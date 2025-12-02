@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Pomodoro Focus Timer</title>
+    <title>Pomodoro Focus Timer (Protected)</title>
     
     <!-- Tải Tailwind CSS -->
     <script src="https://cdn.tailwindcss.com"></script>
@@ -15,15 +15,39 @@
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;700;900&display=swap" rel="stylesheet">
 
     <style>
-        /* Sử dụng phông chữ Inter làm mặc định */
+        /* [GATEKEEPER] QUAN TRỌNG: Ẩn body ngay lập tức để bảo vệ nội dung */
+        body {
+            display: none; 
+        }
+
+        /* [GATEKEEPER] Màn hình chờ khi đang kiểm tra quyền */
+        #gatekeeper-loading {
+            position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+            background: #0f172a; /* Màu nền tối cho hợp theme */
+            display: flex; flex-direction: column; justify-content: center; align-items: center;
+            z-index: 9999; color: white; font-family: 'Inter', sans-serif;
+        }
+
+        /* [GATEKEEPER] Nút đăng xuất nhỏ ở góc trên phải */
+        #gatekeeper-logout-btn {
+            position: fixed; top: 1rem; right: 1rem; z-index: 100;
+            background: rgba(239, 68, 68, 0.2); color: #fca5a5;
+            border: 1px solid rgba(239, 68, 68, 0.5);
+            padding: 0.5rem 1rem; border-radius: 0.5rem;
+            cursor: pointer; font-size: 0.8rem; transition: all 0.2s;
+        }
+        #gatekeeper-logout-btn:hover {
+            background: rgba(239, 68, 68, 0.8); color: white;
+        }
+
+        /* --- CSS CŨ CỦA POMODORO --- */
         body {
             font-family: 'Inter', sans-serif;
             -webkit-font-smoothing: antialiased;
             -moz-osx-font-smoothing: grayscale;
-            position: relative; /* [MỚI] Cần thiết cho các panel nổi */
+            position: relative;
         }
 
-        /* Hiệu ứng nền gradient chuyển động */
         @keyframes gradient-move {
             0% { background-position: 0% 50%; }
             50% { background-position: 100% 50%; }
@@ -35,442 +59,275 @@
             animation: gradient-move 15s ease infinite;
         }
 
-        /* [MỚI] CSS cho nền tùy chỉnh */
         body.custom-background {
-            /* JS sẽ đặt biến --custom-bg-image */
             background-image: var(--custom-bg-image);
             background-size: cover;
             background-position: center;
             background-repeat: no-repeat;
-            background-attachment: fixed; /* Giữ nền cố định khi cuộn */
-            animation: none; /* Tắt hoạt ảnh gradient */
+            background-attachment: fixed;
+            animation: none;
         }
 
-        /* Kiểu cho nút đang hoạt động (tab) */
-        .tab-btn.active {
-            background-color: #ffffff;
-            color: #111827;
-        }
+        .tab-btn.active { background-color: #ffffff; color: #111827; }
         
-        /* [ĐÃ SỬA] Kiểu cho nút icon navi đang hoạt động */
         .nav-icon-btn.active {
-            background-color: #3b82f6; /* Blue-500 */
+            background-color: #3b82f6;
             color: #ffffff;
             box-shadow: 0 0 15px 0 rgba(59, 130, 246, 0.5);
         }
 
-        /* Kiểu cho nút âm thanh đang hoạt động */
         .sound-btn.active {
-            background-color: #3b82f6; /* Blue-500 */
+            background-color: #3b82f6;
             box-shadow: 0 0 15px 0 rgba(59, 130, 246, 0.5);
         }
 
-        /* [XÓA] Quy tắc ẩn media cũ đã bị xóa */
-
-        /* [MỚI] CSS để thu nhỏ đồng hồ khi đang chạy */
         main.timer-active #timer-display {
-            /* Thu nhỏ từ text-8xl/9xl xuống 6xl/7xl */
-            font-size: 4.5rem; /* 72px */
+            font-size: 4.5rem;
             line-height: 1;
             transition: font-size 0.4s ease-in-out;
         }
         @media (min-width: 768px) {
             main.timer-active #timer-display {
-                font-size: 6rem; /* 96px */
+                font-size: 6rem;
             }
         }
         
         main.timer-active #task-input {
-            /* Ẩn input công việc đi */
-            opacity: 0;
-            pointer-events: none;
-            height: 0;
-            margin-bottom: 0;
-            padding-top: 0;
-            padding-bottom: 0;
+            opacity: 0; pointer-events: none; height: 0; margin-bottom: 0; padding-top: 0; padding-bottom: 0;
             transition: all 0.4s ease-in-out;
         }
 
-        /* [MỚI] Tùy chỉnh thanh trượt âm lượng */
         input[type=range].volume-slider {
-             -webkit-appearance: none;
-             appearance: none;
-             background: transparent;
-             cursor: pointer;
-             width: 100%;
+             -webkit-appearance: none; appearance: none; background: transparent; cursor: pointer; width: 100%;
         }
-        input[type=range].volume-slider:focus {
-            outline: none;
-        }
-        /* Thumb (con trượt) */
+        input[type=range].volume-slider:focus { outline: none; }
         input[type=range].volume-slider::-webkit-slider-thumb {
-            -webkit-appearance: none;
-            appearance: none;
-            height: 14px;
-            width: 14px;
-            background-color: #ffffff;
-            border-radius: 50%;
-            border: none;
-            margin-top: -5px; /* Căn giữa con trượt với track */
+            -webkit-appearance: none; appearance: none; height: 14px; width: 14px;
+            background-color: #ffffff; border-radius: 50%; border: none; margin-top: -5px;
         }
         input[type=range].volume-slider::-moz-range-thumb {
-            height: 14px;
-            width: 14px;
-            background-color: #ffffff;
-            border-radius: 50%;
-            border: none;
+            height: 14px; width: 14px; background-color: #ffffff; border-radius: 50%; border: none;
         }
-        /* Track (đường chạy) */
         input[type=range].volume-slider::-webkit-slider-runnable-track {
-            height: 4px;
-            background-color: rgba(255, 255, 255, 0.3);
-            border-radius: 2px;
+            height: 4px; background-color: rgba(255, 255, 255, 0.3); border-radius: 2px;
         }
         input[type=range].volume-slider::-moz-range-track {
-             height: 4px;
-            background-color: rgba(255, 255, 255, 0.3);
-            border-radius: 2px;
+             height: 4px; background-color: rgba(255, 255, 255, 0.3); border-radius: 2px;
         }
         
-        /* [MỚI] Kiểu cho nút media tab */
-        .media-tab-btn.active {
-            background-color: #3b82f6; /* Blue-500 */
-            color: #ffffff;
-        }
-
-        /* [MỚI] Kiểu cho nút bg tab */
-        .bg-tab-btn.active {
-            background-color: #3b82f6; /* Blue-500 */
-            color: #ffffff;
-        }
+        .media-tab-btn.active { background-color: #3b82f6; color: #ffffff; }
+        .bg-tab-btn.active { background-color: #3b82f6; color: #ffffff; }
         
-        /* [MỚI] Kiểu cho danh sách album/history */
         .media-list-item, .bg-list-item {
-            display: block;
-            width: 100%;
-            padding: 8px 10px;
-            font-size: 0.8rem; /* 13px */
-            color: #d1d5db; /* text-gray-300 */
-            border-radius: 6px;
-            transition: background-color 0.2s;
-            cursor: pointer;
-            white-space: nowrap;
-            overflow: hidden;
-            text-overflow: ellipsis;
-            text-align: left; /* Căn trái */
+            display: block; width: 100%; padding: 8px 10px; font-size: 0.8rem; color: #d1d5db;
+            border-radius: 6px; transition: background-color 0.2s; cursor: pointer; white-space: nowrap;
+            overflow: hidden; text-overflow: ellipsis; text-align: left;
         }
-        .media-list-item:hover, .bg-list-item:hover {
-            background-color: rgba(255, 255, 255, 0.1);
-        }
-        .media-list-item .code {
-            font-weight: 600;
-            color: #ffffff;
-            margin-right: 6px;
-        }
-        .bg-list-item .icon {
-            margin-right: 8px;
-        }
+        .media-list-item:hover, .bg-list-item:hover { background-color: rgba(255, 255, 255, 0.1); }
+        .media-list-item .code { font-weight: 600; color: #ffffff; margin-right: 6px; }
+        .bg-list-item .icon { margin-right: 8px; }
 
-        /* [MỚI] CSS để ẩn pop-up video nhưng giữ âm thanh */
         #video-popup-panel.hidden {
-            /* Dùng opacity và pointer-events để ẩn nó khỏi tương tác */
-            /* nhưng vẫn giữ nó trong DOM để âm thanh tiếp tục phát */
-            opacity: 0;
-            pointer-events: none;
-            /* Di chuyển nó ra khỏi màn hình để đảm bảo an toàn */
-            transform: scale(0.5) translateX(200px);
-            transition: all 0.3s ease-out;
+            opacity: 0; pointer-events: none; transform: scale(0.5) translateX(200px); transition: all 0.3s ease-out;
         }
-        #video-popup-panel {
-            transition: all 0.3s ease-out;
-        }
+        #video-popup-panel { transition: all 0.3s ease-out; }
 
+        .spinner {
+            width: 40px; height: 40px; border: 4px solid rgba(255,255,255,0.1);
+            border-top-color: #3b82f6; border-radius: 50%; animation: spin 1s linear infinite; margin-bottom: 1rem;
+        }
+        @keyframes spin { 100% { transform: rotate(360deg); } }
     </style>
 </head>
 <body class="min-h-screen text-white p-4 overflow-hidden">
 
-    <!-- [ĐÃ SỬA] Thẻ (card) hẹn giờ chính, thêm ID -->
+    <!-- [GATEKEEPER] MÀN HÌNH LOADING -->
+    <div id="gatekeeper-loading">
+        <div class="spinner"></div>
+        <h3 class="text-xl font-bold">Checking Access...</h3>
+        <p class="text-sm text-gray-400 mt-2">Gatekeeper is verifying your session</p>
+    </div>
+
+    <!-- [GATEKEEPER] NÚT ĐĂNG XUẤT -->
+    <button id="gatekeeper-logout-btn">Log Out</button>
+
+    <!-- NỘI DUNG CHÍNH CỦA POMODORO -->
     <div class="w-full max-w-md mx-auto my-10">
-        <!-- Bộ chứa chính với hiệu ứng "Glassmorphism" -->
         <main id="main-content" class="bg-black/20 backdrop-blur-xl rounded-2xl p-6 md:p-8 shadow-2xl border border-white/10 transition-all duration-300">
-            
-            <!-- Các tab chọn chế độ (Pomodoro, Short Break, Long Break) -->
+            <!-- Tabs -->
             <div class="bg-black/30 p-1.5 rounded-full flex justify-between items-center space-x-1 mb-8">
-                <button id="focus-btn" class="tab-btn active w-full py-2 px-4 rounded-full text-sm font-semibold transition-all duration-300">
-                    Focus
-                </button>
-                <button id="short-break-btn" class="tab-btn w-full py-2 px-4 rounded-full text-sm font-semibold text-gray-300 hover:bg-white/10 transition-all duration-300">
-                    Short Break
-                </button>
-                <button id="long-break-btn" class="tab-btn w-full py-2 px-4 rounded-full text-sm font-semibold text-gray-300 hover:bg-white/10 transition-all duration-300">
-                    Long Break
-                </button>
+                <button id="focus-btn" class="tab-btn active w-full py-2 px-4 rounded-full text-sm font-semibold transition-all duration-300">Focus</button>
+                <button id="short-break-btn" class="tab-btn w-full py-2 px-4 rounded-full text-sm font-semibold text-gray-300 hover:bg-white/10 transition-all duration-300">Short Break</button>
+                <button id="long-break-btn" class="tab-btn w-full py-2 px-4 rounded-full text-sm font-semibold text-gray-300 hover:bg-white/10 transition-all duration-300">Long Break</button>
             </div>
 
-            <!-- Hiển thị thời gian -->
+            <!-- Timer -->
             <div class ="text-center my-10 md:my-12 transition-all duration-300">
-                <h1 id="timer-display" class="text-8xl md:text-9xl font-extrabold tracking-tighter transition-all duration-400 ease-in-out">
-                    25:00
-                </h1>
+                <h1 id="timer-display" class="text-8xl md:text-9xl font-extrabold tracking-tighter transition-all duration-400 ease-in-out">25:00</h1>
             </div>
 
-            <!-- Input công việc -->
-            <input 
-                type="text" 
-                id="task-input"
-                placeholder="What are you working on?"
-                class="w-full bg-transparent border-b-2 border-white/20 focus:border-white/50 text-center text-lg p-2 outline-none placeholder:text-gray-400 mb-6 transition-all duration-400 ease-in-out"
-            >
+            <!-- Input -->
+            <input type="text" id="task-input" placeholder="What are you working on?" class="w-full bg-transparent border-b-2 border-white/20 focus:border-white/50 text-center text-lg p-2 outline-none placeholder:text-gray-400 mb-6 transition-all duration-400 ease-in-out">
 
-            <!-- Nút Start/Pause -->
-            <button id="start-pause-btn" class="w-full bg-white text-gray-900 py-4 px-6 rounded-xl text-2xl font-bold shadow-lg transition-all duration-300 transform hover:scale-105 hover:shadow-2xl active:scale-95">
-                Start
-            </button>
-            
+            <!-- Start Button -->
+            <button id="start-pause-btn" class="w-full bg-white text-gray-900 py-4 px-6 rounded-xl text-2xl font-bold shadow-lg transition-all duration-300 transform hover:scale-105 hover:shadow-2xl active:scale-95">Start</button>
         </main>
     </div>
 
-    <!-- [MỚI] Thanh Navi Icon Cố Định -->
+    <!-- Navi Icons -->
     <nav class="fixed bottom-4 left-4 z-50 flex flex-row space-x-2">
-        <button id="toggle-sounds-btn" class="nav-icon-btn w-14 h-14 bg-black/30 backdrop-blur-lg border border-white/10 text-2xl rounded-full flex items-center justify-center text-gray-300 hover:bg-white/20 transition-all duration-300">
-            🌧️
-        </button>
-        <button id="toggle-media-btn" class="nav-icon-btn w-14 h-14 bg-black/30 backdrop-blur-lg border border-white/10 text-2xl rounded-full flex items-center justify-center text-gray-300 hover:bg-white/20 transition-all duration-300">
-            🎵
-        </button>
-        <!-- [MỚI] Nút đổi hình nền -->
-        <button id="toggle-background-btn" class="nav-icon-btn w-14 h-14 bg-black/30 backdrop-blur-lg border border-white/10 text-2xl rounded-full flex items-center justify-center text-gray-300 hover:bg-white/20 transition-all duration-300">
-            🖼️
-        </button>
+        <button id="toggle-sounds-btn" class="nav-icon-btn w-14 h-14 bg-black/30 backdrop-blur-lg border border-white/10 text-2xl rounded-full flex items-center justify-center text-gray-300 hover:bg-white/20 transition-all duration-300">🌧️</button>
+        <button id="toggle-media-btn" class="nav-icon-btn w-14 h-14 bg-black/30 backdrop-blur-lg border border-white/10 text-2xl rounded-full flex items-center justify-center text-gray-300 hover:bg-white/20 transition-all duration-300">🎵</button>
+        <button id="toggle-background-btn" class="nav-icon-btn w-14 h-14 bg-black/30 backdrop-blur-lg border border-white/10 text-2xl rounded-full flex items-center justify-center text-gray-300 hover:bg-white/20 transition-all duration-300">🖼️</button>
     </nav>
 
-    <!-- [ĐÃ SỬA] Panel Âm thanh (Panel Nổi) - Thiết kế lại hoàn toàn -->
+    <!-- Sounds Panel -->
     <div id="sounds-panel" class="fixed bottom-20 left-4 z-40 bg-black/50 backdrop-blur-lg rounded-lg p-4 shadow-lg hidden w-72">
         <h3 class="text-center text-sm font-medium text-gray-300 mb-5">Ambient Sounds</h3>
         <div class="flex flex-col space-y-3">
-            
-            <!-- Sound Item 1: White Noise -->
+            <!-- White Noise -->
             <div class="flex items-center space-x-3">
-                <button data-sound="white" class="sound-btn bg-black/30 p-2 rounded-lg text-xl transition-all duration-300 hover:bg-white/20 w-16">
-                    🤍
-                    <span class="block text-xs mt-1">White</span>
-                </button>
+                <button data-sound="white" class="sound-btn bg-black/30 p-2 rounded-lg text-xl transition-all duration-300 hover:bg-white/20 w-16">🤍<span class="block text-xs mt-1">White</span></button>
                 <input type="range" data-sound="white" min="0" max="100" value="0" class="volume-slider w-full">
             </div>
-
-            <!-- Sound Item 2: Pink Noise -->
+            <!-- Pink Noise -->
             <div class="flex items-center space-x-3">
-                <button data-sound="pink" class="sound-btn bg-black/30 p-2 rounded-lg text-xl transition-all duration-300 hover:bg-white/20 w-16">
-                    🩷
-                    <span class="block text-xs mt-1">Pink</span>
-                </button>
+                <button data-sound="pink" class="sound-btn bg-black/30 p-2 rounded-lg text-xl transition-all duration-300 hover:bg-white/20 w-16">🩷<span class="block text-xs mt-1">Pink</span></button>
                 <input type="range" data-sound="pink" min="0" max="100" value="0" class="volume-slider w-full">
             </div>
-
-            <!-- Sound Item 3: Brown Noise -->
+            <!-- Brown Noise -->
             <div class="flex items-center space-x-3">
-                <button data-sound="brown" class="sound-btn bg-black/30 p-2 rounded-lg text-xl transition-all duration-300 hover:bg-white/20 w-16">
-                    🤎
-                    <span class="block text-xs mt-1">Brown</span>
-                </button>
+                <button data-sound="brown" class="sound-btn bg-black/30 p-2 rounded-lg text-xl transition-all duration-300 hover:bg-white/20 w-16">🤎<span class="block text-xs mt-1">Brown</span></button>
                 <input type="range" data-sound="brown" min="0" max="100" value="0" class="volume-slider w-full">
             </div>
-            
-            <!-- [MỚI] Sound Item 4: Sine Wave -->
+            <!-- Sine -->
             <div class="flex items-center space-x-3">
-                <button data-sound="sine" class="sound-btn bg-black/30 p-2 rounded-lg text-xl transition-all duration-300 hover:bg-white/20 w-16">
-                    〰️
-                    <span class="block text-xs mt-1">Sine</span>
-                </button>
+                <button data-sound="sine" class="sound-btn bg-black/30 p-2 rounded-lg text-xl transition-all duration-300 hover:bg-white/20 w-16">〰️<span class="block text-xs mt-1">Sine</span></button>
                 <input type="range" data-sound="sine" min="0" max="100" value="0" class="volume-slider w-full">
             </div>
-            
-            <!-- [MỚI] Sound Item 5: Triangle Wave -->
+            <!-- Triangle -->
             <div class="flex items-center space-x-3">
-                <button data-sound="triangle" class="sound-btn bg-black/30 p-2 rounded-lg text-xl transition-all duration-300 hover:bg-white/20 w-16">
-                    🔺
-                    <span class="block text-xs mt-1">Triangle</span>
-                </button>
+                <button data-sound="triangle" class="sound-btn bg-black/30 p-2 rounded-lg text-xl transition-all duration-300 hover:bg-white/20 w-16">🔺<span class="block text-xs mt-1">Triangle</span></button>
                 <input type="range" data-sound="triangle" min="0" max="100" value="0" class="volume-slider w-full">
             </div>
-
-            <!-- [MỚI] Sound Item 6: Sawtooth Wave -->
+            <!-- Sawtooth -->
             <div class="flex items-center space-x-3">
-                <!-- [SỬA LỖI] Thay thế text 'sawtooth' bằng emoji -->
-                <button data-sound="sawtooth" class="sound-btn bg-black/30 p-2 rounded-lg text-xl transition-all duration-300 hover:bg-white/20 w-16">
-                    📈
-                    <span class="block text-xs mt-1">Saw</span>
-                </button>
+                <button data-sound="sawtooth" class="sound-btn bg-black/30 p-2 rounded-lg text-xl transition-all duration-300 hover:bg-white/20 w-16">📈<span class="block text-xs mt-1">Saw</span></button>
                 <input type="range" data-sound="sawtooth" min="0" max="100" value="0" class="volume-slider w-full">
             </div>
-
         </div>
     </div>
 
-    <!-- [ĐÃ SỬA] Panel Media (Panel Nổi) - Giao diện Tab mới -->
+    <!-- Media Panel -->
     <div id="media-panel" class="fixed bottom-20 left-4 z-40 bg-black/50 backdrop-blur-lg rounded-lg p-4 shadow-lg w-full max-w-xs hidden">
-        
-        <!-- Tab buttons -->
         <div class="bg-black/30 p-1 rounded-full flex justify-between items-center space-x-1 mb-4">
             <button data-tab="custom" class="media-tab-btn active w-full py-1.5 px-2 rounded-full text-xs font-semibold">Custom</button>
             <button data-tab="album" class="media-tab-btn w-full py-1.5 px-2 rounded-full text-xs font-semibold text-gray-300 hover:bg-white/10">Album</button>
             <button data-tab="history" class="media-tab-btn w-full py-1.5 px-2 rounded-full text-xs font-semibold text-gray-300 hover:bg-white/10">History</button>
         </div>
-
-        <!-- Tab Content: Custom URL -->
         <div id="media-tab-custom" class="media-tab-content">
-            <!-- [ĐÃ XÓA] Tiêu đề "Media Player" -->
             <div class="flex space-x-2 mb-2">
-                <input 
-                    type="text" 
-                    id="media-url-input"
-                    placeholder="Paste a YouTube URL"
-                    class="flex-grow bg-black/30 text-white p-2 rounded-lg text-sm outline-none focus:ring-2 focus:ring-blue-500 placeholder:text-gray-400"
-                >
-                <button 
-                    id="load-media-btn"
-                    class="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-lg text-sm font-semibold transition-all"
-                >
-                    Load
-                </button>
+                <input type="text" id="media-url-input" placeholder="Paste a YouTube URL" class="flex-grow bg-black/30 text-white p-2 rounded-lg text-sm outline-none focus:ring-2 focus:ring-blue-500 placeholder:text-gray-400">
+                <button id="load-media-btn" class="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-lg text-sm font-semibold transition-all">Load</button>
             </div>
         </div>
-
-        <!-- [MỚI] Tab Content: Album -->
-        <div id="media-tab-album" class="media-tab-content hidden max-h-48 overflow-y-auto">
-            <!-- Album items sẽ được chèn bằng JS -->
-        </div>
-
-        <!-- [MỚI] Tab Content: History -->
-        <div id="media-tab-history" class="media-tab-content hidden max-h-48 overflow-y-auto">
-            <!-- History items sẽ được chèn bằng JS -->
-        </div>
-
-        <!-- [ĐÃ XÓA] Video Player (đã di chuyển ra ngoài) -->
+        <div id="media-tab-album" class="media-tab-content hidden max-h-48 overflow-y-auto"></div>
+        <div id="media-tab-history" class="media-tab-content hidden max-h-48 overflow-y-auto"></div>
     </div>
 
-    <!-- [MỚI] Pop-up Trình phát Video (Kích thước lớn hơn) -->
+    <!-- Video Popup -->
     <div id="video-popup-panel" class="fixed bottom-4 right-4 z-40 bg-black/50 backdrop-blur-lg rounded-lg shadow-lg w-full max-w-md hidden">
-        <!-- [MỚI] Nút Đóng 'X' -->
         <button id="close-video-popup-btn" class="absolute -top-2 -right-2 z-50 w-7 h-7 bg-black/70 rounded-full text-white flex items-center justify-center text-lg font-bold leading-none pb-0.5 hover:bg-red-500 transition-colors">&times;</button>
-        
-        <!-- [ĐÃ SỬA] Video Player (đã di chuyển) -->
-        <div id="media-player-container" class="video-wrapper aspect-video w-full rounded-lg overflow-hidden bg-black/30">
-            <!-- Iframe sẽ được chèn vào đây bằng JS -->
-        </div>
+        <div id="media-player-container" class="video-wrapper aspect-video w-full rounded-lg overflow-hidden bg-black/30"></div>
     </div>
 
-
-    <!-- [ĐÃ SỬA] Panel Đổi Nền (Thêm Tabs) -->
+    <!-- Background Panel -->
     <div id="background-panel" class="fixed bottom-20 left-4 z-40 bg-black/50 backdrop-blur-lg rounded-lg p-4 shadow-lg w-full max-w-xs hidden">
         <h3 class="text-center text-sm font-medium text-gray-300 mb-4">Đổi Nền</h3>
-        
-        <!-- [MỚI] Tab buttons -->
         <div class="bg-black/30 p-1 rounded-full flex justify-between items-center space-x-1 mb-4">
-            <!-- [SỬA LỖI] Đổi data-tab từ "bg-custom" -> "custom" -->
             <button data-tab="custom" class="bg-tab-btn active w-full py-1.5 px-2 rounded-full text-xs font-semibold">Custom</button>
-            <!-- [SỬA LỖI] Đổi data-tab từ "bg-album" -> "album" -->
             <button data-tab="album" class="bg-tab-btn w-full py-1.5 px-2 rounded-full text-xs font-semibold text-gray-300 hover:bg-white/10">Album</button>
         </div>
-
-        <!-- [MỚI] Tab Content: Custom -->
-        <!-- [SỬA LỖI] Đổi ID từ "bg-tab-custom" -> "bg-custom" (để khớp logic) -->
         <div id="bg-tab-custom" class="bg-tab-content space-y-3">
-            <input 
-                type="text" 
-                id="bg-url-input"
-                placeholder="Paste an image/GIF URL"
-                class="w-full bg-black/30 text-white p-2 rounded-lg text-sm outline-none focus:ring-2 focus:ring-blue-500 placeholder:text-gray-400"
-            >
-            <button 
-                id="set-bg-btn"
-                class="w-full bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-lg text-sm font-semibold transition-all"
-            >
-                Đặt Nền
-            </button>
-            <button 
-                id="reset-bg-btn"
-                class="w-full bg-gray-600 hover:bg-gray-700 text-white px-4 py-2 rounded-lg text-sm font-semibold transition-all"
-            >
-                Khôi Phục
-            </button>
+            <input type="text" id="bg-url-input" placeholder="Paste an image/GIF URL" class="w-full bg-black/30 text-white p-2 rounded-lg text-sm outline-none focus:ring-2 focus:ring-blue-500 placeholder:text-gray-400">
+            <button id="set-bg-btn" class="w-full bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-lg text-sm font-semibold transition-all">Đặt Nền</button>
+            <button id="reset-bg-btn" class="w-full bg-gray-600 hover:bg-gray-700 text-white px-4 py-2 rounded-lg text-sm font-semibold transition-all">Khôi Phục</button>
         </div>
-
-        <!-- [MỚI] Tab Content: Album -->
-        <!-- [SỬA LỖI] Đổi ID từ "bg-tab-album" -> "bg-album" (để khớp logic) -->
-        <div id="bg-tab-album" class="bg-tab-content hidden max-h-48 overflow-y-auto">
-            <!-- Album nền sẽ được chèn bằng JS -->
-        </div>
+        <div id="bg-tab-album" class="bg-tab-content hidden max-h-48 overflow-y-auto"></div>
     </div>
 
-
-    <!-- Modal thông báo lỗi -->
+    <!-- Error Modal -->
     <div id="error-modal" class="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center p-4 hidden" style="z-index: 1000;">
         <div class="bg-gray-800 rounded-lg p-6 shadow-xl w-full max-w-sm text-center">
             <h3 class="text-lg font-semibold mb-2">Thông báo</h3>
             <p id="error-message" class="text-gray-300 mb-4">URL YouTube không hợp lệ.</p>
-            <button id="close-error-modal-btn" class="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-lg text-sm font-semibold transition-all">
-                Đã hiểu
-            </button>
+            <button id="close-error-modal-btn" class="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-lg text-sm font-semibold transition-all">Đã hiểu</button>
         </div>
     </div>
 
+    <!-- [GATEKEEPER] LOGIC BẢO VỆ -->
+    <script type="module">
+        // Import từ thư mục cha 2 cấp (../../)
+        import { initGatekeeper, logoutUser } from "../../gatekeeper.js";
+
+        // Kích hoạt chế độ bảo vệ trang nội dung
+        initGatekeeper('protected_page');
+
+        // Gán sự kiện cho nút đăng xuất (nút mới tạo)
+        document.getElementById('gatekeeper-logout-btn').addEventListener('click', logoutUser);
+    </script>
+
+    <!-- JS CHÍNH CỦA POMODORO (Giữ nguyên) -->
     <script>
         document.addEventListener('DOMContentLoaded', () => {
-            // --- DOM Elements ---
+            // DOM Elements
             const timerDisplay = document.getElementById('timer-display');
             const startPauseBtn = document.getElementById('start-pause-btn');
             const taskInput = document.getElementById('task-input');
-            const mainContent = document.getElementById('main-content'); // [MỚI]
+            const mainContent = document.getElementById('main-content');
             
             const focusBtn = document.getElementById('focus-btn');
             const shortBreakBtn = document.getElementById('short-break-btn');
             const longBreakBtn = document.getElementById('long-break-btn');
             const tabButtons = [focusBtn, shortBreakBtn, longBreakBtn];
 
-            // [ĐÃ SỬA] Lấy các nút và thanh trượt âm thanh mới
             const soundToggleButtons = document.querySelectorAll('.sound-btn');
             const volumeSliders = document.querySelectorAll('.volume-slider');
 
-            // [ĐÃ SỬA] Các nút navi và panel nổi
             const toggleSoundsBtn = document.getElementById('toggle-sounds-btn');
             const toggleMediaBtn = document.getElementById('toggle-media-btn');
-            const toggleBackgroundBtn = document.getElementById('toggle-background-btn'); // [MỚI]
+            const toggleBackgroundBtn = document.getElementById('toggle-background-btn');
             const soundsPanel = document.getElementById('sounds-panel');
             const mediaPanel = document.getElementById('media-panel');
-            const backgroundPanel = document.getElementById('background-panel'); // [MỚI]
+            const backgroundPanel = document.getElementById('background-panel');
             
             const mediaUrlInput = document.getElementById('media-url-input');
             const loadMediaBtn = document.getElementById('load-media-btn');
             const mediaPlayerContainer = document.getElementById('media-player-container');
-            const videoPopupPanel = document.getElementById('video-popup-panel'); // [MỚI]
-            const closeVideoPopupBtn = document.getElementById('close-video-popup-btn'); // [MỚI]
+            const videoPopupPanel = document.getElementById('video-popup-panel');
+            const closeVideoPopupBtn = document.getElementById('close-video-popup-btn');
             
-            // Modal elements
             const errorModal = document.getElementById('error-modal');
             const errorMessage = document.getElementById('error-message');
             const closeErrorModalBtn = document.getElementById('close-error-modal-btn');
             
-            // [MỚI] Element cho nền
             const bgUrlInput = document.getElementById('bg-url-input');
             const setBgBtn = document.getElementById('set-bg-btn');
             const resetBgBtn = document.getElementById('reset-bg-btn');
             const bodyEl = document.body;
             
-            // [MỚI] Media Tabs
             const mediaTabButtons = document.querySelectorAll('.media-tab-btn');
             const mediaTabContents = document.querySelectorAll('.media-tab-content');
             const mediaTabAlbum = document.getElementById('media-tab-album');
             const mediaTabHistory = document.getElementById('media-tab-history');
 
-            // [MỚI] Background Tabs
             const bgTabButtons = document.querySelectorAll('.bg-tab-btn');
             const bgTabContents = document.querySelectorAll('.bg-tab-content');
             const bgTabAlbum = document.getElementById('bg-tab-album');
 
-            // --- [MỚI] Constants ---
+            // Constants
             const MEDIA_ALBUM = [
-            { code: "#001", title: "Midnight Vale", url: "https://www.youtube.com/watch?v=_QqabGYTSpQ&list=RD_QqabGYTSpQ&start_radio=1" },
+                { code: "#001", title: "Midnight Vale", url: "https://www.youtube.com/watch?v=_QqabGYTSpQ&list=RD_QqabGYTSpQ&start_radio=1" },
                 { code: "#002", title: "Forest Sounds", url: "https://www.youtube.com/watch?v=xNN7iTA57jM" },
                 { code: "#003", title: "Cozy Reading Nook", url: "https://www.youtube.com/watch?v=6bPN0JyGfA4" },
                 { code: "#004", title: "minecraft music w/ soft rain", url: "https://www.youtube.com/watch?v=yJ6Lbsmb1lY&list=RDyJ6Lbsmb1lY&start_radio=1&t=11s" },
@@ -495,145 +352,99 @@
                 { title: "BMW M4 Art", url: "https://applescoop.org/image/wallpapers/mac/bmw-m4-m-series-artwork-4k-01-11-2024-1730444935-hd-wallpaper.jpg" },
                 { title: "Ferrari 499P", url: "https://pixelz.cc/wp-content/uploads/2024/01/ferrari-499p-le-mans-hypercar-uhd-4k-wallpaper.jpg" },
                 { title: "Colorful Sky", url: "https://cdn.wallpapersafari.com/63/56/izoh9I.jpg" },
-                { title: "Peace", url: "https://64.media.tumblr.com/5d37ab2aa782462c7aa092f7bd0d27cb/2f374d07287b003b-f4/s1280x1920/fe094893d79e09d668e1705e8b9144964f38ce75.gif" },
-                { title: "(GIF) Abstract Neon", url: "https://cdn.wallpapersafari.com/30/0/n0HOqk.gif" },
-                { title: "(GIF) Orange Forest", url: "https://i.pinimg.com/originals/d7/33/34/d733345e4f11231904e7634a04439e21.gif" },
-                { title: "BMW M4 Art", url: "https://applescoop.org/image/wallpapers/mac/bmw-m4-m-series-artwork-4k-01-11-2024-1730444935-hd-wallpaper.jpg" },
-                { title: "Ferrari 499P", url: "https://pixelz.cc/wp-content/uploads/2024/01/ferrari-499p-le-mans-hypercar-uhd-4k-wallpaper.jpg" },
-                { title: "Colorful Sky", url: "https://cdn.wallpapersafari.com/63/56/izoh9I.jpg" }
+                { title: "Peace", url: "https://64.media.tumblr.com/5d37ab2aa782462c7aa092f7bd0d27cb/2f374d07287b003b-f4/s1280x1920/fe094893d79e09d668e1705e8b9144964f38ce75.gif" }
             ];
 
             const MEDIA_HISTORY_KEY = 'pomodoroMediaHistory';
 
-            // --- Timer State ---
-            const timerModes = {
-                focus: 25 * 60,
-                short: 5 * 60,
-                long: 15 * 60,
-            };
-            
-            // [SỬA LỖI] Khai báo lại các biến state bị thiếu
+            // Timer State
+            const timerModes = { focus: 25 * 60, short: 5 * 60, long: 15 * 60 };
             let currentMode = 'focus';
             let timeRemaining = timerModes.focus;
             let isRunning = false;
             let timerId = null;
-            let longBreakInterval = 4; // Long break after 4 focus sessions
+            let longBreakInterval = 4;
             let focusCount = 0;
 
-            // --- Audio (Tone.js) ---
+            // Audio
             let alarmSynth = null;
             let noisePlayers = {};
-            // [HẾT SỬA LỖI]
 
-            // [ĐÃ SỬA] Thêm 3 loại âm thanh mới (oscillator)
             function setupAudio() {
-                // Báo thức
                 alarmSynth = new Tone.Synth().toDestination();
-
-                // Tiếng ồn
                 noisePlayers = {
                     white: new Tone.Noise("white").set({ volume: -Infinity }),
                     pink: new Tone.Noise("pink").set({ volume: -Infinity }),
                     brown: new Tone.Noise("brown").set({ volume: -Infinity }),
-                    // [MỚI] Thêm Oscillators
-                    // Đặt tần số thấp (C2 = 65.41 Hz) cho tiếng "hum"
                     sine: new Tone.Oscillator("C2", "sine").set({ volume: -Infinity }),
                     triangle: new Tone.Oscillator("C2", "triangle").set({ volume: -Infinity }),
                     sawtooth: new Tone.Oscillator("C2", "sawtooth").set({ volume: -Infinity }),
                 };
-                
-                // [SỬA LỖI] Bắt đầu (start) TẤT CẢ các trình phát âm thanh (cả Noise và Oscillator)
-                // Chúng sẽ chạy ngầm và chỉ được điều chỉnh âm lượng
                 Object.values(noisePlayers).forEach(player => {
                     player.toDestination();
                     player.start();
                 });
-                
-                console.log("Audio players initialized");
             }
 
-            // Phải gọi Tone.start() sau khi người dùng tương tác
             async function startAudioContext() {
                 if (Tone.context.state !== 'running') {
                     await Tone.start();
-                    console.log('Audio context started');
                 }
             }
 
-            // --- Core Functions ---
-
-            // Cập nhật đồng hồ và tiêu đề trang
             function updateDisplay() {
                 const minutes = Math.floor(timeRemaining / 60);
                 const seconds = timeRemaining % 60;
                 const displayString = `${String(minutes).padStart(2, '0')}:${String(seconds).padStart(2, '0')}`;
-                
                 timerDisplay.textContent = displayString;
                 document.title = `${displayString} - ${currentMode.charAt(0).toUpperCase() + currentMode.slice(1)}`;
             }
 
-            // Bắt đầu hẹn giờ
             function startTimer() {
-                startAudioContext(); // Đảm bảo âm thanh được phép chạy
+                startAudioContext();
                 isRunning = true;
                 startPauseBtn.textContent = 'Pause';
-                mainContent.classList.add('timer-active'); // [MỚI] Thu nhỏ UI
-                
+                mainContent.classList.add('timer-active');
                 timerId = setInterval(() => {
                     timeRemaining--;
                     updateDisplay();
-
                     if (timeRemaining <= 0) {
                         stopTimer();
                         playAlarm();
-                        
-                        // Tự động chuyển chế độ
                         if (currentMode === 'focus') {
                             focusCount++;
-                            if (focusCount % longBreakInterval === 0) {
-                                switchMode('long');
-                            } else {
-                                switchMode('short');
-                            }
+                            if (focusCount % longBreakInterval === 0) switchMode('long');
+                            else switchMode('short');
                         } else {
                             switchMode('focus');
                         }
-                        // Tự động bắt đầu
                         startTimer();
                     }
                 }, 1000);
             }
 
-            // Dừng hẹn giờ
             function stopTimer() {
                 clearInterval(timerId);
                 timerId = null;
                 isRunning = false;
                 startPauseBtn.textContent = 'Start';
-                mainContent.classList.remove('timer-active'); // [MỚI] Phục hồi UI
+                mainContent.classList.remove('timer-active');
             }
 
-            // Chơi âm báo thức
             function playAlarm() {
-                startAudioContext(); // Đảm bảo
+                startAudioContext();
                 if (alarmSynth) {
                     alarmSynth.triggerAttackRelease("C5", "8n", Tone.now());
                     alarmSynth.triggerAttackRelease("G5", "8n", Tone.now() + 0.2);
                 }
             }
 
-            // Chuyển chế độ (focus, short, long)
             function switchMode(mode) {
-                if (isRunning) {
-                    stopTimer();
-                }
-                
+                if (isRunning) stopTimer();
                 currentMode = mode;
                 timeRemaining = timerModes[mode];
                 updateDisplay();
-                mainContent.classList.remove('timer-active'); // [MỚI] Luôn phục hồi UI khi chuyển mode
-
-                // Cập nhật giao diện nút tab
+                mainContent.classList.remove('timer-active');
                 tabButtons.forEach(btn => {
                     if (btn.id.startsWith(mode)) {
                         btn.classList.add('active');
@@ -645,11 +456,6 @@
                 });
             }
             
-            // [ĐÃ SỬA] Logic bật/tắt và điều chỉnh âm lượng
-            /**
-             * Bật/tắt một âm thanh
-             * @param {string} soundType - "white", "pink", "sine", v.v.
-             */
             function toggleSound(soundType) {
                 startAudioContext();
                 const player = noisePlayers[soundType];
@@ -657,220 +463,127 @@
                 const slider = document.querySelector(`.volume-slider[data-sound="${soundType}"]`);
 
                 if (btn.classList.contains('active')) {
-                    // Đang active -> Tắt nó đi
                     player.volume.rampTo(-Infinity, 0.1);
                     slider.value = 0;
                     btn.classList.remove('active');
                 } else {
-                    // Đang tắt -> Bật lên (với âm lượng mặc định 75)
                     const defaultSliderVal = 75;
                     slider.value = defaultSliderVal;
-                    setSoundVolume(soundType, defaultSliderVal); // Dùng hàm setVolume
+                    setSoundVolume(soundType, defaultSliderVal);
                     btn.classList.add('active');
                 }
             }
 
-            /**
-             * [MỚI] Đặt âm lượng dựa trên thanh trượt
-             * @param {string} soundType 
-             * @param {string|number} sliderValue - Giá trị từ 0 đến 100
-             */
             function setSoundVolume(soundType, sliderValue) {
                 const player = noisePlayers[soundType];
                 const btn = document.querySelector(`.sound-btn[data-sound="${soundType}"]`);
                 const value = parseInt(sliderValue, 10);
-
                 if (value === 0) {
                     player.volume.rampTo(-Infinity, 0.1);
                     btn.classList.remove('active');
                 } else {
-                    // Chuyển đổi [1, 100] -> [-50, 0] dB
-                    // (1 * 0.5) - 50 = -49.5 dB (rất nhỏ)
-                    // (100 * 0.5) - 50 = 0 dB (tối đa)
                     const newVolumeDb = (value * 0.5) - 50;
                     player.volume.rampTo(newVolumeDb, 0.1);
-                    btn.classList.add('active'); // Đảm bảo nút active khi có âm lượng
+                    btn.classList.add('active');
                 }
             }
 
-
-            // --- Media Player Functions ---
-
-            /**
-             * [MỚI] Hiển thị modal lỗi
-             * @param {string} msg - Tin nhắn lỗi
-             */
             function showError(msg) {
                 errorMessage.textContent = msg;
                 errorModal.classList.remove('hidden');
                 errorModal.classList.add('flex');
             }
 
-            /**
-             * [MỚI] Ẩn modal lỗi
-             */
             function hideError() {
                 errorModal.classList.add('hidden');
                 errorModal.classList.remove('flex');
             }
 
-            /**
-             * [ĐÃ SỬA] Chuyển đổi URL YouTube (mạnh mẽ hơn, hỗ trợ /shorts/)
-             * @param {string} url - URL YouTube
-             * @returns {string|null} URL nhúng hoặc null nếu không hợp lệ
-             */
             function getYouTubeEmbedUrl(url) {
                 let videoId = null;
-
                 try {
-                    // Thử phân tích URL đầy đủ (yêu cầu http/https)
                     const urlObj = new URL(url);
                     const hostname = urlObj.hostname;
                     const pathname = urlObj.pathname;
-
-                    if (hostname === 'youtu.be') {
-                        // Dạng: youtu.be/VIDEO_ID
-                        videoId = pathname.split('/')[1];
-                    } else if (hostname.includes('youtube.com') || hostname.includes('youtube-nocookie.com')) {
-                        if (pathname.includes('/watch')) {
-                            // Dạng: youtube.com/watch?v=VIDEO_ID
-                            videoId = urlObj.searchParams.get('v');
-                        } else if (pathname.includes('/shorts/')) {
-                            // Dạng: youtube.com/shorts/VIDEO_ID
-                            videoId = pathname.split('/shorts/')[1].split('?')[0];
-                        } else if (pathname.includes('/embed/')) {
-                            // Dạng: youtube.com/embed/VIDEO_ID
-                            videoId = pathname.split('/embed/')[1].split('?')[0];
-                        }
+                    if (hostname === 'youtu.be') videoId = pathname.split('/')[1];
+                    else if (hostname.includes('youtube.com')) {
+                        if (pathname.includes('/watch')) videoId = urlObj.searchParams.get('v');
+                        else if (pathname.includes('/shorts/')) videoId = pathname.split('/shorts/')[1].split('?')[0];
+                        else if (pathname.includes('/embed/')) videoId = pathname.split('/embed/')[1].split('?')[0];
                     }
-                } catch (error) {
-                    // Lỗi xảy ra nếu URL không có (ví dụ: "www.youtube.com/...")
-                    console.warn("URL constructor failed, trying regex.", error.message);
-                }
+                } catch (e) {}
 
-                // Fallback bằng Regex cho các URL không đầy đủ hoặc các biến thể khác
                 if (!videoId) {
                     const regex = /(?:youtube\.com\/(?:[^\/]+\/.+\/|(?:v|e(?:mbed)?|shorts)\/|.*[?&]v=)|youtu\.be\/)([^"&?\/ ]{11})/;
                     const match = url.match(regex);
-                    if (match && match[1]) {
-                        videoId = match[1];
-                    }
+                    if (match) videoId = match[1];
                 }
-
-                if (videoId) {
-                    // Đảm bảo videoId sạch (11 ký tự)
-                    videoId = videoId.substring(0, 11);
-                    
-                    // [ĐÃ SỬA] Gỡ bỏ tham số loop=1&playlist=...
-                    // Chúng không hoạt động với live stream và có thể gây lỗi.
-                    // Autoplay=1&mute=1 là đủ.
-                    return `https://www.youtube.com/embed/${videoId}?autoplay=1&mute=1`;
-                }
+                if (videoId) return `https://www.youtube.com/embed/${videoId.substring(0, 11)}?autoplay=1&mute=1`;
                 return null;
             }
 
-            /**
-             * [ĐÃ SỬA] Tải video và LƯU lịch sử
-             */
             function loadMedia() {
                 const url = mediaUrlInput.value.trim();
-                if (!url) return; // Không làm gì nếu input rỗng
-                
+                if (!url) return;
                 const embedUrl = getYouTubeEmbedUrl(url);
-
                 if (!embedUrl) {
-                    showError("URL YouTube không hợp lệ. Vui lòng kiểm tra lại (ví dụ: https://www.youtube.com/watch?v=...).");
+                    showError("URL YouTube không hợp lệ.");
                     return;
                 }
-
-                // Tải video (tách hàm)
                 loadYouTubeIframe(embedUrl);
-                
-                // [MỚI] Thêm vào lịch sử
                 addMediaToHistory(url); 
-                mediaUrlInput.value = ''; // Xóa input sau khi tải
+                mediaUrlInput.value = '';
             }
 
-            /**
-             * [ĐÃ SỬA] Tách riêng hàm tải Iframe (giờ tải vào Pop-up)
-             * @param {string} embedUrl - URL nhúng đã được xử lý
-             */
             function loadYouTubeIframe(embedUrl) {
-                 // Xóa iframe cũ nếu có
                 mediaPlayerContainer.innerHTML = '';
-
-                // Tạo iframe mới
                 const iframe = document.createElement('iframe');
                 iframe.src = embedUrl;
-                iframe.className = "w-full h-full"; // Cho iframe lấp đầy container
+                iframe.className = "w-full h-full";
                 iframe.frameBorder = "0";
                 iframe.allow = "accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture";
                 iframe.allowFullscreen = true;
-
                 mediaPlayerContainer.appendChild(iframe);
-                
-                // [MỚI] Hiển thị pop-up video
                 videoPopupPanel.classList.remove('hidden');
-                // Tự động đóng menu chọn (nếu đang mở)
                 mediaPanel.classList.add('hidden');
                 toggleMediaBtn.classList.remove('active');
             }
             
-            /**
-             * [MỚI] Hàm tải video từ Album/History
-             * @param {string} url - URL gốc (chưa xử lý)
-             */
             function loadMediaFromList(url) {
                 const embedUrl = getYouTubeEmbedUrl(url);
                 if (embedUrl) {
                     loadYouTubeIframe(embedUrl);
-                    // [MỚI] Khi tải từ Album/History, cũng thêm vào lịch sử
                     addMediaToHistory(url);
-                } else {
-                    showError("Link đã lưu không hợp lệ.");
-                }
+                } else showError("Link đã lưu không hợp lệ.");
             }
             
-            // [MỚI] Lấy lịch sử từ localStorage
             function getMediaHistory() {
                 try {
                     const history = localStorage.getItem(MEDIA_HISTORY_KEY);
                     return history ? JSON.parse(history) : [];
-                } catch (e) {
-                    return [];
-                }
+                } catch (e) { return []; }
             }
 
-            // [MỚI] Thêm vào lịch sử (đảm bảo không trùng lặp)
             function addMediaToHistory(url) {
                 let history = getMediaHistory();
-                // Xóa URL cũ nếu đã tồn tại để di chuyển nó lên đầu
                 history = history.filter(item => item.url !== url);
-                // Thêm vào đầu (mới nhất)
-                history.unshift({ url: url }); // Chỉ lưu URL
-                // Giữ 10 mục
+                history.unshift({ url: url });
                 history = history.slice(0, 10); 
                 localStorage.setItem(MEDIA_HISTORY_KEY, JSON.stringify(history));
-                // Cập nhật UI (nếu tab history đang mở)
-                if (mediaTabHistory && !mediaTabHistory.classList.contains('hidden')) {
-                    populateMediaHistory();
-                }
+                if (mediaTabHistory && !mediaTabHistory.classList.contains('hidden')) populateMediaHistory();
             }
 
-            // [MỚI] Tạo UI cho Album
             function populateMediaAlbum() {
                 mediaTabAlbum.innerHTML = '';
                 MEDIA_ALBUM.forEach(item => {
                     const el = document.createElement('button');
                     el.className = 'media-list-item';
                     el.innerHTML = `<span class="code">${item.code}</span> ${item.title}`;
-                    el.title = item.title;
                     el.onclick = () => loadMediaFromList(item.url);
                     mediaTabAlbum.appendChild(el);
                 });
             }
 
-            // [MỚI] Tạo UI cho History
             function populateMediaHistory() {
                 mediaTabHistory.innerHTML = '';
                 const history = getMediaHistory();
@@ -881,47 +594,27 @@
                 history.forEach(item => {
                     const el = document.createElement('button');
                     el.className = 'media-list-item';
-                    el.textContent = item.url; // Hiển thị URL
-                    el.title = item.url; // Hiển thị full URL khi hover
+                    el.textContent = item.url;
+                    el.title = item.url;
                     el.onclick = () => loadMediaFromList(item.url);
                     mediaTabHistory.appendChild(el);
                 });
             }
 
-            // --- [MỚI] Background Functions ---
-
-            /**
-             * [MỚI] Đặt nền (từ URL)
-             */
             function setBackground(url) {
                 if (!url) return;
-
-                if (!url.startsWith('http://') && !url.startsWith('https://')) {
-                    showError("URL hình ảnh không hợp lệ. Phải bắt đầu bằng http:// hoặc https://");
-                    return;
-                }
-
-                // Tạo một ảnh trong bộ nhớ để kiểm tra xem nó có tải được không
                 const img = new Image();
                 img.onload = () => {
-                    // Thành công!
                     bodyEl.style.setProperty('--custom-bg-image', `url(${url})`);
                     bodyEl.classList.add('custom-background');
                     localStorage.setItem('pomodoroBgUrl', url);
-                    // Đóng panel sau khi đặt thành công
                     backgroundPanel.classList.add('hidden');
                     toggleBackgroundBtn.classList.remove('active');
                 };
-                img.onerror = () => {
-                    // Thất bại!
-                    showError("Không thể tải hình ảnh/GIF. Vui lòng kiểm tra lại URL.");
-                };
-                img.src = url; // Bắt đầu tải
+                img.onerror = () => showError("Không thể tải hình ảnh. Kiểm tra URL.");
+                img.src = url;
             }
             
-            /**
-             * [MỚI] Khôi phục nền mặc định
-             */
             function resetBackground() {
                 bodyEl.style.removeProperty('--custom-bg-image');
                 bodyEl.classList.remove('custom-background');
@@ -929,165 +622,90 @@
                 bgUrlInput.value = '';
             }
             
-            /**
-             * [MỚI] Tạo UI cho Album Nền
-             */
             function populateBackgroundAlbum() {
                 bgTabAlbum.innerHTML = '';
                 BACKGROUND_ALBUM.forEach(item => {
                     const el = document.createElement('button');
                     el.className = 'bg-list-item';
                     el.innerHTML = `<span class="icon">${item.url.includes('gif') ? '🎞️' : '🖼️'}</span> ${item.title}`;
-                    el.title = item.title;
                     el.onclick = () => setBackground(item.url);
                     bgTabAlbum.appendChild(el);
                 });
             }
 
-            // --- Event Listeners ---
-
-            // Nút Start/Pause
-            startPauseBtn.addEventListener('click', () => {
-                if (isRunning) {
-                    stopTimer();
-                } else {
-                    startTimer();
-                }
-            });
-
-            // Nút chuyển chế độ
+            // Event Listeners
+            startPauseBtn.addEventListener('click', () => isRunning ? stopTimer() : startTimer());
             focusBtn.addEventListener('click', () => switchMode('focus'));
             shortBreakBtn.addEventListener('click', () => switchMode('short'));
             longBreakBtn.addEventListener('click', () => switchMode('long'));
-
-            // [ĐÃ SỬA] Nút âm thanh (Bật/Tắt)
-            soundToggleButtons.forEach(btn => {
-                btn.addEventListener('click', () => toggleSound(btn.dataset.sound));
-            });
-
-            // [MỚI] Thanh trượt âm lượng
-            volumeSliders.forEach(slider => {
-                // Dùng 'input' để cập nhật mượt mà khi kéo
-                slider.addEventListener('input', (e) => setSoundVolume(e.target.dataset.sound, e.target.value));
-            });
-
-            // Nút tải media
+            soundToggleButtons.forEach(btn => btn.addEventListener('click', () => toggleSound(btn.dataset.sound)));
+            volumeSliders.forEach(slider => slider.addEventListener('input', (e) => setSoundVolume(e.target.dataset.sound, e.target.value)));
             loadMediaBtn.addEventListener('click', loadMedia);
-
-            // [MỚI] Nút đóng pop-up video
-            closeVideoPopupBtn.addEventListener('click', () => {
-                videoPopupPanel.classList.add('hidden');
-            });
-
-            // Nút đóng modal lỗi
+            closeVideoPopupBtn.addEventListener('click', () => videoPopupPanel.classList.add('hidden'));
             closeErrorModalBtn.addEventListener('click', hideError);
-
-            // [ĐÃ SỬA] Event Listeners cho thanh Nav CỐ ĐỊNH (logic panel mới)
+            
             const navButtons = [
                 { btn: toggleSoundsBtn, panel: soundsPanel },
                 { btn: toggleMediaBtn, panel: mediaPanel },
-                { btn: toggleBackgroundBtn, panel: backgroundPanel } // [MỚI]
+                { btn: toggleBackgroundBtn, panel: backgroundPanel }
             ];
-
             navButtons.forEach(item => {
                 item.btn.addEventListener('click', () => {
                     const wasHidden = item.panel.classList.contains('hidden');
-                    
-                    // Ẩn tất cả panels và hủy active tất cả nút
                     navButtons.forEach(i => {
                         i.panel.classList.add('hidden');
                         i.btn.classList.remove('active');
                     });
-                    
-                    // [MỚI] Tắt pop-up video nếu chúng ta mở một panel khác
-                    if (item.btn !== toggleMediaBtn) {
-                        videoPopupPanel.classList.add('hidden');
-                    }
-
-                    // Nếu nó đã bị ẩn, thì hiển thị nó và bật active
+                    if (item.btn !== toggleMediaBtn) videoPopupPanel.classList.add('hidden');
                     if (wasHidden) {
                         item.panel.classList.remove('hidden');
                         item.btn.classList.add('active');
                     }
-                    // Nếu nó đang mở, bước trên đã đóng nó lại.
                 });
             });
 
-            // [MỚI] Event Listeners cho Media Tabs
             mediaTabButtons.forEach(button => {
                 button.addEventListener('click', () => {
                     const tabId = button.dataset.tab;
-
-                    // Ẩn tất cả nội dung
                     mediaTabContents.forEach(content => content.classList.add('hidden'));
-                    
-                    // Bỏ active tất cả nút
                     mediaTabButtons.forEach(btn => {
                         btn.classList.remove('active');
                         btn.classList.add('text-gray-300', 'hover:bg-white/10');
                     });
-
-                    // Hiển thị nội dung và nút active
                     document.getElementById(`media-tab-${tabId}`).classList.remove('hidden');
                     button.classList.add('active');
                     button.classList.remove('text-gray-300', 'hover:bg-white/10');
-
-                    // [MỚI] Tải lại nội dung khi nhấp vào tab (để cập nhật)
-                    if (tabId === 'history') {
-                        populateMediaHistory();
-                    }
+                    if (tabId === 'history') populateMediaHistory();
                 });
             });
 
-            // [MỚI] Event Listeners cho Background Tabs
             bgTabButtons.forEach(button => {
                 button.addEventListener('click', () => {
-                    const tabId = button.dataset.tab; // Sẽ là "custom" hoặc "album"
-
-                    // Ẩn tất cả nội dung
+                    const tabId = button.dataset.tab;
                     bgTabContents.forEach(content => content.classList.add('hidden'));
-                    
-                    // Bỏ active tất cả nút
                     bgTabButtons.forEach(btn => {
                         btn.classList.remove('active');
                         btn.classList.add('text-gray-300', 'hover:bg-white/10');
                     });
-
-                    // Hiển thị nội dung và nút active
-                    // [SỬA LỖI] Logic ID đã được sửa
                     document.getElementById(`bg-tab-${tabId}`).classList.remove('hidden'); 
                     button.classList.add('active');
                     button.classList.remove('text-gray-300', 'hover:bg-white/10');
                 });
             });
 
-
-            // [MỚI] Event Listeners cho Đổi Nền
-            setBgBtn.addEventListener('click', () => {
-                setBackground(bgUrlInput.value.trim());
-            });
-
+            setBgBtn.addEventListener('click', () => setBackground(bgUrlInput.value.trim()));
             resetBgBtn.addEventListener('click', resetBackground);
 
-
-            // --- Initialization ---
-            setupAudio(); // Chuẩn bị âm thanh
-            updateDisplay(); // Đặt hiển thị ban đầu
-            populateMediaAlbum(); // [MỚI]
-            populateMediaHistory(); // [MỚI]
-            populateBackgroundAlbum(); // [MỚI]
-
-            // [MỚI] Tải nền đã lưu khi khởi động
+            // Init
+            setupAudio();
+            updateDisplay();
+            populateMediaAlbum();
+            populateMediaHistory();
+            populateBackgroundAlbum();
             const savedBgUrl = localStorage.getItem('pomodoroBgUrl');
-            if (savedBgUrl) {
-                setBackground(savedBgUrl); // Dùng hàm setBackground để xác thực
-            }
-            
-            // [MỚI] Đặt tab media + bg mặc định là 'custom'
-            // Dùng setTimeout 0 để đảm bảo nó chạy sau khi DOM render xong
+            if (savedBgUrl) setBackground(savedBgUrl);
             setTimeout(() => {
                  document.querySelector('.media-tab-btn[data-tab="custom"]').click();
-                 // [SỬA LỖI] Đổi từ "bg-custom" -> "custom"
                  document.querySelector('.bg-tab-btn[data-tab="custom"]').click(); 
             }, 0);
         });
