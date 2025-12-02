@@ -1,6 +1,7 @@
 /**
- * GATEKEEPER.JS - HỆ THỐNG BẢO VỆ TẬP TRUNG
+ * GATEKEEPER.JS - HỆ THỐNG BẢO VỆ TẬP TRUNG (PHIÊN BẢN NÂNG CẤP)
  * Tác dụng: Quản lý đăng nhập, whitelist, và chống đá session.
+ * Lỗ hổng bảo mật đã được vá.
  */
 
 import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-app.js";
@@ -40,7 +41,7 @@ export async function loginWithGoogle() {
 // Hàm đăng xuất (Dùng cho mọi trang)
 export async function logoutUser() {
     await signOut(auth);
-    window.location.href = "/index.html"; // Luôn đá về trang chủ
+    // onAuthStateChanged sẽ tự động xử lý việc chuyển hướng sau khi đăng xuất
 }
 
 /**
@@ -48,15 +49,10 @@ export async function logoutUser() {
  * @param {string} type - 'login' (cho trang chủ) hoặc 'protected' (cho trang nội dung)
  */
 export function initGatekeeper(type = 'protected') {
-    console.log(`🛡️ Gatekeeper đang bảo vệ trang: [${type}]`);
-    
-    // Tìm màn hình loading để ẩn/hiện
-    const loadingEl = document.getElementById('view-loading') || document.getElementById('loading-screen');
-    const contentEl = (type === 'login') ? document.getElementById('view-login') : document.body;
-
-    // Mặc định ẩn nội dung
-    if(contentEl && type === 'protected') contentEl.style.display = 'none';
-    if(loadingEl) loadingEl.style.display = 'flex';
+    // Ngay lập tức ẩn nội dung để chống bị xem trộm
+    if (type === 'protected') {
+        document.body.style.visibility = 'hidden';
+    }
 
     onAuthStateChanged(auth, async (user) => {
         if (user) {
@@ -65,64 +61,55 @@ export function initGatekeeper(type = 'protected') {
                 const userRef = doc(db, 'allowed_users', user.email);
                 const docSnap = await getDoc(userRef);
 
-                // 1. Check Whitelist
                 if (!docSnap.exists()) {
-                    throw new Error("Email không nằm trong Whitelist.");
+                    throw new Error("Email không nằm trong Whitelist. Vui lòng liên hệ quản trị viên.");
                 }
 
-                // 2. Logic riêng cho từng loại trang
+                const serverSession = docSnap.data().current_session_id;
+
                 if (type === 'login') {
-                    // Nếu đang ở trang Login mà đã login rồi -> Tạo Session mới & Chuyển trang
+                    // Nếu ở trang login, tạo session mới và chuyển hướng
                     const newSession = Date.now().toString();
                     await updateDoc(userRef, { 
                         current_session_id: newSession,
                         last_login: new Date().toISOString()
                     });
                     localStorage.setItem('my_session_id', newSession);
-                    
-                    // Chuyển hướng vào trong
-                    window.location.href = 'content/index.html'; 
-                } 
-                else if (type === 'protected') {
-                    // Nếu đang ở trang nội dung -> Check Session xem có hợp lệ không
-                    const serverSession = docSnap.data().current_session_id;
+                    window.location.href = 'content/index.html';
+                } else if (type === 'protected') {
+                    // Nếu ở trang được bảo vệ, xác thực session
                     const localSession = localStorage.getItem('my_session_id');
-
                     if (serverSession !== localSession) {
-                        throw new Error("Phiên đăng nhập không hợp lệ (Bị đá).");
+                        throw new Error("Phiên đăng nhập không hợp lệ. Có thể bạn đã đăng nhập ở nơi khác.");
                     }
 
-                    // OK -> Mở cửa hiển thị nội dung
-                    if(loadingEl) loadingEl.style.display = 'none';
-                    if(contentEl) contentEl.style.display = 'block';
-
-                    // 3. KÍCH HOẠT RA-ĐA (REALTIME LISTENER)
+                    // Kích hoạt listener để phát hiện đăng nhập từ nơi khác
                     onSnapshot(userRef, (snap) => {
-                        const currentData = snap.data();
-                        const currentLocal = localStorage.getItem('my_session_id');
-                        
-                        if (currentData.current_session_id !== currentLocal) {
-                            alert("Tài khoản đang được sử dụng ở nơi khác!");
-                            signOut(auth).then(() => window.location.href = "/index.html");
+                        if (snap.data().current_session_id !== localStorage.getItem('my_session_id')) {
+                            alert("Tài khoản đang được sử dụng ở nơi khác! Bạn sẽ bị đăng xuất.");
+                            signOut(auth);
                         }
                     });
-                }
 
+                    // Mọi thứ OK -> Hiển thị lại nội dung
+                    document.body.style.visibility = 'visible';
+                }
             } catch (error) {
                 console.error("Gatekeeper Error:", error);
-                await signOut(auth);
                 alert(error.message);
-                if (type === 'protected') window.location.href = "/index.html";
+                document.body.innerHTML = '<h1>Lỗi xác thực. Đang chuyển hướng...</h1>';
+                await signOut(auth);
+                setTimeout(() => { window.location.href = "/index.html"; }, 2000);
             }
         } else {
             // === CHƯA LOGIN ===
             if (type === 'protected') {
-                // Nếu đang cố vào trang bảo mật -> Đá về Login
+                // Xóa trắng nội dung và chuyển hướng về trang login
+                document.body.innerHTML = '';
                 window.location.href = "/index.html";
             } else {
-                // Nếu đang ở trang Login -> Hiển thị nút đăng nhập
-                if(loadingEl) loadingEl.style.display = 'none';
-                if(contentEl) contentEl.classList.remove('hidden');
+                // Ở trang login, chỉ cần đảm bảo nội dung được hiển thị
+                document.body.style.visibility = 'visible';
             }
         }
     });
