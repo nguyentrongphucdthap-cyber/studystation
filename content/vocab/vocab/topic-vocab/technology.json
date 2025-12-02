@@ -1,0 +1,13 @@
+{
+  "topicId": "technology",
+  "title": "Công nghệ",
+  "name": "Công Nghệ & AI",
+  "color": "cyan",
+  "words": [
+    { "id": 101, "word": "Algorithm", "type": "n", "ipa": "/ˈæl.ɡə.rɪ.ðəm/", "meaning": "Thuật toán", "example": "The algorithm sorts data efficiently." },
+    { "id": 102, "word": "Neural Network", "type": "n", "ipa": "/ˈnʊr.əl ˈnet.wɝːk/", "meaning": "Mạng nơ-ron", "example": "Neural networks mimic the human brain." },
+    { "id": 103, "word": "Latency", "type": "n", "ipa": "/ˈleɪ.tən.si/", "meaning": "Độ trễ", "example": "Low latency is crucial for gaming." },
+    { "id": 104, "word": "Cybersecurity", "type": "n", "ipa": "/ˌsaɪ.bɚ.səˈkjʊr.ə.t̬i/", "meaning": "An ninh mạng", "example": "Cybersecurity is a top priority." }
+  ]
+}
+

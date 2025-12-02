@@ -1,0 +1,13 @@
+{
+  "topicId": "business",
+  "title": "Kinh doanh",
+  "name": "Business English",
+  "color": "emerald",
+  "words": [
+    { "id": 201, "word": "Stakeholder", "type": "n", "ipa": "/ˈsteɪkˌhoʊl.dɚ/", "meaning": "Các bên liên quan", "example": "We need to consult all stakeholders." },
+    { "id": 202, "word": "Revenue", "type": "n", "ipa": "/ˈrev.ə.nuː/", "meaning": "Doanh thu", "example": "Revenue increased by 20% this quarter." },
+    { "id": 203, "word": "Negotiation", "type": "n", "ipa": "/nəˌɡoʊ.ʃiˈeɪ.ʃən/", "meaning": "Đàm phán", "example": "The negotiation took three days." },
+    { "id": 204, "word": "Deadline", "type": "n", "ipa": "/ˈded.laɪn/", "meaning": "Hạn chót", "example": "We have to meet the deadline." }
+  ]
+}
+
