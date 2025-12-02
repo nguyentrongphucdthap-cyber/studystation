@@ -1,0 +1,133 @@
+/* Base settings */
+:root {
+    --content-size: 16px;
+    --line-height: 1.6;
+}
+
+body {
+    transition: background-color 0.3s ease, color 0.3s ease;
+    -webkit-tap-highlight-color: transparent;
+    overscroll-behavior-y: none;
+}
+
+/* Custom Scrollbar */
+.custom-scroll::-webkit-scrollbar { width: 4px; height: 4px; }
+.custom-scroll::-webkit-scrollbar-track { background: transparent; }
+.custom-scroll::-webkit-scrollbar-thumb { background: #cbd5e1; border-radius: 3px; }
+.dark .custom-scroll::-webkit-scrollbar-thumb { background: #475569; }
+
+/* Highlight Colors */
+.hl-yellow { background-color: #fef08a; color: #1e293b; }
+.hl-green { background-color: #bbf7d0; color: #1e293b; }
+.hl-blue { background-color: #bfdbfe; color: #1e293b; }
+.hl-pink { background-color: #fbcfe8; color: #1e293b; }
+.hl-purple { background-color: #e9d5ff; color: #1e293b; }
+
+.dark .hl-yellow { background-color: #854d0e; color: #fef08a; }
+.dark .hl-green { background-color: #166534; color: #bbf7d0; }
+.dark .hl-blue { background-color: #1e40af; color: #bfdbfe; }
+.dark .hl-pink { background-color: #9d174d; color: #fbcfe8; }
+.dark .hl-purple { background-color: #6b21a8; color: #e9d5ff; }
+
+/* User Note */
+.user-note {
+    border-bottom: 2px dashed #3B82F6;
+    color: #2563EB;
+    font-weight: 600;
+    cursor: pointer;
+    background-color: rgba(59, 130, 246, 0.1);
+    padding: 0 4px;
+    border-radius: 4px;
+}
+.dark .user-note {
+    color: #60A5FA;
+    border-bottom-color: #60A5FA;
+    background-color: rgba(96, 165, 250, 0.1);
+}
+
+/* Resizer Handle */
+.resizer {
+    background-color: #cbd5e1;
+    width: 4px;
+    cursor: col-resize;
+    transition: background-color 0.2s;
+    z-index: 20;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+.resizer:hover, .resizer.resizing { background-color: #3B82F6; }
+.dark .resizer { background-color: #475569; }
+.dark .resizer:hover, .dark .resizer.resizing { background-color: #60A5FA; }
+
+/* Review Mode Styles */
+.review-mode .correct-option {
+    border-color: #10B981 !important;
+    background-color: #ECFDF5 !important;
+    color: #065F46 !important;
+}
+.dark .review-mode .correct-option {
+    background-color: rgba(6, 95, 70, 0.4) !important;
+    color: #D1FAE5 !important;
+}
+.review-mode .wrong-option {
+    border-color: #EF4444 !important;
+    background-color: #FEF2F2 !important;
+    color: #991B1B !important;
+}
+.dark .review-mode .wrong-option {
+    background-color: rgba(153, 27, 27, 0.4) !important;
+    color: #FECACA !important;
+}
+.filter-btn.active { background-color: #3B82F6; color: white; }
+
+/* Dynamic Font Sizing Application */
+.dynamic-text { font-size: var(--content-size); line-height: var(--line-height); }
+
+/* Tooltip Arrow */
+.tooltip-arrow { position: absolute; bottom: -6px; left: 50%; margin-left: -6px; border-width: 6px; border-style: solid; border-color: #1e293b transparent transparent transparent; }
+.dark .tooltip-arrow { border-color: #f8fafc transparent transparent transparent; }
+
+/* Radio Logic - Improved Dark Mode Contrast */
+body:not(.review-mode) .peer:checked + div { 
+    border-color: #3B82F6; 
+    background-color: #EFF6FF; 
+    color: #1D4ED8; 
+    box-shadow: 0 4px 6px -1px rgba(59, 130, 246, 0.1); 
+}
+
+body:not(.review-mode) .dark .peer:checked + div { 
+    background-color: rgba(59, 130, 246, 0.2); /* Blue-500 with opacity */
+    border-color: #3B82F6; /* Blue-500 border */
+    color: #FFFFFF; /* White text for contrast */
+    box-shadow: 0 0 0 1px #3B82F6, 0 4px 6px -1px rgba(0, 0, 0, 0.3);
+}
+
+body:not(.review-mode) .peer:checked + div .option-circle { 
+    background-color: #2563EB; 
+    border-color: #2563EB; 
+    color: white; 
+    transform: scale(1.1); 
+}
+
+body:not(.review-mode) .dark .peer:checked + div .option-circle {
+    background-color: #3B82F6;
+    border-color: #3B82F6;
+    color: #FFFFFF;
+}
+
+/* Mobile Tab Styling */
+.mobile-tab-active {
+    border-bottom: 2px solid #3B82F6;
+    color: #3B82F6;
+    font-weight: 700;
+}
+.dark .mobile-tab-active {
+    border-bottom-color: #60A5FA;
+    color: #60A5FA;
+}
+
+/* Safe Area for iPhones */
+.pb-safe {
+    padding-bottom: env(safe-area-inset-bottom);
+}
