@@ -1,1 +1,132 @@
+/* Sử dụng font Be Vietnam Pro làm font chữ mặc định */
+body {
+    font-family: 'Be Vietnam Pro', sans-serif;
+}
 
+/* Định nghĩa hiệu ứng chuyển cảnh (fade-in và trượt lên) */
+.page-content {
+    display: none; /* Ẩn tất cả các trang theo mặc định */
+    animation: pageFadeIn 0.5s cubic-bezier(0.25, 0.46, 0.45, 0.94) forwards;
+}
+
+.page-content.active {
+    display: block; /* Hiển thị trang đang hoạt động */
+}
+
+@keyframes pageFadeIn {
+    from {
+        opacity: 0;
+        transform: translateY(20px);
+    }
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+/* Hiệu ứng hover mượt mà cho các nút môn học */
+.subject-card {
+    transition: transform 0.3s ease, box-shadow 0.3s ease;
+}
+.subject-card:hover {
+    transform: translateY(-5px);
+    box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05);
+}
+        
+/* --- CSS MỚI CHO TRANG LÀM BÀI --- */
+        
+/* Loading Spinner */
+@keyframes spin {
+    to { transform: rotate(360deg); }
+}
+#loading-indicator {
+    width: 50px;
+    height: 50px;
+    border: 5px solid #f3f3f3;
+    border-top: 5px solid #3498db;
+    border-radius: 50%;
+    animation: spin 1s linear infinite;
+}
+        
+/* Kiểu dáng câu hỏi */
+.quiz-question {
+    background-color: #f9fafb; /* bg-gray-50 */
+    /* ĐÃ SỬA: Thêm padding responsive */
+    padding: 1rem; /* p-4 for mobile */
+    border-radius: 0.75rem; /* rounded-lg */
+    margin-bottom: 1.5rem; /* mb-6 */
+    border: 1px solid #e5e7eb; /* border border-gray-200 */
+}
+.question-text {
+    /* ĐÃ SỬA: Thêm font-size responsive */
+    font-size: 1rem; /* text-base for mobile */
+    font-weight: 600; /* font-semibold */
+    margin-bottom: 1rem; /* mb-4 */
+    color: #1f2937; /* text-gray-800 */
+}
+.options-container label {
+    display: block;
+    /* ĐÃ SỬA: Thêm padding responsive */
+    padding: 0.75rem; /* p-3 for mobile */
+    background-color: #ffffff; /* bg-white */
+    border: 1px solid #d1d5db; /* border border-gray-300 */
+    border-radius: 0.5rem; /* rounded-md */
+    margin-bottom: 0.75rem; /* mb-3 */
+    cursor: pointer;
+    transition: border-color 0.2s ease, background-color 0.2s ease;
+}
+.options-container label:hover {
+    background-color: #f9fafb; /* hover:bg-gray-50 */
+}
+.options-container input[type="radio"]:checked + span {
+     font-weight: 600; /* font-semibold */
+     color: #2563eb; /* text-blue-600 */
+}
+ .options-container label input {
+     margin-right: 0.75rem; /* mr-3 */
+ }
+
+/* --- CSS MỚI CHO TRANG KẾT QUẢ --- */
+.review-item {
+    border: 1px solid #e5e7eb; /* border border-gray-200 */
+    border-radius: 0.75rem; /* rounded-lg */
+    /* ĐÃ SỬA: Thêm padding responsive */
+    padding: 1rem; /* p-4 for mobile */
+    margin-bottom: 1rem; /* mb-4 */
+}
+.review-item.correct {
+    background-color: #f0fdf4; /* bg-green-50 */
+    border-color: #bbf7d0; /* border-green-200 */
+}
+.review-item.incorrect {
+    background-color: #fef2f2; /* bg-red-50 */
+    border-color: #fecaca; /* border-red-200 */
+}
+.feedback-text {
+    font-weight: 600; /* font-semibold */
+    margin-top: 0.75rem; /* mt-3 */
+    padding-top: 0.75rem; /* pt-3 */
+    border-top: 1px solid #e5e7eb; /* border-t border-gray-200 */
+}
+.correct-answer {
+    color: #16a34a; /* text-green-600 */
+}
+.incorrect-answer {
+     color: #dc2626; /* text-red-600 */
+}
+
+/* ĐÃ THÊM: Media query cho màn hình lớn hơn (sm: 640px) */
+@media (min-width: 640px) {
+    .quiz-question {
+        padding: 1.5rem; /* p-6 */
+    }
+    .question-text {
+        font-size: 1.125rem; /* text-lg */
+    }
+    .options-container label {
+        padding: 0.75rem 1rem; /* p-3 px-4 */
+    }
+    .review-item {
+        padding: 1rem; /* p-4 */
+    }
+}
