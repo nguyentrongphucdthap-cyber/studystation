@@ -1,1 +1,21 @@
+{
+  "categories": [
+    {
+      "folder": "gdpt-program",
+      "type": "gdpt",
+      "label": "Chương trình GDPT"
+    },
+    {
+      "folder": "advanced-gdpt-program",
+      "type": "advanced_gdpt",
+      "label": "(Nâng cao) Chương trình GDPT"
+    },
+    {
+      "folder": "topic-vocab",
+      "type": "topic",
+      "label": "Từ vựng theo chủ đề"
+    }
+  ],
+  "autoScan": true
+}
 
