@@ -11,12 +11,12 @@ import { getFirestore, doc, getDoc, updateDoc, onSnapshot } from "https://www.gs
 // 1. CẤU HÌNH (BẠN CHỈ CẦN DÁN CONFIG 1 LẦN DUY NHẤT Ở ĐÂY)
 // ============================================================
 const firebaseConfig = {
-    apiKey: "DÁN_API_KEY_CỦA_BẠN_VÀO_ĐÂY",
-    authDomain: "...",
-    projectId: "...",
-    storageBucket: "...",
-    messagingSenderId: "...",
-    appId: "..."
+    apiKey: "AIzaSyDWhaSOppY0WawN1h9g0bib-UomFNQO1PM",
+    authDomain: "studystationlogin.firebaseapp.com",
+    projectId: "studystationlogin",
+    storageBucket: "studystationlogin.firebasestorage.app",
+    messagingSenderId: "966986507430",
+    appId: "1:966986507430:web:443c18747bd9a4dfa88067"
 };
 // ============================================================
 
