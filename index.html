@@ -178,7 +178,7 @@
             <p style="margin: 0; font-weight: 500;">Đang kiểm tra bảo mật...</p>
         </div>
 
-        <!-- VIEW: REDIRECT (Hiển thị khi đăng nhập thành công trước khi chuyển trang) -->
+        <!-- VIEW: REDIRECT -->
         <div id="view-redirect" class="card hidden">
             <div class="spinner"></div>
             <h2 style="font-size: 18px; margin-bottom: 8px; color: #059669;">Đăng nhập thành công!</h2>
@@ -214,7 +214,7 @@
             <div class="register-section">
                 Bạn chưa có tài khoản? 
                 <!-- THAY LINK ĐĂNG KÝ CỦA BẠN VÀO ĐÂY -->
-                <a href="https://forms.gle/juz6yP3W59z2ipyy6" target="_blank" class="register-link">Đăng ký truy cập</a>
+                <a href="https://forms.google.com/your-form-id" target="_blank" class="register-link">Đăng ký truy cập</a>
             </div>
         </div>
     </div>
@@ -227,23 +227,21 @@
     <script type="module">
         import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-app.js";
         import { getAuth, signInWithPopup, GoogleAuthProvider, signOut, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-auth.js";
-        // THÊM updateDoc vào import
         import { getFirestore, doc, getDoc, updateDoc, onSnapshot } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js";
 
         // ============================================================
         // [QUAN TRỌNG] DÁN CẤU HÌNH FIREBASE CỦA BẠN VÀO DƯỚI ĐÂY:
         // ============================================================
         const firebaseConfig = {
-            apiKey: "AIzaSyDWhaSOppY0WawN1h9g0bib-UomFNQO1PM",
-            authDomain: "studystationlogin.firebaseapp.com",
-            projectId: "studystationlogin",
-            storageBucket: "studystationlogin.firebasestorage.app",
-            messagingSenderId: "966986507430",
-            appId: "1:966986507430:web:443c18747bd9a4dfa88067"
+            apiKey: "DÁN_API_KEY_VÀO_ĐÂY",
+            authDomain: "DÁN_AUTH_DOMAIN_VÀO_ĐÂY",
+            projectId: "DÁN_PROJECT_ID_VÀO_ĐÂY",
+            storageBucket: "DÁN_STORAGE_BUCKET_VÀO_ĐÂY",
+            messagingSenderId: "DÁN_MESSAGING_SENDER_ID_VÀO_ĐÂY",
+            appId: "DÁN_APP_ID_VÀO_ĐÂY"
         };
         // ============================================================
 
-        // Sử dụng cấu hình người dùng cung cấp nếu có, nếu không fallback về env config
         const finalConfig = firebaseConfig.apiKey !== "DÁN_API_KEY_VÀO_ĐÂY" 
                             ? firebaseConfig 
                             : JSON.parse(window.__firebase_config || '{}');
@@ -255,7 +253,6 @@
 
         let unsubscribeDoc = null;
 
-        // UI Helpers
         const views = {
             loading: document.getElementById('view-loading'),
             login: document.getElementById('view-login'),
@@ -271,7 +268,6 @@
             }
         }
 
-        // Xử lý nút Đăng Nhập
         document.getElementById('btnLogin').addEventListener('click', () => {
             errorMsg.style.display = 'none';
             signInWithPopup(auth, provider).catch(err => {
@@ -287,20 +283,17 @@
                 
                 try {
                     // 1. THAM CHIẾU ĐẾN COLLECTION "allowed_users"
-                    // Đây là cấu trúc chuẩn, thay thế cho cấu trúc artifacts cũ
                     const userRef = doc(db, 'allowed_users', user.email);
                     
                     // 2. KIỂM TRA WHITELIST
                     const docSnap = await getDoc(userRef);
 
-                    // --- BẢO MẬT: CHẶN NẾU KHÔNG CÓ TRONG WHITELIST ---
-                    // Đã xóa hoàn toàn logic tự động thêm user (demo_auto_add)
+                    // BẢO MẬT: CHẶN NẾU KHÔNG CÓ TRONG WHITELIST
                     if (!docSnap.exists()) {
                         throw new Error("Email của bạn không nằm trong danh sách cho phép (Whitelist). Vui lòng liên hệ quản trị viên.");
                     }
 
                     // 3. CẬP NHẬT SESSION ID (DÙNG updateDoc)
-                    // Sử dụng updateDoc để chỉ cập nhật trường session, giữ nguyên các thông tin khác của user
                     const newSessionId = Date.now().toString();
                     
                     await updateDoc(userRef, {
@@ -318,27 +311,48 @@
                         window.location.href = 'content/index.html';
                     }, 1500);
 
-                    // 6. THIẾT LẬP "RA-ĐA" THEO DÕI (Lắng nghe ngay trên userRef)
-                    unsubscribeDoc = onSnapshot(userRef, (snapshot) => {
-                        if (!snapshot.exists()) return;
+                    // 6. THIẾT LẬP "RA-ĐA" THEO DÕI (PHIÊN BẢN DEBUG)
+                    console.log("--> Đang bắt đầu theo dõi Session cho:", user.email);
 
-                        const data = snapshot.data();
-                        const serverSessionId = data.current_session_id;
-                        const localSessionId = localStorage.getItem('my_session_id');
+                    unsubscribeDoc = onSnapshot(userRef, 
+                        (snapshot) => {
+                            // LOG 1: Kiểm tra xem Listener có chạy không?
+                            console.log("🔥 Firestore có thay đổi! Đang xử lý...");
 
-                        // Nếu Server khác Local => Có người mới đăng nhập
-                        if (serverSessionId && serverSessionId !== localSessionId) {
-                            console.warn("Phát hiện đăng nhập nơi khác! Đang đăng xuất...");
-                            if (unsubscribeDoc) unsubscribeDoc();
-                            
-                            signOut(auth).then(() => {
-                                alert("Tài khoản của bạn vừa được đăng nhập ở một thiết bị khác. Phiên làm việc này sẽ kết thúc.");
-                                switchView('login');
-                                errorMsg.textContent = "Bạn đã bị đăng xuất vì tài khoản đang dùng ở nơi khác.";
-                                errorMsg.style.display = 'block';
-                            });
+                            if (!snapshot.exists()) {
+                                console.log("❌ Lỗi: Document không tồn tại!"); 
+                                return;
+                            }
+
+                            const data = snapshot.data();
+                            const serverSessionId = String(data.current_session_id); // Ép về String
+                            const localSessionId = String(localStorage.getItem('my_session_id')); // Ép về String
+
+                            // LOG 2: So sánh trực tiếp giá trị
+                            console.log(`📡 Server ID: [${serverSessionId}]`);
+                            console.log(`💻 Local ID : [${localSessionId}]`);
+
+                            if (serverSessionId && serverSessionId !== localSessionId) {
+                                console.warn("🚨 PHÁT HIỆN XÂM NHẬP/LOGIN NƠI KHÁC! -> KICK OUT");
+                                
+                                if (unsubscribeDoc) unsubscribeDoc();
+                                
+                                signOut(auth).then(() => {
+                                    alert("Tài khoản đang được sử dụng ở nơi khác!");
+                                    switchView('login');
+                                    errorMsg.textContent = "Bạn bị đăng xuất do có thiết bị khác truy cập.";
+                                    errorMsg.style.display = 'block';
+                                });
+                            } else {
+                                console.log("✅ Session hợp lệ. Không làm gì cả.");
+                            }
+                        },
+                        (error) => {
+                            // LOG 3: Bắt lỗi nếu Firestore từ chối quyền giữa chừng
+                            console.error("❌ LỖI SNAPSHOT (Rất có thể do Rules):", error);
+                            alert("Mất kết nối bảo mật với Server. Vui lòng đăng nhập lại.");
                         }
-                    });
+                    );
 
                 } catch (error) {
                     console.error("Login Error:", error);
@@ -362,4 +376,3 @@
     </script>
 </body>
 </html>
-
