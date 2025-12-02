@@ -1,0 +1,165 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Đăng nhập 1 Thiết bị (Single Session)</title>
+    <style>
+        /* (Giữ nguyên CSS cũ) */
+        body { font-family: 'Segoe UI', sans-serif; background-color: #f4f6f8; height: 100vh; display: flex; justify-content: center; align-items: center; margin: 0; }
+        .card { background: white; padding: 40px; border-radius: 12px; box-shadow: 0 10px 25px rgba(0,0,0,0.1); width: 100%; max-width: 400px; text-align: center; }
+        .btn { width: 100%; padding: 12px; border: none; border-radius: 6px; font-size: 16px; font-weight: 600; cursor: pointer; margin-top: 10px; }
+        .btn-google { background-color: #4285F4; color: white; }
+        .btn-logout { background-color: #ff4b4b; color: white; }
+        .alert { padding: 12px; background-color: #fee2e2; color: #991b1b; border-radius: 6px; margin-top: 15px; display: none; }
+        .hidden { display: none !important; }
+        .loader { border: 4px solid #f3f3f3; border-top: 4px solid #3498db; border-radius: 50%; width: 30px; height: 30px; animation: spin 1s linear infinite; margin: 0 auto 20px auto; }
+        @keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
+    </style>
+</head>
+<body>
+
+    <div class="card">
+        <div id="view-loading" class="hidden">
+            <div class="loader"></div>
+            <p>Đang kiểm tra bảo mật...</p>
+        </div>
+
+        <div id="view-login">
+            <h2>Cổng Bảo Mật</h2>
+            <p>Mỗi tài khoản chỉ sử dụng trên 1 thiết bị.</p>
+            <button id="btnLogin" class="btn btn-google">Đăng nhập Google</button>
+            <div id="errorMsg" class="alert"></div>
+        </div>
+
+        <div id="view-dashboard" class="hidden">
+            <h2 style="color: #2e7d32;">Đang hoạt động</h2>
+            <p>Xin chào: <strong id="userName">...</strong></p>
+            <div style="background: #e3f2fd; padding: 10px; border-radius: 4px; font-size: 13px; color: #0d47a1;">
+                Session ID: <span id="sessIdDisplay">...</span><br>
+                (Nếu đăng nhập máy khác, máy này sẽ thoát)
+            </div>
+            <button id="btnLogout" class="btn btn-logout">Đăng xuất</button>
+        </div>
+    </div>
+
+    <script type="module">
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
+        import { getAuth, signInWithPopup, GoogleAuthProvider, signOut, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-auth.js";
+        import { getFirestore, doc, getDoc, updateDoc, onSnapshot } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
+
+        // --- CẤU HÌNH ---
+        const firebaseConfig = {
+            apiKey: "API_KEY_CUA_BAN",
+            authDomain: "PROJECT_ID.firebaseapp.com",
+            projectId: "PROJECT_ID",
+            storageBucket: "PROJECT_ID.appspot.com",
+            messagingSenderId: "...",
+            appId: "..."
+        };
+
+        const app = initializeApp(firebaseConfig);
+        const auth = getAuth(app);
+        const db = getFirestore(app);
+        const provider = new GoogleAuthProvider();
+
+        // Biến lưu listener để hủy khi cần
+        let unsubscribeDoc = null; 
+
+        // DOM Elements
+        const views = {
+            login: document.getElementById('view-login'),
+            dashboard: document.getElementById('view-dashboard'),
+            loading: document.getElementById('view-loading')
+        };
+        const errorMsg = document.getElementById('errorMsg');
+
+        function switchView(name) {
+            Object.values(views).forEach(v => v.classList.add('hidden'));
+            views[name].classList.remove('hidden');
+        }
+
+        // --- XỬ LÝ ĐĂNG NHẬP ---
+        document.getElementById('btnLogin').addEventListener('click', () => {
+            errorMsg.style.display = 'none';
+            signInWithPopup(auth, provider).catch(err => {
+                errorMsg.textContent = err.message;
+                errorMsg.style.display = 'block';
+            });
+        });
+
+        // --- XỬ LÝ ĐĂNG XUẤT ---
+        document.getElementById('btnLogout').addEventListener('click', () => {
+            if (unsubscribeDoc) unsubscribeDoc(); // Ngừng theo dõi
+            signOut(auth);
+        });
+
+        // --- LOGIC CHÍNH ---
+        onAuthStateChanged(auth, async (user) => {
+            if (user) {
+                switchView('loading');
+                const userRef = doc(db, "allowed_users", user.email);
+
+                try {
+                    // 1. Kiểm tra xem có trong Whitelist không
+                    const docSnap = await getDoc(userRef);
+                    
+                    if (!docSnap.exists()) {
+                        throw new Error("Email không nằm trong danh sách cho phép.");
+                    }
+
+                    // 2. Tạo Session ID mới cho phiên này (Dùng thời gian hiện tại)
+                    const newSessionId = Date.now().toString();
+                    
+                    // 3. Cập nhật Session ID mới lên Server
+                    await updateDoc(userRef, {
+                        current_session_id: newSessionId,
+                        last_login: new Date().toISOString()
+                    });
+
+                    // 4. Lưu Session ID vào trình duyệt hiện tại
+                    localStorage.setItem('my_session_id', newSessionId);
+
+                    // 5. HIỂN THỊ GIAO DIỆN
+                    document.getElementById('userName').textContent = user.displayName;
+                    document.getElementById('sessIdDisplay').textContent = newSessionId;
+                    switchView('dashboard');
+
+                    // 6. THIẾT LẬP "RA-ĐA" THEO DÕI (Realtime Listener)
+                    // Nếu dữ liệu trên server thay đổi, hàm này sẽ chạy
+                    unsubscribeDoc = onSnapshot(userRef, (snapshot) => {
+                        const data = snapshot.data();
+                        const serverSessionId = data.current_session_id;
+                        const localSessionId = localStorage.getItem('my_session_id');
+
+                        // Kiểm tra: Nếu Server khác Local => Có người mới đăng nhập đè lên
+                        if (serverSessionId && serverSessionId !== localSessionId) {
+                            console.warn("Phát hiện đăng nhập nơi khác! Đang đăng xuất...");
+                            if (unsubscribeDoc) unsubscribeDoc(); // Dừng theo dõi để tránh loop
+                            
+                            signOut(auth).then(() => {
+                                alert("Tài khoản của bạn vừa được đăng nhập ở một thiết bị khác. Phiên làm việc này sẽ kết thúc.");
+                                switchView('login');
+                                errorMsg.textContent = "Bạn đã bị đăng xuất vì tài khoản đang dùng ở nơi khác.";
+                                errorMsg.style.display = 'block';
+                            });
+                        }
+                    });
+
+                } catch (error) {
+                    console.error(error);
+                    await signOut(auth);
+                    switchView('login');
+                    errorMsg.textContent = error.message;SSS
+                    if (error.code === 'permission-denied') {
+                        errorMsg.textContent = "Lỗi quyền: Không thể cập nhật Session ID.";
+                    }
+                    errorMsg.style.display = 'block';
+                }
+            } else {
+                switchView('login');
+            }
+        });
+    </script>
+</body>
+</html>
