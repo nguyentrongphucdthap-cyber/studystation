@@ -3,83 +3,275 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Đăng nhập 1 Thiết bị (Single Session)</title>
+    <title>StudyStation Login</title>
+    
+    <!-- Font Be Vietnam Pro -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Be+Vietnam+Pro:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    
     <style>
-        /* (Giữ nguyên CSS cũ) */
-        body { font-family: 'Segoe UI', sans-serif; background-color: #f4f6f8; height: 100vh; display: flex; justify-content: center; align-items: center; margin: 0; }
-        .card { background: white; padding: 40px; border-radius: 12px; box-shadow: 0 10px 25px rgba(0,0,0,0.1); width: 100%; max-width: 400px; text-align: center; }
-        .btn { width: 100%; padding: 12px; border: none; border-radius: 6px; font-size: 16px; font-weight: 600; cursor: pointer; margin-top: 10px; }
-        .btn-google { background-color: #4285F4; color: white; }
-        .btn-logout { background-color: #ff4b4b; color: white; }
-        .alert { padding: 12px; background-color: #fee2e2; color: #991b1b; border-radius: 6px; margin-top: 15px; display: none; }
+        /* --- GIỮ NGUYÊN CSS CỦA STUDYSTATION --- */
+        :root {
+            --font-main: 'Be Vietnam Pro', sans-serif;
+            --bg-body: #F3F4F6;
+            --bg-card: #FFFFFF;
+            --text-primary: #111827;
+            --text-secondary: #6B7280;
+            --text-tertiary: #9CA3AF;
+            --accent: #2563EB;
+            --danger: #EF4444;
+            --shadow-card: 0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05);
+            --radius-xl: 20px;
+        }
+
+        * { box-sizing: border-box; }
+
+        body {
+            font-family: var(--font-main);
+            background-color: var(--bg-body);
+            background-image: radial-gradient(#E5E7EB 1px, transparent 1px);
+            background-size: 24px 24px;
+            height: 100vh;
+            margin: 0;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            color: var(--text-primary);
+        }
+
+        .wrapper {
+            width: 100%;
+            max-width: 420px;
+            padding: 20px;
+        }
+
+        .card {
+            background: var(--bg-card);
+            border-radius: var(--radius-xl);
+            padding: 40px 32px;
+            box-shadow: var(--shadow-card);
+            text-align: center;
+            border: 1px solid #E5E7EB;
+        }
+
+        h1 {
+            font-weight: 700;
+            font-size: 26px;
+            margin: 0 0 10px 0;
+            color: var(--text-primary);
+        }
+
+        p {
+            font-size: 15px;
+            color: var(--text-secondary);
+            line-height: 1.5;
+            margin: 0 0 24px 0;
+        }
+
+        .warning-text {
+            font-size: 13px;
+            color: #D97706;
+            background: #FFFBEB;
+            padding: 10px;
+            border-radius: 8px;
+            margin-bottom: 24px;
+            border: 1px solid #FEF3C7;
+        }
+
+        .btn {
+            width: 100%;
+            padding: 14px;
+            border-radius: 12px;
+            border: none;
+            font-family: var(--font-main);
+            font-size: 15px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.2s;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 12px;
+        }
+
+        .btn:active { transform: scale(0.98); }
+
+        .btn-google {
+            background: #FFFFFF;
+            color: #374151;
+            border: 1px solid #D1D5DB;
+            box-shadow: 0 1px 2px 0 rgba(0, 0, 0, 0.05);
+        }
+        .btn-google:hover {
+            background: #F9FAFB;
+            border-color: #9CA3AF;
+        }
+
+        .register-section {
+            margin-top: 24px;
+            padding-top: 20px;
+            border-top: 1px solid #E5E7EB;
+            font-size: 14px;
+            color: var(--text-secondary);
+        }
+        
+        .register-link {
+            color: var(--accent);
+            text-decoration: none;
+            font-weight: 600;
+        }
+        .register-link:hover { text-decoration: underline; }
+
         .hidden { display: none !important; }
-        .loader { border: 4px solid #f3f3f3; border-top: 4px solid #3498db; border-radius: 50%; width: 30px; height: 30px; animation: spin 1s linear infinite; margin: 0 auto 20px auto; }
-        @keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
+        .fade-in { animation: fadeIn 0.4s ease-out forwards; }
+        @keyframes fadeIn { 
+            from { opacity: 0; transform: translateY(10px); } 
+            to { opacity: 1; transform: translateY(0); } 
+        }
+
+        .alert {
+            padding: 12px;
+            border-radius: 8px;
+            font-size: 13px;
+            margin-top: 16px;
+            text-align: left;
+            display: none;
+        }
+        .alert-error { 
+            background: #FEF2F2; 
+            color: #991B1B; 
+            border: 1px solid #FECACA; 
+        }
+
+        .spinner {
+            width: 32px;
+            height: 32px;
+            border: 3px solid #E5E7EB;
+            border-top-color: var(--accent);
+            border-radius: 50%;
+            animation: spin 0.8s linear infinite;
+            margin: 0 auto 16px;
+        }
+        @keyframes spin { to { transform: rotate(360deg); } }
+
+        .credits {
+            position: fixed;
+            bottom: 20px;
+            left: 0;
+            width: 100%;
+            text-align: center;
+            font-size: 12px;
+            color: #9CA3AF;
+            pointer-events: none;
+        }
+        .credits strong { color: #6B7280; font-weight: 600; }
     </style>
 </head>
 <body>
 
-    <div class="card">
-        <div id="view-loading" class="hidden">
-            <div class="loader"></div>
-            <p>Đang kiểm tra bảo mật...</p>
+    <div class="wrapper">
+        
+        <!-- VIEW: LOADING -->
+        <div id="view-loading" class="card hidden">
+            <div class="spinner"></div>
+            <p style="margin: 0; font-weight: 500;">Đang kiểm tra bảo mật...</p>
         </div>
 
-        <div id="view-login">
-            <h2>Cổng Bảo Mật</h2>
-            <p>Mỗi tài khoản chỉ sử dụng trên 1 thiết bị.</p>
-            <button id="btnLogin" class="btn btn-google">Đăng nhập Google</button>
-            <div id="errorMsg" class="alert"></div>
+        <!-- VIEW: REDIRECT (Hiển thị khi đăng nhập thành công trước khi chuyển trang) -->
+        <div id="view-redirect" class="card hidden">
+            <div class="spinner"></div>
+            <h2 style="font-size: 18px; margin-bottom: 8px; color: #059669;">Đăng nhập thành công!</h2>
+            <p style="margin: 0; font-size: 14px; color: var(--text-secondary);">Đang chuyển hướng...</p>
         </div>
 
-        <div id="view-dashboard" class="hidden">
-            <h2 style="color: #2e7d32;">Đang hoạt động</h2>
-            <p>Xin chào: <strong id="userName">...</strong></p>
-            <div style="background: #e3f2fd; padding: 10px; border-radius: 4px; font-size: 13px; color: #0d47a1;">
-                Session ID: <span id="sessIdDisplay">...</span><br>
-                (Nếu đăng nhập máy khác, máy này sẽ thoát)
+        <!-- VIEW: LOGIN -->
+        <div id="view-login" class="card fade-in">
+            <div style="margin-bottom: 24px;">
+                <div style="width: 48px; height: 48px; background: #EFF6FF; border-radius: 12px; margin: 0 auto 16px; display: flex; align-items: center; justify-content: center;">
+                    <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#2563EB" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                        <path d="M15 3h4a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2h-4"></path>
+                        <polyline points="10 17 15 12 10 7"></polyline>
+                        <line x1="15" y1="12" x2="3" y2="12"></line>
+                    </svg>
+                </div>
+
+                <h1>StudyStation Login</h1>
+                <p class="warning-text">⚠️ Chỉ dành cho tài khoản được cấp quyền (whitelist).</p>
             </div>
-            <button id="btnLogout" class="btn btn-logout">Đăng xuất</button>
+
+            <button id="btnLogin" class="btn btn-google">
+                <svg width="18" height="18" viewBox="0 0 24 24">
+                    <path d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z" fill="#4285F4"/>
+                    <path d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z" fill="#34A853"/>
+                    <path d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l2.85-2.84z" fill="#FBBC05"/>
+                    <path d="M12 4.63c1.69 0 3.26.58 4.54 1.8l3.29-3.29C17.45 1.14 14.97 0 12 0 7.7 0 3.99 2.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z" fill="#EA4335"/>
+                </svg>
+                Đăng nhập bằng Google
+            </button>
+            <div id="loginError" class="alert alert-error"></div>
+
+            <div class="register-section">
+                Bạn chưa có tài khoản? 
+                <!-- THAY LINK ĐĂNG KÝ CỦA BẠN VÀO ĐÂY -->
+                <a href="https://forms.google.com/your-form-id" target="_blank" class="register-link">Đăng ký truy cập</a>
+            </div>
         </div>
     </div>
 
+    <div class="credits">
+        <p>Designed & Developed by <strong>Trọng Phúc</strong> | From Concept to Content by <strong>Phương Kiều</strong></p>
+    </div>
+
+    <!-- LOGIC FIREBASE -->
     <script type="module">
-        import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
-        import { getAuth, signInWithPopup, GoogleAuthProvider, signOut, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-auth.js";
-        import { getFirestore, doc, getDoc, updateDoc, onSnapshot } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-app.js";
+        import { getAuth, signInWithPopup, GoogleAuthProvider, signOut, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-auth.js";
+        // THÊM updateDoc vào import
+        import { getFirestore, doc, getDoc, updateDoc, onSnapshot } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js";
 
-        // --- CẤU HÌNH ---
+        // ============================================================
+        // [QUAN TRỌNG] DÁN CẤU HÌNH FIREBASE CỦA BẠN VÀO DƯỚI ĐÂY:
+        // ============================================================
         const firebaseConfig = {
-            apiKey: "API_KEY_CUA_BAN",
-            authDomain: "PROJECT_ID.firebaseapp.com",
-            projectId: "PROJECT_ID",
-            storageBucket: "PROJECT_ID.appspot.com",
-            messagingSenderId: "...",
-            appId: "..."
+            apiKey: "AIzaSyDWhaSOppY0WawN1h9g0bib-UomFNQO1PM",
+            authDomain: "studystationlogin.firebaseapp.com",
+            projectId: "studystationlogin",
+            storageBucket: "studystationlogin.firebasestorage.app",
+            messagingSenderId: "966986507430",
+            appId: "1:966986507430:web:443c18747bd9a4dfa88067"
         };
+        // ============================================================
 
-        const app = initializeApp(firebaseConfig);
+        // Sử dụng cấu hình người dùng cung cấp nếu có, nếu không fallback về env config
+        const finalConfig = firebaseConfig.apiKey !== "DÁN_API_KEY_VÀO_ĐÂY" 
+                            ? firebaseConfig 
+                            : JSON.parse(window.__firebase_config || '{}');
+
+        const app = initializeApp(finalConfig);
         const auth = getAuth(app);
         const db = getFirestore(app);
         const provider = new GoogleAuthProvider();
 
-        // Biến lưu listener để hủy khi cần
-        let unsubscribeDoc = null; 
+        let unsubscribeDoc = null;
 
-        // DOM Elements
+        // UI Helpers
         const views = {
+            loading: document.getElementById('view-loading'),
             login: document.getElementById('view-login'),
-            dashboard: document.getElementById('view-dashboard'),
-            loading: document.getElementById('view-loading')
+            redirect: document.getElementById('view-redirect')
         };
-        const errorMsg = document.getElementById('errorMsg');
+        const errorMsg = document.getElementById('loginError');
 
         function switchView(name) {
             Object.values(views).forEach(v => v.classList.add('hidden'));
-            views[name].classList.remove('hidden');
+            if(views[name]) {
+                views[name].classList.remove('hidden');
+                views[name].classList.add('fade-in');
+            }
         }
 
-        // --- XỬ LÝ ĐĂNG NHẬP ---
+        // Xử lý nút Đăng Nhập
         document.getElementById('btnLogin').addEventListener('click', () => {
             errorMsg.style.display = 'none';
             signInWithPopup(auth, provider).catch(err => {
@@ -88,54 +280,56 @@
             });
         });
 
-        // --- XỬ LÝ ĐĂNG XUẤT ---
-        document.getElementById('btnLogout').addEventListener('click', () => {
-            if (unsubscribeDoc) unsubscribeDoc(); // Ngừng theo dõi
-            signOut(auth);
-        });
-
-        // --- LOGIC CHÍNH ---
+        // --- CORE LOGIC (SINGLE SESSION + WHITELIST) ---
         onAuthStateChanged(auth, async (user) => {
             if (user) {
                 switchView('loading');
-                const userRef = doc(db, "allowed_users", user.email);
-
+                
                 try {
-                    // 1. Kiểm tra xem có trong Whitelist không
-                    const docSnap = await getDoc(userRef);
+                    // 1. THAM CHIẾU ĐẾN COLLECTION "allowed_users"
+                    // Đây là cấu trúc chuẩn, thay thế cho cấu trúc artifacts cũ
+                    const userRef = doc(db, 'allowed_users', user.email);
                     
+                    // 2. KIỂM TRA WHITELIST
+                    const docSnap = await getDoc(userRef);
+
+                    // --- BẢO MẬT: CHẶN NẾU KHÔNG CÓ TRONG WHITELIST ---
+                    // Đã xóa hoàn toàn logic tự động thêm user (demo_auto_add)
                     if (!docSnap.exists()) {
-                        throw new Error("Email không nằm trong danh sách cho phép.");
+                        throw new Error("Email của bạn không nằm trong danh sách cho phép (Whitelist). Vui lòng liên hệ quản trị viên.");
                     }
 
-                    // 2. Tạo Session ID mới cho phiên này (Dùng thời gian hiện tại)
+                    // 3. CẬP NHẬT SESSION ID (DÙNG updateDoc)
+                    // Sử dụng updateDoc để chỉ cập nhật trường session, giữ nguyên các thông tin khác của user
                     const newSessionId = Date.now().toString();
                     
-                    // 3. Cập nhật Session ID mới lên Server
                     await updateDoc(userRef, {
                         current_session_id: newSessionId,
                         last_login: new Date().toISOString()
                     });
 
-                    // 4. Lưu Session ID vào trình duyệt hiện tại
+                    // 4. LƯU SESSION ID VÀO LOCALSTORAGE
                     localStorage.setItem('my_session_id', newSessionId);
 
-                    // 5. HIỂN THỊ GIAO DIỆN
-                    document.getElementById('userName').textContent = user.displayName;
-                    document.getElementById('sessIdDisplay').textContent = newSessionId;
-                    switchView('dashboard');
+                    // 5. CHUYỂN HƯỚNG
+                    switchView('redirect');
+                    
+                    setTimeout(() => {
+                        window.location.href = 'content/index.html';
+                    }, 1500);
 
-                    // 6. THIẾT LẬP "RA-ĐA" THEO DÕI (Realtime Listener)
-                    // Nếu dữ liệu trên server thay đổi, hàm này sẽ chạy
+                    // 6. THIẾT LẬP "RA-ĐA" THEO DÕI (Lắng nghe ngay trên userRef)
                     unsubscribeDoc = onSnapshot(userRef, (snapshot) => {
+                        if (!snapshot.exists()) return;
+
                         const data = snapshot.data();
                         const serverSessionId = data.current_session_id;
                         const localSessionId = localStorage.getItem('my_session_id');
 
-                        // Kiểm tra: Nếu Server khác Local => Có người mới đăng nhập đè lên
+                        // Nếu Server khác Local => Có người mới đăng nhập
                         if (serverSessionId && serverSessionId !== localSessionId) {
                             console.warn("Phát hiện đăng nhập nơi khác! Đang đăng xuất...");
-                            if (unsubscribeDoc) unsubscribeDoc(); // Dừng theo dõi để tránh loop
+                            if (unsubscribeDoc) unsubscribeDoc();
                             
                             signOut(auth).then(() => {
                                 alert("Tài khoản của bạn vừa được đăng nhập ở một thiết bị khác. Phiên làm việc này sẽ kết thúc.");
@@ -147,13 +341,18 @@
                     });
 
                 } catch (error) {
-                    console.error(error);
+                    console.error("Login Error:", error);
                     await signOut(auth);
                     switchView('login');
-                    errorMsg.textContent = error.message;SSS
+                    
+                    let displayError = error.message;
                     if (error.code === 'permission-denied') {
-                        errorMsg.textContent = "Lỗi quyền: Không thể cập nhật Session ID.";
+                        displayError = "Lỗi quyền truy cập: Bạn không thể cập nhật dữ liệu.";
+                    } else if (error.code === 'unavailable') {
+                        displayError = "Không thể kết nối đến máy chủ.";
                     }
+                    
+                    errorMsg.textContent = displayError;
                     errorMsg.style.display = 'block';
                 }
             } else {
