@@ -26,6 +26,22 @@ const auth = getAuth(app);
 const db = getFirestore(app);
 const provider = new GoogleAuthProvider();
 
+const ENTRY_TOKEN_KEY = 'gatekeeper_entry';
+function setEntryToken() {
+    try { sessionStorage.setItem(ENTRY_TOKEN_KEY, JSON.stringify({ ts: Date.now(), r: Math.random().toString(36).slice(2) })); } catch {}
+}
+function clearEntryToken() {
+    try { sessionStorage.removeItem(ENTRY_TOKEN_KEY); } catch {}
+}
+function hasValidEntryToken(maxAgeMs = 300000) {
+    try {
+        const raw = sessionStorage.getItem(ENTRY_TOKEN_KEY);
+        if (!raw) return false;
+        const data = JSON.parse(raw);
+        return typeof data?.ts === 'number' && (Date.now() - data.ts) <= maxAgeMs;
+    } catch { return false; }
+}
+
 // --- CÁC HÀM HỖ TRỢ ---
 
 // Hàm đăng nhập (Dùng cho trang Login)
@@ -41,6 +57,7 @@ export async function loginWithGoogle() {
 // Hàm đăng xuất (Dùng cho mọi trang)
 export async function logoutUser() {
     await signOut(auth);
+    clearEntryToken();
     // onAuthStateChanged sẽ tự động xử lý việc chuyển hướng sau khi đăng xuất
 }
 
@@ -49,9 +66,16 @@ export async function logoutUser() {
  * @param {string} type - 'login' (cho trang chủ) hoặc 'protected' (cho trang nội dung)
  */
 export function initGatekeeper(type = 'protected') {
-    // Ngay lập tức ẩn nội dung để chống bị xem trộm
-    if (type === 'protected') {
-        document.body.style.visibility = 'hidden';
+    const isProtected = type === 'protected' || type === 'protected_page';
+    const loadingEl = document.getElementById('gatekeeper-loading');
+
+    if (isProtected) {
+        if (loadingEl) {
+            document.body.style.visibility = 'visible';
+            loadingEl.style.display = 'flex';
+        } else {
+            document.body.style.visibility = 'hidden';
+        }
     }
 
     onAuthStateChanged(auth, async (user) => {
@@ -75,8 +99,13 @@ export function initGatekeeper(type = 'protected') {
                         last_login: new Date().toISOString()
                     });
                     localStorage.setItem('my_session_id', newSession);
+                    setEntryToken();
                     window.location.href = 'content/index.html';
-                } else if (type === 'protected') {
+                } else if (isProtected) {
+                    if (!hasValidEntryToken()) {
+                        window.location.href = "/index.html";
+                        return;
+                    }
                     // Nếu ở trang được bảo vệ, xác thực session
                     const localSession = localStorage.getItem('my_session_id');
                     if (serverSession !== localSession) {
@@ -91,7 +120,9 @@ export function initGatekeeper(type = 'protected') {
                         }
                     });
 
-                    // Mọi thứ OK -> Hiển thị lại nội dung
+                    if (loadingEl) {
+                        loadingEl.style.display = 'none';
+                    }
                     document.body.style.visibility = 'visible';
                 }
             } catch (error) {
@@ -103,7 +134,7 @@ export function initGatekeeper(type = 'protected') {
             }
         } else {
             // === CHƯA LOGIN ===
-            if (type === 'protected') {
+            if (isProtected) {
                 // Xóa trắng nội dung và chuyển hướng về trang login
                 document.body.innerHTML = '';
                 window.location.href = "/index.html";
