@@ -139,7 +139,13 @@
     </style>
 </head>
 <body class="bg-gray-100">
-    <div id="gatekeeper-loading" style="position:fixed;top:0;left:0;width:100%;height:100%;background:#0f172a;display:none;justify-content:center;align-items:center;color:#ffffff;z-index:9999">Checking Access...</div>
+    <div id="gatekeeper-loading" style="position:fixed;top:0;left:0;width:100%;height:100%;background:#0f172a;display:none;justify-content:center;align-items:center;color:#ffffff;z-index:9999">
+        <div style="display:flex;flex-direction:column;align-items:center;gap:10px">
+            <img src="../favicon.png" alt="StudyStation" style="width:56px;height:56px;border-radius:12px">
+            <div style="font-weight:700;font-size:18px">StudyStation</div>
+            <div style="width:28px;height:28px;border:3px solid rgba(255,255,255,0.25);border-top-color:#60a5fa;border-radius:9999px;animation: spin 1s linear infinite"></div>
+        </div>
+    </div>
 
     <!-- Card chính của ứng dụng -->
     <div class="w-full max-w-3xl mx-auto bg-white rounded-lg shadow-lg my-4 md:my-8">
