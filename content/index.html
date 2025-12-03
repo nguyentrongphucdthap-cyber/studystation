@@ -137,6 +137,7 @@
     </style>
 </head>
 <body class="bg-gray-100">
+    <div id="gatekeeper-loading" style="position:fixed;top:0;left:0;width:100%;height:100%;background:#0f172a;display:none;justify-content:center;align-items:center;color:#ffffff;z-index:9999">Checking Access...</div>
 
     <!-- Card chính của ứng dụng -->
     <div class="w-full max-w-3xl mx-auto bg-white rounded-lg shadow-lg my-4 md:my-8">
@@ -834,6 +835,14 @@
 
         });
     </script>
+    <script type="module">
+        import { initGatekeeper } from "../gatekeeper.js";
+        initGatekeeper('protected');
+    </script>
 
 </body>
 </html>
+<script type="module">
+    import { initGatekeeper } from "../gatekeeper.js";
+    initGatekeeper('protected');
+</script>
