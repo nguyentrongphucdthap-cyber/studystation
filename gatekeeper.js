@@ -63,7 +63,11 @@ export async function loginWithGoogle() {
         await signInWithPopup(auth, provider);
     } catch (error) {
         console.error("Login failed:", error);
-        alert("Lỗi đăng nhập: " + error.message);
+        const el = document.getElementById('loginError');
+        if (el) {
+            el.textContent = error.message || 'Không thể đăng nhập. Vui lòng thử lại.';
+            el.style.display = 'block';
+        }
     }
 }
 
@@ -140,10 +144,20 @@ export function initGatekeeper(type = 'protected') {
                 }
             } catch (error) {
                 console.error("Gatekeeper Error:", error);
-                alert(error.message);
-                document.body.innerHTML = '<h1>Lỗi xác thực. Đang chuyển hướng...</h1>';
                 await signOut(auth);
-                setTimeout(() => { window.location.href = toProjectUrl('index.html'); }, 2000);
+                if (type === 'login') {
+                    const el = document.getElementById('loginError');
+                    const vLogin = document.getElementById('view-login');
+                    const vLoading = document.getElementById('view-loading');
+                    const vRedirect = document.getElementById('view-redirect');
+                    if (vLoading) vLoading.classList.add('hidden');
+                    if (vRedirect) vRedirect.classList.add('hidden');
+                    if (vLogin) vLogin.classList.remove('hidden');
+                    if (el) { el.textContent = error.message || 'Bạn chưa được cấp quyền truy cập.'; el.style.display = 'block'; }
+                } else {
+                    document.body.innerHTML = '<h1>Lỗi xác thực. Đang chuyển hướng...</h1>';
+                    setTimeout(() => { window.location.href = toProjectUrl('index.html'); }, 2000);
+                }
             }
         } else {
             // === CHƯA LOGIN ===
@@ -154,6 +168,12 @@ export function initGatekeeper(type = 'protected') {
             } else {
                 // Ở trang login, chỉ cần đảm bảo nội dung được hiển thị
                 document.body.style.visibility = 'visible';
+                const vLogin = document.getElementById('view-login');
+                const vLoading = document.getElementById('view-loading');
+                const vRedirect = document.getElementById('view-redirect');
+                if (vLoading) vLoading.classList.add('hidden');
+                if (vRedirect) vRedirect.classList.add('hidden');
+                if (vLogin) vLogin.classList.remove('hidden');
             }
         }
     });
