@@ -44,9 +44,19 @@
     
     <!-- Phosphor Icons -->
     <script src="https://unpkg.com/@phosphor-icons/web"></script>
+    <style>
+        @keyframes gkSpin { to { transform: rotate(360deg); } }
+        .gk-spinner { width: 28px; height: 28px; border: 3px solid rgba(255,255,255,0.25); border-top-color: #60a5fa; border-radius: 9999px; animation: gkSpin 1s linear infinite; }
+    </style>
 </head>
 <body class="text-slate-800 bg-slate-50 h-screen flex flex-col select-none dark:bg-dark-bg dark:text-dark-text transition-colors duration-300">
-    <div id="gatekeeper-loading" style="position:fixed;top:0;left:0;width:100%;height:100%;background:#0f172a;display:none;justify-content:center;align-items:center;color:#ffffff;z-index:9999">Checking Access...</div>
+    <div id="gatekeeper-loading" style="position:fixed;top:0;left:0;width:100%;height:100%;background:#0f172a;display:none;justify-content:center;align-items:center;color:#ffffff;z-index:9999">
+        <div style="display:flex;flex-direction:column;align-items:center;gap:10px">
+            <img src="../../favicon.png" alt="StudyStation" style="width:56px;height:56px;border-radius:12px">
+            <div style="font-weight:700;font-size:18px">StudyStation</div>
+            <div class="gk-spinner"></div>
+        </div>
+    </div>
 
     <!-- Header -->
     <header class="fixed top-0 w-full bg-white/95 dark:bg-dark-card/95 backdrop-blur-md border-b border-slate-200 dark:border-slate-700 z-50 h-16 flex items-center justify-between px-4 md:px-8 shadow-sm transition-colors duration-300 safe-top">
