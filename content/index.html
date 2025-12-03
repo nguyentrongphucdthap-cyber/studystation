@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>StudyStation - Nền tảng hỗ trợ học tập</title>
+    <title>StudyStaion - Nền tảng hỗ trợ học tập</title>
     <meta name="ga-measurement-id" content="G-4FGSW7XDZ9">
     <link rel="icon" type="image/png" href="../favicon.png">
     <!-- Tải Tailwind CSS -->
@@ -161,13 +161,17 @@
                     </h1>
                     <div class="flex items-center gap-3 mt-2 md:mt-0">
                         <p class="text-base md:text-lg text-gray-600">Xin chào, hãy chọn một mục để bắt đầu!</p>
-                        <div id="account-info" class="hidden md:flex items-center gap-3 bg-gray-50 border border-gray-200 rounded-xl px-3 py-2">
-                            <img id="acc-avatar" class="w-8 h-8 rounded-full" alt="avatar">
-                            <div class="leading-tight">
-                                <div id="acc-name" class="text-sm font-semibold text-gray-800"></div>
-                                <div id="acc-email" class="text-xs text-gray-600"></div>
+                        <div id="account-info" class="hidden md:flex items-center gap-3">
+                            <button id="acc-avatar-btn" class="rounded-full focus:outline-none">
+                                <img id="acc-avatar" class="w-8 h-8 rounded-full" alt="avatar">
+                            </button>
+                            <div id="acc-details" class="hidden items-center gap-3 bg-gray-50 border border-gray-200 rounded-xl px-3 py-2">
+                                <div class="leading-tight">
+                                    <div id="acc-name" class="text-sm font-semibold text-gray-800"></div>
+                                    <div id="acc-email" class="text-xs text-gray-600"></div>
+                                </div>
+                                <button id="acc-logout" class="text-xs bg-red-600 hover:bg-red-700 text-white px-3 py-1 rounded-lg">Đăng xuất</button>
                             </div>
-                            <button id="acc-logout" class="text-xs bg-red-600 hover:bg-red-700 text-white px-3 py-1 rounded-lg">Đăng xuất</button>
                         </div>
                     </div>
                 </div>
@@ -861,13 +865,25 @@
         const accEmail = document.getElementById('acc-email');
         const accAvatar = document.getElementById('acc-avatar');
         const accLogout = document.getElementById('acc-logout');
+        const accDetails = document.getElementById('acc-details');
+        const accAvatarBtn = document.getElementById('acc-avatar-btn');
         if (accLogout) accLogout.addEventListener('click', () => logoutUser());
+        if (accAvatarBtn) accAvatarBtn.addEventListener('click', (e) => {
+            e.stopPropagation();
+            if (!accDetails) return;
+            accDetails.classList.toggle('hidden');
+        });
+        document.addEventListener('click', (e) => {
+            if (!accDetails || !accInfo) return;
+            if (!accInfo.contains(e.target)) accDetails.classList.add('hidden');
+        });
         onUserChange((user) => {
             if (!user) { if (accInfo) accInfo.classList.add('hidden'); return; }
             if (accInfo) accInfo.classList.remove('hidden');
             if (accName) accName.textContent = user.displayName || 'Người dùng';
             if (accEmail) accEmail.textContent = user.email || '';
             if (accAvatar) accAvatar.src = user.photoURL || '../favicon.png';
+            if (accDetails) accDetails.classList.add('hidden');
         });
     </script>
 
