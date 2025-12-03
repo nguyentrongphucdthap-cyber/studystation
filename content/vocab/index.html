@@ -44,6 +44,7 @@
     <script src="https://unpkg.com/@phosphor-icons/web"></script>
 </head>
 <body class="text-slate-800 bg-slate-50 h-screen flex flex-col select-none dark:bg-dark-bg dark:text-dark-text transition-colors duration-300">
+    <div id="gatekeeper-loading" style="position:fixed;top:0;left:0;width:100%;height:100%;background:#0f172a;display:none;justify-content:center;align-items:center;color:#ffffff;z-index:9999">Checking Access...</div>
 
     <!-- Header -->
     <header class="fixed top-0 w-full bg-white/95 dark:bg-dark-card/95 backdrop-blur-md border-b border-slate-200 dark:border-slate-700 z-50 h-16 flex items-center justify-between px-4 md:px-8 shadow-sm transition-colors duration-300 safe-top">
@@ -625,5 +626,9 @@
 
     <!-- App Logic -->
     <script src="script.js"></script>
+    <script type="module">
+        import { initGatekeeper } from "../../gatekeeper.js";
+        initGatekeeper('protected');
+    </script>
 </body>
 </html>
