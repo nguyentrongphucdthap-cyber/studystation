@@ -877,40 +877,27 @@ async function loadVocabSets() {
     showLoading(true);
     
     try {
-        // Load category configuration
         const response = await fetch(VOCAB_INDEX_URL);
         if (!response.ok) throw new Error(`HTTP ${response.status}`);
         const indexData = await response.json();
         const categories = indexData.categories || [];
-        const loadedSets = [];
 
-        // Auto-scan: Try to fetch all possible JSON files in each folder
-        for (const category of categories) {
+        const categoryPromises = categories.map(async (category) => {
             try {
-                // Get list of files to try from a comprehensive list
                 const filesToTry = await getFilesToScan(category.folder);
-                
-                // Try to load each file
                 const loadPromises = filesToTry.map(async (filename) => {
                     try {
                         const vocabResponse = await fetch(`./vocab/${category.folder}/${filename}`);
                         if (!vocabResponse.ok) return null;
-                        
                         const vocabJson = await vocabResponse.json();
-                        
-                        // Skip if it's not a vocab file (no words array) or is a config file
                         if (!vocabJson.words || !Array.isArray(vocabJson.words)) return null;
                         if (filename.includes('vocab-list') || filename.includes('index')) return null;
-                        
                         const words = vocabJson.words;
                         if (words.length === 0) return null;
-
-                        // Generate unique ID from folder and filename
                         const setId = `${category.folder}-${filename.replace(/\.json$/, '')}`.toLowerCase();
-
                         return {
                             id: setId,
-                            categoryId: category.type, // Auto-determined from folder
+                            categoryId: category.type,
                             title: vocabJson.name || vocabJson.title || filename.replace(/\.json$/, ''),
                             description: vocabJson.title || vocabJson.name || '',
                             color: vocabJson.color || 'indigo',
@@ -920,19 +907,20 @@ async function loadVocabSets() {
                                 topicTitle: vocabJson.title || vocabJson.name
                             }))
                         };
-                    } catch (fileError) {
+                    } catch (_) {
                         return null;
                     }
                 });
-                
                 const results = await Promise.all(loadPromises);
-                loadedSets.push(...results.filter(r => r !== null));
+                return results.filter(r => r !== null);
             } catch (categoryError) {
                 console.error(`Không thể tải thư mục ${category.folder}:`, categoryError);
+                return [];
             }
-        }
+        });
 
-        VOCAB_SETS = loadedSets;
+        const categoryResults = await Promise.all(categoryPromises);
+        VOCAB_SETS = categoryResults.flat();
     } catch (error) {
         console.error('Không thể tải dữ liệu từ vựng:', error);
         VOCAB_SETS = [];
@@ -1038,32 +1026,20 @@ async function tryFolderManifest(folder) {
 }
 
 async function scanSequentialNumberedFiles(folder, max = 20) {
-    const detected = [];
-    for (let i = 1; i <= max; i++) {
-        const filename = `${i}.json`;
-        const exists = await checkFileExists(folder, filename);
-        if (exists) detected.push(filename);
-    }
-    return detected;
+    const filenames = Array.from({ length: max }, (_, idx) => `${idx + 1}.json`);
+    const checks = await Promise.all(filenames.map(async (fn) => {
+        const ok = await checkFileExists(folder, fn);
+        return ok ? fn : null;
+    }));
+    return checks.filter(Boolean);
 }
 
 async function checkFileExists(folder, filename) {
     const url = `./vocab/${folder}/${filename}`;
     try {
         const headResponse = await fetch(url, { method: 'HEAD', cache: 'no-cache' });
-        if (headResponse.ok) return true;
-    } catch (err) {
-        // Ignore and fallback to GET
-    }
-
-    try {
-        const getResponse = await fetch(url, { method: 'GET', cache: 'no-cache' });
-        if (!getResponse.ok) return false;
-        const contentType = getResponse.headers.get('content-type') || '';
-        if (!contentType.includes('application/json')) return false;
-        const data = await getResponse.json();
-        return data.words && Array.isArray(data.words);
-    } catch (err) {
+        return headResponse.ok;
+    } catch (_) {
         return false;
     }
 }
