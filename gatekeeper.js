@@ -104,6 +104,12 @@ export async function logoutUser() {
     // onAuthStateChanged sẽ tự động xử lý việc chuyển hướng sau khi đăng xuất
 }
 
+export function onUserChange(cb) {
+    return onAuthStateChanged(auth, (user) => {
+        if (typeof cb === 'function') cb(user);
+    });
+}
+
 /**
  * HÀM KHỞI TẠO BẢO VỆ (QUAN TRỌNG NHẤT)
  * @param {string} type - 'login' (cho trang chủ) hoặc 'protected' (cho trang nội dung)
