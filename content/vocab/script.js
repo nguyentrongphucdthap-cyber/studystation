@@ -945,28 +945,9 @@ async function loadVocabSets() {
 // Attempt to discover JSON files in a folder so new vocab sets auto-load
 async function getFilesToScan(folder) {
     if (folderFileCache[folder]) return folderFileCache[folder];
-
-    const discoveredViaListing = await tryDirectoryListing(folder);
-    if (discoveredViaListing.length) {
-        folderFileCache[folder] = discoveredViaListing;
-        return discoveredViaListing;
-    }
-
-    const manifestFiles = await tryFolderManifest(folder);
-    if (manifestFiles.length) {
-        folderFileCache[folder] = manifestFiles;
-        return manifestFiles;
-    }
-
-    const sequentialFiles = await scanSequentialNumberedFiles(folder);
-    if (sequentialFiles.length) {
-        folderFileCache[folder] = sequentialFiles;
-        return sequentialFiles;
-    }
-
-    const fallbackFiles = await probeFallbackFiles(folder);
-    folderFileCache[folder] = fallbackFiles;
-    return fallbackFiles;
+    const sequentialFiles = await scanSequentialNumberedFiles(folder, 20);
+    folderFileCache[folder] = sequentialFiles;
+    return sequentialFiles;
 }
 
 function normalizeFileList(files) {
@@ -1056,32 +1037,13 @@ async function tryFolderManifest(folder) {
     return [];
 }
 
-async function scanSequentialNumberedFiles(folder) {
+async function scanSequentialNumberedFiles(folder, max = 20) {
     const detected = [];
-    const MAX_INDEX = 300;
-    const MAX_INITIAL_ATTEMPTS = 5;
-    const MAX_MISSES_AFTER_FOUND = 3;
-    let initialAttempts = 0;
-    let missesAfterFound = 0;
-
-    for (let i = 1; i <= MAX_INDEX; i++) {
+    for (let i = 1; i <= max; i++) {
         const filename = `${i}.json`;
         const exists = await checkFileExists(folder, filename);
-        if (exists) {
-            detected.push(filename);
-            missesAfterFound = 0;
-            continue;
-        }
-
-        if (!detected.length) {
-            initialAttempts++;
-            if (initialAttempts >= MAX_INITIAL_ATTEMPTS) break;
-        } else {
-            missesAfterFound++;
-            if (missesAfterFound >= MAX_MISSES_AFTER_FOUND) break;
-        }
+        if (exists) detected.push(filename);
     }
-
     return detected;
 }
 
