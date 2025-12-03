@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>StudyStaion - Nền tảng hỗ trợ học tập</title>
+    <title>StudyStation - Nền tảng hỗ trợ học tập</title>
     <meta name="ga-measurement-id" content="G-4FGSW7XDZ9">
     <link rel="icon" type="image/png" href="../favicon.png">
     <!-- Tải Tailwind CSS -->
@@ -159,7 +159,17 @@
                     <h1 class="text-3xl md:text-4xl font-bold text-gray-800">
                         Study<span class="text-blue-400">Staion</span>
                     </h1>
-                    <p class="text-base md:text-lg text-gray-600 mt-2 md:mt-0">Xin chào, hãy chọn một mục để bắt đầu!</p>
+                    <div class="flex items-center gap-3 mt-2 md:mt-0">
+                        <p class="text-base md:text-lg text-gray-600">Xin chào, hãy chọn một mục để bắt đầu!</p>
+                        <div id="account-info" class="hidden md:flex items-center gap-3 bg-gray-50 border border-gray-200 rounded-xl px-3 py-2">
+                            <img id="acc-avatar" class="w-8 h-8 rounded-full" alt="avatar">
+                            <div class="leading-tight">
+                                <div id="acc-name" class="text-sm font-semibold text-gray-800"></div>
+                                <div id="acc-email" class="text-xs text-gray-600"></div>
+                            </div>
+                            <button id="acc-logout" class="text-xs bg-red-600 hover:bg-red-700 text-white px-3 py-1 rounded-lg">Đăng xuất</button>
+                        </div>
+                    </div>
                 </div>
 
                 <!-- Tìm kiếm nhanh -->
@@ -844,8 +854,21 @@
         });
     </script>
     <script type="module">
-        import { initGatekeeper } from "../gatekeeper.js";
+        import { initGatekeeper, onUserChange, logoutUser } from "../gatekeeper.js";
         initGatekeeper('protected');
+        const accInfo = document.getElementById('account-info');
+        const accName = document.getElementById('acc-name');
+        const accEmail = document.getElementById('acc-email');
+        const accAvatar = document.getElementById('acc-avatar');
+        const accLogout = document.getElementById('acc-logout');
+        if (accLogout) accLogout.addEventListener('click', () => logoutUser());
+        onUserChange((user) => {
+            if (!user) { if (accInfo) accInfo.classList.add('hidden'); return; }
+            if (accInfo) accInfo.classList.remove('hidden');
+            if (accName) accName.textContent = user.displayName || 'Người dùng';
+            if (accEmail) accEmail.textContent = user.email || '';
+            if (accAvatar) accAvatar.src = user.photoURL || '../favicon.png';
+        });
     </script>
 
 </body>
