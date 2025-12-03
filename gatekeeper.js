@@ -55,6 +55,32 @@ function toProjectUrl(relPath) {
     return root + clean;
 }
 
+function getGaId() {
+    try {
+        const v = window.__GA_MEASUREMENT_ID;
+        if (typeof v === 'string' && v.trim()) return v.trim();
+        const m = document.querySelector('meta[name="ga-measurement-id"]');
+        const c = m && m.content ? m.content.trim() : '';
+        return c;
+    } catch { return ''; }
+}
+
+function initAnalytics() {
+    const id = getGaId();
+    if (!id) return;
+    if (!window.dataLayer) window.dataLayer = [];
+    if (!window.gtag) window.gtag = function(){window.dataLayer.push(arguments);};
+    const existing = document.querySelector('script[src*="googletagmanager.com/gtag/js"]');
+    if (!existing) {
+        const s = document.createElement('script');
+        s.async = true;
+        s.src = `https://www.googletagmanager.com/gtag/js?id=${encodeURIComponent(id)}`;
+        document.head.appendChild(s);
+    }
+    window.gtag('js', new Date());
+    window.gtag('config', id, { send_page_view: true });
+}
+
 // --- CÁC HÀM HỖ TRỢ ---
 
 // Hàm đăng nhập (Dùng cho trang Login)
@@ -83,6 +109,7 @@ export async function logoutUser() {
  * @param {string} type - 'login' (cho trang chủ) hoặc 'protected' (cho trang nội dung)
  */
 export function initGatekeeper(type = 'protected') {
+    initAnalytics();
     const isProtected = type === 'protected' || type === 'protected_page';
     const loadingEl = document.getElementById('gatekeeper-loading');
 
