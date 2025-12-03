@@ -3,877 +3,237 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>StudyStaion - Nền tảng hỗ trợ học tập</title>
+    <title>StudyStation Login</title>
     <meta name="ga-measurement-id" content="G-4FGSW7XDZ9">
-    <link rel="icon" type="image/png" href="../favicon.png">
-    <!-- Tải Tailwind CSS -->
-    <script src="https://cdn.tailwindcss.com"></script>
-    <!-- Tải font Be Vietnam Pro từ Google Fonts -->
-    <link href="https://fonts.googleapis.com/css2?family=Be+Vietnam+Pro:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <link rel="icon" type="image/png" href="favicon.png">
+    
+    <!-- Font Be Vietnam Pro -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Be+Vietnam+Pro:wght@300;400;500;600;700&display=swap" rel="stylesheet">
     
     <style>
-        /* Sử dụng font Be Vietnam Pro làm font chữ mặc định */
+        /* --- GIỮ NGUYÊN CSS CỦA STUDYSTATION --- */
+        :root {
+            --font-main: 'Be Vietnam Pro', sans-serif;
+            --bg-body: #F3F4F6;
+            --bg-card: #FFFFFF;
+            --text-primary: #111827;
+            --text-secondary: #6B7280;
+            --text-tertiary: #9CA3AF;
+            --accent: #2563EB;
+            --danger: #EF4444;
+            --shadow-card: 0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05);
+            --radius-xl: 20px;
+        }
+
+        * { box-sizing: border-box; }
+
         body {
-            font-family: 'Be Vietnam Pro', sans-serif;
+            font-family: var(--font-main);
+            background-color: var(--bg-body);
+            background-image: radial-gradient(#E5E7EB 1px, transparent 1px);
+            background-size: 24px 24px;
+            height: 100vh;
+            margin: 0;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            color: var(--text-primary);
         }
 
-        /* Định nghĩa hiệu ứng chuyển cảnh (fade-in và trượt lên) */
-        .page-content {
-            display: none; /* Ẩn tất cả các trang theo mặc định */
-            animation: pageFadeIn 0.5s cubic-bezier(0.25, 0.46, 0.45, 0.94) forwards;
+        .wrapper {
+            width: 100%;
+            max-width: 420px;
+            padding: 20px;
         }
 
-        .page-content.active {
-            display: block; /* Hiển thị trang đang hoạt động */
+        .card {
+            background: var(--bg-card);
+            border-radius: var(--radius-xl);
+            padding: 40px 32px;
+            box-shadow: var(--shadow-card);
+            text-align: center;
+            border: 1px solid #E5E7EB;
         }
 
-        @keyframes pageFadeIn {
-            from {
-                opacity: 0;
-                transform: translateY(20px);
-            }
-            to {
-                opacity: 1;
-                transform: translateY(0);
-            }
+        h1 {
+            font-weight: 700;
+            font-size: 26px;
+            margin: 0 0 10px 0;
+            color: var(--text-primary);
         }
 
-        /* Hiệu ứng hover mượt mà cho các nút môn học */
-        .subject-card {
-            transition: transform 0.3s ease, box-shadow 0.3s ease;
+        p {
+            font-size: 15px;
+            color: var(--text-secondary);
+            line-height: 1.5;
+            margin: 0 0 24px 0;
         }
-        .subject-card:hover {
-            transform: translateY(-5px);
-            box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05);
+
+        .warning-text {
+            font-size: 13px;
+            color: #D97706;
+            background: #FFFBEB;
+            padding: 10px;
+            border-radius: 8px;
+            margin-bottom: 24px;
+            border: 1px solid #FEF3C7;
         }
-        .menu-card {
-            transition: transform 0.3s ease, box-shadow 0.3s ease;
-        }
-        .menu-card.clicked {
-            animation: cardClick 0.35s ease;
-        }
-        @keyframes cardClick {
-            0% { transform: scale(1); }
-            40% { transform: scale(0.95); }
-            100% { transform: scale(1); }
-        }
-        
-        /* --- CSS MỚI CHO TRANG LÀM BÀI --- */
-        
-        /* Loading Spinner */
-        @keyframes spin {
-            to { transform: rotate(360deg); }
-        }
-        #loading-indicator {
-            width: 50px;
-            height: 50px;
-            border: 5px solid #f3f3f3;
-            border-top: 5px solid #3498db;
-            border-radius: 50%;
-            animation: spin 1s linear infinite;
-        }
-        
-        /* Kiểu dáng câu hỏi */
-        .quiz-question {
-            background-color: #f9fafb; /* bg-gray-50 */
-            padding: 1.5rem; /* p-6 */
-            border-radius: 0.75rem; /* rounded-lg */
-            margin-bottom: 1.5rem; /* mb-6 */
-            border: 1px solid #e5e7eb; /* border border-gray-200 */
-        }
-        .question-text {
-            font-size: 1.125rem; /* text-lg */
-            font-weight: 600; /* font-semibold */
-            margin-bottom: 1rem; /* mb-4 */
-            color: #1f2937; /* text-gray-800 */
-        }
-        .options-container label {
-            display: block;
-            padding: 0.75rem 1rem; /* p-3 px-4 */
-            background-color: #ffffff; /* bg-white */
-            border: 1px solid #d1d5db; /* border border-gray-300 */
-            border-radius: 0.5rem; /* rounded-md */
-            margin-bottom: 0.75rem; /* mb-3 */
+
+        .btn {
+            width: 100%;
+            padding: 14px;
+            border-radius: 12px;
+            border: none;
+            font-family: var(--font-main);
+            font-size: 15px;
+            font-weight: 600;
             cursor: pointer;
-            transition: border-color 0.2s ease, background-color 0.2s ease;
+            transition: all 0.2s;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 12px;
         }
-        .options-container label:hover {
-            background-color: #f9fafb; /* hover:bg-gray-50 */
-        }
-        .options-container input[type="radio"]:checked + span {
-             font-weight: 600; /* font-semibold */
-             color: #2563eb; /* text-blue-600 */
-        }
-         .options-container label input {
-             margin-right: 0.75rem; /* mr-3 */
-         }
 
-        /* --- CSS MỚI CHO TRANG KẾT QUẢ --- */
-        .review-item {
-            border: 1px solid #e5e7eb; /* border border-gray-200 */
-            border-radius: 0.75rem; /* rounded-lg */
-            padding: 1rem; /* p-4 */
-            margin-bottom: 1rem; /* mb-4 */
+        .btn:active { transform: scale(0.98); }
+
+        .btn-google {
+            background: #FFFFFF;
+            color: #374151;
+            border: 1px solid #D1D5DB;
+            box-shadow: 0 1px 2px 0 rgba(0, 0, 0, 0.05);
         }
-        .review-item.correct {
-            background-color: #f0fdf4; /* bg-green-50 */
-            border-color: #bbf7d0; /* border-green-200 */
+        .btn-google:hover {
+            background: #F9FAFB;
+            border-color: #9CA3AF;
         }
-        .review-item.incorrect {
-            background-color: #fef2f2; /* bg-red-50 */
-            border-color: #fecaca; /* border-red-200 */
-        }
-        .feedback-text {
-            font-weight: 600; /* font-semibold */
-            margin-top: 0.75rem; /* mt-3 */
-            padding-top: 0.75rem; /* pt-3 */
-            border-top: 1px solid #e5e7eb; /* border-t border-gray-200 */
-        }
-        .correct-answer {
-            color: #16a34a; /* text-green-600 */
-        }
-        .incorrect-answer {
-             color: #dc2626; /* text-red-600 */
+
+        .register-section {
+            margin-top: 24px;
+            padding-top: 20px;
+            border-top: 1px solid #E5E7EB;
+            font-size: 14px;
+            color: var(--text-secondary);
         }
         
+        .register-link {
+            color: var(--accent);
+            text-decoration: none;
+            font-weight: 600;
+        }
+        .register-link:hover { text-decoration: underline; }
+
+        .hidden { display: none !important; }
+        .fade-in { animation: fadeIn 0.4s ease-out forwards; }
+        @keyframes fadeIn { 
+            from { opacity: 0; transform: translateY(10px); } 
+            to { opacity: 1; transform: translateY(0); } 
+        }
+
+        .alert {
+            padding: 12px;
+            border-radius: 8px;
+            font-size: 13px;
+            margin-top: 16px;
+            text-align: left;
+            display: none;
+        }
+        .alert-error { 
+            background: #FEF2F2; 
+            color: #991B1B; 
+            border: 1px solid #FECACA; 
+        }
+
+        .spinner {
+            width: 32px;
+            height: 32px;
+            border: 3px solid #E5E7EB;
+            border-top-color: var(--accent);
+            border-radius: 50%;
+            animation: spin 0.8s linear infinite;
+            margin: 0 auto 16px;
+        }
+        @keyframes spin { to { transform: rotate(360deg); } }
+
+        .credits {
+            position: fixed;
+            bottom: 20px;
+            left: 0;
+            width: 100%;
+            text-align: center;
+            font-size: 12px;
+            color: #9CA3AF;
+            pointer-events: none;
+        }
+        .credits strong { color: #6B7280; font-weight: 600; }
     </style>
 </head>
-<body class="bg-gray-100">
-    <div id="gatekeeper-loading" style="position:fixed;top:0;left:0;width:100%;height:100%;background:#0f172a;display:none;justify-content:center;align-items:center;color:#ffffff;z-index:9999">
-        <div style="display:flex;flex-direction:column;align-items:center;gap:10px">
-            <img src="../favicon.png" alt="StudyStation" style="width:56px;height:56px;border-radius:12px">
-            <div style="font-weight:700;font-size:18px">StudyStation</div>
-            <div style="width:28px;height:28px;border:3px solid rgba(255,255,255,0.25);border-top-color:#60a5fa;border-radius:9999px;animation: spin 1s linear infinite"></div>
+<body>
+
+    <div class="wrapper">
+        
+        <!-- VIEW: LOADING -->
+        <div id="view-loading" class="card hidden">
+            <div class="spinner"></div>
+            <p style="margin: 0; font-weight: 500;">Đang kiểm tra bảo mật...</p>
+        </div>
+
+        <!-- VIEW: REDIRECT -->
+        <div id="view-redirect" class="card hidden">
+            <div class="spinner"></div>
+            <h2 style="font-size: 18px; margin-bottom: 8px; color: #059669;">Đăng nhập thành công!</h2>
+            <p style="margin: 0; font-size: 14px; color: var(--text-secondary);">Đang chuyển hướng...</p>
+        </div>
+
+        <!-- VIEW: LOGIN -->
+        <div id="view-login" class="card fade-in">
+            <div style="margin-bottom: 24px;">
+                <div style="width: 48px; height: 48px; background: #EFF6FF; border-radius: 12px; margin: 0 auto 16px; display: flex; align-items: center; justify-content: center;">
+                    <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#2563EB" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                        <path d="M15 3h4a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2h-4"></path>
+                        <polyline points="10 17 15 12 10 7"></polyline>
+                        <line x1="15" y1="12" x2="3" y2="12"></line>
+                    </svg>
+                </div>
+
+                <h1>StudyStation Login</h1>
+                <p class="warning-text">⚠️ Chỉ dành cho tài khoản được cấp quyền (whitelist).</p>
+            </div>
+
+            <button id="btnLogin" class="btn btn-google">
+                <svg width="18" height="18" viewBox="0 0 24 24">
+                    <path d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z" fill="#4285F4"/>
+                    <path d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z" fill="#34A853"/>
+                    <path d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l2.85-2.84z" fill="#FBBC05"/>
+                    <path d="M12 4.63c1.69 0 3.26.58 4.54 1.8l3.29-3.29C17.45 1.14 14.97 0 12 0 7.7 0 3.99 2.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z" fill="#EA4335"/>
+                </svg>
+                Đăng nhập bằng Google
+            </button>
+            <div id="loginError" class="alert alert-error"></div>
+
+            <div class="register-section">
+                Bạn chưa có tài khoản? 
+                <!-- THAY LINK ĐĂNG KÝ CỦA BẠN VÀO ĐÂY -->
+                <a href="https://forms.gle/DiTJpf85bScCrzxT8" target="_blank" class="register-link">Đăng ký truy cập</a>
+            </div>
         </div>
     </div>
 
-    <!-- Card chính của ứng dụng -->
-    <div class="w-full max-w-3xl mx-auto bg-white rounded-lg shadow-lg my-4 md:my-8">
-            
-        <!-- Khu vực nội dung chính -->
-        <main class="w-full p-6 md:p-10 min-h-[600px]">
-            
-            <!-- 1. Trang Menu Thẻ (Mặc định) -->
-            <div id="menu-cards" class="page-content active">
-                <div class="flex flex-col md:flex-row items-start md:items-center justify-between mb-4 md:mb-6">
-                    <h1 class="text-3xl md:text-4xl font-bold text-gray-800">
-                        Study<span class="text-blue-400">Staion</span>
-                    </h1>
-                    <div class="flex items-center gap-3 mt-2 md:mt-0">
-                        <p class="text-base md:text-lg text-gray-600">Xin chào, hãy chọn một mục để bắt đầu!</p>
-                        <div id="account-info" class="hidden md:flex items-center gap-3 bg-gray-50 border border-gray-200 rounded-xl px-3 py-2">
-                            <img id="acc-avatar" class="w-8 h-8 rounded-full" alt="avatar">
-                            <div class="leading-tight">
-                                <div id="acc-name" class="text-sm font-semibold text-gray-800"></div>
-                                <div id="acc-email" class="text-xs text-gray-600"></div>
-                            </div>
-                            <button id="acc-logout" class="text-xs bg-red-600 hover:bg-red-700 text-white px-3 py-1 rounded-lg">Đăng xuất</button>
-                        </div>
-                    </div>
-                </div>
-
-                <!-- Tìm kiếm nhanh -->
-                <div class="w-full mb-6 flex justify-center">
-                    <div class="flex flex-col space-y-2 md:space-y-1 md:items-center md:max-w-xs w-full max-w-xs">
-                        <input
-                            id="global-search-input"
-                            type="text"
-                            placeholder="Tìm kiếm..."
-                            class="w-full px-3 py-2 border border-gray-300 rounded-lg shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-400 focus:border-blue-400 text-sm"
-                        >
-                        <div id="global-search-results" class="space-y-2 text-sm text-gray-700"></div>
-                    </div>
-                </div>
-                
-                <div class="grid grid-cols-2 md:grid-cols-3 gap-4 md:gap-6">
-                    <!-- Card Ôn thi -->
-                    <div class="menu-card subject-card p-3 md:p-4 bg-white border border-gray-200 rounded-xl cursor-pointer hover:border-blue-500 aspect-square" data-link="./practice/index.html" data-feature="practice">
-                        <div class="flex flex-col items-center justify-center h-full space-y-2 text-center">
-                            <div class="p-2 md:p-3 rounded-full bg-blue-100 text-blue-600">
-                                <svg class="w-8 h-8 md:w-10 md:h-10" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.747 0 3.332.477 4.5 1.253v13C19.832 18.477 18.246 18 16.5 18c-1.746 0-3.332.477-4.5 1.253"></path></svg>
-                            </div>
-                            <span class="text-base md:text-xl font-semibold text-gray-800">Bài thi</span>
-                        </div>
-                    </div>
-                    <!-- Card Lịch học -->
-                    <div class="menu-card subject-card p-3 md:p-4 bg-white border border-gray-200 rounded-xl cursor-pointer hover:border-blue-500 aspect-square" data-link="./schedule/index.html" data-feature="schedule">
-                         <div class="flex flex-col items-center justify-center h-full space-y-2 text-center">
-                            <div class="p-2 md:p-3 rounded-full bg-green-100 text-green-600">
-                                <svg class="w-8 h-8 md:w-10 md:h-10" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"></path></svg>
-                            </div>
-                            <span class="text-base md:text-xl font-semibold text-gray-800">Thời Khoá Biểu</span>
-                        </div>
-                    </div>
-                    <!-- Card Lịch thi -->
-                    <div class="menu-card subject-card p-3 md:p-4 bg-white border border-gray-200 rounded-xl cursor-pointer hover:border-blue-500 aspect-square" data-target="coming-soon">
-                         <div class="flex flex-col items-center justify-center h-full space-y-2 text-center">
-                            <div class="p-2 md:p-3 rounded-full bg-red-100 text-red-600">
-                                <svg class="w-8 h-8 md:w-10 md:h-10" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>
-                            </div>
-                            <span class="text-base md:text-xl font-semibold text-gray-800">Lịch thi</span>
-                        </div>
-                    </div>
-                    <!-- Card Tài liệu -->
-                    <div class="menu-card subject-card p-3 md:p-4 bg-white border border-gray-200 rounded-xl cursor-pointer hover:border-blue-500 aspect-square" data-target="tai-lieu-main">
-                         <div class="flex flex-col items-center justify-center h-full space-y-2 text-center">
-                            <div class="p-2 md:p-3 rounded-full bg-indigo-100 text-indigo-600">
-                                <svg class="w-8 h-8 md:w-10 md:h-10" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 7v10a2 2 0 002 2h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2z"></path></svg>
-                            </div>
-                            <span class="text-base md:text-xl font-semibold text-gray-800">Tài liệu</span>
-                        </div>
-                    </div>
-                    <!-- Card Study Flow -->
-                    <div class="menu-card subject-card p-3 md:p-4 bg-white border border-gray-200 rounded-xl cursor-pointer hover:border-blue-500 aspect-square" data-link="./studyflow/index.html" data-feature="studyflow">
-                         <div class="flex flex-col items-center justify-center h-full space-y-2 text-center">
-                            <div class="p-2 md:p-3 rounded-full bg-purple-100 text-purple-600">
-                                <svg class="w-8 h-8 md:w-10 md:h-10" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9.663 17h4.673M12 3v1m6.364 1.636l-.707.707M21 12h-1M4 12H3m3.343-5.657l-.707-.707m12.728 0l-.707.707M6.343 17.657l-.707.707m12.728 0l-.707-.707"></path></svg>
-                            </div>
-                            <span class="text-base md:text-xl font-semibold text-gray-800">Study Flow</span>
-                        </div>
-                    </div>
-                    <!-- Card Flashcard -->
-                    <div class="menu-card subject-card p-3 md:p-4 bg-white border border-gray-200 rounded-xl cursor-pointer hover:border-blue-500 aspect-square" data-link="./vocab/index.html" data-feature="flashcard">
-                         <div class="flex flex-col items-center justify-center h-full space-y-2 text-center">
-                            <div class="p-2 md:p-3 rounded-full bg-yellow-100 text-yellow-600">
-                                <svg class="w-8 h-8 md:w-10 md:h-10" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6v6l4 2m4 0a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>
-                            </div>
-                            <span class="text-base md:text-xl font-semibold text-gray-800">Flashcard</span>
-                        </div>
-                    </div>
-                </div>
-            </div>
-
-            <!-- 2. Trang Chọn Môn Học (Ôn thi) -->
-            <div id="on-thi-main" class="page-content">
-                <!-- Nút Quay lại Menu -->
-                <button class="back-to-menu-btn flex items-center space-x-2 text-gray-600 hover:text-blue-600 transition-colors duration-300 mb-6 group">
-                    <svg class="w-5 h-5 transition-transform duration-300 group-hover:-translate-x-1" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 19l-7-7m0 0l7-7m-7 7h18"></path></svg>
-                    <span class="font-medium">Quay lại Menu</span>
-                </button>
-                <h2 class="text-3xl md:text-4xl font-bold text-gray-800 mb-8">Chọn môn học</h2>
-                <!-- ĐÃ SỬA: grid-cols-2 sm:grid-cols-3 -> grid-cols-2 -->
-                <div class="grid grid-cols-2 gap-6">
-                    <!-- Thẻ Vật lí -->
-                    <div class="subject-card p-6 bg-gradient-to-br from-blue-500 to-blue-600 text-white rounded-xl cursor-pointer" data-subject="vat-li" data-subject-name="Vật lí">
-                        <h3 class="text-xl md:text-2xl font-semibold mb-2">Vật lí</h3>
-                        <p class="font-light">Các định luật Newton, điện học, quang học và hơn thế nữa.</p>
-                    </div>
-                    <!-- Thẻ Sinh học -->
-                    <div class="subject-card p-6 bg-gradient-to-br from-green-500 to-green-600 text-white rounded-xl cursor-pointer" data-subject="sinh-hoc" data-subject-name="Sinh học">
-                        <h3 class="text-xl md:text-2xl font-semibold mb-2">Sinh học</h3>
-                        <p class="font-light">Di truyền, tế bào, hệ sinh thái và quá trình tiến hóa.</p>
-                    </div>
-                    <!-- Thẻ Tin học -->
-                    <div class="subject-card p-6 bg-gradient-to-br from-purple-500 to-purple-600 text-white rounded-xl cursor-pointer" data-subject="tin-hoc" data-subject-name="Tin học">
-                        <h3 class="text-xl md:text-2xl font-semibold mb-2">Tin học</h3>
-                        <p class="font-light">Cấu trúc dữ liệu, giải thuật và lập trình cơ bản.</p>
-                    </div>
-                    <!-- Thẻ Lịch sử -->
-                    <div class="subject-card p-6 bg-gradient-to-br from-yellow-500 to-orange-500 text-white rounded-xl cursor-pointer" data-subject="lich-su" data-subject-name="Lịch sử">
-                        <h3 class="text-xl md:text-2xl font-semibold mb-2">Lịch sử</h3>
-                        <p class="font-light">Các cuộc chiến tranh, cách mạng và các triều đại.</p>
-                    </div>
-                    <!-- THẺ MỚI: Hóa học (ĐÃ XÓA) -->
-                    <!-- THẺ MỚI: Địa lý (ĐÃ XÓA) -->
-                </div>
-            </div>
-
-            <!-- 2b. Trang Chọn Môn Học (Tài liệu) -->
-            <div id="tai-lieu-main" class="page-content">
-                <!-- Nút Quay lại Menu -->
-                <button class="back-to-menu-btn flex items-center space-x-2 text-gray-600 hover:text-blue-600 transition-colors duration-300 mb-6 group">
-                    <svg class="w-5 h-5 transition-transform duration-300 group-hover:-translate-x-1" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 19l-7-7m0 0l7-7m-7 7h18"></path></svg>
-                    <span class="font-medium">Quay lại Menu</span>
-                </button>
-                <h2 class="text-3xl md:text-4xl font-bold text-gray-800 mb-8">Chọn môn học (Tài liệu)</h2>
-                <div class="grid grid-cols-2 gap-6">
-                    <!-- Thẻ Vật lí -->
-                    <div class="subject-card p-6 bg-gradient-to-br from-blue-500 to-blue-600 text-white rounded-xl cursor-pointer" data-subject="vat-li" data-subject-name="Vật lí">
-                        <h3 class="text-xl md:text-2xl font-semibold mb-2">Vật lí</h3>
-                        <p class="font-light">Tổng hợp tài liệu, ghi chú và đề cương môn Vật lí.</p>
-                    </div>
-                    <!-- Thẻ Sinh học -->
-                    <div class="subject-card p-6 bg-gradient-to-br from-green-500 to-green-600 text-white rounded-xl cursor-pointer" data-subject="sinh-hoc" data-subject-name="Sinh học">
-                        <h3 class="text-xl md:text-2xl font-semibold mb-2">Sinh học</h3>
-                        <p class="font-light">Tài liệu về di truyền, tế bào, hệ sinh thái và tiến hóa.</p>
-                    </div>
-                    <!-- Thẻ Tin học -->
-                    <div class="subject-card p-6 bg-gradient-to-br from-purple-500 to-purple-600 text-white rounded-xl cursor-pointer" data-subject="tin-hoc" data-subject-name="Tin học">
-                        <h3 class="text-xl md:text-2xl font-semibold mb-2">Tin học</h3>
-                        <p class="font-light">Tài liệu cấu trúc dữ liệu, giải thuật và lập trình.</p>
-                    </div>
-                    <!-- Thẻ Lịch sử -->
-                    <div class="subject-card p-6 bg-gradient-to-br from-yellow-500 to-orange-500 text-white rounded-xl cursor-pointer" data-subject="lich-su" data-subject-name="Lịch sử">
-                        <h3 class="text-xl md:text-2xl font-semibold mb-2">Lịch sử</h3>
-                        <p class="font-light">Tài liệu các giai đoạn lịch sử và sự kiện quan trọng.</p>
-                    </div>
-                </div>
-            </div>
-
-            <!-- 3. Trang Danh sách Bài thi -->
-            <div id="test-list" class="page-content">
-                <!-- Nút Quay lại -->
-                <button id="back-to-subjects" class="flex items-center space-x-2 text-gray-600 hover:text-blue-600 transition-colors duration-300 mb-6 group">
-                    <svg class="w-5 h-5 transition-transform duration-300 group-hover:-translate-x-1" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 19l-7-7m0 0l7-7m-7 7h18"></path></svg>
-                    <span class="font-medium">Quay lại chọn môn</span>
-                </button>
-                
-                <h2 id="subject-title" class="text-3xl md:text-4xl font-bold text-gray-800 mb-8"></h2>
-                <ul id="test-list-ul" class="space-y-4">
-                    <!-- Danh sách bài thi sẽ được JS chèn vào đây -->
-                </ul>
-            </div>
-            
-            <!-- 4. Trang "Đang phát triển" -->
-            <div id="coming-soon" class="page-content">
-                <!-- Nút Quay lại Menu -->
-                <button class="back-to-menu-btn flex items-center space-x-2 text-gray-600 hover:text-blue-600 transition-colors duration-300 mb-6 group">
-                    <svg class="w-5 h-5 transition-transform duration-300 group-hover:-translate-x-1" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 19l-7-7m0 0l7-7m-7 7h18"></path></svg>
-                    <span class="font-medium">Quay lại Menu</span>
-                </button>
-                <div class="text-center mt-10">
-                    <svg class="w-24 h-24 text-gray-400 mx-auto mb-6" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19.428 15.428a2 2 0 00-1.022-.547l-2.387-.477a6 6 0 00-3.86.517l-.318.158a6 6 0 01-3.86.517L6.05 15.21a2 2 0 00-1.806.547M8 4h8l-1 1v5.172a2 2 0 00.586 1.414l5 5c1.26 1.26.367 3.414-1.415 3.414H4.828c-1.782 0-2.674-2.154-1.414-3.414l5-5A2 2 0 009 10.172V5L8 4z"></path></svg>
-                    <h2 class="text-3xl md:text-4xl font-bold text-gray-800 mb-4">Tính năng đang phát triển</h2>
-                    <p class="text-base md:text-lg text-gray-600">Chúng tôi đang nỗ lực làm việc để sớm ra mắt tính năng này. <br>Vui lòng quay lại sau nhé!</p>
-                </div>
-            </div>
-
-            <!-- 5. TRANG MỚI: Làm bài thi -->
-            <div id="test-page" class="page-content">
-                <!-- Nút Quay lại danh sách bài thi -->
-                <button id="back-to-test-list" class="flex items-center space-x-2 text-gray-600 hover:text-blue-600 transition-colors duration-300 mb-6 group">
-                    <svg class="w-5 h-5 transition-transform duration-300 group-hover:-translate-x-1" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 19l-7-7m0 0l7-7m-7 7h18"></path></svg>
-                    <span class="font-medium">Quay lại danh sách</span>
-                </button>
-                
-                <h2 id="test-title" class="text-2xl md:text-3xl font-bold text-gray-800 mb-6"></h2>
-                
-                <!-- Chỉ báo tải -->
-                <div id="loading-indicator" class="flex flex-col items-center justify-center h-64">
-                    <div id="loading-spinner"></div>
-                    <p class="text-gray-600 mt-4">Đang tạo đề thi cho bạn, vui lòng chờ...</p>
-                </div>
-                
-                <!-- Vùng chứa câu hỏi -->
-                <div id="quiz-container" class="hidden">
-                    <!-- Câu hỏi sẽ được JS chèn vào đây -->
-                </div>
-                
-                <!-- Nút Nộp bài -->
-                <button id="submit-test-btn" class="hidden w-full sm:w-auto text-white bg-blue-600 hover:bg-blue-700 font-medium rounded-lg text-base px-8 py-3 transition-colors duration-300 mt-8">
-                    Nộp bài
-                </button>
-            </div>
-
-            <!-- 6. TRANG MỚI: Kết quả bài thi -->
-            <div id="results-page" class="page-content">
-                <!-- Nút Quay lại danh sách bài thi -->
-                <button id="back-to-test-list-from-results" class="flex items-center space-x-2 text-gray-600 hover:text-blue-600 transition-colors duration-300 mb-6 group">
-                    <svg class="w-5 h-5 transition-transform duration-300 group-hover:-translate-x-1" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 19l-7-7m0 0l7-7m-7 7h18"></path></svg>
-                    <span class="font-medium">Quay lại danh sách</span>
-                </button>
-                
-                <h2 id="results-title" class="text-3xl md:text-4xl font-bold text-gray-800 mb-4">Kết quả</h2>
-                
-                <!-- Hiển thị điểm -->
-                <div id="score-container" class="text-2xl font-bold text-blue-600 bg-blue-50 border border-blue-200 p-6 rounded-lg mb-8">
-                    <!-- Điểm số sẽ được JS chèn vào đây -->
-                </div>
-                
-                <h3 class="text-2xl font-semibold text-gray-800 mb-4">Xem lại bài làm</h3>
-                
-                <!-- Vùng chứa review -->
-                <div id="review-container">
-                    <!-- Review câu trả lời sẽ được JS chèn vào đây -->
-                </div>
-            </div>
-
-        </main>
+    <div class="credits">
+        <p>Designed & Developed by <strong>Trọng Phúc</strong> | From Concept to Content by <strong>Phương Kiều</strong></p>
     </div>
 
-    <script>
-        document.addEventListener('DOMContentLoaded', () => {
-            // --- Hằng số và Biến ---
-            const pages = document.querySelectorAll('.page-content');
-            
-            // Trang 1: Menu
-            const menuCards = document.querySelectorAll('.menu-card');
-            
-            // Trang 2: Chọn môn
-            const backToMenuButtons = document.querySelectorAll('.back-to-menu-btn');
-            const subjectCards = document.querySelectorAll('.subject-card[data-subject]');
-            
-            // Trang 3: Danh sách thi
-            const backToSubjectsButton = document.getElementById('back-to-subjects');
-            const subjectTitleEl = document.getElementById('subject-title');
-            const testListUl = document.getElementById('test-list-ul');
-            
-            // Trang 4: Coming Soon (không cần biến)
-            
-            // Trang 5: Làm bài thi
-            const testPage = document.getElementById('test-page');
-            const backToTestListButton = document.getElementById('back-to-test-list');
-            const testTitleEl = document.getElementById('test-title');
-            const loadingIndicator = document.getElementById('loading-indicator');
-            const quizContainer = document.getElementById('quiz-container');
-            const submitTestBtn = document.getElementById('submit-test-btn');
-            
-            // Trang 6: Kết quả
-            const resultsPage = document.getElementById('results-page');
-            const backToTestListFromResultsButton = document.getElementById('back-to-test-list-from-results');
-            const resultsTitleEl = document.getElementById('results-title');
-            const scoreContainer = document.getElementById('score-container');
-            const reviewContainer = document.getElementById('review-container');
-
-            // Biến trạng thái
-            let currentSubjectName = '';
-            let currentTestName = '';
-            let currentQuizData = []; // Lưu trữ dữ liệu câu hỏi hiện tại
-
-            // --- API và Dữ liệu ---
-
-            // System prompt cho Gemini
-            const systemPrompt = `Bạn là một trợ lý giáo dục chuyên nghiệp, chuyên tạo ra các câu hỏi trắc nghiệm chất lượng cao cho học sinh.
-    
-    QUY TẮC:
-    1.  Luôn luôn trả lời bằng tiếng Việt.
-    2.  Tạo chính xác 5 câu hỏi trắc nghiệm.
-    3.  Mỗi câu hỏi phải có 4 lựa chọn (A, B, C, D).
-    4.  Chỉ có MỘT đáp án đúng.
-    5.  Các lựa chọn phải hợp lý và có tính thử thách.
-    6.  Không được thêm bất kỳ lời giải thích hay lời nói nào ngoài định dạng JSON đã yêu cầu.
-    7.  Giá trị của "answer" phải khớp chính xác (bao gồm cả dấu chấm) với một trong các lựa chọn trong mảng "options".`;
-            
-            // Dữ liệu giả lập cho các bài thi
-            const testData = {
-                'vat-li': ['Đề thi thử THPT QG 2024 - Mã 101', 'Kiểm tra 15 phút - Chương 1: Dao động cơ', 'Đề thi cuối kỳ 1', 'Tổng hợp lý thuyết Sóng ánh sáng'],
-                'sinh-hoc': ['Đề thi THPT QG 2023 - Mã 202', 'Bài tập Di truyền học Mendel', 'Hệ sinh thái và Môi trường', 'Tiến hóa'],
-                'tin-hoc': ['Giải thuật cơ bản (Sorting)', 'Cấu trúc dữ liệu và giải thuật (Nâng cao)', 'Luyện tập Python (Cơ bản)', 'Đề thi Olympic Tin học 30/4'],
-                'lich-su': ['Chiến tranh thế giới thứ 2', 'Lịch sử Việt Nam (1945-1954)', 'Các cuộc cách mạng tư sản', 'Chiến tranh lạnh']
-            };
-
-            // --- Hàm Điều Hướng ---
-
-            // Hàm hiển thị trang
-            function showPage(pageId) {
-                pages.forEach(page => {
-                    page.classList.remove('active');
-                });
-                const targetPage = document.getElementById(pageId);
-                if (targetPage) {
-                    targetPage.classList.add('active');
-                    // Cuộn lên đầu trang
-                    window.scrollTo(0, 0);
-                }
-            }
-
-            // --- Hàm Gọi API (Gemini) ---
-
-            /**
-             * Gọi API Gemini với xử lý retry và backoff.
-             * @param {string} systemPrompt - Hướng dẫn hệ thống cho AI.
-             * @param {string} userQuery - Prompt của người dùng.
-             * @param {object} jsonSchema - Định dạng JSON schema cho đầu ra.
-             * @returns {Promise<object>} - Dữ liệu JSON đã được parse.
-             */
-            async function callGeminiAPI(systemPrompt, userQuery, jsonSchema) {
-                const apiKey = ""; // Canvas sẽ tự động cung cấp
-                const apiUrl = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash-preview-09-2025:generateContent?key=${apiKey}`;
-                
-                const payload = {
-                    contents: [{ parts: [{ text: userQuery }] }],
-                    systemInstruction: {
-                        parts: [{ text: systemPrompt }]
-                    },
-                    generationConfig: {
-                        responseMimeType: "application/json",
-                        responseSchema: jsonSchema,
-                        temperature: 0.7, // Thêm chút sáng tạo cho câu hỏi
-                    }
-                };
-                
-                const maxRetries = 3;
-                let baseDelay = 1000; // 1 giây
-
-                for (let attempt = 1; attempt <= maxRetries; attempt++) {
-                    try {
-                        const response = await fetch(apiUrl, {
-                            method: 'POST',
-                            headers: { 'Content-Type': 'application/json' },
-                            body: JSON.stringify(payload)
-                        });
-
-                        if (!response.ok) {
-                            throw new Error(`HTTP error! status: ${response.status}`);
-                        }
-
-                        const result = await response.json();
-                        
-                        if (result.candidates && result.candidates[0]?.content?.parts?.[0]?.text) {
-                            // API trả về một chuỗi JSON, ta cần parse nó một lần nữa
-                            const jsonText = result.candidates[0].content.parts[0].text;
-                            return JSON.parse(jsonText);
-                        } else {
-                            console.error("Phản hồi API không hợp lệ:", result);
-                            throw new Error("Không nhận được nội dung hợp lệ từ API.");
-                        }
-
-                    } catch (error) {
-                        console.error(`Lỗi API (lần ${attempt}/${maxRetries}):`, error.message);
-                        if (attempt === maxRetries) {
-                            throw error; // Ném lỗi sau lần thử cuối cùng
-                        }
-                        // Chờ trước khi thử lại (exponential backoff)
-                        await new Promise(resolve => setTimeout(resolve, baseDelay));
-                        baseDelay *= 2; // Gấp đôi thời gian chờ
-                    }
-                }
-            }
-
-            // --- Hàm Xử Lý Bài Thi ---
-
-            /**
-             * Bắt đầu quá trình tạo bài thi.
-             * @param {string} subjectName - Tên môn học (Vật lí, Sinh học...).
-             * @param {string} testName - Tên bài thi (Đề thi thử...).
-             */
-            async function generateTest(subjectName, testName) {
-                // Hiển thị trạng thái tải
-                loadingIndicator.style.display = 'flex';
-                quizContainer.innerHTML = ''; // Xóa câu hỏi cũ
-                quizContainer.style.display = 'none';
-                submitTestBtn.style.display = 'none';
-
-                // Định nghĩa JSON schema
-                const schema = {
-                    type: "ARRAY",
-                    items: {
-                        type: "OBJECT",
-                        properties: {
-                            question: { type: "STRING" },
-                            options: {
-                                type: "ARRAY",
-                                items: { type: "STRING" }
-                            },
-                            answer: { type: "STRING" }
-                        },
-                        required: ["question", "options", "answer"]
-                    }
-                };
-
-                // Tạo prompt cho AI
-                const userQuery = `Tạo 5 câu hỏi trắc nghiệm tiếng Việt về chủ đề: "${testName}" của môn "${subjectName}".`;
-
-                try {
-                    // Gọi API
-                    const quizData = await callGeminiAPI(systemPrompt, userQuery, schema);
-                    
-                    if (!quizData || !Array.isArray(quizData) || quizData.length === 0) {
-                         throw new Error("Dữ liệu quiz trả về không hợp lệ.");
-                    }
-
-                    // Lưu dữ liệu và hiển thị quiz
-                    currentQuizData = quizData;
-                    displayQuiz(quizData);
-
-                } catch (error) {
-                    console.error("Không thể tạo bài thi:", error);
-                    quizContainer.innerHTML = `<p class="text-red-600 text-center">Đã xảy ra lỗi khi tạo đề thi. Vui lòng thử lại.</p>`;
-                } finally {
-                    // Ẩn tải và hiển thị nội dung
-                    loadingIndicator.style.display = 'none';
-                    quizContainer.style.display = 'block';
-                    submitTestBtn.style.display = 'block';
-                }
-            }
-
-            /**
-             * Hiển thị các câu hỏi quiz lên giao diện.
-             * @param {Array<object>} quizData - Mảng các đối tượng câu hỏi.
-             */
-            function displayQuiz(quizData) {
-                quizContainer.innerHTML = ''; // Xóa nội dung cũ
-                quizData.forEach((item, index) => {
-                    // Tạo các phần tử HTML cho câu hỏi
-                    const questionDiv = document.createElement('div');
-                    questionDiv.className = 'quiz-question';
-                    // Lưu trữ đáp án đúng vào data attribute
-                    questionDiv.dataset.correctAnswer = item.answer;
-
-                    const questionText = document.createElement('p');
-                    questionText.className = 'question-text';
-                    questionText.textContent = `Câu ${index + 1}: ${item.question}`;
-                    
-                    const optionsContainer = document.createElement('div');
-                    optionsContainer.className = 'options-container';
-
-                    // Tạo các lựa chọn
-                    item.options.forEach((option, optionIndex) => {
-                        const label = document.createElement('label');
-                        const radioInput = document.createElement('input');
-                        radioInput.type = 'radio';
-                        radioInput.name = `question-${index}`;
-                        radioInput.value = option;
-                        
-                        const optionText = document.createElement('span');
-                        optionText.textContent = option;
-                        
-                        label.appendChild(radioInput);
-                        label.appendChild(optionText);
-                        optionsContainer.appendChild(label);
-                    });
-
-                    questionDiv.appendChild(questionText);
-                    questionDiv.appendChild(optionsContainer);
-                    quizContainer.appendChild(questionDiv);
-                });
-            }
-
-            // --- Hàm Xử Lý Kết Quả ---
-
-            /**
-             * Tính toán kết quả khi người dùng nộp bài.
-             */
-            function calculateResults() {
-                const questionElements = quizContainer.querySelectorAll('.quiz-question');
-                let score = 0;
-                
-                reviewContainer.innerHTML = ''; // Xóa review cũ
-                resultsTitleEl.textContent = `Kết quả: ${currentTestName}`;
-
-                questionElements.forEach((questionEl, index) => {
-                    const selectedInput = questionEl.querySelector(`input[name="question-${index}"]:checked`);
-                    const userAnswer = selectedInput ? selectedInput.value : null;
-                    const correctAnswer = questionEl.dataset.correctAnswer;
-                    
-                    const isCorrect = (userAnswer === correctAnswer);
-                    if (isCorrect) {
-                        score++;
-                    }
-
-                    // Hiển thị review cho từng câu
-                    displayReview(index, questionEl, userAnswer, correctAnswer, isCorrect);
-                });
-                
-                // Hiển thị tổng điểm
-                scoreContainer.textContent = `Điểm của bạn: ${score} / ${questionElements.length}`;
-                
-                // Chuyển sang trang kết quả
-                showPage('results-page');
-            }
-
-            /**
-             * Hiển thị review chi tiết cho một câu hỏi.
-             */
-            function displayReview(index, questionEl, userAnswer, correctAnswer, isCorrect) {
-                const reviewItem = document.createElement('div');
-                reviewItem.className = `review-item ${isCorrect ? 'correct' : 'incorrect'}`;
-                
-                // Lấy lại văn bản câu hỏi
-                const questionText = questionEl.querySelector('.question-text').textContent;
-                reviewItem.innerHTML = `<p class="question-text">${questionText}</p>`;
-                
-                const feedbackText = document.createElement('div');
-                feedbackText.className = 'feedback-text';
-                
-                if (isCorrect) {
-                    feedbackText.innerHTML = `<p class="correct-answer">Bạn đã trả lời đúng!</p>
-                                          <p>Đáp án: ${correctAnswer}</p>`;
-                } else {
-                    feedbackText.innerHTML = `<p class="incorrect-answer">Bạn đã trả lời sai!</p>
-                                          <p>Bạn chọn: ${userAnswer || 'Không chọn'}</p>
-                                          <p class="correct-answer">Đáp án đúng: ${correctAnswer}</p>`;
-                }
-                
-                reviewItem.appendChild(feedbackText);
-                reviewContainer.appendChild(reviewItem);
-            }
-
-            // --- Gán Sự Kiện ---
-
-            // Trang 1: Menu -> Trang 2 (Chọn môn) hoặc 4 (Coming Soon)
-            menuCards.forEach(card => {
-                card.addEventListener('click', (e) => {
-                    e.preventDefault();
-                    card.classList.add('clicked');
-                    setTimeout(() => {
-                        card.classList.remove('clicked');
-                    }, 350);
-                    const externalLink = card.dataset.link;
-                    if (externalLink) {
-                        window.location.href = externalLink;
-                        return;
-                    }
-                    const targetId = card.dataset.target;
-                    if (targetId) {
-                        showPage(targetId);
-                    }
-                });
-            });
-
-            // Trang 2 & 2b: Chọn môn -> Trang Coming Soon (tạm thời chưa có nội dung chi tiết)
-            subjectCards.forEach(card => {
-                card.addEventListener('click', () => {
-                    showPage('coming-soon');
-                });
-            });
-
-            // --- Tìm kiếm nhanh trên toàn website ---
-            const globalSearchInput = document.getElementById('global-search-input');
-            const globalSearchResults = document.getElementById('global-search-results');
-
-            function clearSearchHighlights() {
-                const highlighted = document.querySelectorAll('.search-highlight-ring');
-                highlighted.forEach(el => {
-                    el.classList.remove('search-highlight-ring', 'ring-2', 'ring-blue-400', 'ring-offset-2');
-                });
-            }
-
-            function performGlobalSearch(query) {
-                clearSearchHighlights();
-                if (!globalSearchResults) return;
-                globalSearchResults.innerHTML = '';
-
-                const trimmed = (query || '').trim();
-                if (!trimmed) return;
-
-                const q = trimmed.toLowerCase();
-                const candidates = document.querySelectorAll('h1,h2,h3,h4,p,span,button');
-                const results = [];
-
-                candidates.forEach(el => {
-                    const text = (el.textContent || '').trim();
-                    if (!text) return;
-                    if (text.toLowerCase().includes(q)) {
-                        results.push({ el, text });
-                    }
-                });
-
-                if (results.length === 0) {
-                    const noResult = document.createElement('p');
-                    noResult.className = 'text-gray-500';
-                    noResult.textContent = 'Không tìm thấy kết quả phù hợp.';
-                    globalSearchResults.appendChild(noResult);
-                    return;
-                }
-
-                const maxResults = 10;
-                results.slice(0, maxResults).forEach((item, index) => {
-                    const resultBtn = document.createElement('button');
-                    resultBtn.type = 'button';
-                    resultBtn.className = 'w-full text-left px-3 py-2 bg-gray-50 hover:bg-gray-100 border border-gray-200 rounded-md transition-colors duration-150';
-
-                    const preview = item.text.length > 120 ? item.text.slice(0, 117) + '...' : item.text;
-
-                    // Xác định "địa chỉ" (trang) chứa kết quả
-                    const hostPage = item.el.closest('.page-content');
-                    let pageLabel = '';
-                    if (hostPage) {
-                        const heading = hostPage.querySelector('h1, h2, h3');
-                        pageLabel = heading ? heading.textContent.trim() : hostPage.id;
-                    }
-
-                    resultBtn.innerHTML = `
-                        <div class="text-xs text-blue-600 mb-0.5">[${pageLabel || 'Trang'}]</div>
-                        <div>${preview}</div>
-                    `;
-
-                    resultBtn.addEventListener('click', () => {
-                        const hostPage = item.el.closest('.page-content');
-                        if (hostPage && hostPage.id) {
-                            showPage(hostPage.id);
-                        }
-                        item.el.scrollIntoView({ behavior: 'smooth', block: 'center' });
-                        item.el.classList.add('search-highlight-ring', 'ring-2', 'ring-blue-400', 'ring-offset-2');
-                        setTimeout(() => {
-                            item.el.classList.remove('search-highlight-ring', 'ring-2', 'ring-blue-400', 'ring-offset-2');
-                        }, 2000);
-                    });
-
-                    globalSearchResults.appendChild(resultBtn);
-                });
-
-                if (results.length > maxResults) {
-                    const more = document.createElement('p');
-                    more.className = 'text-xs text-gray-500';
-                    more.textContent = `Hiển thị ${maxResults}/${results.length} kết quả. Hãy dùng từ khóa cụ thể hơn để thu hẹp kết quả.`;
-                    globalSearchResults.appendChild(more);
-                }
-            }
-
-            let searchTimeout;
-            if (globalSearchInput) {
-                // Tìm kiếm theo thời gian thực khi người dùng nhập (debounce)
-                globalSearchInput.addEventListener('input', (e) => {
-                    const value = globalSearchInput.value;
-                    clearTimeout(searchTimeout);
-                    searchTimeout = setTimeout(() => {
-                        performGlobalSearch(value);
-                    }, 250);
-                });
-
-                // Vẫn cho phép nhấn Enter để tìm ngay lập tức
-                globalSearchInput.addEventListener('keydown', (e) => {
-                    if (e.key === 'Enter') {
-                        performGlobalSearch(globalSearchInput.value);
-                    }
-                });
-            }
-            
-            // --- Các Nút Quay Lại ---
-
-            // Quay lại Menu (từ Trang 2 hoặc 4)
-            backToMenuButtons.forEach(button => {
-                button.addEventListener('click', () => {
-                    showPage('menu-cards');
-                });
-            });
-
-            // Quay lại Chọn Môn (từ Trang 3)
-            backToSubjectsButton.addEventListener('click', () => {
-                showPage('on-thi-main');
-            });
-            
-            // Quay lại Danh sách thi (từ Trang 5)
-            backToTestListButton.addEventListener('click', () => {
-                // Thêm xác nhận nếu người dùng đang làm bài
-                if (confirm('Bạn có chắc muốn thoát? Mọi tiến trình làm bài sẽ bị mất.')) {
-                    showPage('test-list');
-                    currentQuizData = []; // Xóa dữ liệu bài thi cũ
-                }
-            });
-
-            // Quay lại Danh sách thi (từ Trang 6)
-            backToTestListFromResultsButton.addEventListener('click', () => {
-                showPage('test-list');
-            });
-
-            // --- Khởi động ---
-            showPage('menu-cards');
-
-        });
-    </script>
+    <!-- LOGIC FIREBASE -->
     <script type="module">
-        import { initGatekeeper, onUserChange, logoutUser } from "../gatekeeper.js";
-        initGatekeeper('protected');
-        const accInfo = document.getElementById('account-info');
-        const accName = document.getElementById('acc-name');
-        const accEmail = document.getElementById('acc-email');
-        const accAvatar = document.getElementById('acc-avatar');
-        const accLogout = document.getElementById('acc-logout');
-        if (accLogout) accLogout.addEventListener('click', () => logoutUser());
-        onUserChange((user) => {
-            if (!user) { if (accInfo) accInfo.classList.add('hidden'); return; }
-            if (accInfo) accInfo.classList.remove('hidden');
-            if (accName) accName.textContent = user.displayName || 'Người dùng';
-            if (accEmail) accEmail.textContent = user.email || '';
-            if (accAvatar) accAvatar.src = user.photoURL || '../favicon.png';
-        });
+        import { initGatekeeper, loginWithGoogle } from "./gatekeeper.js";
+        initGatekeeper('login');
+        const btn = document.getElementById('btnLogin');
+        if (btn) btn.addEventListener('click', loginWithGoogle);
     </script>
-
 </body>
 </html>
-<script type="module">
-    import { initGatekeeper } from "../gatekeeper.js";
-    initGatekeeper('protected');
-</script>
+
+
+
