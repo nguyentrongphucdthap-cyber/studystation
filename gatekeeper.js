@@ -42,6 +42,19 @@ function hasValidEntryToken(maxAgeMs = 300000) {
     } catch { return false; }
 }
 
+function getProjectRoot() {
+    try {
+        const parts = location.pathname.split('/').filter(Boolean);
+        return parts.length ? `/${parts[0]}/` : '/';
+    } catch { return '/'; }
+}
+
+function toProjectUrl(relPath) {
+    const root = getProjectRoot();
+    const clean = String(relPath || '').replace(/^\/+/, '');
+    return root + clean;
+}
+
 // --- CÁC HÀM HỖ TRỢ ---
 
 // Hàm đăng nhập (Dùng cho trang Login)
@@ -100,10 +113,10 @@ export function initGatekeeper(type = 'protected') {
                     });
                     localStorage.setItem('my_session_id', newSession);
                     setEntryToken();
-                    window.location.href = 'content/index.html';
+                    window.location.href = toProjectUrl('content/index.html');
                 } else if (isProtected) {
                     if (!hasValidEntryToken()) {
-                        window.location.href = "/index.html";
+                        window.location.href = toProjectUrl('index.html');
                         return;
                     }
                     // Nếu ở trang được bảo vệ, xác thực session
@@ -130,14 +143,14 @@ export function initGatekeeper(type = 'protected') {
                 alert(error.message);
                 document.body.innerHTML = '<h1>Lỗi xác thực. Đang chuyển hướng...</h1>';
                 await signOut(auth);
-                setTimeout(() => { window.location.href = "/index.html"; }, 2000);
+                setTimeout(() => { window.location.href = toProjectUrl('index.html'); }, 2000);
             }
         } else {
             // === CHƯA LOGIN ===
             if (isProtected) {
                 // Xóa trắng nội dung và chuyển hướng về trang login
                 document.body.innerHTML = '';
-                window.location.href = "/index.html";
+                window.location.href = toProjectUrl('index.html');
             } else {
                 // Ở trang login, chỉ cần đảm bảo nội dung được hiển thị
                 document.body.style.visibility = 'visible';
