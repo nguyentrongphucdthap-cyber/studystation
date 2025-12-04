@@ -1,119 +1,177 @@
+/* Sử dụng font Be Vietnam Pro làm font chữ mặc định */
 body {
     font-family: 'Be Vietnam Pro', sans-serif;
-    overflow-x: hidden;
-    touch-action: pan-y;
-    -webkit-tap-highlight-color: transparent;
 }
 
-/* View Transitions */
-.view-enter {
-    animation: slideUpFade 0.4s cubic-bezier(0.16, 1, 0.3, 1);
+/* Định nghĩa hiệu ứng chuyển cảnh (fade-in và trượt lên) */
+.page-content {
+    display: none; /* Ẩn tất cả các trang theo mặc định */
+    animation: pageFadeIn 0.5s cubic-bezier(0.25, 0.46, 0.45, 0.94) forwards;
 }
 
-@keyframes slideUpFade {
-    from { opacity: 0; transform: translateY(20px); }
-    to { opacity: 1; transform: translateY(0); }
+.page-content.active {
+    display: block; /* Hiển thị trang đang hoạt động */
 }
 
-/* Button Interactions */
-.btn-press {
-    transition: transform 0.1s ease, background-color 0.2s, border-color 0.2s;
-}
-.btn-press:active {
-    transform: scale(0.95);
-}
-
-/* 3D Flip & Card Styles */
-.perspective-1000 { perspective: 1000px; }
-.preserve-3d { transform-style: preserve-3d; }
-.backface-hidden { backface-visibility: hidden; -webkit-backface-visibility: hidden; }
-.rotate-y-180 { transform: rotateY(180deg); }
-
-/* Dragging Classes */
-.cursor-grab { cursor: grab; }
-.cursor-grabbing { cursor: grabbing; }
-
-.card-transition {
-    transition: transform 0.5s cubic-bezier(0.2, 0.8, 0.2, 1), opacity 0.5s;
-}
-.no-transition {
-    transition: none !important;
+@keyframes pageFadeIn {
+    from {
+        opacity: 0;
+        transform: translateY(20px);
+    }
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
 }
 
-/* Game Animations (Match & Learn) */
-.anim-correct {
-    animation: pulseGreen 0.5s ease;
-    background-color: #dcfce7 !important;
-    border-color: #22c55e !important;
-    color: #15803d !important;
+/* Hiệu ứng hover mượt mà cho các nút môn học */
+.subject-card {
+    transition: transform 0.3s ease, box-shadow 0.3s ease;
 }
-.anim-wrong {
-    animation: shake 0.4s ease;
-    background-color: #fee2e2 !important;
-    border-color: #ef4444 !important;
-    color: #b91c1c !important;
+.subject-card:hover {
+    transform: translateY(-5px);
+    box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05);
 }
-
-/* Dark Mode Overrides for Games */
-html.dark .anim-correct {
-    background-color: #064e3b !important; /* emerald-900 */
-    border-color: #10b981 !important; /* emerald-500 */
-    color: #ecfdf5 !important; /* emerald-50 */
+.menu-card {
+    transition: transform 0.3s ease, box-shadow 0.3s ease;
 }
-html.dark .anim-wrong {
-    background-color: #7f1d1d !important; /* red-900 */
-    border-color: #ef4444 !important; /* red-500 */
-    color: #fef2f2 !important; /* red-50 */
+.menu-card.clicked {
+    animation: cardClick 0.35s ease;
 }
-
-@keyframes pulseGreen {
+@keyframes cardClick {
     0% { transform: scale(1); }
-    50% { transform: scale(1.02); }
+    40% { transform: scale(0.95); }
     100% { transform: scale(1); }
 }
-@keyframes shake {
-    0%, 100% { transform: translateX(0); }
-    25% { transform: translateX(-5px); }
-    75% { transform: translateX(5px); }
+
+/* --- CSS MỚI CHO TRANG LÀM BÀI --- */
+
+/* Loading Spinner */
+@keyframes spin {
+    to { transform: rotate(360deg); }
+}
+#loading-indicator {
+    width: 50px;
+    height: 50px;
+    border: 5px solid #f3f3f3;
+    border-top: 5px solid #3498db;
+    border-radius: 50%;
+    animation: spin 1s linear infinite;
 }
 
-/* Toggle Switch */
-.toggle-checkbox:checked {
-    right: 0;
-    border-color: #6366f1;
+/* Kiểu dáng câu hỏi */
+.quiz-question {
+    background-color: #f9fafb; /* bg-gray-50 */
+    padding: 1rem; /* p-4 for mobile */
+    border-radius: 0.75rem; /* rounded-lg */
+    margin-bottom: 1.5rem; /* mb-6 */
+    border: 1px solid #e5e7eb; /* border border-gray-200 */
 }
-.toggle-checkbox:checked + .toggle-label {
-    background-color: #6366f1;
+.question-text {
+    font-size: 1rem; /* text-base for mobile */
+    font-weight: 600; /* font-semibold */
+    margin-bottom: 1rem; /* mb-4 */
+    color: #1f2937; /* text-gray-800 */
+}
+.options-container label {
+    display: block;
+    padding: 0.75rem; /* p-3 for mobile */
+    background-color: #ffffff; /* bg-white */
+    border: 1px solid #d1d5db; /* border border-gray-300 */
+    border-radius: 0.5rem; /* rounded-md */
+    margin-bottom: 0.75rem; /* mb-3 */
+    cursor: pointer;
+    transition: border-color 0.2s ease, background-color 0.2s ease;
+}
+.options-container label:hover {
+    background-color: #f9fafb; /* hover:bg-gray-50 */
+}
+.options-container input[type="radio"]:checked + span {
+     font-weight: 600; /* font-semibold */
+     color: #2563eb; /* text-blue-600 */
+}
+ .options-container label input {
+     margin-right: 0.75rem; /* mr-3 */
+ }
+
+/* --- CSS MỚI CHO TRANG KẾT QUẢ --- */
+.review-item {
+    border: 1px solid #e5e7eb; /* border border-gray-200 */
+    border-radius: 0.75rem; /* rounded-lg */
+    padding: 1rem; /* p-4 for mobile */
+    margin-bottom: 1rem; /* mb-4 */
+}
+.review-item.correct {
+    background-color: #f0fdf4; /* bg-green-50 */
+    border-color: #bbf7d0; /* border-green-200 */
+}
+.review-item.incorrect {
+    background-color: #fef2f2; /* bg-red-50 */
+    border-color: #fecaca; /* border-red-200 */
+}
+.feedback-text {
+    font-weight: 600; /* font-semibold */
+    margin-top: 0.75rem; /* mt-3 */
+    padding-top: 0.75rem; /* pt-3 */
+    border-top: 1px solid #e5e7eb; /* border-t border-gray-200 */
+}
+.correct-answer {
+    color: #16a34a; /* text-green-600 */
+}
+.incorrect-answer {
+     color: #dc2626; /* text-red-600 */
 }
 
-/* Hide Scrollbar */
-.no-scrollbar::-webkit-scrollbar { display: none; }
-.no-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
+/* --- CSS CHO MENU TÀI KHOẢN (MỚI) --- */
 
-/* Music panel custom scrollbar */
-.music-scroll {
-    scrollbar-width: thin;
-    scrollbar-color: #c7d2fe transparent; /* thumb track */
+/* Hiệu ứng Dropdown Desktop */
+.user-dropdown-menu {
+    transform-origin: top right;
+    transition: all 0.2s ease-out;
+    opacity: 0;
+    transform: scale(0.95) translateY(-10px);
+    pointer-events: none;
+    display: none; /* Thêm display none để ẩn hoàn toàn */
 }
-.music-scroll::-webkit-scrollbar {
-    width: 6px;
+
+.user-dropdown-menu.show {
+    display: block; /* Hiện block trước khi chạy animation */
+    opacity: 1;
+    transform: scale(1) translateY(0);
+    pointer-events: auto;
 }
-.music-scroll::-webkit-scrollbar-track {
-    background: transparent;
+
+/* Hiệu ứng Mobile Sheet */
+.mobile-sheet-content {
+    transition: transform 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+    transform: translateY(100%);
 }
-.music-scroll::-webkit-scrollbar-thumb {
-    background-color: #c7d2fe; /* indigo-200 */
-    border-radius: 999px;
+.mobile-sheet-backdrop {
+    transition: opacity 0.3s ease;
+    opacity: 0;
+    pointer-events: none;
 }
-.music-scroll::-webkit-scrollbar-thumb:hover {
-    background-color: #818cf8; /* indigo-400 */
+
+.mobile-sheet.open .mobile-sheet-content {
+    transform: translateY(0);
 }
-html.dark .music-scroll {
-    scrollbar-color: #4f46e5 transparent; /* indigo-600 */
+.mobile-sheet.open .mobile-sheet-backdrop {
+    opacity: 1;
+    pointer-events: auto;
 }
-html.dark .music-scroll::-webkit-scrollbar-thumb {
-    background-color: #4f46e5;
-}
-html.dark .music-scroll::-webkit-scrollbar-thumb:hover {
-    background-color: #818cf8;
+
+/* Media query cho màn hình lớn hơn */
+@media (min-width: 640px) {
+    .quiz-question {
+        padding: 1.5rem; /* p-6 */
+    }
+    .question-text {
+        font-size: 1.125rem; /* text-lg */
+    }
+    .options-container label {
+        padding: 0.75rem 1rem; /* p-3 px-4 */
+    }
+    .review-item {
+        padding: 1rem; /* p-4 */
+    }
 }
