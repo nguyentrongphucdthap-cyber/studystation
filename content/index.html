@@ -159,22 +159,39 @@
                     <h1 class="text-3xl md:text-4xl font-bold text-gray-800">
                         Study<span class="text-blue-400">Staion</span>
                     </h1>
-                    <div class="flex items-center gap-3 mt-2 md:mt-0">
-                        <p class="text-base md:text-lg text-gray-600">Xin chào, hãy chọn một mục để bắt đầu!</p>
-                        <div id="account-info" class="hidden md:flex items-center gap-3">
-                            <button id="acc-avatar-btn" class="rounded-full focus:outline-none">
-                                <img id="acc-avatar" class="w-8 h-8 rounded-full" alt="avatar">
-                            </button>
-                            <div id="acc-details" class="hidden items-center gap-3 bg-gray-50 border border-gray-200 rounded-xl px-3 py-2">
-                                <div class="leading-tight">
-                                    <div id="acc-name" class="text-sm font-semibold text-gray-800"></div>
-                                    <div id="acc-email" class="text-xs text-gray-600"></div>
-                                </div>
-                                <button id="acc-logout" class="text-xs bg-red-600 hover:bg-red-700 text-white px-3 py-1 rounded-lg">Đăng xuất</button>
+                <div class="flex items-center gap-3 mt-2 md:mt-0">
+                    <p class="text-base md:text-lg text-gray-600">Xin chào, hãy chọn một mục để bắt đầu!</p>
+                    <button id="acc-mobile-btn" class="md:hidden rounded-full focus:outline-none">
+                        <img id="acc-mobile-avatar" class="w-8 h-8 rounded-full" alt="avatar">
+                    </button>
+                    <div id="account-info" class="hidden md:flex items-center gap-3">
+                        <button id="acc-avatar-btn" class="rounded-full focus:outline-none">
+                            <img id="acc-avatar" class="w-8 h-8 rounded-full" alt="avatar">
+                        </button>
+                        <div id="acc-details" class="hidden items-center gap-3 bg-gray-50 border border-gray-200 rounded-xl px-3 py-2">
+                            <div class="leading-tight">
+                                <div id="acc-name" class="text-sm font-semibold text-gray-800"></div>
+                                <div id="acc-email" class="text-xs text-gray-600"></div>
                             </div>
+                            <button id="acc-logout" class="text-xs bg-red-600 hover:bg-red-700 text-white px-3 py-1 rounded-lg">Đăng xuất</button>
                         </div>
                     </div>
                 </div>
+            </div>
+
+            <div id="acc-mobile-sheet" class="fixed inset-0 md:hidden hidden z-50">
+                <div id="acc-mobile-backdrop" class="absolute inset-0 bg-black/40"></div>
+                <div class="absolute bottom-0 left-0 right-0 bg-white border-t border-gray-200 rounded-t-2xl p-4 shadow-xl">
+                    <div class="flex items-center gap-3 mb-3">
+                        <img id="acc-mobile-avatar-sheet" class="w-10 h-10 rounded-full" alt="avatar">
+                        <div class="leading-tight">
+                            <div id="acc-mobile-name" class="text-sm font-semibold text-gray-800"></div>
+                            <div id="acc-mobile-email" class="text-xs text-gray-600"></div>
+                        </div>
+                    </div>
+                    <button id="acc-mobile-logout" class="w-full bg-red-600 hover:bg-red-700 text-white px-4 py-2 rounded-lg text-sm">Đăng xuất</button>
+                </div>
+            </div>
 
                 <!-- Tìm kiếm nhanh -->
                 <div class="w-full mb-6 flex justify-center">
@@ -867,6 +884,14 @@
         const accLogout = document.getElementById('acc-logout');
         const accDetails = document.getElementById('acc-details');
         const accAvatarBtn = document.getElementById('acc-avatar-btn');
+        const accMobileBtn = document.getElementById('acc-mobile-btn');
+        const accMobileSheet = document.getElementById('acc-mobile-sheet');
+        const accMobileBackdrop = document.getElementById('acc-mobile-backdrop');
+        const accMobileName = document.getElementById('acc-mobile-name');
+        const accMobileEmail = document.getElementById('acc-mobile-email');
+        const accMobileAvatarBtnImg = document.getElementById('acc-mobile-avatar');
+        const accMobileAvatarSheetImg = document.getElementById('acc-mobile-avatar-sheet');
+        const accMobileLogout = document.getElementById('acc-mobile-logout');
         if (accLogout) accLogout.addEventListener('click', () => logoutUser());
         if (accAvatarBtn) accAvatarBtn.addEventListener('click', (e) => {
             e.stopPropagation();
@@ -877,13 +902,40 @@
             if (!accDetails || !accInfo) return;
             if (!accInfo.contains(e.target)) accDetails.classList.add('hidden');
         });
+        if (accMobileBtn && accMobileSheet) {
+            accMobileBtn.addEventListener('click', () => {
+                accMobileSheet.classList.remove('hidden');
+            });
+        }
+        if (accMobileBackdrop && accMobileSheet) {
+            accMobileBackdrop.addEventListener('click', () => {
+                accMobileSheet.classList.add('hidden');
+            });
+        }
+        if (accMobileLogout) {
+            accMobileLogout.addEventListener('click', () => {
+                logoutUser();
+                if (accMobileSheet) accMobileSheet.classList.add('hidden');
+            });
+        }
         onUserChange((user) => {
-            if (!user) { if (accInfo) accInfo.classList.add('hidden'); return; }
+            if (!user) {
+                if (accInfo) accInfo.classList.add('hidden');
+                if (accMobileBtn) accMobileBtn.classList.add('hidden');
+                if (accMobileSheet) accMobileSheet.classList.add('hidden');
+                return;
+            }
             if (accInfo) accInfo.classList.remove('hidden');
             if (accName) accName.textContent = user.displayName || 'Người dùng';
             if (accEmail) accEmail.textContent = user.email || '';
             if (accAvatar) accAvatar.src = user.photoURL || '../favicon.png';
             if (accDetails) accDetails.classList.add('hidden');
+            if (accMobileBtn) accMobileBtn.classList.remove('hidden');
+            if (accMobileName) accMobileName.textContent = user.displayName || 'Người dùng';
+            if (accMobileEmail) accMobileEmail.textContent = user.email || '';
+            const fallback = '../favicon.png';
+            if (accMobileAvatarBtnImg) accMobileAvatarBtnImg.src = user.photoURL || fallback;
+            if (accMobileAvatarSheetImg) accMobileAvatarSheetImg.src = user.photoURL || fallback;
         });
     </script>
 
