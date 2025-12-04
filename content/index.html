@@ -102,78 +102,74 @@
             
             <!-- 1. Trang Menu Thẻ (Hub Trung Tâm) -->
             <div id="menu-cards" class="page-content active">
-                <!-- Header đã được tối ưu hóa cho Mobile: Cùng 1 hàng, ẩn text "Xin chào" trên mobile -->
+                <!-- Header -->
                 <div class="flex flex-row items-center justify-between mb-6">
                     <h1 class="text-2xl md:text-4xl font-bold text-gray-800">
                         Study<span class="text-blue-400">Station</span>
                     </h1>
-                <div class="flex items-center gap-3 relative">
-                    <!-- Text "Xin chào" chỉ hiện trên màn hình md trở lên -->
-                    <p class="hidden md:block text-base md:text-lg text-gray-600 mr-2">Xin chào!</p>
                     
-                    <!-- Mobile Account Button -->
-                    <button id="acc-mobile-btn" class="md:hidden rounded-full focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2">
-                        <img id="acc-mobile-avatar" class="w-8 h-8 rounded-full border border-gray-200" alt="avatar">
-                    </button>
-
-                    <!-- Desktop Account Dropdown -->
-                    <div id="account-info" class="hidden md:block relative">
-                        <button id="acc-avatar-btn" class="flex items-center gap-2 rounded-full focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 transition-all" aria-expanded="false" aria-haspopup="true">
-                            <img id="acc-avatar" class="w-9 h-9 rounded-full border border-gray-200" alt="avatar">
-                        </button>
+                    <div class="flex items-center gap-3 relative">
+                        <!-- Text "Xin chào" chỉ hiện trên màn hình md trở lên -->
+                        <p class="hidden md:block text-base md:text-lg text-gray-600 mr-2">Xin chào!</p>
                         
-                        <!-- Dropdown Menu -->
-                        <div id="acc-dropdown" class="hidden absolute right-0 z-20 mt-2 w-56 origin-top-right rounded-xl bg-white shadow-xl ring-1 ring-black ring-opacity-5 focus:outline-none transform transition-all duration-200">
-                            <div class="px-4 py-3 border-b border-gray-100 bg-gray-50 rounded-t-xl">
-                                <p class="text-sm text-gray-500">Đăng nhập với tên</p>
-                                <p id="acc-name" class="text-sm font-bold text-gray-900 truncate">User Name</p>
-                                <p id="acc-email" class="text-xs text-gray-500 truncate mt-0.5">email@example.com</p>
-                            </div>
-                            <div class="py-1">
-                                <a href="#" class="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-50 hover:text-blue-600 transition-colors">
-                                    Hồ sơ cá nhân
-                                </a>
-                                <a href="#" class="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-50 hover:text-blue-600 transition-colors">
-                                    Cài đặt
-                                </a>
-                            </div>
-                            <div class="py-1 border-t border-gray-100">
-                                <button id="acc-logout" class="block w-full text-left px-4 py-2 text-sm text-red-600 hover:bg-red-50 transition-colors rounded-b-xl">
-                                    Đăng xuất
-                                </button>
+                        <!-- Unified Account Button (Hiển thị trên mọi thiết bị) -->
+                        <div id="account-info" class="relative">
+                            <button id="acc-avatar-btn" class="flex items-center gap-2 rounded-full focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 transition-all" aria-expanded="false" aria-haspopup="true">
+                                <img id="acc-avatar" class="w-9 h-9 rounded-full border border-gray-200" alt="avatar">
+                            </button>
+                            
+                            <!-- Dropdown Menu (Chỉ dùng cho Desktop logic) -->
+                            <div id="acc-dropdown" class="hidden absolute right-0 z-20 mt-2 w-56 origin-top-right rounded-xl bg-white shadow-xl ring-1 ring-black ring-opacity-5 focus:outline-none transform transition-all duration-200">
+                                <div class="px-4 py-3 border-b border-gray-100 bg-gray-50 rounded-t-xl">
+                                    <p class="text-sm text-gray-500">Đăng nhập với tên</p>
+                                    <p id="acc-name" class="text-sm font-bold text-gray-900 truncate">User Name</p>
+                                    <p id="acc-email" class="text-xs text-gray-500 truncate mt-0.5">email@example.com</p>
+                                </div>
+                                <div class="py-1">
+                                    <a href="#" class="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-50 hover:text-blue-600 transition-colors">
+                                        Hồ sơ cá nhân
+                                    </a>
+                                    <a href="#" class="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-50 hover:text-blue-600 transition-colors">
+                                        Cài đặt
+                                    </a>
+                                </div>
+                                <div class="py-1 border-t border-gray-100">
+                                    <button id="acc-logout" class="block w-full text-left px-4 py-2 text-sm text-red-600 hover:bg-red-50 transition-colors rounded-b-xl">
+                                        Đăng xuất
+                                    </button>
+                                </div>
                             </div>
                         </div>
                     </div>
                 </div>
-            </div>
 
-            <!-- Mobile Account Sheet -->
-            <div id="acc-mobile-sheet" class="fixed inset-0 md:hidden hidden z-50">
-                <div id="acc-mobile-backdrop" class="absolute inset-0 bg-black/40 backdrop-blur-sm transition-opacity"></div>
-                <div class="absolute bottom-0 left-0 right-0 bg-white rounded-t-2xl p-5 shadow-2xl transform transition-transform duration-300 ease-out">
-                    <div class="flex items-center justify-center mb-2">
-                         <div class="w-12 h-1.5 bg-gray-300 rounded-full"></div>
-                    </div>
-                    <div class="flex items-center gap-4 mb-6 mt-4">
-                        <img id="acc-mobile-avatar-sheet" class="w-14 h-14 rounded-full border-2 border-blue-100" alt="avatar">
-                        <div class="leading-tight overflow-hidden">
-                            <div id="acc-mobile-name" class="text-lg font-bold text-gray-800 truncate"></div>
-                            <div id="acc-mobile-email" class="text-sm text-gray-500 truncate"></div>
+                <!-- Mobile Account Sheet (Chỉ hiện khi gọi bằng JS trên mobile) -->
+                <div id="acc-mobile-sheet" class="fixed inset-0 hidden z-50">
+                    <div id="acc-mobile-backdrop" class="absolute inset-0 bg-black/40 backdrop-blur-sm transition-opacity"></div>
+                    <div class="absolute bottom-0 left-0 right-0 bg-white rounded-t-2xl p-5 shadow-2xl transform transition-transform duration-300 ease-out">
+                        <div class="flex items-center justify-center mb-2">
+                             <div class="w-12 h-1.5 bg-gray-300 rounded-full"></div>
+                        </div>
+                        <div class="flex items-center gap-4 mb-6 mt-4">
+                            <img id="acc-mobile-avatar-sheet" class="w-14 h-14 rounded-full border-2 border-blue-100" alt="avatar">
+                            <div class="leading-tight overflow-hidden">
+                                <div id="acc-mobile-name" class="text-lg font-bold text-gray-800 truncate"></div>
+                                <div id="acc-mobile-email" class="text-sm text-gray-500 truncate"></div>
+                            </div>
+                        </div>
+                        <hr class="border-gray-100 mb-4">
+                        <div class="space-y-2">
+                            <button class="w-full flex items-center gap-3 px-4 py-3 text-gray-700 bg-gray-50 hover:bg-gray-100 rounded-xl transition-colors">
+                                <svg class="w-5 h-5 text-gray-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z"></path></svg>
+                                Hồ sơ cá nhân
+                            </button>
+                            <button id="acc-mobile-logout" class="w-full flex items-center gap-3 px-4 py-3 text-red-600 bg-red-50 hover:bg-red-100 rounded-xl transition-colors font-medium">
+                                <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1"></path></svg>
+                                Đăng xuất
+                            </button>
                         </div>
                     </div>
-                    <hr class="border-gray-100 mb-4">
-                    <div class="space-y-2">
-                        <button class="w-full flex items-center gap-3 px-4 py-3 text-gray-700 bg-gray-50 hover:bg-gray-100 rounded-xl transition-colors">
-                            <svg class="w-5 h-5 text-gray-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z"></path></svg>
-                            Hồ sơ cá nhân
-                        </button>
-                        <button id="acc-mobile-logout" class="w-full flex items-center gap-3 px-4 py-3 text-red-600 bg-red-50 hover:bg-red-100 rounded-xl transition-colors font-medium">
-                            <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1"></path></svg>
-                            Đăng xuất
-                        </button>
-                    </div>
                 </div>
-            </div>
 
                 <!-- Tìm kiếm nhanh -->
                 <div class="w-full mb-6 flex justify-center">
@@ -258,7 +254,7 @@
                 </div>
             </div>
 
-            <!-- 2. Trang Chọn Môn Học (Ôn thi) - Không còn sử dụng nhưng giữ lại cấu trúc nếu cần -->
+            <!-- 2. Trang Chọn Môn Học (Ôn thi) -->
             <div id="on-thi-main" class="page-content">
                 <!-- Nút Quay lại Menu -->
                 <button class="back-to-menu-btn flex items-center space-x-2 text-gray-600 hover:text-blue-600 transition-colors duration-300 mb-6 group">
@@ -294,7 +290,7 @@
                 </div>
             </div>
 
-            <!-- 2b. Trang Chọn Môn Học (Tài liệu) - Điều hướng đến File -->
+            <!-- 2b. Trang Chọn Môn Học (Tài liệu) -->
             <div id="tai-lieu-main" class="page-content">
                 <!-- Nút Quay lại Menu -->
                 <button class="back-to-menu-btn flex items-center space-x-2 text-gray-600 hover:text-blue-600 transition-colors duration-300 mb-6 group">
@@ -358,43 +354,72 @@
             // Trang 2: Chọn môn
             const backToMenuButtons = document.querySelectorAll('.back-to-menu-btn');
 
-            // Account Dropdown Logic
+            // Account Logic
             const accAvatarBtn = document.getElementById('acc-avatar-btn');
             const accDropdown = document.getElementById('acc-dropdown');
             const accInfo = document.getElementById('account-info');
-
-            // Xử lý sự kiện Dropdown Tài khoản (Desktop)
-            if (accAvatarBtn && accDropdown) {
+            
+            // Mobile Sheet Elements
+            const accMobileSheet = document.getElementById('acc-mobile-sheet');
+            const accMobileBackdrop = document.getElementById('acc-mobile-backdrop');
+            
+            // Logic xử lý Click vào Avatar (Thông minh)
+            if (accAvatarBtn) {
                 accAvatarBtn.addEventListener('click', (e) => {
                     e.stopPropagation();
-                    const isExpanded = accAvatarBtn.getAttribute('aria-expanded') === 'true';
-                    accAvatarBtn.setAttribute('aria-expanded', !isExpanded);
                     
-                    if (isExpanded) {
-                        accDropdown.classList.add('dropdown-exit');
-                        accDropdown.classList.remove('dropdown-enter', 'dropdown-enter-active');
-                        setTimeout(() => {
-                            accDropdown.classList.add('hidden');
-                            accDropdown.classList.remove('dropdown-exit', 'dropdown-exit-active');
-                        }, 75);
+                    // Kiểm tra kích thước màn hình (768px là breakpoint 'md' của Tailwind)
+                    if (window.innerWidth < 768) {
+                        // MOBILE: Mở Mobile Sheet
+                        accMobileSheet.classList.remove('hidden');
                     } else {
-                        accDropdown.classList.remove('hidden');
-                        requestAnimationFrame(() => {
-                            accDropdown.classList.add('dropdown-enter-active');
-                            accDropdown.classList.remove('dropdown-enter');
-                        });
-                    }
-                });
-
-                // Đóng dropdown khi click ra ngoài
-                document.addEventListener('click', (e) => {
-                    if (!accInfo.contains(e.target)) {
-                         accAvatarBtn.setAttribute('aria-expanded', 'false');
-                         accDropdown.classList.add('hidden');
+                        // DESKTOP: Mở Dropdown
+                        const isExpanded = accAvatarBtn.getAttribute('aria-expanded') === 'true';
+                        accAvatarBtn.setAttribute('aria-expanded', !isExpanded);
+                        
+                        if (isExpanded) {
+                            closeDropdown();
+                        } else {
+                            openDropdown();
+                        }
                     }
                 });
             }
 
+            function openDropdown() {
+                if(!accDropdown) return;
+                accDropdown.classList.remove('hidden');
+                requestAnimationFrame(() => {
+                    accDropdown.classList.add('dropdown-enter-active');
+                    accDropdown.classList.remove('dropdown-enter');
+                });
+            }
+
+            function closeDropdown() {
+                if(!accDropdown) return;
+                accAvatarBtn.setAttribute('aria-expanded', 'false');
+                accDropdown.classList.add('dropdown-exit');
+                accDropdown.classList.remove('dropdown-enter', 'dropdown-enter-active');
+                setTimeout(() => {
+                    accDropdown.classList.add('hidden');
+                    accDropdown.classList.remove('dropdown-exit', 'dropdown-exit-active');
+                }, 75);
+            }
+
+            // Đóng dropdown khi click ra ngoài (Desktop)
+            document.addEventListener('click', (e) => {
+                if (accInfo && !accInfo.contains(e.target)) {
+                     closeDropdown();
+                }
+            });
+
+            // Logic đóng Mobile Sheet
+            if (accMobileBackdrop && accMobileSheet) {
+                accMobileBackdrop.addEventListener('click', () => {
+                    accMobileSheet.classList.add('hidden');
+                });
+            }
+            
             // --- Hàm Điều Hướng ---
 
             // Hàm hiển thị trang (Trong cùng file)
@@ -541,58 +566,52 @@
     <script type="module">
         import { initGatekeeper, onUserChange, logoutUser } from "../gatekeeper.js";
         initGatekeeper('protected');
+        
+        // Desktop Elements
         const accInfo = document.getElementById('account-info');
         const accName = document.getElementById('acc-name');
         const accEmail = document.getElementById('acc-email');
         const accAvatar = document.getElementById('acc-avatar');
         const accLogout = document.getElementById('acc-logout');
-        const accDetails = document.getElementById('acc-details');
-        const accAvatarBtn = document.getElementById('acc-avatar-btn');
-        const accMobileBtn = document.getElementById('acc-mobile-btn');
+        
+        // Mobile Sheet Elements
         const accMobileSheet = document.getElementById('acc-mobile-sheet');
-        const accMobileBackdrop = document.getElementById('acc-mobile-backdrop');
         const accMobileName = document.getElementById('acc-mobile-name');
         const accMobileEmail = document.getElementById('acc-mobile-email');
-        const accMobileAvatarBtnImg = document.getElementById('acc-mobile-avatar');
         const accMobileAvatarSheetImg = document.getElementById('acc-mobile-avatar-sheet');
         const accMobileLogout = document.getElementById('acc-mobile-logout');
         
         if (accLogout) accLogout.addEventListener('click', () => logoutUser());
         
-        if (accMobileBtn && accMobileSheet) {
-            accMobileBtn.addEventListener('click', () => {
-                accMobileSheet.classList.remove('hidden');
-            });
-        }
-        if (accMobileBackdrop && accMobileSheet) {
-            accMobileBackdrop.addEventListener('click', () => {
-                accMobileSheet.classList.add('hidden');
-            });
-        }
         if (accMobileLogout) {
             accMobileLogout.addEventListener('click', () => {
                 logoutUser();
                 if (accMobileSheet) accMobileSheet.classList.add('hidden');
             });
         }
+
         onUserChange((user) => {
             if (!user) {
                 if (accInfo) accInfo.classList.add('hidden');
-                if (accMobileBtn) accMobileBtn.classList.add('hidden');
                 if (accMobileSheet) accMobileSheet.classList.add('hidden');
                 return;
             }
             if (accInfo) accInfo.classList.remove('hidden');
-            if (accName) accName.textContent = user.displayName || 'Người dùng';
-            if (accEmail) accEmail.textContent = user.email || '';
-            if (accAvatar) accAvatar.src = user.photoURL || '../favicon.png';
             
-            if (accMobileBtn) accMobileBtn.classList.remove('hidden');
-            if (accMobileName) accMobileName.textContent = user.displayName || 'Người dùng';
-            if (accMobileEmail) accMobileEmail.textContent = user.email || '';
-            const fallback = '../favicon.png';
-            if (accMobileAvatarBtnImg) accMobileAvatarBtnImg.src = user.photoURL || fallback;
-            if (accMobileAvatarSheetImg) accMobileAvatarSheetImg.src = user.photoURL || fallback;
+            // Cập nhật thông tin cho cả Desktop và Mobile từ cùng một nguồn dữ liệu
+            const userName = user.displayName || 'Người dùng';
+            const userEmail = user.email || '';
+            const userPhoto = user.photoURL || '../favicon.png';
+
+            // Desktop Updates
+            if (accName) accName.textContent = userName;
+            if (accEmail) accEmail.textContent = userEmail;
+            if (accAvatar) accAvatar.src = userPhoto;
+            
+            // Mobile Sheet Updates
+            if (accMobileName) accMobileName.textContent = userName;
+            if (accMobileEmail) accMobileEmail.textContent = userEmail;
+            if (accMobileAvatarSheetImg) accMobileAvatarSheetImg.src = userPhoto;
         });
     </script>
 
