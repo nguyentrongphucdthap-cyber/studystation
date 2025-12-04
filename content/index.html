@@ -83,15 +83,18 @@
             transition: opacity 0.075s ease-in, transform 0.075s ease-in;
         }
 
-        /* Modal Animation */
-        .modal-enter {
+        /* Modal Animation - Cập nhật */
+        #notification-modal {
+            transition: opacity 0.3s ease;
+        }
+        .modal-card-content {
             opacity: 0;
             transform: scale(0.9);
+            transition: opacity 0.4s cubic-bezier(0.16, 1, 0.3, 1), transform 0.4s cubic-bezier(0.16, 1, 0.3, 1);
         }
-        .modal-enter-active {
+        .modal-card-content.show {
             opacity: 1;
             transform: scale(1);
-            transition: opacity 0.3s ease, transform 0.3s ease;
         }
     </style>
 </head>
@@ -108,8 +111,11 @@
 
     <!-- Notification Modal (Popup) -->
     <div id="notification-modal" class="fixed inset-0 z-50 hidden items-center justify-center p-4">
-        <div class="absolute inset-0 bg-black/60 backdrop-blur-sm transition-opacity" id="modal-backdrop"></div>
-        <div class="bg-white rounded-2xl shadow-2xl w-full max-w-md relative z-10 overflow-hidden modal-enter transform transition-all">
+        <!-- Backdrop -->
+        <div class="absolute inset-0 bg-black/60 backdrop-blur-sm transition-opacity opacity-0" id="modal-backdrop" style="transition: opacity 0.3s ease;"></div>
+        
+        <!-- Nội dung Modal -->
+        <div id="modal-card" class="modal-card-content bg-white rounded-2xl shadow-2xl w-full max-w-md relative z-10 overflow-hidden">
             <!-- Header Modal -->
             <div class="bg-blue-600 px-6 py-4 flex justify-between items-center">
                 <h3 class="text-white font-bold text-lg flex items-center gap-2">
@@ -164,7 +170,7 @@
                         <button id="notification-bell-btn" class="relative p-2 text-gray-500 hover:text-blue-600 hover:bg-gray-100 rounded-full transition-colors focus:outline-none">
                             <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 17h5l-1.405-1.405A2.032 2.032 0 0118 14.158V11a6.002 6.002 0 00-4-5.659V5a2 2 0 10-4 0v.341C7.67 6.165 6 8.388 6 11v3.159c0 .538-.214 1.055-.595 1.436L4 17h5m6 0v1a3 3 0 11-6 0v-1m6 0H9"></path></svg>
                             <!-- Chấm đỏ báo hiệu có thông báo -->
-                            <span class="absolute top-1.5 right-2 w-2.5 h-2.5 bg-red-500 border-2 border-white rounded-full"></span>
+                            <span id="notification-badge" class="absolute top-1.5 right-2 w-2.5 h-2.5 bg-red-500 border-2 border-white rounded-full hidden"></span>
                         </button>
 
                         <div class="w-px h-6 bg-gray-300 mx-1 hidden md:block"></div>
@@ -407,7 +413,7 @@
     <script>
         document.addEventListener('DOMContentLoaded', () => {
             // --- DATA THÔNG BÁO ---
-            // Bạn có thể thêm thông báo mới vào đầu mảng này
+            // ID càng lớn thì thông báo càng mới
             const notifications = [
                 {
                     id: 3,
@@ -455,12 +461,17 @@
             
             // Notification Elements
             const notificationModal = document.getElementById('notification-modal');
+            const notificationBackdrop = document.getElementById('modal-backdrop');
+            const notificationCard = document.getElementById('modal-card');
+            
             const closeModalBtns = document.querySelectorAll('#close-modal-btn, #close-modal-btn-sub');
-            const modalBackdrop = document.getElementById('modal-backdrop');
             const viewHistoryBtnModal = document.getElementById('view-history-btn-modal');
             const notificationBellBtn = document.getElementById('notification-bell-btn');
+            const notificationBadge = document.getElementById('notification-badge');
+            
             const menuHistoryBtn = document.getElementById('menu-history-btn');
             const mobileHistoryBtn = document.getElementById('mobile-history-btn');
+            
             const notificationListContainer = document.getElementById('notification-list-container');
             const latestContentContainer = document.getElementById('latest-notification-content');
 
@@ -469,12 +480,9 @@
                 accAvatarBtn.addEventListener('click', (e) => {
                     e.stopPropagation();
                     
-                    // Kiểm tra kích thước màn hình (768px là breakpoint 'md' của Tailwind)
                     if (window.innerWidth < 768) {
-                        // MOBILE: Mở Mobile Sheet
                         accMobileSheet.classList.remove('hidden');
                     } else {
-                        // DESKTOP: Mở Dropdown
                         const isExpanded = accAvatarBtn.getAttribute('aria-expanded') === 'true';
                         accAvatarBtn.setAttribute('aria-expanded', !isExpanded);
                         
@@ -523,7 +531,6 @@
             
             // --- Hàm Điều Hướng ---
 
-            // Hàm hiển thị trang (Trong cùng file)
             function showPage(pageId) {
                 pages.forEach(page => {
                     page.classList.remove('active');
@@ -531,7 +538,6 @@
                 const targetPage = document.getElementById(pageId);
                 if (targetPage) {
                     targetPage.classList.add('active');
-                    // Cuộn lên đầu trang
                     window.scrollTo(0, 0);
                 }
             }
@@ -607,20 +613,44 @@
             }
 
             function openModal() {
+                renderNotifications();
                 notificationModal.classList.remove('hidden');
                 notificationModal.classList.add('flex');
+                
+                // Animation triggers
+                requestAnimationFrame(() => {
+                   if(notificationBackdrop) notificationBackdrop.classList.remove('opacity-0');
+                   if(notificationCard) notificationCard.classList.add('show');
+                });
             }
 
             function closeModal() {
-                notificationModal.classList.add('hidden');
-                notificationModal.classList.remove('flex');
-                // Đánh dấu đã xem trong Session Storage để không hiện lại khi F5
-                sessionStorage.setItem('hasSeenNotification', 'true');
+                if(notificationBackdrop) notificationBackdrop.classList.add('opacity-0');
+                if(notificationCard) notificationCard.classList.remove('show');
+                
+                // Đợi animation chạy xong mới ẩn display
+                setTimeout(() => {
+                    notificationModal.classList.add('hidden');
+                    notificationModal.classList.remove('flex');
+                }, 300);
+
+                // Lưu lại ID của thông báo mới nhất đã xem vào LocalStorage (lưu lâu dài)
+                if (notifications.length > 0) {
+                    localStorage.setItem('seen_notification_id', notifications[0].id.toString());
+                    updateBadge(false); // Ẩn badge đỏ
+                }
+            }
+
+            function updateBadge(show) {
+                if (notificationBadge) {
+                    if (show) notificationBadge.classList.remove('hidden');
+                    else notificationBadge.classList.add('hidden');
+                }
             }
 
             // Gán sự kiện đóng modal
             closeModalBtns.forEach(btn => btn.addEventListener('click', closeModal));
-            if (modalBackdrop) modalBackdrop.addEventListener('click', closeModal);
+            if (notificationBackdrop) notificationBackdrop.addEventListener('click', closeModal);
 
             // Nút "Xem lịch sử" trong modal
             if (viewHistoryBtnModal) {
@@ -633,6 +663,11 @@
             // Nút Bell ở Header
             if (notificationBellBtn) {
                 notificationBellBtn.addEventListener('click', () => {
+                    // Nếu bấm chuông, coi như đã xem thông báo mới nhất
+                    if (notifications.length > 0) {
+                        localStorage.setItem('seen_notification_id', notifications[0].id.toString());
+                        updateBadge(false);
+                    }
                     showPage('notification-history');
                 });
             }
@@ -653,17 +688,24 @@
                 });
             }
 
-            // Auto-show Modal Logic
-            // Chỉ hiện modal nếu người dùng chưa xem trong phiên làm việc này VÀ có thông báo
-            const hasSeen = sessionStorage.getItem('hasSeenNotification');
-            if (!hasSeen && notifications.length > 0) {
-                // Đợi 1 chút sau khi load trang cho mượt
-                setTimeout(() => {
-                    openModal();
-                    renderNotifications(); // Render data
-                }, 800);
-            } else {
-                renderNotifications(); // Vẫn render data vào History Page dù không hiện modal
+            // --- AUTO SHOW LOGIC (QUAN TRỌNG) ---
+            renderNotifications(); // Render dữ liệu trước
+            
+            if (notifications.length > 0) {
+                const latestId = notifications[0].id;
+                const seenId = localStorage.getItem('seen_notification_id');
+                
+                // Nếu chưa có seenId HOẶC seenId khác với latestId (có thông báo mới hơn)
+                if (!seenId || parseInt(seenId) !== latestId) {
+                    updateBadge(true); // Hiện chấm đỏ
+                    
+                    // Tự động mở Modal sau 1s
+                    setTimeout(() => {
+                        openModal();
+                    }, 1000);
+                } else {
+                    updateBadge(false); // Không hiện chấm đỏ
+                }
             }
 
 
