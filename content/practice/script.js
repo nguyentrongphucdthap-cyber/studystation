@@ -8,7 +8,7 @@ tailwind.config = {
                 question: ['"Be Vietnam Pro"', 'sans-serif'],
             },
             colors: {
-                primary: '#2563eb', 
+                primary: '#2563eb',
                 secondary: '#475569',
                 background: '#f8fafc',
                 correct: '#10b981', // Emerald 500
@@ -489,7 +489,7 @@ const app = {
         if (localStorage.theme === 'dark' || (!('theme' in localStorage) && window.matchMedia('(prefers-color-scheme: dark)').matches)) {
             document.documentElement.classList.add('dark'); document.getElementById('dark-mode-toggle').checked = true;
         } else { document.getElementById('dark-mode-toggle').checked = false; }
-        
+
         // Load Stats
         const savedStats = localStorage.getItem('studyStation_stats');
         if (savedStats) this.stats = JSON.parse(savedStats);
@@ -500,13 +500,82 @@ const app = {
             document.documentElement.style.setProperty('--question-font-size', e.target.value + 'px');
             document.getElementById('font-size-display').innerText = e.target.value + 'px';
         });
-        
+
         await this.loadSubjects();
         this.goHome();
     },
 
     async loadSubjects() {
         try {
+            // Try Firebase first (if available)
+            if (window.firebaseExams && typeof window.firebaseExams.getAllExams === 'function') {
+                try {
+                    const firebaseExams = await window.firebaseExams.getAllExams();
+                    const firebaseSubjects = window.firebaseExams.getSubjects();
+
+                    if (firebaseExams && firebaseExams.length > 0) {
+                        console.log('Loaded exams from Firebase:', firebaseExams.length);
+
+                        // Build subjects from Firebase data
+                        this.subjects = {};
+                        this.examContentDB = {};
+
+                        firebaseSubjects.forEach(sub => {
+                            this.subjects[sub.id] = {
+                                id: sub.id,
+                                name: sub.name,
+                                color: sub.color,
+                                bg: sub.bg,
+                                icon: sub.icon,
+                                exams: []
+                            };
+                        });
+
+                        firebaseExams.forEach(exam => {
+                            const subId = exam.subjectId;
+                            if (this.subjects[subId]) {
+                                this.subjects[subId].exams.push({
+                                    id: exam.id,
+                                    title: exam.title,
+                                    time: exam.time || 50,
+                                    examCode: exam.examCode || '',
+                                    createdAt: exam.createdAt || ''
+                                });
+                                this.examContentDB[exam.id] = {
+                                    id: exam.id,
+                                    title: exam.title,
+                                    time: exam.time || 50,
+                                    part1: exam.part1 || [],
+                                    part2: exam.part2 || [],
+                                    part3: exam.part3 || []
+                                };
+                            }
+                        });
+
+                        // Sort exams by createdAt descending (newest first)
+                        Object.keys(this.subjects).forEach(key => {
+                            this.subjects[key].exams.sort((a, b) => {
+                                if (a.createdAt && b.createdAt) return b.createdAt.localeCompare(a.createdAt);
+                                return 0;
+                            });
+                        });
+
+                        // Remove empty subjects
+                        Object.keys(this.subjects).forEach(key => {
+                            if (this.subjects[key].exams.length === 0) {
+                                delete this.subjects[key];
+                            }
+                        });
+
+                        this.subjectLoadError = Object.keys(this.subjects).length ? null : 'Chưa có bài thi nào. Admin có thể thêm bài thi mới.';
+                        return;
+                    }
+                } catch (fbError) {
+                    console.warn('Firebase load failed, falling back to local files:', fbError);
+                }
+            }
+
+            // Fallback to local JSON files
             const res = await fetch(`${MANIFEST_PATH}?v=${Date.now()}`);
             if (!res.ok) throw new Error('Manifest not found');
             const data = await res.json();
@@ -550,7 +619,7 @@ const app = {
             console.error('Load subjects failed', error);
             this.subjects = {};
             this.examContentDB = {};
-            this.subjectLoadError = 'Không thể tải danh sách đề thi. Vui lòng kiểm tra lại thư mục tests.';
+            this.subjectLoadError = 'Không thể tải danh sách đề thi. Vui lòng kiểm tra lại.';
         }
     },
 
@@ -563,7 +632,7 @@ const app = {
         const tpl = document.getElementById(tplId);
         this.container.innerHTML = '';
         this.container.appendChild(tpl.content.cloneNode(true));
-        window.scrollTo(0,0);
+        window.scrollTo(0, 0);
     },
 
     // --- Stats Logic ---
@@ -574,7 +643,7 @@ const app = {
             const totalExams = Object.values(this.stats.attempts).flat().length;
             const hours = Math.floor(this.stats.totalTime / 3600);
             const minutes = Math.floor((this.stats.totalTime % 3600) / 60);
-            
+
             document.getElementById('stat-exams').innerText = totalExams;
             document.getElementById('stat-time').innerText = `${hours}h ${minutes}m`;
 
@@ -586,7 +655,7 @@ const app = {
                 first3.forEach(s => { totalScore += s; count++; });
             });
             const avg = count > 0 ? (totalScore / count) : 0;
-            
+
             document.getElementById('stat-avg').innerText = avg.toFixed(1);
             document.getElementById('stat-avg-bar').style.width = `${avg * 10}%`; // 0-10 scale maps to 0-100%
 
@@ -642,11 +711,40 @@ const app = {
             grid.innerHTML = `<div class="bg-white dark:bg-slate-800 p-6 rounded-2xl border border-slate-200 dark:border-slate-700 text-slate-500 dark:text-slate-300">Chưa có đề thi nào trong môn này.</div>`;
             return;
         }
-        sub.exams.forEach(exam => {
+        sub.exams.forEach((exam, index) => {
             const el = document.createElement('div');
             el.className = 'bg-white dark:bg-slate-800 p-6 rounded-2xl border border-slate-200 dark:border-slate-700 shadow-sm hover:border-blue-300 dark:hover:border-blue-500 hover:shadow-md transition-all cursor-pointer flex justify-between items-center group';
             el.onclick = () => this.startExam(subId, exam.id);
-            el.innerHTML = `<div class="flex items-start gap-4"><div class="w-10 h-10 rounded-full bg-blue-50 dark:bg-blue-900/30 text-blue-600 dark:text-blue-400 flex items-center justify-center font-bold text-sm mt-1">0${sub.exams.indexOf(exam) + 1}</div><div><h4 class="font-bold text-lg text-slate-800 dark:text-white group-hover:text-blue-600 dark:group-hover:text-blue-400 transition-colors">${exam.title}</h4><div class="flex items-center gap-4 mt-2"><span class="text-xs font-semibold text-slate-500 dark:text-slate-400 bg-slate-100 dark:bg-slate-700 px-2 py-1 rounded flex items-center"><svg class="w-3 h-3 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>${exam.time} phút</span></div></div></div>`;
+
+            const badgeCode = exam.examCode
+                ? `<span class="text-xs font-mono font-semibold text-slate-500 dark:text-slate-400 bg-slate-100 dark:bg-slate-700 px-2 py-1 rounded ml-2 border border-slate-200 dark:border-slate-600">ID: ${exam.examCode}</span>`
+                : '';
+
+            const createdDate = exam.createdAt
+                ? `<span class="text-xs text-slate-400 dark:text-slate-500 ml-auto flex items-center"><svg class="w-3 h-3 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"/></svg>${new Date(exam.createdAt).toLocaleDateString('vi-VN')}</span>`
+                : '';
+
+            el.innerHTML = `
+                <div class="flex items-start gap-4 flex-1">
+                    <div class="shrink-0 w-10 h-10 rounded-full bg-blue-50 dark:bg-blue-900/30 text-blue-600 dark:text-blue-400 flex items-center justify-center font-bold text-sm mt-1">${(index + 1).toString().padStart(2, '0')}</div>
+                    <div class="flex-1 min-w-0">
+                        <div class="flex flex-wrap items-center gap-2 mb-1">
+                            <h4 class="font-bold text-lg text-slate-800 dark:text-white group-hover:text-blue-600 dark:group-hover:text-blue-400 transition-colors truncate">${exam.title}</h4>
+                            ${badgeCode}
+                        </div>
+                        <div class="flex items-center gap-4 mt-2">
+                            <span class="text-xs font-semibold text-slate-500 dark:text-slate-400 bg-slate-100 dark:bg-slate-700 px-2 py-1 rounded flex items-center">
+                                <svg class="w-3 h-3 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>
+                                ${exam.time} phút
+                            </span>
+                            ${createdDate}
+                        </div>
+                    </div>
+                </div>
+                <div class="ml-4 opacity-0 group-hover:opacity-100 transition-opacity">
+                     <svg class="w-6 h-6 text-blue-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"/></svg>
+                </div>
+            `;
             grid.appendChild(el);
         });
     },
@@ -664,7 +762,7 @@ const app = {
 
         this.renderTemplate('tpl-taking-exam');
         this.timerEl.classList.remove('hidden');
-        
+
         this.renderQuestions(examData);
         this.renderPalette(examData);
         this.startTimer(examMeta.time * 60);
@@ -678,7 +776,7 @@ const app = {
             div.id = `q-${q.id}`;
             div.dataset.type = type;
             div.className = 'bg-white dark:bg-slate-800 p-5 md:p-8 rounded-3xl border border-slate-100 dark:border-slate-700 shadow-soft question-card';
-            
+
             let content = `
                 <div class="mb-4 md:mb-6 font-medium text-slate-800 dark:text-white flex gap-4">
                     <div class="shrink-0 w-10 h-10 bg-blue-100 dark:bg-blue-900/30 text-blue-700 dark:text-blue-400 rounded-xl flex items-center justify-center font-bold shadow-sm">${q.id}</div>
@@ -720,7 +818,7 @@ const app = {
         const p1 = document.getElementById('part-1-questions');
         const p2 = document.getElementById('part-2-questions');
         const p3 = document.getElementById('part-3-questions');
-        
+
         if (data.part1.length) data.part1.forEach(q => p1.appendChild(renderQ(q, 0, 1))); else document.getElementById('part-1-container').classList.add('hidden');
         if (data.part2.length) data.part2.forEach(q => p2.appendChild(renderQ(q, 0, 2))); else document.getElementById('part-2-container').classList.add('hidden');
         if (data.part3.length) data.part3.forEach(q => p3.appendChild(renderQ(q, 0, 3))); else document.getElementById('part-3-container').classList.add('hidden');
@@ -731,7 +829,7 @@ const app = {
             const btnId = isMobile ? `mob-pal-btn-${id}` : `pal-btn-${id}`;
             return `<button id="${btnId}" onclick="document.getElementById('q-${id}').scrollIntoView({behavior: 'smooth', block: 'center'})" class="question-nav-item w-full aspect-square flex items-center justify-center rounded-xl border border-slate-200 dark:border-slate-600 text-sm font-bold text-slate-500 dark:text-slate-400 bg-white dark:bg-slate-800">${id}</button>`;
         };
-        const allIds = [...data.part1.map(q=>q.id), ...data.part2.map(q=>q.id), ...data.part3.map(q=>q.id)];
+        const allIds = [...data.part1.map(q => q.id), ...data.part2.map(q => q.id), ...data.part3.map(q => q.id)];
         document.getElementById('question-palette').innerHTML = allIds.map(id => createBtn(id, false)).join('');
         document.getElementById('mobile-palette-grid').innerHTML = allIds.map(id => createBtn(id, true)).join('');
     },
@@ -784,11 +882,11 @@ const app = {
     },
 
     stopTimer() { if (this.timerInterval) clearInterval(this.timerInterval); },
-    
+
     toggleSettings() { document.getElementById('settings-modal').classList.toggle('hidden'); },
 
     submitExam() { document.getElementById('submit-confirm-modal').classList.remove('hidden'); },
-    
+
     confirmSubmit() {
         document.getElementById('submit-confirm-modal').classList.add('hidden');
         this.submitExamLogic();
@@ -798,7 +896,7 @@ const app = {
         this.stopTimer();
         this.endTime = new Date();
         const durationSeconds = Math.floor((this.endTime - this.startTime) / 1000);
-        
+
         const data = this.currentExam.data;
         let maxScore = 0;
         let earnedScore = 0;
@@ -846,7 +944,7 @@ const app = {
 
         this.renderTemplate('tpl-result');
         this.timerEl.classList.add('hidden');
-        
+
         document.getElementById('result-subject-name').innerText = this.currentExam.meta.title;
         document.getElementById('score-display').innerText = finalScore.toFixed(2);
         document.getElementById('result-time').innerText = timeStr;
@@ -860,7 +958,7 @@ const app = {
         document.getElementById('desktop-palette-sidebar').classList.add('hidden');
         document.getElementById('mobile-footer').classList.add('hidden');
         document.getElementById('review-controls').classList.remove('hidden');
-        
+
         this.renderQuestions(this.currentExam.data);
         if (window.MathJax) MathJax.typesetPromise();
 
@@ -869,7 +967,7 @@ const app = {
             const el = document.getElementById(`q-${id}`);
             el.dataset.status = isCorrect ? 'correct' : 'wrong';
             el.classList.add(isCorrect ? 'border-green-200' : 'border-red-200');
-            if(isCorrect) el.classList.add('dark:border-green-900');
+            if (isCorrect) el.classList.add('dark:border-green-900');
             else el.classList.add('dark:border-red-900');
         };
 
@@ -893,12 +991,12 @@ const app = {
             q.subQuestions.forEach(sub => {
                 const userAns = userSub[sub.id];
                 const row = document.querySelector(`#q-${q.id} .sub-question-row[data-sub="${sub.id}"]`);
-                if (userAns !== sub.correct) { fullyCorrect = false; row.classList.add('bg-red-50', 'dark:bg-red-900/10'); } 
+                if (userAns !== sub.correct) { fullyCorrect = false; row.classList.add('bg-red-50', 'dark:bg-red-900/10'); }
                 else { row.classList.add('bg-green-50', 'dark:bg-green-900/10'); }
                 const btns = row.querySelectorAll('.tf-btn');
-                if(userAns === true) btns[0].classList.add(sub.correct === true ? 'selected-true' : 'selected-false');
-                if(userAns === false) btns[1].classList.add(sub.correct === false ? 'selected-true' : 'selected-false');
-                if(userAns !== sub.correct) {
+                if (userAns === true) btns[0].classList.add(sub.correct === true ? 'selected-true' : 'selected-false');
+                if (userAns === false) btns[1].classList.add(sub.correct === false ? 'selected-true' : 'selected-false');
+                if (userAns !== sub.correct) {
                     const correctBtn = sub.correct ? btns[0] : btns[1];
                     correctBtn.style.border = "2px solid #10b981";
                 }
@@ -913,14 +1011,14 @@ const app = {
             setStatus(q.id, isCorrect);
             const inp = document.getElementById(`input-${q.id}`);
             inp.value = this.answers[q.id]?.val || "";
-            if(isCorrect) inp.classList.add('border-green-500', 'bg-green-50');
+            if (isCorrect) inp.classList.add('border-green-500', 'bg-green-50');
             else inp.classList.add('border-red-500', 'bg-red-50');
         });
     },
 
     filterReview(type) {
         document.querySelectorAll('.filter-btn').forEach(b => {
-            if(b.dataset.filter === type) b.classList.add('ring-2', 'ring-offset-2', 'ring-blue-400');
+            if (b.dataset.filter === type) b.classList.add('ring-2', 'ring-offset-2', 'ring-blue-400');
             else b.classList.remove('ring-2', 'ring-offset-2', 'ring-blue-400');
         });
         const cards = document.querySelectorAll('.question-card');
