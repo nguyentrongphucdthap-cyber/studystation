@@ -1,0 +1,362 @@
+<!DOCTYPE html>
+<html lang="vi">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Admin - Quản lý bài thi | StudyStation</title>
+    <link rel="icon" type="image/png" href="../../favicon.png">
+
+    <!-- Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+
+    <!-- Fonts -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Be+Vietnam+Pro:wght@400;500;600;700&display=swap"
+        rel="stylesheet">
+
+    <style>
+        body {
+            font-family: 'Be Vietnam Pro', sans-serif;
+        }
+
+        /* Loading Spinner */
+        @keyframes spin {
+            to {
+                transform: rotate(360deg);
+            }
+        }
+
+        .spinner {
+            animation: spin 1s linear infinite;
+        }
+
+        /* Custom scrollbar */
+        .custom-scrollbar::-webkit-scrollbar {
+            width: 6px;
+        }
+
+        .custom-scrollbar::-webkit-scrollbar-track {
+            background: #f1f5f9;
+            border-radius: 999px;
+        }
+
+        .custom-scrollbar::-webkit-scrollbar-thumb {
+            background: #cbd5e1;
+            border-radius: 999px;
+        }
+
+        .custom-scrollbar::-webkit-scrollbar-thumb:hover {
+            background: #94a3b8;
+        }
+
+        /* Toast animations */
+        .toast-enter {
+            animation: slideIn 0.3s ease-out forwards;
+        }
+
+        .toast-exit {
+            animation: slideOut 0.3s ease-in forwards;
+        }
+
+        @keyframes slideIn {
+            from {
+                transform: translateX(100%);
+                opacity: 0;
+            }
+
+            to {
+                transform: translateX(0);
+                opacity: 1;
+            }
+        }
+
+        @keyframes slideOut {
+            from {
+                transform: translateX(0);
+                opacity: 1;
+            }
+
+            to {
+                transform: translateX(100%);
+                opacity: 0;
+            }
+        }
+    </style>
+</head>
+
+<body class="bg-gray-50 min-h-screen">
+
+    <!-- Gatekeeper Loading -->
+    <div id="gatekeeper-loading"
+        style="position:fixed;top:0;left:0;width:100%;height:100%;background:#0f172a;display:none;justify-content:center;align-items:center;color:#ffffff;z-index:9999">
+        <div style="display:flex;flex-direction:column;align-items:center;gap:10px">
+            <img src="../../favicon.png" alt="StudyStation" style="width:56px;height:56px;border-radius:12px">
+            <div style="font-weight:700;font-size:18px">StudyStation Admin</div>
+            <div class="w-7 h-7 border-2 border-white/20 border-t-blue-400 rounded-full spinner"></div>
+        </div>
+    </div>
+
+    <!-- Access Denied -->
+    <div id="access-denied" class="hidden fixed inset-0 bg-gray-50 z-50 flex items-center justify-center p-4">
+        <div class="text-center">
+            <div class="w-20 h-20 bg-red-100 rounded-full flex items-center justify-center mx-auto mb-6">
+                <svg class="w-10 h-10 text-red-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                        d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
+                </svg>
+            </div>
+            <h1 class="text-2xl font-bold text-gray-800 mb-2">Truy cập bị từ chối</h1>
+            <p class="text-gray-500 mb-6">Bạn không có quyền Admin để truy cập trang này.</p>
+            <a href="../index.html"
+                class="inline-flex items-center gap-2 px-6 py-3 bg-blue-600 text-white font-semibold rounded-xl hover:bg-blue-700 transition-colors">
+                <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                        d="M10 19l-7-7m0 0l7-7m-7 7h18" />
+                </svg>
+                Về trang chủ
+            </a>
+        </div>
+    </div>
+
+    <!-- Toast Container -->
+    <div id="toast-container" class="fixed top-4 right-4 z-50 space-y-2"></div>
+
+    <!-- Main Content -->
+    <div id="main-content" class="hidden">
+        <!-- Header -->
+        <header class="bg-white border-b border-gray-200 sticky top-0 z-40">
+            <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+                <div class="flex items-center justify-between h-16">
+                    <div class="flex items-center gap-4">
+                        <a href="../index.html"
+                            class="flex items-center gap-3 text-gray-500 hover:text-blue-600 transition-colors">
+                            <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                    d="M10 19l-7-7m0 0l7-7m-7 7h18" />
+                            </svg>
+                        </a>
+                        <div class="h-6 w-px bg-gray-200"></div>
+                        <h1 class="text-xl font-bold text-gray-800">
+                            <span class="text-yellow-500">⚡</span> Quản lý bài thi
+                        </h1>
+                    </div>
+                    <div class="flex items-center gap-3">
+                        <span id="admin-email" class="text-sm text-gray-500 hidden sm:block"></span>
+                        <div
+                            class="px-3 py-1 bg-yellow-100 text-yellow-700 text-xs font-bold rounded-full border border-yellow-200">
+                            ADMIN</div>
+                    </div>
+                </div>
+            </div>
+        </header>
+
+        <!-- Main Layout -->
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+            <div class="grid grid-cols-1 lg:grid-cols-3 gap-8">
+
+                <!-- Left Panel: Exam List -->
+                <div class="lg:col-span-1">
+                    <div class="bg-white rounded-2xl border border-gray-200 shadow-sm overflow-hidden">
+                        <div class="p-4 border-b border-gray-100 bg-gray-50">
+                            <div class="flex items-center justify-between mb-4">
+                                <h2 class="font-bold text-gray-800">Danh sách bài thi</h2>
+                                <button id="btn-new-exam"
+                                    class="px-3 py-1.5 bg-blue-600 text-white text-sm font-semibold rounded-lg hover:bg-blue-700 transition-colors flex items-center gap-1">
+                                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                            d="M12 4v16m8-8H4" />
+                                    </svg>
+                                    Thêm
+                                </button>
+                            </div>
+                            <!-- Subject Filter -->
+                            <select id="subject-filter"
+                                class="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none">
+                                <option value="">Tất cả môn học</option>
+                            </select>
+                        </div>
+
+                        <!-- Exam List -->
+                        <div id="exam-list" class="max-h-[60vh] overflow-y-auto custom-scrollbar">
+                            <div class="p-8 text-center text-gray-400">
+                                <div
+                                    class="w-12 h-12 border-2 border-gray-200 border-t-blue-500 rounded-full spinner mx-auto mb-3">
+                                </div>
+                                <p>Đang tải danh sách...</p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Right Panel: Exam Editor -->
+                <div class="lg:col-span-2">
+                    <div id="editor-panel" class="bg-white rounded-2xl border border-gray-200 shadow-sm">
+                        <!-- Empty State -->
+                        <div id="editor-empty" class="p-12 text-center">
+                            <div
+                                class="w-16 h-16 bg-gray-100 rounded-2xl flex items-center justify-center mx-auto mb-4">
+                                <svg class="w-8 h-8 text-gray-400" fill="none" stroke="currentColor"
+                                    viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                        d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+                                </svg>
+                            </div>
+                            <h3 class="text-lg font-bold text-gray-800 mb-2">Chọn hoặc tạo bài thi</h3>
+                            <p class="text-gray-500 text-sm">Chọn một bài thi từ danh sách bên trái hoặc nhấn "Thêm" để
+                                tạo bài thi mới.</p>
+                        </div>
+
+                        <!-- Editor Form -->
+                        <div id="editor-form" class="hidden">
+                            <div class="p-4 border-b border-gray-100 bg-gray-50 flex items-center justify-between">
+                                <h2 id="editor-title" class="font-bold text-gray-800">Tạo bài thi mới</h2>
+                                <div class="flex gap-2">
+                                    <button id="btn-delete"
+                                        class="hidden px-3 py-1.5 border border-red-200 text-red-600 text-sm font-semibold rounded-lg hover:bg-red-50 transition-colors">
+                                        Xóa
+                                    </button>
+                                    <button id="btn-cancel"
+                                        class="px-3 py-1.5 border border-gray-200 text-gray-600 text-sm font-semibold rounded-lg hover:bg-gray-50 transition-colors">
+                                        Hủy
+                                    </button>
+                                    <button id="btn-save"
+                                        class="px-4 py-1.5 bg-emerald-600 text-white text-sm font-semibold rounded-lg hover:bg-emerald-700 transition-colors flex items-center gap-2">
+                                        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                                d="M5 13l4 4L19 7" />
+                                        </svg>
+                                        Lưu
+                                    </button>
+                                </div>
+                            </div>
+
+                            <div class="p-6 space-y-6 max-h-[70vh] overflow-y-auto custom-scrollbar">
+                                <!-- Basic Info -->
+                                <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                    <div>
+                                        <label class="block text-sm font-semibold text-gray-700 mb-1">Môn học <span
+                                                class="text-red-500">*</span></label>
+                                        <select id="exam-subject"
+                                            class="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none"
+                                            required>
+                                            <option value="">Chọn môn học</option>
+                                        </select>
+                                    </div>
+                                    <div>
+                                        <label class="block text-sm font-semibold text-gray-700 mb-1">Thời gian (phút)
+                                            <span class="text-red-500">*</span></label>
+                                        <input type="number" id="exam-time"
+                                            class="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none"
+                                            placeholder="45" min="1" max="180" required>
+                                    </div>
+                                </div>
+                                <div>
+                                    <label class="block text-sm font-semibold text-gray-700 mb-1">Tiêu đề bài thi <span
+                                            class="text-red-500">*</span></label>
+                                    <input type="text" id="exam-title"
+                                        class="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none"
+                                        placeholder="Đề thi thử THPT QG 2025 - Mã 001" required>
+                                </div>
+
+                                <!-- Part 1: Multiple Choice -->
+                                <div class="border border-gray-200 rounded-xl overflow-hidden">
+                                    <div
+                                        class="bg-blue-50 px-4 py-3 flex items-center justify-between border-b border-blue-100">
+                                        <div class="flex items-center gap-2">
+                                            <div
+                                                class="w-6 h-6 bg-blue-600 text-white text-xs font-bold rounded flex items-center justify-center">
+                                                1</div>
+                                            <h3 class="font-semibold text-blue-800">Phần I: Trắc nghiệm</h3>
+                                            <span id="part1-count"
+                                                class="text-xs bg-blue-100 text-blue-700 px-2 py-0.5 rounded-full">0
+                                                câu</span>
+                                        </div>
+                                        <button type="button" id="btn-add-part1"
+                                            class="text-sm text-blue-600 font-semibold hover:underline">+ Thêm câu
+                                            hỏi</button>
+                                    </div>
+                                    <div id="part1-questions" class="p-4 space-y-4 bg-white">
+                                        <p class="text-gray-400 text-sm text-center py-4">Chưa có câu hỏi nào</p>
+                                    </div>
+                                </div>
+
+                                <!-- Part 2: True/False -->
+                                <div class="border border-gray-200 rounded-xl overflow-hidden">
+                                    <div
+                                        class="bg-indigo-50 px-4 py-3 flex items-center justify-between border-b border-indigo-100">
+                                        <div class="flex items-center gap-2">
+                                            <div
+                                                class="w-6 h-6 bg-indigo-600 text-white text-xs font-bold rounded flex items-center justify-center">
+                                                2</div>
+                                            <h3 class="font-semibold text-indigo-800">Phần II: Đúng/Sai</h3>
+                                            <span id="part2-count"
+                                                class="text-xs bg-indigo-100 text-indigo-700 px-2 py-0.5 rounded-full">0
+                                                câu</span>
+                                        </div>
+                                        <button type="button" id="btn-add-part2"
+                                            class="text-sm text-indigo-600 font-semibold hover:underline">+ Thêm câu
+                                            hỏi</button>
+                                    </div>
+                                    <div id="part2-questions" class="p-4 space-y-4 bg-white">
+                                        <p class="text-gray-400 text-sm text-center py-4">Chưa có câu hỏi nào</p>
+                                    </div>
+                                </div>
+
+                                <!-- Part 3: Short Answer -->
+                                <div class="border border-gray-200 rounded-xl overflow-hidden">
+                                    <div
+                                        class="bg-emerald-50 px-4 py-3 flex items-center justify-between border-b border-emerald-100">
+                                        <div class="flex items-center gap-2">
+                                            <div
+                                                class="w-6 h-6 bg-emerald-600 text-white text-xs font-bold rounded flex items-center justify-center">
+                                                3</div>
+                                            <h3 class="font-semibold text-emerald-800">Phần III: Trả lời ngắn</h3>
+                                            <span id="part3-count"
+                                                class="text-xs bg-emerald-100 text-emerald-700 px-2 py-0.5 rounded-full">0
+                                                câu</span>
+                                        </div>
+                                        <button type="button" id="btn-add-part3"
+                                            class="text-sm text-emerald-600 font-semibold hover:underline">+ Thêm câu
+                                            hỏi</button>
+                                    </div>
+                                    <div id="part3-questions" class="p-4 space-y-4 bg-white">
+                                        <p class="text-gray-400 text-sm text-center py-4">Chưa có câu hỏi nào</p>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Delete Confirmation Modal -->
+    <div id="delete-modal"
+        class="hidden fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm p-4">
+        <div class="bg-white rounded-2xl p-6 max-w-sm w-full shadow-2xl">
+            <div class="w-12 h-12 bg-red-100 rounded-full flex items-center justify-center mx-auto mb-4">
+                <svg class="w-6 h-6 text-red-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                        d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+                </svg>
+            </div>
+            <h3 class="text-lg font-bold text-gray-800 text-center mb-2">Xóa bài thi?</h3>
+            <p class="text-gray-500 text-sm text-center mb-6">Hành động này không thể hoàn tác. Bài thi sẽ bị xóa vĩnh
+                viễn khỏi hệ thống.</p>
+            <div class="flex gap-3">
+                <button id="btn-cancel-delete"
+                    class="flex-1 px-4 py-2.5 border border-gray-200 text-gray-600 font-semibold rounded-xl hover:bg-gray-50 transition-colors">Hủy</button>
+                <button id="btn-confirm-delete"
+                    class="flex-1 px-4 py-2.5 bg-red-600 text-white font-semibold rounded-xl hover:bg-red-700 transition-colors">Xóa</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Scripts -->
+    <script src="script.js" type="module"></script>
+</body>
+
+</html>
