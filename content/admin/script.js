@@ -645,7 +645,7 @@ async function confirmDeleteExam() {
 // ============================================================
 
 // Gemini API configuration
-const GEMINI_API_KEY = "AIzaSyCfBlHWM9VU5nc6LEZOGEwInfrkqc-c9W8"; // API key sẽ được cung cấp
+const GEMINI_API_KEY = ""; // API key sẽ được cung cấp
 const GEMINI_API_URL = "https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash-lite-preview-02-05:generateContent";
 
 /**
@@ -924,4 +924,5 @@ function handleExport() {
 // ============================================================
 
 init();
+
 
