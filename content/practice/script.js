@@ -773,7 +773,8 @@ const app = {
     renderQuestions(data) {
         const renderQ = (q, index, type) => {
             const div = document.createElement('div');
-            div.id = `q-${q.id}`;
+            const uniqueId = `${type}_${q.id}`;
+            div.id = `q-${uniqueId}`;
             div.dataset.type = type;
             div.className = 'bg-white dark:bg-slate-800 p-5 md:p-8 rounded-3xl border border-slate-100 dark:border-slate-700 shadow-soft question-card';
 
@@ -787,7 +788,7 @@ const app = {
                 content += `<div class="grid grid-cols-1 md:grid-cols-2 gap-3 md:gap-4 items-start">
                     ${q.options.map((opt, i) => `
                         <label class="cursor-pointer group relative option-label" data-idx="${i}">
-                            <input type="radio" name="q${q.id}" value="${i}" class="peer sr-only option-radio" onchange="app.handleAnswer(1, ${q.id}, ${i})" ${this.isReviewMode ? 'disabled' : ''}>
+                            <input type="radio" name="q_${uniqueId}" value="${i}" class="peer sr-only option-radio" onchange="app.handleAnswer(1, ${q.id}, ${i})" ${this.isReviewMode ? 'disabled' : ''}>
                             <div class="p-3 md:p-4 rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 hover:bg-slate-50 dark:hover:bg-slate-700 transition-all flex items-center">
                                 <div class="option-dot-outer w-6 h-6 rounded-full border-2 border-slate-300 dark:border-slate-500 mr-3 flex items-center justify-center shrink-0">
                                     <div class="option-dot-inner w-2.5 h-2.5 bg-white rounded-full"></div>
@@ -807,7 +808,7 @@ const app = {
                         </div>`).join('')}</div>`;
             } else if (type === 3) {
                 content += `<div class="relative">
-                    <input type="text" id="input-${q.id}" oninput="app.handleAnswer(3, ${q.id}, this.value)" placeholder="Nhập đáp án..." class="w-full md:w-2/3 p-3 md:p-4 pl-5 border border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-900 rounded-xl focus:ring-4 focus:ring-emerald-100 dark:focus:ring-emerald-900 focus:border-emerald-500 outline-none transition-all font-medium text-lg text-slate-800 dark:text-white placeholder:text-slate-400 font-question" ${this.isReviewMode ? 'disabled' : ''}>
+                    <input type="text" id="input-${uniqueId}" oninput="app.handleAnswer(3, ${q.id}, this.value)" placeholder="Nhập đáp án..." class="w-full md:w-2/3 p-3 md:p-4 pl-5 border border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-900 rounded-xl focus:ring-4 focus:ring-emerald-100 dark:focus:ring-emerald-900 focus:border-emerald-500 outline-none transition-all font-medium text-lg text-slate-800 dark:text-white placeholder:text-slate-400 font-question" ${this.isReviewMode ? 'disabled' : ''}>
                     ${this.isReviewMode ? `<div class="mt-2 text-sm font-bold text-emerald-600">Đáp án đúng: ${q.correct}</div>` : ''}
                 </div>`;
             }
@@ -825,45 +826,61 @@ const app = {
     },
 
     renderPalette(data) {
-        const createBtn = (id, isMobile) => {
-            const btnId = isMobile ? `mob-pal-btn-${id}` : `pal-btn-${id}`;
-            return `<button id="${btnId}" onclick="document.getElementById('q-${id}').scrollIntoView({behavior: 'smooth', block: 'center'})" class="question-nav-item w-full aspect-square flex items-center justify-center rounded-xl border border-slate-200 dark:border-slate-600 text-sm font-bold text-slate-500 dark:text-slate-400 bg-white dark:bg-slate-800">${id}</button>`;
+        const createBtn = (id, type, isMobile) => {
+            const uniqueId = `${type}_${id}`;
+            const btnId = isMobile ? `mob-pal-btn-${uniqueId}` : `pal-btn-${uniqueId}`;
+            return `<button id="${btnId}" onclick="document.getElementById('q-${uniqueId}').scrollIntoView({behavior: 'smooth', block: 'center'})" class="question-nav-item w-full aspect-square flex items-center justify-center rounded-xl border border-slate-200 dark:border-slate-600 text-sm font-bold text-slate-500 dark:text-slate-400 bg-white dark:bg-slate-800">${id}</button>`;
         };
-        const allIds = [...data.part1.map(q => q.id), ...data.part2.map(q => q.id), ...data.part3.map(q => q.id)];
-        document.getElementById('question-palette').innerHTML = allIds.map(id => createBtn(id, false)).join('');
-        document.getElementById('mobile-palette-grid').innerHTML = allIds.map(id => createBtn(id, true)).join('');
+        const allQuestions = [
+            ...data.part1.map(q => ({ id: q.id, type: 1 })),
+            ...data.part2.map(q => ({ id: q.id, type: 2 })),
+            ...data.part3.map(q => ({ id: q.id, type: 3 }))
+        ];
+        document.getElementById('question-palette').innerHTML = allQuestions.map(q => createBtn(q.id, q.type, false)).join('');
+        document.getElementById('mobile-palette-grid').innerHTML = allQuestions.map(q => createBtn(q.id, q.type, true)).join('');
     },
 
     handleAnswer(part, qId, value) {
         if (this.isReviewMode) return;
-        if (!this.answers[qId]) this.answers[qId] = {};
-        this.answers[qId].val = value;
-        this.answers[qId].part = part;
-        this.updatePalette(qId, value !== "" && value !== undefined);
+        const key = `${part}_${qId}`;
+        if (!this.answers[key]) this.answers[key] = {};
+        this.answers[key].val = value;
+        this.answers[key].part = part;
+        this.updatePalette(key, value !== "" && value !== undefined);
     },
 
     handleTFAnswer(qId, subId, isTrue, btnEl) {
         if (this.isReviewMode) return;
-        if (!this.answers[qId]) this.answers[qId] = { part: 2, sub: {} };
-        if (!this.answers[qId].sub) this.answers[qId].sub = {};
-        this.answers[qId].sub[subId] = isTrue;
+        const key = `2_${qId}`;
+        if (!this.answers[key]) this.answers[key] = { part: 2, sub: {} };
+        if (!this.answers[key].sub) this.answers[key].sub = {};
+        this.answers[key].sub[subId] = isTrue;
 
         const parent = btnEl.parentElement;
         parent.querySelectorAll('.tf-btn').forEach(b => {
-            b.classList.remove('selected-true', 'selected-false');
+            b.classList.remove('active-tf', 'bg-blue-600', 'text-white');
             b.classList.add('text-slate-500', 'dark:text-slate-400');
         });
-        if (isTrue) { btnEl.classList.add('selected-true'); btnEl.classList.remove('text-slate-500', 'dark:text-slate-400'); }
-        else { btnEl.classList.add('selected-false'); btnEl.classList.remove('text-slate-500', 'dark:text-slate-400'); }
+        if (btnEl.classList.contains('active-tf')) {
+            // Already active? usually logic is simple toggle, here we set
+        }
+        btnEl.classList.remove('text-slate-500', 'dark:text-slate-400');
+        btnEl.classList.add('active-tf', 'bg-blue-600', 'text-white');
+
+        const ansCount = Object.keys(this.answers[key].sub).length;
+        // In this logic, update palette if at least one is answered? or all?
+        // Original logic checked against qData req.
+        // Let's rely on simple check for now or restore the full check.
+        // To query full check we need qData.
 
         const qData = this.currentExam.data.part2.find(q => q.id === qId);
         const req = qData ? qData.subQuestions.map(s => s.id) : [];
-        const ans = Object.keys(this.answers[qId].sub);
-        this.updatePalette(qId, req.every(k => ans.includes(k)));
+        const ans = Object.keys(this.answers[key].sub);
+        this.updatePalette(key, req.every(k => ans.includes(k)));
     },
 
-    updatePalette(qId, isAnswered) {
-        [`pal-btn-${qId}`, `mob-pal-btn-${qId}`].forEach(id => {
+    updatePalette(uniqueId, isAnswered) {
+        [`pal-btn-${uniqueId}`, `mob-pal-btn-${uniqueId}`].forEach(id => {
             const el = document.getElementById(id);
             if (el) isAnswered ? el.classList.add('answered') : el.classList.remove('answered');
         });
@@ -907,15 +924,17 @@ const app = {
         // Grading
         maxScore += data.part1.length * 0.25;
         data.part1.forEach(q => {
-            if (this.answers[q.id]?.val == q.correct) { earnedScore += 0.25; correctCount++; }
+            const key = `1_${q.id}`;
+            if (this.answers[key]?.val == q.correct) { earnedScore += 0.25; correctCount++; }
         });
 
         maxScore += data.part2.length * 1.0;
         data.part2.forEach(q => {
+            const key = `2_${q.id}`;
             let qCorrectSub = 0;
-            if (this.answers[q.id]?.sub) {
+            if (this.answers[key]?.sub) {
                 q.subQuestions.forEach(sub => {
-                    if (this.answers[q.id].sub[sub.id] === sub.correct) qCorrectSub++;
+                    if (this.answers[key].sub[sub.id] === sub.correct) qCorrectSub++;
                 });
             }
             if (qCorrectSub === 1) earnedScore += 0.1;
@@ -926,8 +945,10 @@ const app = {
 
         maxScore += data.part3.length * 0.25;
         data.part3.forEach(q => {
-            const userVal = String(this.answers[q.id]?.val || "").trim().toLowerCase();
+            const key = `3_${q.id}`;
+            const userVal = String(this.answers[key]?.val || "").trim().toLowerCase();
             const correctVal = String(q.correct).trim().toLowerCase();
+            // Basic matching, could be improved
             if (userVal === correctVal) { earnedScore += 0.25; correctCount++; }
         });
 
