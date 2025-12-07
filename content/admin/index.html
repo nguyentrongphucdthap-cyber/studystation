@@ -160,16 +160,33 @@
                 <div class="lg:col-span-1">
                     <div class="bg-white rounded-2xl border border-gray-200 shadow-sm overflow-hidden">
                         <div class="p-4 border-b border-gray-100 bg-gray-50">
-                            <div class="flex items-center justify-between mb-4">
+                            <div class="flex items-center justify-between mb-3">
                                 <h2 class="font-bold text-gray-800">Danh sách bài thi</h2>
-                                <button id="btn-new-exam"
-                                    class="px-3 py-1.5 bg-blue-600 text-white text-sm font-semibold rounded-lg hover:bg-blue-700 transition-colors flex items-center gap-1">
-                                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-                                            d="M12 4v16m8-8H4" />
-                                    </svg>
-                                    Thêm
-                                </button>
+                                <div class="flex gap-2">
+                                    <button id="btn-new-exam"
+                                        class="px-3 py-1.5 bg-blue-600 text-white text-sm font-semibold rounded-lg hover:bg-blue-700 transition-colors flex items-center gap-1">
+                                        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                                d="M12 4v16m8-8H4" />
+                                        </svg>
+                                        Thêm
+                                    </button>
+                                </div>
+                            </div>
+                            <!-- Import/Export Row -->
+                            <div class="flex gap-2 mb-3">
+                                <label class="flex-1 cursor-pointer">
+                                    <input type="file" id="import-file"
+                                        accept=".json,.doc,.docx,.pdf,.png,.jpg,.jpeg,.svg,.webp" class="hidden">
+                                    <div
+                                        class="w-full px-3 py-2 border border-dashed border-gray-300 rounded-lg text-sm text-gray-500 hover:border-blue-400 hover:text-blue-600 transition-colors flex items-center justify-center gap-2">
+                                        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                                d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-8l-4-4m0 0L8 8m4-4v12" />
+                                        </svg>
+                                        Import (AI)
+                                    </div>
+                                </label>
                             </div>
                             <!-- Subject Filter -->
                             <select id="subject-filter"
@@ -204,8 +221,30 @@
                                 </svg>
                             </div>
                             <h3 class="text-lg font-bold text-gray-800 mb-2">Chọn hoặc tạo bài thi</h3>
-                            <p class="text-gray-500 text-sm">Chọn một bài thi từ danh sách bên trái hoặc nhấn "Thêm" để
-                                tạo bài thi mới.</p>
+                            <p class="text-gray-500 text-sm mb-6">Chọn một bài thi từ danh sách, nhấn "Thêm" để tạo mới,
+                                hoặc Import từ file JSON.</p>
+                            <div class="flex flex-col sm:flex-row gap-3 justify-center">
+                                <button id="btn-new-exam-empty"
+                                    class="px-4 py-2 bg-blue-600 text-white text-sm font-semibold rounded-lg hover:bg-blue-700 transition-colors flex items-center justify-center gap-2">
+                                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                            d="M12 4v16m8-8H4" />
+                                    </svg>
+                                    Tạo đề mới
+                                </button>
+                                <label class="cursor-pointer">
+                                    <input type="file" accept=".json,.doc,.docx,.pdf,.png,.jpg,.jpeg,.svg,.webp"
+                                        class="hidden import-file-trigger">
+                                    <div
+                                        class="px-4 py-2 border border-gray-200 text-gray-600 text-sm font-semibold rounded-lg hover:bg-gray-50 transition-colors flex items-center justify-center gap-2">
+                                        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                                d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-8l-4-4m0 0L8 8m4-4v12" />
+                                        </svg>
+                                        Import (AI)
+                                    </div>
+                                </label>
+                            </div>
                         </div>
 
                         <!-- Editor Form -->
@@ -213,6 +252,15 @@
                             <div class="p-4 border-b border-gray-100 bg-gray-50 flex items-center justify-between">
                                 <h2 id="editor-title" class="font-bold text-gray-800">Tạo bài thi mới</h2>
                                 <div class="flex gap-2">
+                                    <button id="btn-export"
+                                        class="hidden px-3 py-1.5 border border-gray-200 text-gray-600 text-sm font-semibold rounded-lg hover:bg-gray-50 transition-colors flex items-center gap-1"
+                                        title="Xuất file JSON">
+                                        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                                d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4" />
+                                        </svg>
+                                        Export
+                                    </button>
                                     <button id="btn-delete"
                                         class="hidden px-3 py-1.5 border border-red-200 text-red-600 text-sm font-semibold rounded-lg hover:bg-red-50 transition-colors">
                                         Xóa
