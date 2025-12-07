@@ -358,10 +358,10 @@ function createPart1QuestionHTML(q, idx) {
                         ${options.map((opt, i) => `
                             <label class="option-card cursor-pointer group">
                                 <input type="radio" name="correct-${idx}" value="${i}" ${correctIdx === i ? 'checked' : ''} class="q-correct sr-only">
-                                <div class="flex items-center gap-3 p-3 border-2 rounded-xl transition-all ${correctIdx === i ? 'border-emerald-500 bg-emerald-50' : 'border-gray-200 hover:border-blue-300 hover:bg-blue-50'}">
-                                    <span class="w-7 h-7 rounded-lg flex items-center justify-center text-sm font-bold shrink-0 transition-colors ${correctIdx === i ? 'bg-emerald-500 text-white' : 'bg-gray-100 text-gray-600 group-hover:bg-blue-100 group-hover:text-blue-600'}">${String.fromCharCode(65 + i)}</span>
+                                <div class="option-content flex items-center gap-3 p-3 border-2 rounded-xl transition-all ${correctIdx === i ? 'border-emerald-500 bg-emerald-50' : 'border-gray-200 hover:border-blue-300 hover:bg-blue-50'}">
+                                    <span class="option-badge w-7 h-7 rounded-lg flex items-center justify-center text-sm font-bold shrink-0 transition-colors ${correctIdx === i ? 'bg-emerald-500 text-white' : 'bg-gray-100 text-gray-600 group-hover:bg-blue-100 group-hover:text-blue-600'}">${String.fromCharCode(65 + i)}</span>
                                     <input type="text" class="q-option flex-1 bg-transparent border-0 text-sm focus:ring-0 outline-none placeholder-gray-400" placeholder="Nhập đáp án ${String.fromCharCode(65 + i)}..." value="${opt || ''}" onclick="event.stopPropagation()">
-                                    ${correctIdx === i ? '<svg class="w-5 h-5 text-emerald-500 shrink-0" fill="currentColor" viewBox="0 0 20 20"><path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clip-rule="evenodd"/></svg>' : ''}
+                                    <svg class="option-check w-5 h-5 text-emerald-500 shrink-0 ${correctIdx === i ? '' : 'hidden'}" fill="currentColor" viewBox="0 0 20 20"><path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clip-rule="evenodd"/></svg>
                                 </div>
                             </label>
                         `).join('')}
@@ -436,6 +436,7 @@ function createPart3QuestionHTML(q, idx) {
 function bindQuestionEvents(part) {
     const container = part === 1 ? refs.part1Questions : part === 2 ? refs.part2Questions : refs.part3Questions;
 
+    // Remove handlers
     container.querySelectorAll('.btn-remove-question').forEach(btn => {
         btn.addEventListener('click', (e) => {
             const block = e.target.closest('.question-block');
@@ -444,6 +445,41 @@ function bindQuestionEvents(part) {
             updateQuestionCount(part);
         });
     });
+
+    // Part 1 Radio handlers for visual update
+    if (part === 1) {
+        container.querySelectorAll('.q-correct').forEach(radio => {
+            radio.addEventListener('change', (e) => {
+                const checkedRadio = e.target;
+                const questionBlock = checkedRadio.closest('.question-block');
+
+                // Reset all options in this question
+                questionBlock.querySelectorAll('.option-content').forEach(card => {
+                    card.classList.remove('border-emerald-500', 'bg-emerald-50');
+                    card.classList.add('border-gray-200', 'hover:border-blue-300', 'hover:bg-blue-50');
+
+                    const badge = card.querySelector('.option-badge');
+                    badge.classList.remove('bg-emerald-500', 'text-white');
+                    badge.classList.add('bg-gray-100', 'text-gray-600', 'group-hover:bg-blue-100', 'group-hover:text-blue-600');
+
+                    const check = card.querySelector('.option-check');
+                    if (check) check.classList.add('hidden');
+                });
+
+                // Set selected option
+                const selectedCard = checkedRadio.closest('.option-card').querySelector('.option-content');
+                selectedCard.classList.remove('border-gray-200', 'hover:border-blue-300', 'hover:bg-blue-50');
+                selectedCard.classList.add('border-emerald-500', 'bg-emerald-50');
+
+                const selectedBadge = selectedCard.querySelector('.option-badge');
+                selectedBadge.classList.remove('bg-gray-100', 'text-gray-600', 'group-hover:bg-blue-100', 'group-hover:text-blue-600');
+                selectedBadge.classList.add('bg-emerald-500', 'text-white');
+
+                const selectedCheck = selectedCard.querySelector('.option-check');
+                if (selectedCheck) selectedCheck.classList.remove('hidden');
+            });
+        });
+    }
 }
 
 function addQuestion(part) {
