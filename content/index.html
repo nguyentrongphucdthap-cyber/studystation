@@ -10,7 +10,7 @@
     <script src="https://cdn.tailwindcss.com"></script>
     <!-- Tải font Be Vietnam Pro từ Google Fonts -->
     <link href="https://fonts.googleapis.com/css2?family=Be+Vietnam+Pro:wght@400;500;600;700&display=swap" rel="stylesheet">
-    
+
     <style>
         /* Sử dụng font Be Vietnam Pro làm font chữ mặc định */
         body {
@@ -82,10 +82,25 @@
             transform: scale(0.95);
             transition: opacity 0.075s ease-in, transform 0.075s ease-in;
         }
-        
+
+        /* Modal Animation - Cập nhật */
+        #notification-modal {
+            transition: opacity 0.3s ease;
+        }
+        .modal-card-content {
+            opacity: 0;
+            transform: scale(0.9);
+            transition: opacity 0.4s cubic-bezier(0.16, 1, 0.3, 1), transform 0.4s cubic-bezier(0.16, 1, 0.3, 1);
+        }
+        .modal-card-content.show {
+            opacity: 1;
+            transform: scale(1);
+        }
     </style>
 </head>
-<body class="bg-gray-100">
+<body class="bg-gray-100 relative">
+
+    <!-- Màn hình Loading Gatekeeper -->
     <div id="gatekeeper-loading" style="position:fixed;top:0;left:0;width:100%;height:100%;background:#0f172a;display:none;justify-content:center;align-items:center;color:#ffffff;z-index:9999">
         <div style="display:flex;flex-direction:column;align-items:center;gap:10px">
             <img src="../favicon.png" alt="StudyStation" style="width:56px;height:56px;border-radius:12px">
@@ -94,104 +109,157 @@
         </div>
     </div>
 
+    <!-- Notification Modal (Popup) -->
+    <div id="notification-modal" class="fixed inset-0 z-50 hidden items-center justify-center p-4">
+        <!-- Backdrop -->
+        <div class="absolute inset-0 bg-black/60 backdrop-blur-sm transition-opacity opacity-0" id="modal-backdrop" style="transition: opacity 0.3s ease;"></div>
+
+        <!-- Nội dung Modal -->
+        <div id="modal-card" class="modal-card-content bg-white rounded-2xl shadow-2xl w-full max-w-md relative z-10 overflow-hidden">
+            <!-- Header Modal -->
+            <div class="bg-blue-600 px-6 py-4 flex justify-between items-center">
+                <h3 class="text-white font-bold text-lg flex items-center gap-2">
+                    <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 17h5l-1.405-1.405A2.032 2.032 0 0118 14.158V11a6.002 6.002 0 00-4-5.659V5a2 2 0 10-4 0v.341C7.67 6.165 6 8.388 6 11v3.159c0 .538-.214 1.055-.595 1.436L4 17h5m6 0v1a3 3 0 11-6 0v-1m6 0H9"></path></svg>
+                    Thông báo mới
+                </h3>
+                <button id="close-modal-btn" class="text-blue-100 hover:text-white transition-colors">
+                    <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path></svg>
+                </button>
+            </div>
+
+            <!-- Body Modal -->
+            <div class="p-6">
+                <div id="latest-notification-content">
+                    <!-- Nội dung sẽ được JS inject vào đây -->
+                    <div class="animate-pulse flex space-x-4">
+                        <div class="flex-1 space-y-4 py-1">
+                            <div class="h-4 bg-gray-200 rounded w-3/4"></div>
+                            <div class="space-y-2">
+                                <div class="h-4 bg-gray-200 rounded"></div>
+                                <div class="h-4 bg-gray-200 rounded w-5/6"></div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Footer Modal -->
+            <div class="bg-gray-50 px-6 py-3 flex justify-between items-center border-t border-gray-100">
+                <button id="view-history-btn-modal" class="text-sm text-blue-600 font-medium hover:underline">Xem lịch sử cập nhật</button>
+                <button id="close-modal-btn-sub" class="px-4 py-2 bg-blue-600 text-white text-sm font-medium rounded-lg hover:bg-blue-700 transition-colors">Đã hiểu</button>
+            </div>
+        </div>
+    </div>
+
     <!-- Card chính của ứng dụng -->
     <div class="w-full max-w-3xl mx-auto bg-white rounded-lg shadow-lg my-4 md:my-8">
-            
+
         <!-- Khu vực nội dung chính -->
         <main class="w-full p-6 md:p-10 min-h-[600px]">
-            
+
             <!-- 1. Trang Menu Thẻ (Hub Trung Tâm) -->
             <div id="menu-cards" class="page-content active">
-                <div class="flex flex-col md:flex-row items-start md:items-center justify-between mb-4 md:mb-6">
-                    <h1 class="text-3xl md:text-4xl font-bold text-gray-800">
+                <!-- Header -->
+                <div class="flex flex-row items-center justify-between mb-6">
+                    <h1 class="text-2xl md:text-4xl font-bold text-gray-800">
                         Study<span class="text-blue-400">Station</span>
                     </h1>
-                <div class="flex items-center gap-3 mt-2 md:mt-0 relative">
-                    <p class="text-base md:text-lg text-gray-600 mr-2">Xin chào!</p>
-                    
-                    <!-- Mobile Account Button -->
-                    <button id="acc-mobile-btn" class="md:hidden rounded-full focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2">
-                        <img id="acc-mobile-avatar" class="w-8 h-8 rounded-full border border-gray-200" alt="avatar">
-                    </button>
 
-                    <!-- Desktop Account Dropdown -->
-                    <div id="account-info" class="hidden md:block relative">
-                        <button id="acc-avatar-btn" class="flex items-center gap-2 rounded-full focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 transition-all" aria-expanded="false" aria-haspopup="true">
-                            <img id="acc-avatar" class="w-9 h-9 rounded-full border border-gray-200" alt="avatar">
+                    <div class="flex items-center gap-3 relative">
+                        <!-- Icon Thông báo (Bell) -->
+                        <button id="notification-bell-btn" class="relative p-2 text-gray-500 hover:text-blue-600 hover:bg-gray-100 rounded-full transition-colors focus:outline-none">
+                            <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 17h5l-1.405-1.405A2.032 2.032 0 0118 14.158V11a6.002 6.002 0 00-4-5.659V5a2 2 0 10-4 0v.341C7.67 6.165 6 8.388 6 11v3.159c0 .538-.214 1.055-.595 1.436L4 17h5m6 0v1a3 3 0 11-6 0v-1m6 0H9"></path></svg>
+                            <!-- Chấm đỏ báo hiệu có thông báo -->
+                            <span id="notification-badge" class="absolute top-1.5 right-2 w-2.5 h-2.5 bg-red-500 border-2 border-white rounded-full hidden"></span>
                         </button>
-                        
-                        <!-- Dropdown Menu -->
-                        <div id="acc-dropdown" class="hidden absolute right-0 z-20 mt-2 w-56 origin-top-right rounded-xl bg-white shadow-xl ring-1 ring-black ring-opacity-5 focus:outline-none transform transition-all duration-200">
-                            <div class="px-4 py-3 border-b border-gray-100 bg-gray-50 rounded-t-xl">
-                                <p class="text-sm text-gray-500">Đăng nhập với tên</p>
-                                <div class="flex items-center gap-2">
-                                    <p id="acc-name" class="text-sm font-bold text-gray-900 truncate">User Name</p>
-                                    <!-- ADMIN BADGE (Ẩn mặc định) -->
-                                    <span id="admin-badge" class="hidden px-1.5 py-0.5 rounded text-[10px] font-bold bg-yellow-100 text-yellow-700 border border-yellow-200 uppercase tracking-wide">Admin</span>
+
+                        <div class="w-px h-6 bg-gray-300 mx-1 hidden md:block"></div>
+
+                        <!-- Text "Xin chào" chỉ hiện trên màn hình md trở lên -->
+                        <p class="hidden md:block text-base md:text-lg text-gray-600 mr-2">Xin chào!</p>
+
+                        <!-- Unified Account Button (Hiển thị trên mọi thiết bị) -->
+                        <div id="account-info" class="relative">
+                            <button id="acc-avatar-btn" class="flex items-center gap-2 rounded-full focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 transition-all" aria-expanded="false" aria-haspopup="true">
+                                <img id="acc-avatar" class="w-9 h-9 rounded-full border border-gray-200" alt="avatar">
+                            </button>
+
+                            <!-- Dropdown Menu (Chỉ dùng cho Desktop logic) -->
+                            <div id="acc-dropdown" class="hidden absolute right-0 z-20 mt-2 w-56 origin-top-right rounded-xl bg-white shadow-xl ring-1 ring-black ring-opacity-5 focus:outline-none transform transition-all duration-200">
+                                <div class="px-4 py-3 border-b border-gray-100 bg-gray-50 rounded-t-xl">
+                                    <p class="text-sm text-gray-500">Đăng nhập với tên</p>
+                                    <div class="flex items-center gap-2">
+                                        <p id="acc-name" class="text-sm font-bold text-gray-900 truncate">User Name</p>
+                                        <!-- ADMIN BADGE (Ẩn mặc định) -->
+                                        <span id="admin-badge" class="hidden px-1.5 py-0.5 rounded text-[10px] font-bold bg-yellow-100 text-yellow-700 border border-yellow-200 uppercase tracking-wide">Admin</span>
+                                    </div>
+                                    <p id="acc-email" class="text-xs text-gray-500 truncate mt-0.5">email@example.com</p>
                                 </div>
-                                <p id="acc-email" class="text-xs text-gray-500 truncate mt-0.5">email@example.com</p>
-                            </div>
-                            <div class="py-1">
-                                <!-- ADMIN LINK (Ẩn mặc định) -->
-                                <a id="admin-link" href="#" class="hidden block px-4 py-2 text-sm text-yellow-700 font-medium hover:bg-yellow-50 transition-colors">
-                                    ⚡ Trang Quản Trị
-                                </a>
-                                <div class="border-t border-gray-100 my-1"></div>
-                                
-                                <a href="#" class="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-50 hover:text-blue-600 transition-colors">
-                                    Hồ sơ cá nhân
-                                </a>
-                                <a href="#" class="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-50 hover:text-blue-600 transition-colors">
-                                    Cài đặt
-                                </a>
-                            </div>
-                            <div class="py-1 border-t border-gray-100">
-                                <button id="acc-logout" class="block w-full text-left px-4 py-2 text-sm text-red-600 hover:bg-red-50 transition-colors rounded-b-xl">
-                                    Đăng xuất
-                                </button>
+                                <div class="py-1">
+                                    <!-- ADMIN LINK (Ẩn mặc định) -->
+                                    <a id="admin-link" href="#" class="hidden block px-4 py-2 text-sm text-yellow-700 font-medium hover:bg-yellow-50 transition-colors">
+                                        ⚡ Trang Quản Trị
+                                    </a>
+                                    
+                                    <a href="#" class="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-50 hover:text-blue-600 transition-colors">
+                                        Hồ sơ cá nhân
+                                    </a>
+                                    <!-- Nút mở lịch sử thông báo từ menu -->
+                                    <button id="menu-history-btn" class="block w-full text-left px-4 py-2 text-sm text-gray-700 hover:bg-gray-50 hover:text-blue-600 transition-colors">
+                                        Lịch sử thông báo
+                                    </button>
+                                </div>
+                                <div class="py-1 border-t border-gray-100">
+                                    <button id="acc-logout" class="block w-full text-left px-4 py-2 text-sm text-red-600 hover:bg-red-50 transition-colors rounded-b-xl">
+                                        Đăng xuất
+                                    </button>
+                                </div>
                             </div>
                         </div>
                     </div>
                 </div>
-            </div>
 
-            <!-- Mobile Account Sheet -->
-            <div id="acc-mobile-sheet" class="fixed inset-0 md:hidden hidden z-50">
-                <div id="acc-mobile-backdrop" class="absolute inset-0 bg-black/40 backdrop-blur-sm transition-opacity"></div>
-                <div class="absolute bottom-0 left-0 right-0 bg-white rounded-t-2xl p-5 shadow-2xl transform transition-transform duration-300 ease-out">
-                    <div class="flex items-center justify-center mb-2">
-                         <div class="w-12 h-1.5 bg-gray-300 rounded-full"></div>
-                    </div>
-                    <div class="flex items-center gap-4 mb-6 mt-4">
-                        <img id="acc-mobile-avatar-sheet" class="w-14 h-14 rounded-full border-2 border-blue-100" alt="avatar">
-                        <div class="leading-tight overflow-hidden">
-                            <div class="flex items-center gap-2">
-                                <div id="acc-mobile-name" class="text-lg font-bold text-gray-800 truncate"></div>
-                                <!-- MOBILE ADMIN BADGE -->
-                                <span id="admin-badge-mobile" class="hidden px-2 py-0.5 rounded text-xs font-bold bg-yellow-100 text-yellow-700 border border-yellow-200">ADMIN</span>
+                <!-- Mobile Account Sheet (Chỉ hiện khi gọi bằng JS trên mobile) -->
+                <div id="acc-mobile-sheet" class="fixed inset-0 hidden z-50">
+                    <div id="acc-mobile-backdrop" class="absolute inset-0 bg-black/40 backdrop-blur-sm transition-opacity"></div>
+                    <div class="absolute bottom-0 left-0 right-0 bg-white rounded-t-2xl p-5 shadow-2xl transform transition-transform duration-300 ease-out">
+                        <div class="flex items-center justify-center mb-2">
+                             <div class="w-12 h-1.5 bg-gray-300 rounded-full"></div>
+                        </div>
+                        <div class="flex items-center gap-4 mb-6 mt-4">
+                            <img id="acc-mobile-avatar-sheet" class="w-14 h-14 rounded-full border-2 border-blue-100" alt="avatar">
+                            <div class="leading-tight overflow-hidden">
+                                <div class="flex items-center gap-2">
+                                    <div id="acc-mobile-name" class="text-lg font-bold text-gray-800 truncate"></div>
+                                    <!-- MOBILE ADMIN BADGE -->
+                                    <span id="admin-badge-mobile" class="hidden px-2 py-0.5 rounded text-xs font-bold bg-yellow-100 text-yellow-700 border border-yellow-200">ADMIN</span>
+                                </div>
+                                <div id="acc-mobile-email" class="text-sm text-gray-500 truncate"></div>
                             </div>
-                            <div id="acc-mobile-email" class="text-sm text-gray-500 truncate"></div>
+                        </div>
+                        <hr class="border-gray-100 mb-4">
+                        <div class="space-y-2">
+                             <!-- MOBILE ADMIN BUTTON -->
+                            <button id="admin-btn-mobile" class="hidden w-full flex items-center gap-3 px-4 py-3 text-yellow-700 bg-yellow-50 hover:bg-yellow-100 rounded-xl transition-colors font-medium">
+                                <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z"></path></svg>
+                                Khu vực Quản trị
+                            </button>
+
+                            <button class="w-full flex items-center gap-3 px-4 py-3 text-gray-700 bg-gray-50 hover:bg-gray-100 rounded-xl transition-colors">
+                                <svg class="w-5 h-5 text-gray-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z"></path></svg>
+                                Hồ sơ cá nhân
+                            </button>
+                            <button id="mobile-history-btn" class="w-full flex items-center gap-3 px-4 py-3 text-gray-700 bg-gray-50 hover:bg-gray-100 rounded-xl transition-colors">
+                                <svg class="w-5 h-5 text-gray-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 17h5l-1.405-1.405A2.032 2.032 0 0118 14.158V11a6.002 6.002 0 00-4-5.659V5a2 2 0 10-4 0v.341C7.67 6.165 6 8.388 6 11v3.159c0 .538-.214 1.055-.595 1.436L4 17h5m6 0v1a3 3 0 11-6 0v-1m6 0H9"></path></svg>
+                                Lịch sử thông báo
+                            </button>
+                            <button id="acc-mobile-logout" class="w-full flex items-center gap-3 px-4 py-3 text-red-600 bg-red-50 hover:bg-red-100 rounded-xl transition-colors font-medium">
+                                <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1"></path></svg>
+                                Đăng xuất
+                            </button>
                         </div>
                     </div>
-                    <hr class="border-gray-100 mb-4">
-                    <div class="space-y-2">
-                        <!-- MOBILE ADMIN BUTTON -->
-                        <button id="admin-btn-mobile" class="hidden w-full flex items-center gap-3 px-4 py-3 text-yellow-700 bg-yellow-50 hover:bg-yellow-100 rounded-xl transition-colors font-medium">
-                            <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z"></path></svg>
-                            Khu vực Quản trị
-                        </button>
-                        
-                        <button class="w-full flex items-center gap-3 px-4 py-3 text-gray-700 bg-gray-50 hover:bg-gray-100 rounded-xl transition-colors">
-                            <svg class="w-5 h-5 text-gray-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z"></path></svg>
-                            Hồ sơ cá nhân
-                        </button>
-                        <button id="acc-mobile-logout" class="w-full flex items-center gap-3 px-4 py-3 text-red-600 bg-red-50 hover:bg-red-100 rounded-xl transition-colors font-medium">
-                            <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1"></path></svg>
-                            Đăng xuất
-                        </button>
-                    </div>
                 </div>
-            </div>
 
                 <!-- Tìm kiếm nhanh -->
                 <div class="w-full mb-6 flex justify-center">
@@ -206,10 +274,11 @@
                         <div id="global-search-results" class="space-y-2 text-sm text-gray-700"></div>
                     </div>
                 </div>
-                
+
                 <div class="grid grid-cols-2 md:grid-cols-3 gap-4 md:gap-6">
+                    <!-- Cards Menu (Giữ nguyên) -->
                     <!-- Card Ôn thi -->
-                    <div class="menu-card subject-card p-3 md:p-4 bg-white border border-gray-200 rounded-xl cursor-pointer hover:border-blue-500 aspect-square" data-target="on-thi-main">
+                    <div class="menu-card subject-card p-3 md:p-4 bg-white border border-gray-200 rounded-xl cursor-pointer hover:border-blue-500 aspect-square" data-link="./practice/index.html">
                         <div class="flex flex-col items-center justify-center h-full space-y-2 text-center">
                             <div class="p-2 md:p-3 rounded-full bg-blue-100 text-blue-600">
                                 <svg class="w-8 h-8 md:w-10 md:h-10" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.747 0 3.332.477 4.5 1.253v13C19.832 18.477 18.246 18 16.5 18c-1.746 0-3.332.477-4.5 1.253"></path></svg>
@@ -272,12 +341,13 @@
 
             <!-- 2. Trang Chọn Môn Học (Ôn thi) -->
             <div id="on-thi-main" class="page-content">
+                <!-- Nút Quay lại Menu -->
                 <button class="back-to-menu-btn flex items-center space-x-2 text-gray-600 hover:text-blue-600 transition-colors duration-300 mb-6 group">
                     <svg class="w-5 h-5 transition-transform duration-300 group-hover:-translate-x-1" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 19l-7-7m0 0l7-7m-7 7h18"></path></svg>
                     <span class="font-medium">Quay lại Menu</span>
                 </button>
                 <h2 class="text-3xl md:text-4xl font-bold text-gray-800 mb-8">Chọn môn học (Ôn thi)</h2>
-                
+
                 <div class="grid grid-cols-2 gap-6">
                     <a href="./practice/vat-li.html" class="subject-card block p-6 bg-gradient-to-br from-blue-500 to-blue-600 text-white rounded-xl cursor-pointer decoration-0 hover:no-underline">
                         <h3 class="text-xl md:text-2xl font-semibold mb-2">Vật lí</h3>
@@ -298,14 +368,14 @@
                 </div>
             </div>
 
-            <!-- 3. Trang Chọn Môn Học (Tài liệu) -->
+            <!-- 2b. Trang Chọn Môn Học (Tài liệu) -->
             <div id="tai-lieu-main" class="page-content">
                 <button class="back-to-menu-btn flex items-center space-x-2 text-gray-600 hover:text-blue-600 transition-colors duration-300 mb-6 group">
                     <svg class="w-5 h-5 transition-transform duration-300 group-hover:-translate-x-1" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 19l-7-7m0 0l7-7m-7 7h18"></path></svg>
                     <span class="font-medium">Quay lại Menu</span>
                 </button>
                 <h2 class="text-3xl md:text-4xl font-bold text-gray-800 mb-8">Chọn môn học (Tài liệu)</h2>
-                
+
                 <div class="grid grid-cols-2 gap-6">
                     <a href="./docs/vat-li.html" class="subject-card block p-6 bg-gradient-to-br from-blue-500 to-blue-600 text-white rounded-xl cursor-pointer decoration-0 hover:no-underline">
                         <h3 class="text-xl md:text-2xl font-semibold mb-2">Vật lí</h3>
@@ -325,7 +395,24 @@
                     </a>
                 </div>
             </div>
-            
+
+            <!-- NEW: Trang Lịch sử Thông Báo -->
+            <div id="notification-history" class="page-content">
+                <button class="back-to-menu-btn flex items-center space-x-2 text-gray-600 hover:text-blue-600 transition-colors duration-300 mb-6 group">
+                    <svg class="w-5 h-5 transition-transform duration-300 group-hover:-translate-x-1" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 19l-7-7m0 0l7-7m-7 7h18"></path></svg>
+                    <span class="font-medium">Quay lại Menu</span>
+                </button>
+
+                <div class="flex items-center justify-between mb-8">
+                    <h2 class="text-3xl md:text-4xl font-bold text-gray-800">Lịch sử cập nhật</h2>
+                    <span class="bg-blue-100 text-blue-800 text-xs font-semibold px-2.5 py-0.5 rounded border border-blue-400">News</span>
+                </div>
+
+                <div class="space-y-4" id="notification-list-container">
+                    <!-- Danh sách thông báo sẽ được render tại đây bởi JS -->
+                </div>
+            </div>
+
             <!-- 4. Trang "Đang phát triển" -->
             <div id="coming-soon" class="page-content">
                 <button class="back-to-menu-btn flex items-center space-x-2 text-gray-600 hover:text-blue-600 transition-colors duration-300 mb-6 group">
@@ -342,49 +429,123 @@
         </main>
     </div>
 
-    <!-- UI Interaction Scripts -->
+    <!-- UI Interaction Scripts (Giữ nguyên logic Thông báo và Tìm kiếm) -->
     <script>
         document.addEventListener('DOMContentLoaded', () => {
+            // --- DATA THÔNG BÁO ---
+            // ID càng lớn thì thông báo càng mới
+            const notifications = [
+                {
+                    id: 4,
+                    date: '05/12/2025',
+                    author: 'Trọng Phúc',
+                    title: 'Thay đổi tên miền thành studystaion.site',
+                    content: 'Tên miền chính thức đổi thành studystation.site để dễ dàng truy cập.',
+                    isNew: true
+                },
+                {
+                    id: 3,
+                    date: '04/12/2025',
+                    author: 'Trọng Phúc',
+                    title: 'Ra mắt tính năng Thông báo và Lịch sử',
+                    content: 'Giờ đây bạn đã có thể nhận được các cập nhật mới nhất thông qua tính năng thông báo và lịch sử thông báo!',
+                    isNew: false
+                },
+                {
+                    id: 2,
+                    date: '04/12/2025',
+                    author: 'Trọng Phúc',
+                    title: 'Thêm Account ở menu chính',
+                    content: 'Đã bổ sung mục Tài Khoản ở menu chính, để người chơi theo dõi tài khoản và có thể đăng xuất bất cứ lúc nào.',
+                    isNew: false
+                },
+                {
+                    id: 1,
+                    date: '04/12/2025',
+                    author: 'Trọng Phúc',
+                    title: 'Tối ưu hoá logic scan vocab',
+                    content: 'Hệ thống scan từ vựng vocab giờ đây đã được nâng cấp để scan nhanh hơn. Người dùng đã không cần phải đợi để hiển thị kết quả nữa!',
+                    isNew: false
+                }
+            ];
+
+            // --- Hằng số và Biến ---
             const pages = document.querySelectorAll('.page-content');
             const menuCards = document.querySelectorAll('.menu-card');
             const backToMenuButtons = document.querySelectorAll('.back-to-menu-btn');
+
+            // Account Logic
             const accAvatarBtn = document.getElementById('acc-avatar-btn');
             const accDropdown = document.getElementById('acc-dropdown');
             const accInfo = document.getElementById('account-info');
+            const accMobileSheet = document.getElementById('acc-mobile-sheet');
+            const accMobileBackdrop = document.getElementById('acc-mobile-backdrop');
 
-            // --- Dropdown Logic ---
-            if (accAvatarBtn && accDropdown) {
+            // Notification Elements
+            const notificationModal = document.getElementById('notification-modal');
+            const notificationBackdrop = document.getElementById('modal-backdrop');
+            const notificationCard = document.getElementById('modal-card');
+            const closeModalBtns = document.querySelectorAll('#close-modal-btn, #close-modal-btn-sub');
+            const viewHistoryBtnModal = document.getElementById('view-history-btn-modal');
+            const notificationBellBtn = document.getElementById('notification-bell-btn');
+            const notificationBadge = document.getElementById('notification-badge');
+            const menuHistoryBtn = document.getElementById('menu-history-btn');
+            const mobileHistoryBtn = document.getElementById('mobile-history-btn');
+            const notificationListContainer = document.getElementById('notification-list-container');
+            const latestContentContainer = document.getElementById('latest-notification-content');
+
+            // Logic xử lý Click vào Avatar (Thông minh)
+            if (accAvatarBtn) {
                 accAvatarBtn.addEventListener('click', (e) => {
                     e.stopPropagation();
-                    const isExpanded = accAvatarBtn.getAttribute('aria-expanded') === 'true';
-                    accAvatarBtn.setAttribute('aria-expanded', !isExpanded);
-                    
-                    if (isExpanded) {
-                        accDropdown.classList.add('dropdown-exit');
-                        accDropdown.classList.remove('dropdown-enter', 'dropdown-enter-active');
-                        setTimeout(() => {
-                            accDropdown.classList.add('hidden');
-                            accDropdown.classList.remove('dropdown-exit', 'dropdown-exit-active');
-                        }, 75);
+
+                    if (window.innerWidth < 768) {
+                        accMobileSheet.classList.remove('hidden');
                     } else {
-                        accDropdown.classList.remove('hidden');
-                        requestAnimationFrame(() => {
-                            accDropdown.classList.add('dropdown-enter-active');
-                            accDropdown.classList.remove('dropdown-enter');
-                        });
-                    }
-                });
-                document.addEventListener('click', (e) => {
-                    if (!accInfo.contains(e.target)) {
-                         accAvatarBtn.setAttribute('aria-expanded', 'false');
-                         accDropdown.classList.add('hidden');
+                        const isExpanded = accAvatarBtn.getAttribute('aria-expanded') === 'true';
+                        accAvatarBtn.setAttribute('aria-expanded', !isExpanded);
+                        if (isExpanded) { closeDropdown(); } else { openDropdown(); }
                     }
                 });
             }
 
-            // --- Navigation Logic ---
+            function openDropdown() {
+                if(!accDropdown) return;
+                accDropdown.classList.remove('hidden');
+                requestAnimationFrame(() => {
+                    accDropdown.classList.add('dropdown-enter-active');
+                    accDropdown.classList.remove('dropdown-enter');
+                });
+            }
+
+            function closeDropdown() {
+                if(!accDropdown) return;
+                accAvatarBtn.setAttribute('aria-expanded', 'false');
+                accDropdown.classList.add('dropdown-exit');
+                accDropdown.classList.remove('dropdown-enter', 'dropdown-enter-active');
+                setTimeout(() => {
+                    accDropdown.classList.add('hidden');
+                    accDropdown.classList.remove('dropdown-exit', 'dropdown-exit-active');
+                }, 75);
+            }
+
+            // Đóng dropdown khi click ra ngoài (Desktop)
+            document.addEventListener('click', (e) => {
+                if (accInfo && !accInfo.contains(e.target)) {
+                     closeDropdown();
+                }
+            });
+
+            // Logic đóng Mobile Sheet
+            if (accMobileBackdrop && accMobileSheet) {
+                accMobileBackdrop.addEventListener('click', () => {
+                    accMobileSheet.classList.add('hidden');
+                });
+            }
+
+            // --- Hàm Điều Hướng ---
             function showPage(pageId) {
-                pages.forEach(page => page.classList.remove('active'));
+                pages.forEach(page => { page.classList.remove('active'); });
                 const targetPage = document.getElementById(pageId);
                 if (targetPage) {
                     targetPage.classList.add('active');
@@ -392,10 +553,11 @@
                 }
             }
 
+            // --- Gán Sự Kiện Menu Cards ---
             menuCards.forEach(card => {
                 card.addEventListener('click', (e) => {
                     card.classList.add('clicked');
-                    setTimeout(() => card.classList.remove('clicked'), 350);
+                    setTimeout(() => { card.classList.remove('clicked'); }, 350);
                     const externalLink = card.dataset.link;
                     if (externalLink) { window.location.href = externalLink; return; }
                     const targetId = card.dataset.target;
@@ -403,106 +565,288 @@
                 });
             });
 
+            // --- LOGIC THÔNG BÁO (NOTIFICATION) ---
+            function renderNotifications() {
+                if (notifications.length > 0) {
+                    const latest = notifications[0];
+                    if (latestContentContainer) {
+                        latestContentContainer.innerHTML = `
+                            <div class="mb-2">
+                                <span class="text-xs font-semibold text-blue-600 bg-blue-50 px-2 py-1 rounded-md border border-blue-100">${latest.date}</span>
+                                <span class="text-xs text-gray-400 ml-2">Bởi: ${latest.author}</span>
+                            </div>
+                            <h4 class="text-xl font-bold text-gray-800 mb-2">${latest.title}</h4>
+                            <p class="text-gray-600 text-sm leading-relaxed">${latest.content}</p>
+                        `;
+                    }
+                }
+                if (notificationListContainer) {
+                    notificationListContainer.innerHTML = '';
+                    notifications.forEach(notif => {
+                        const item = document.createElement('div');
+                        item.className = "bg-white p-5 rounded-xl border border-gray-100 shadow-sm hover:shadow-md transition-shadow relative overflow-hidden";
+                        const newBadge = notif.isNew ? 
+                            `<div class="absolute top-0 right-0 bg-red-500 text-white text-[10px] font-bold px-2 py-1 rounded-bl-lg uppercase tracking-wider">Mới</div>` : '';
+                        item.innerHTML = `
+                            ${newBadge}
+                            <div class="flex items-center gap-2 mb-2">
+                                <span class="inline-flex items-center justify-center w-8 h-8 rounded-full bg-blue-100 text-blue-600">
+                                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>
+                                </span>
+                                <div class="flex flex-col">
+                                    <span class="text-sm font-bold text-gray-800">${notif.author}</span>
+                                    <span class="text-xs text-gray-500">${notif.date}</span>
+                                </div>
+                            </div>
+                            <h3 class="text-lg font-bold text-gray-800 mb-2 mt-1">${notif.title}</h3>
+                            <p class="text-gray-600 text-sm">${notif.content}</p>
+                        `;
+                        notificationListContainer.appendChild(item);
+                    });
+                }
+            }
+
+            function openModal() {
+                renderNotifications();
+                notificationModal.classList.remove('hidden');
+                notificationModal.classList.add('flex');
+                requestAnimationFrame(() => {
+                   if(notificationBackdrop) notificationBackdrop.classList.remove('opacity-0');
+                   if(notificationCard) notificationCard.classList.add('show');
+                });
+            }
+
+            function closeModal() {
+                if(notificationBackdrop) notificationBackdrop.classList.add('opacity-0');
+                if(notificationCard) notificationCard.classList.remove('show');
+                setTimeout(() => {
+                    notificationModal.classList.add('hidden');
+                    notificationModal.classList.remove('flex');
+                }, 300);
+                if (notifications.length > 0) {
+                    localStorage.setItem('seen_notification_id', notifications[0].id.toString());
+                    updateBadge(false);
+                }
+            }
+
+            function updateBadge(show) {
+                if (notificationBadge) {
+                    if (show) notificationBadge.classList.remove('hidden');
+                    else notificationBadge.classList.add('hidden');
+                }
+            }
+
+            closeModalBtns.forEach(btn => btn.addEventListener('click', closeModal));
+            if (notificationBackdrop) notificationBackdrop.addEventListener('click', closeModal);
+
+            if (viewHistoryBtnModal) {
+                viewHistoryBtnModal.addEventListener('click', () => {
+                    closeModal();
+                    showPage('notification-history');
+                });
+            }
+
+            if (notificationBellBtn) {
+                notificationBellBtn.addEventListener('click', () => {
+                    if (notifications.length > 0) {
+                        localStorage.setItem('seen_notification_id', notifications[0].id.toString());
+                        updateBadge(false);
+                    }
+                    showPage('notification-history');
+                });
+            }
+
+            if (menuHistoryBtn) {
+                menuHistoryBtn.addEventListener('click', () => {
+                    closeDropdown();
+                    showPage('notification-history');
+                });
+            }
+
+            if (mobileHistoryBtn) {
+                mobileHistoryBtn.addEventListener('click', () => {
+                    accMobileSheet.classList.add('hidden');
+                    showPage('notification-history');
+                });
+            }
+
+            // --- AUTO SHOW LOGIC (QUAN TRỌNG) ---
+            renderNotifications();
+            if (notifications.length > 0) {
+                const latestId = notifications[0].id;
+                const seenId = localStorage.getItem('seen_notification_id');
+                if (!seenId || parseInt(seenId) !== latestId) {
+                    updateBadge(true);
+                    setTimeout(() => { openModal(); }, 1000);
+                } else {
+                    updateBadge(false);
+                }
+            }
+
+            // --- Tìm kiếm nhanh trên toàn website (UI Only) ---
+            const globalSearchInput = document.getElementById('global-search-input');
+            const globalSearchResults = document.getElementById('global-search-results');
+
+            function clearSearchHighlights() {
+                const highlighted = document.querySelectorAll('.search-highlight-ring');
+                highlighted.forEach(el => {
+                    el.classList.remove('search-highlight-ring', 'ring-2', 'ring-blue-400', 'ring-offset-2');
+                });
+            }
+
+            function performGlobalSearch(query) {
+                clearSearchHighlights();
+                if (!globalSearchResults) return;
+                globalSearchResults.innerHTML = '';
+                const trimmed = (query || '').trim();
+                if (!trimmed) return;
+
+                const q = trimmed.toLowerCase();
+                const candidates = document.querySelectorAll('h1,h2,h3,h4,p,span,button,a');
+                const results = [];
+
+                candidates.forEach(el => {
+                    const text = (el.textContent || '').trim();
+                    if (!text) return;
+                    if (text.toLowerCase().includes(q)) {
+                        results.push({ el, text });
+                    }
+                });
+
+                if (results.length === 0) {
+                    const noResult = document.createElement('p');
+                    noResult.className = 'text-gray-500';
+                    noResult.textContent = 'Không tìm thấy kết quả phù hợp.';
+                    globalSearchResults.appendChild(noResult);
+                    return;
+                }
+
+                const maxResults = 10;
+                results.slice(0, maxResults).forEach((item, index) => {
+                    const resultBtn = document.createElement('button');
+                    resultBtn.type = 'button';
+                    resultBtn.className = 'w-full text-left px-3 py-2 bg-gray-50 hover:bg-gray-100 border border-gray-200 rounded-md transition-colors duration-150';
+                    const preview = item.text.length > 120 ? item.text.slice(0, 117) + '...' : item.text;
+                    const hostPage = item.el.closest('.page-content');
+                    let pageLabel = '';
+                    if (hostPage) {
+                        const heading = hostPage.querySelector('h1, h2, h3');
+                        pageLabel = heading ? heading.textContent.trim() : hostPage.id;
+                    }
+                    resultBtn.innerHTML = `
+                        <div class="text-xs text-blue-600 mb-0.5">[${pageLabel || 'Trang'}]</div>
+                        <div>${preview}</div>
+                    `;
+                    resultBtn.addEventListener('click', () => {
+                        const hostPage = item.el.closest('.page-content');
+                        if (hostPage && hostPage.id) { showPage(hostPage.id); }
+                        item.el.scrollIntoView({ behavior: 'smooth', block: 'center' });
+                        item.el.classList.add('search-highlight-ring', 'ring-2', 'ring-blue-400', 'ring-offset-2');
+                        setTimeout(() => {
+                            item.el.classList.remove('search-highlight-ring', 'ring-2', 'ring-blue-400', 'ring-offset-2');
+                        }, 2000);
+                    });
+                    globalSearchResults.appendChild(resultBtn);
+                });
+            }
+
+            let searchTimeout;
+            if (globalSearchInput) {
+                globalSearchInput.addEventListener('input', (e) => {
+                    const value = globalSearchInput.value;
+                    clearTimeout(searchTimeout);
+                    searchTimeout = setTimeout(() => { performGlobalSearch(value); }, 250);
+                });
+            }
+
+            // Quay lại Menu (từ các trang chọn môn)
             backToMenuButtons.forEach(button => {
-                button.addEventListener('click', () => showPage('menu-cards'));
+                button.addEventListener('click', () => { showPage('menu-cards'); });
             });
 
+            // Khởi động
             showPage('menu-cards');
         });
     </script>
 
-    <!-- GATEKEEPER INTEGRATION -->
+    <!-- MODULE GATEKEEPER & ADMIN LOGIC -->
     <script type="module">
+        // Import checkIsAdmin để kiểm tra quyền
         import { initGatekeeper, onUserChange, logoutUser, checkIsAdmin } from "../gatekeeper.js";
-        
-        // 1. Khởi tạo bảo vệ
         initGatekeeper('protected');
 
-        // 2. Elements cần cập nhật
-        const els = {
-            accInfo: document.getElementById('account-info'),
-            name: document.getElementById('acc-name'),
-            email: document.getElementById('acc-email'),
-            avatar: document.getElementById('acc-avatar'),
-            logoutBtn: document.getElementById('acc-logout'),
-            
-            // Mobile elements
-            mobileBtn: document.getElementById('acc-mobile-btn'),
-            mobileSheet: document.getElementById('acc-mobile-sheet'),
-            mobileBackdrop: document.getElementById('acc-mobile-backdrop'),
-            mobileName: document.getElementById('acc-mobile-name'),
-            mobileEmail: document.getElementById('acc-mobile-email'),
-            mobileAvatarBtn: document.getElementById('acc-mobile-avatar'),
-            mobileAvatarSheet: document.getElementById('acc-mobile-avatar-sheet'),
-            mobileLogout: document.getElementById('acc-mobile-logout'),
-            
-            // ADMIN ELEMENTS (Mới)
-            adminBadge: document.getElementById('admin-badge'),
-            adminLink: document.getElementById('admin-link'),
-            adminBadgeMobile: document.getElementById('admin-badge-mobile'),
-            adminBtnMobile: document.getElementById('admin-btn-mobile')
-        };
+        // Desktop Elements
+        const accInfo = document.getElementById('account-info');
+        const accName = document.getElementById('acc-name');
+        const accEmail = document.getElementById('acc-email');
+        const accAvatar = document.getElementById('acc-avatar');
+        const accLogout = document.getElementById('acc-logout');
 
-        // 3. Xử lý Đăng xuất
-        if (els.logoutBtn) els.logoutBtn.addEventListener('click', () => logoutUser());
-        
-        if (els.mobileBtn && els.mobileSheet) {
-            els.mobileBtn.addEventListener('click', () => els.mobileSheet.classList.remove('hidden'));
-        }
-        if (els.mobileBackdrop && els.mobileSheet) {
-            els.mobileBackdrop.addEventListener('click', () => els.mobileSheet.classList.add('hidden'));
-        }
-        if (els.mobileLogout) {
-            els.mobileLogout.addEventListener('click', () => {
+        // Admin Elements (Desktop)
+        const adminBadge = document.getElementById('admin-badge');
+        const adminLink = document.getElementById('admin-link');
+
+        // Mobile Sheet Elements
+        const accMobileSheet = document.getElementById('acc-mobile-sheet');
+        const accMobileName = document.getElementById('acc-mobile-name');
+        const accMobileEmail = document.getElementById('acc-mobile-email');
+        const accMobileAvatarSheetImg = document.getElementById('acc-mobile-avatar-sheet');
+        const accMobileLogout = document.getElementById('acc-mobile-logout');
+
+        // Admin Elements (Mobile)
+        const adminBadgeMobile = document.getElementById('admin-badge-mobile');
+        const adminBtnMobile = document.getElementById('admin-btn-mobile');
+
+        if (accLogout) accLogout.addEventListener('click', () => logoutUser());
+
+        if (accMobileLogout) {
+            accMobileLogout.addEventListener('click', () => {
                 logoutUser();
-                if (els.mobileSheet) els.mobileSheet.classList.add('hidden');
+                if (accMobileSheet) accMobileSheet.classList.add('hidden');
             });
         }
 
-        // 4. Lắng nghe thay đổi User & Admin Status
         onUserChange((user) => {
             if (!user) {
-                if (els.accInfo) els.accInfo.classList.add('hidden');
-                if (els.mobileBtn) els.mobileBtn.classList.add('hidden');
-                if (els.mobileSheet) els.mobileSheet.classList.add('hidden');
+                if (accInfo) accInfo.classList.add('hidden');
+                if (accMobileSheet) accMobileSheet.classList.add('hidden');
                 return;
             }
+            if (accInfo) accInfo.classList.remove('hidden');
 
-            // Hiển thị info
-            if (els.accInfo) els.accInfo.classList.remove('hidden');
-            if (els.mobileBtn) els.mobileBtn.classList.remove('hidden');
+            // Cập nhật thông tin User
+            const userName = user.displayName || 'Người dùng';
+            const userEmail = user.email || '';
+            const userPhoto = user.photoURL || '../favicon.png';
 
-            // Cập nhật text
-            const name = user.displayName || 'Người dùng';
-            const email = user.email || '';
-            const photo = user.photoURL || '../favicon.png';
+            // Desktop Updates
+            if (accName) accName.textContent = userName;
+            if (accEmail) accEmail.textContent = userEmail;
+            if (accAvatar) accAvatar.src = userPhoto;
 
-            if (els.name) els.name.textContent = name;
-            if (els.email) els.email.textContent = email;
-            if (els.avatar) els.avatar.src = photo;
+            // Mobile Sheet Updates
+            if (accMobileName) accMobileName.textContent = userName;
+            if (accMobileEmail) accMobileEmail.textContent = userEmail;
+            if (accMobileAvatarSheetImg) accMobileAvatarSheetImg.src = userPhoto;
 
-            if (els.mobileName) els.mobileName.textContent = name;
-            if (els.mobileEmail) els.mobileEmail.textContent = email;
-            if (els.mobileAvatarBtn) els.mobileAvatarBtn.src = photo;
-            if (els.mobileAvatarSheet) els.mobileAvatarSheet.src = photo;
-
-            // 🚀 CHECK ADMIN STATUS & SHOW UI
-            const isAdmin = checkIsAdmin(); // Hàm mới từ gatekeeper.js
+            // 🚀 KIỂM TRA QUYỀN ADMIN VÀ HIỂN THỊ GIAO DIỆN
+            const isAdmin = checkIsAdmin(); 
             
             if (isAdmin) {
-                // Show Admin UI
-                if (els.adminBadge) els.adminBadge.classList.remove('hidden');
-                if (els.adminLink) els.adminLink.classList.remove('hidden');
-                if (els.adminBadgeMobile) els.adminBadgeMobile.classList.remove('hidden');
-                if (els.adminBtnMobile) els.adminBtnMobile.classList.remove('hidden');
+                // Hiển thị UI Admin
+                if (adminBadge) adminBadge.classList.remove('hidden');
+                if (adminLink) adminLink.classList.remove('hidden');
+                if (adminBadgeMobile) adminBadgeMobile.classList.remove('hidden');
+                if (adminBtnMobile) adminBtnMobile.classList.remove('hidden');
             } else {
-                // Hide Admin UI
-                if (els.adminBadge) els.adminBadge.classList.add('hidden');
-                if (els.adminLink) els.adminLink.classList.add('hidden');
-                if (els.adminBadgeMobile) els.adminBadgeMobile.classList.add('hidden');
-                if (els.adminBtnMobile) els.adminBtnMobile.classList.add('hidden');
+                // Ẩn UI Admin (nếu user bị hạ quyền mà không reload)
+                if (adminBadge) adminBadge.classList.add('hidden');
+                if (adminLink) adminLink.classList.add('hidden');
+                if (adminBadgeMobile) adminBadgeMobile.classList.add('hidden');
+                if (adminBtnMobile) adminBtnMobile.classList.add('hidden');
             }
         });
     </script>
+
 </body>
 </html>
