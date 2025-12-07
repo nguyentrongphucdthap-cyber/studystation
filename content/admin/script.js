@@ -752,35 +752,23 @@ function getMimeType(ext) {
     };
     return mimeTypes[ext] || 'application/octet-stream';
 }
-
-/**
- * Parse file using Gemini Vision API
- */
 async function parseFileWithAI(base64Data, mimeType, fileName) {
-    const systemPrompt = `Bạn là trợ lý AI chuyên phân tích đề thi. 
-Nhiệm vụ: Trích xuất tất cả câu hỏi từ tài liệu này và chuyển thành định dạng JSON.
-
-Quy tắc phân loại câu hỏi:
-- part1: Trắc nghiệm 4 đáp án (A, B, C, D)
-- part2: Đúng/Sai với 4 mệnh đề a, b, c, d
-- part3: Trả lời ngắn (điền số, từ, công thức)
-
-Các môn học hợp lệ: bio (Sinh học), physics (Vật lí), info (Tin học), history (Lịch sử)
-
-Trả về JSON với cấu trúc:
+    const systemPrompt = `Extract exam to JSON.
+Subjects: bio, physics, info, history (or null).
+Format:
 {
-  "subjectId": "bio|physics|info|history hoặc null nếu không xác định được",
-  "title": "Tiêu đề đề thi",
+  "subjectId": "subject|null",
+  "title": "Exam Title",
   "time": 50,
-  "part1": [{"id": 1, "text": "Câu hỏi?", "options": ["A", "B", "C", "D"], "correct": 0}],
-  "part2": [{"id": 1, "text": "Mô tả", "subQuestions": [{"id": "a", "text": "...", "correct": true/false}]}],
-  "part3": [{"id": 1, "text": "Câu hỏi?", "correct": "đáp án"}]
+  "part1": [{"id": 1, "text": "Q", "options": ["A","B","C","D"], "correct": 0}],
+  "part2": [{"id": 1, "text": "Desc", "subQuestions": [{"id": "a", "text": "Q", "correct": true}]}],
+  "part3": [{"id": 1, "text": "Q", "correct": "Ans"}]
 }`;
 
     const payload = {
         contents: [{
             parts: [
-                { text: `Phân tích đề thi từ file "${fileName}" và trích xuất tất cả câu hỏi:` },
+                { text: `Extract questions from file "${fileName}":` },
                 { inline_data: { mime_type: mimeType, data: base64Data } }
             ]
         }],
