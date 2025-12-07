@@ -1031,7 +1031,6 @@ const app = {
     }
 };
 
-document.addEventListener('DOMContentLoaded', () => {
-    musicPlayer.init();
-    app.init();
-});
+// Export app and musicPlayer for manual initialization
+window.app = app;
+window.musicPlayer = musicPlayer;
