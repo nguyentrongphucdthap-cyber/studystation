@@ -337,16 +337,42 @@ export async function getExamsBySubject(subjectId) {
 }
 
 /**
- * Thêm exam mới
+ * Thêm exam mới với ID có cấu trúc: {subjectId}_{timestamp}_{randomCode}
+ * Ví dụ: bio_20251207_a1b2c3
  */
 export async function createExam(examData) {
-    const examsCol = collection(db, 'exams');
-    const docRef = await addDoc(examsCol, {
+    // Generate structured ID
+    const now = new Date();
+    const dateStr = now.toISOString().slice(0, 10).replace(/-/g, ''); // YYYYMMDD
+    const randomCode = Math.random().toString(36).substring(2, 8); // 6 chars
+    const examId = `${examData.subjectId}_${dateStr}_${randomCode}`;
+
+    // Generate exam code from title (for display)
+    const examCode = generateExamCode(examData.title);
+
+    const examRef = doc(db, 'exams', examId);
+    await setDoc(examRef, {
         ...examData,
-        createdAt: new Date().toISOString(),
-        updatedAt: new Date().toISOString()
+        examCode: examCode,
+        createdAt: now.toISOString(),
+        updatedAt: now.toISOString()
     });
-    return docRef.id;
+    return examId;
+}
+
+/**
+ * Generate exam code from title
+ * E.g., "Đề thi THPT QG 2025 - Mã 001" -> "THPTQG2025_001"
+ */
+function generateExamCode(title) {
+    if (!title) return 'EXAM_' + Date.now();
+    return title
+        .normalize('NFD').replace(/[\u0300-\u036f]/g, '') // Remove diacritics
+        .replace(/[^a-zA-Z0-9]/g, '_') // Replace special chars
+        .replace(/_+/g, '_') // Remove multiple underscores
+        .replace(/^_|_$/g, '') // Trim underscores
+        .toUpperCase()
+        .substring(0, 30);
 }
 
 /**
