@@ -816,7 +816,10 @@ const app = {
     },
 
     renderQuestions(data) {
+        let globalQIndex = 0;
         const renderQ = (q, index, type) => {
+            globalQIndex++;
+            const displayId = globalQIndex;
             const div = document.createElement('div');
             const uniqueId = `${type}_${q.id}`;
             div.id = `q-${uniqueId}`;
@@ -825,7 +828,7 @@ const app = {
 
             let content = `
                 <div class="mb-4 md:mb-6 font-medium text-slate-800 dark:text-white flex gap-4">
-                    <div class="shrink-0 w-10 h-10 bg-blue-100 dark:bg-blue-900/30 text-blue-700 dark:text-blue-400 rounded-xl flex items-center justify-center font-bold shadow-sm">${q.id}</div>
+                    <div class="shrink-0 w-10 h-10 bg-blue-100 dark:bg-blue-900/30 text-blue-700 dark:text-blue-400 rounded-xl flex items-center justify-center font-bold shadow-sm">${displayId}</div>
                     <span class="pt-1.5 leading-relaxed font-question dynamic-text">${q.text}</span>
                 </div>`;
 
@@ -871,17 +874,26 @@ const app = {
     },
 
     renderPalette(data) {
+        let globalQIndex = 0;
         const createBtn = (id, type, isMobile) => {
+            globalQIndex++;
             const uniqueId = `${type}_${id}`;
             const btnId = isMobile ? `mob-pal-btn-${uniqueId}` : `pal-btn-${uniqueId}`;
-            return `<button id="${btnId}" onclick="document.getElementById('q-${uniqueId}').scrollIntoView({behavior: 'smooth', block: 'center'})" class="question-nav-item w-full aspect-square flex items-center justify-center rounded-xl border border-slate-200 dark:border-slate-600 text-sm font-bold text-slate-500 dark:text-slate-400 bg-white dark:bg-slate-800">${id}</button>`;
+            return `<button id="${btnId}" onclick="document.getElementById('q-${uniqueId}').scrollIntoView({behavior: 'smooth', block: 'center'})" class="question-nav-item w-full aspect-square flex items-center justify-center rounded-xl border border-slate-200 dark:border-slate-600 text-sm font-bold text-slate-500 dark:text-slate-400 bg-white dark:bg-slate-800">${globalQIndex}</button>`;
         };
         const allQuestions = [
             ...data.part1.map(q => ({ id: q.id, type: 1 })),
             ...data.part2.map(q => ({ id: q.id, type: 2 })),
             ...data.part3.map(q => ({ id: q.id, type: 3 }))
         ];
+        // We need to render independent lists for desktop and mobile because the counter increments
+
+        // Reset and render for Desktop
+        globalQIndex = 0;
         document.getElementById('question-palette').innerHTML = allQuestions.map(q => createBtn(q.id, q.type, false)).join('');
+
+        // Reset and render for Mobile
+        globalQIndex = 0;
         document.getElementById('mobile-palette-grid').innerHTML = allQuestions.map(q => createBtn(q.id, q.type, true)).join('');
     },
 
