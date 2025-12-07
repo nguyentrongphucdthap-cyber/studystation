@@ -15,12 +15,12 @@ import { getFirestore, doc, getDoc, updateDoc, onSnapshot, collection, getDocs, 
 // 1. CẤU HÌNH FIREBASE
 // ============================================================
 const firebaseConfig = {
-    apiKey: "AIzaSyDWhaSOppY0WawN1h9g0bib-UomFNQO1PM",
-    authDomain: "studystationlogin.firebaseapp.com",
-    projectId: "studystationlogin",
-    storageBucket: "studystationlogin.firebasestorage.app",
-    messagingSenderId: "966986507430",
-    appId: "1:966986507430:web:443c18747bd9a4dfa88067"
+    apiKey: "AIzaSyBdSnR-z6CJWzDH-WxdG-0rNX58srJrb8A",
+    authDomain: "studystation-auth.firebaseapp.com",
+    projectId: "studystation-auth",
+    storageBucket: "studystation-auth.firebasestorage.app",
+    messagingSenderId: "293717187040",
+    appId: "1:293717187040:web:8bca14e98046b1c98cb385"
 };
 
 const app = initializeApp(firebaseConfig);
