@@ -6,865 +6,412 @@
     <title>StudyStation - Cổng thông tin học tập</title>
     <meta name="ga-measurement-id" content="G-4FGSW7XDZ9">
     <link rel="icon" type="image/png" href="../favicon.png">
+    
     <!-- Tải Tailwind CSS -->
     <script src="https://cdn.tailwindcss.com"></script>
-    <!-- Tải font Be Vietnam Pro từ Google Fonts -->
+    
+    <!-- Tải font Be Vietnam Pro -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Be+Vietnam+Pro:wght@400;500;600;700&display=swap" rel="stylesheet">
     
     <style>
-        /* Sử dụng font Be Vietnam Pro làm font chữ mặc định */
-        body {
-            font-family: 'Be Vietnam Pro', sans-serif;
-        }
+        body { font-family: 'Be Vietnam Pro', sans-serif; }
 
-        /* Định nghĩa hiệu ứng chuyển cảnh (fade-in và trượt lên) */
+        /* Animation cho chuyển trang */
         .page-content {
-            display: none; /* Ẩn tất cả các trang theo mặc định */
+            display: none;
             animation: pageFadeIn 0.5s cubic-bezier(0.25, 0.46, 0.45, 0.94) forwards;
         }
-
-        .page-content.active {
-            display: block; /* Hiển thị trang đang hoạt động */
-        }
-
+        .page-content.active { display: block; }
         @keyframes pageFadeIn {
-            from {
-                opacity: 0;
-                transform: translateY(20px);
-            }
-            to {
-                opacity: 1;
-                transform: translateY(0);
-            }
+            from { opacity: 0; transform: translateY(20px); }
+            to { opacity: 1; transform: translateY(0); }
         }
 
-        /* Hiệu ứng hover mượt mà cho các nút môn học */
-        .subject-card {
-            transition: transform 0.3s ease, box-shadow 0.3s ease;
-        }
-        .subject-card:hover {
-            transform: translateY(-5px);
-            box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05);
-        }
-        .menu-card {
-            transition: transform 0.3s ease, box-shadow 0.3s ease;
-        }
-        .menu-card.clicked {
-            animation: cardClick 0.35s ease;
-        }
+        /* Hiệu ứng Hover Card */
+        .subject-card { transition: transform 0.3s ease, box-shadow 0.3s ease; }
+        .subject-card:hover { transform: translateY(-5px); box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1); }
+        
+        .menu-card.clicked { animation: cardClick 0.35s ease; }
         @keyframes cardClick {
             0% { transform: scale(1); }
             40% { transform: scale(0.95); }
             100% { transform: scale(1); }
         }
 
-        /* Loading Spinner cho Gatekeeper */
-        @keyframes spin {
-            to { transform: rotate(360deg); }
-        }
-
-        /* Dropdown menu animation */
-        .dropdown-enter {
-            opacity: 0;
-            transform: scale(0.95);
-        }
-        .dropdown-enter-active {
-            opacity: 1;
-            transform: scale(1);
-            transition: opacity 0.1s ease-out, transform 0.1s ease-out;
-        }
-        .dropdown-exit {
-            opacity: 1;
-            transform: scale(1);
-        }
-        .dropdown-exit-active {
-            opacity: 0;
-            transform: scale(0.95);
-            transition: opacity 0.075s ease-in, transform 0.075s ease-in;
-        }
-
-        /* Modal Animation - Cập nhật */
-        #notification-modal {
-            transition: opacity 0.3s ease;
-        }
-        .modal-card-content {
-            opacity: 0;
-            transform: scale(0.9);
-            transition: opacity 0.4s cubic-bezier(0.16, 1, 0.3, 1), transform 0.4s cubic-bezier(0.16, 1, 0.3, 1);
-        }
-        .modal-card-content.show {
-            opacity: 1;
-            transform: scale(1);
-        }
+        /* Loading Spinner */
+        @keyframes spin { to { transform: rotate(360deg); } }
+        
+        /* Dropdown Animation */
+        .dropdown-enter-active { transition: all 0.1s ease-out; }
+        .dropdown-leave-active { transition: all 0.075s ease-in; }
+        .dropdown-enter, .dropdown-leave-to { opacity: 0; transform: scale(0.95); }
     </style>
 </head>
-<body class="bg-gray-100 relative">
-    
-    <!-- Màn hình Loading Gatekeeper -->
-    <div id="gatekeeper-loading" style="position:fixed;top:0;left:0;width:100%;height:100%;background:#0f172a;display:none;justify-content:center;align-items:center;color:#ffffff;z-index:9999">
-        <div style="display:flex;flex-direction:column;align-items:center;gap:10px">
-            <img src="../favicon.png" alt="StudyStation" style="width:56px;height:56px;border-radius:12px">
-            <div style="font-weight:700;font-size:18px">StudyStation</div>
-            <div style="width:28px;height:28px;border:3px solid rgba(255,255,255,0.25);border-top-color:#60a5fa;border-radius:9999px;animation: spin 1s linear infinite"></div>
+<body class="bg-gray-100 text-gray-800">
+
+    <!-- OVERLAY LOADING (Gatekeeper) -->
+    <div id="gatekeeper-loading" style="position:fixed;top:0;left:0;width:100%;height:100%;background:#0f172a;display:flex;flex-direction:column;justify-content:center;align-items:center;color:#ffffff;z-index:9999;">
+        <div style="display:flex;flex-direction:column;align-items:center;gap:16px">
+             <!-- Placeholder Logo nếu chưa load được ảnh -->
+            <div class="w-14 h-14 bg-blue-500 rounded-xl flex items-center justify-center text-2xl font-bold">S</div>
+            <div style="font-weight:700;font-size:18px">Đang xác thực...</div>
+            <div style="width:28px;height:28px;border:3px solid rgba(255,255,255,0.25);border-top-color:#60a5fa;border-radius:50%;animation: spin 1s linear infinite"></div>
         </div>
     </div>
 
-    <!-- Notification Modal (Popup) -->
-    <div id="notification-modal" class="fixed inset-0 z-50 hidden items-center justify-center p-4">
-        <!-- Backdrop -->
-        <div class="absolute inset-0 bg-black/60 backdrop-blur-sm transition-opacity opacity-0" id="modal-backdrop" style="transition: opacity 0.3s ease;"></div>
-        
-        <!-- Nội dung Modal -->
-        <div id="modal-card" class="modal-card-content bg-white rounded-2xl shadow-2xl w-full max-w-md relative z-10 overflow-hidden">
-            <!-- Header Modal -->
-            <div class="bg-blue-600 px-6 py-4 flex justify-between items-center">
-                <h3 class="text-white font-bold text-lg flex items-center gap-2">
-                    <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 17h5l-1.405-1.405A2.032 2.032 0 0118 14.158V11a6.002 6.002 0 00-4-5.659V5a2 2 0 10-4 0v.341C7.67 6.165 6 8.388 6 11v3.159c0 .538-.214 1.055-.595 1.436L4 17h5m6 0v1a3 3 0 11-6 0v-1m6 0H9"></path></svg>
-                    Thông báo mới
-                </h3>
-                <button id="close-modal-btn" class="text-blue-100 hover:text-white transition-colors">
-                    <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path></svg>
-                </button>
-            </div>
+    <!-- MAIN CONTAINER -->
+    <div class="w-full max-w-4xl mx-auto bg-white rounded-lg shadow-xl my-4 md:my-8 min-h-[80vh] flex flex-col">
             
-            <!-- Body Modal -->
-            <div class="p-6">
-                <div id="latest-notification-content">
-                    <!-- Nội dung sẽ được JS inject vào đây -->
-                    <div class="animate-pulse flex space-x-4">
-                        <div class="flex-1 space-y-4 py-1">
-                            <div class="h-4 bg-gray-200 rounded w-3/4"></div>
-                            <div class="space-y-2">
-                                <div class="h-4 bg-gray-200 rounded"></div>
-                                <div class="h-4 bg-gray-200 rounded w-5/6"></div>
-                            </div>
-                        </div>
-                    </div>
+        <!-- HEADER / USER BAR -->
+        <header class="w-full px-6 py-4 border-b border-gray-100 flex items-center justify-between">
+            <div class="flex items-center gap-2">
+                <h1 class="text-2xl font-bold text-gray-800">Study<span class="text-blue-500">Station</span></h1>
+            </div>
+
+            <!-- User Actions -->
+            <div class="flex items-center gap-3 relative">
+                <!-- Admin Badge (Chỉ hiện khi là Admin) -->
+                <span id="admin-badge" class="hidden px-2 py-0.5 rounded text-xs font-bold bg-yellow-100 text-yellow-700 border border-yellow-200">
+                    ADMIN
+                </span>
+
+                <!-- Desktop User Info -->
+                <div class="hidden md:flex flex-col items-end mr-2">
+                    <span id="acc-name" class="text-sm font-bold text-gray-900 leading-tight">Đang tải...</span>
+                    <span id="acc-role" class="text-xs text-gray-500">Kiểm tra quyền...</span>
                 </div>
-            </div>
 
-            <!-- Footer Modal -->
-            <div class="bg-gray-50 px-6 py-3 flex justify-between items-center border-t border-gray-100">
-                <button id="view-history-btn-modal" class="text-sm text-blue-600 font-medium hover:underline">Xem lịch sử cập nhật</button>
-                <button id="close-modal-btn-sub" class="px-4 py-2 bg-blue-600 text-white text-sm font-medium rounded-lg hover:bg-blue-700 transition-colors">Đã hiểu</button>
-            </div>
-        </div>
-    </div>
+                <!-- Avatar Button (Dropdown Toggle) -->
+                <button id="acc-avatar-btn" class="relative focus:outline-none">
+                    <img id="acc-avatar" class="w-10 h-10 rounded-full border-2 border-gray-100 hover:border-blue-400 transition-colors object-cover" src="../favicon.png" alt="Avatar">
+                </button>
 
-    <!-- Card chính của ứng dụng -->
-    <div class="w-full max-w-3xl mx-auto bg-white rounded-lg shadow-lg my-4 md:my-8">
-            
-        <!-- Khu vực nội dung chính -->
-        <main class="w-full p-6 md:p-10 min-h-[600px]">
-            
-            <!-- 1. Trang Menu Thẻ (Hub Trung Tâm) -->
-            <div id="menu-cards" class="page-content active">
-                <!-- Header -->
-                <div class="flex flex-row items-center justify-between mb-6">
-                    <h1 class="text-2xl md:text-4xl font-bold text-gray-800">
-                        Study<span class="text-blue-400">Station</span>
-                    </h1>
+                <!-- Desktop Dropdown Menu -->
+                <div id="acc-dropdown" class="hidden absolute right-0 top-12 w-56 bg-white rounded-xl shadow-2xl border border-gray-100 py-2 z-50 transform origin-top-right transition-all">
+                    <div class="px-4 py-2 border-b border-gray-50 md:hidden">
+                        <p id="acc-name-mobile" class="text-sm font-bold text-gray-900">User</p>
+                        <p id="acc-email-mobile" class="text-xs text-gray-500 truncate">email@example.com</p>
+                    </div>
                     
-                    <div class="flex items-center gap-3 relative">
-                        <!-- Icon Thông báo (Bell) -->
-                        <button id="notification-bell-btn" class="relative p-2 text-gray-500 hover:text-blue-600 hover:bg-gray-100 rounded-full transition-colors focus:outline-none">
-                            <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 17h5l-1.405-1.405A2.032 2.032 0 0118 14.158V11a6.002 6.002 0 00-4-5.659V5a2 2 0 10-4 0v.341C7.67 6.165 6 8.388 6 11v3.159c0 .538-.214 1.055-.595 1.436L4 17h5m6 0v1a3 3 0 11-6 0v-1m6 0H9"></path></svg>
-                            <!-- Chấm đỏ báo hiệu có thông báo -->
-                            <span id="notification-badge" class="absolute top-1.5 right-2 w-2.5 h-2.5 bg-red-500 border-2 border-white rounded-full hidden"></span>
-                        </button>
-
-                        <div class="w-px h-6 bg-gray-300 mx-1 hidden md:block"></div>
-
-                        <!-- Text "Xin chào" chỉ hiện trên màn hình md trở lên -->
-                        <p class="hidden md:block text-base md:text-lg text-gray-600 mr-2">Xin chào!</p>
-                        
-                        <!-- Unified Account Button (Hiển thị trên mọi thiết bị) -->
-                        <div id="account-info" class="relative">
-                            <button id="acc-avatar-btn" class="flex items-center gap-2 rounded-full focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 transition-all" aria-expanded="false" aria-haspopup="true">
-                                <img id="acc-avatar" class="w-9 h-9 rounded-full border border-gray-200" alt="avatar">
-                            </button>
-                            
-                            <!-- Dropdown Menu (Chỉ dùng cho Desktop logic) -->
-                            <div id="acc-dropdown" class="hidden absolute right-0 z-20 mt-2 w-56 origin-top-right rounded-xl bg-white shadow-xl ring-1 ring-black ring-opacity-5 focus:outline-none transform transition-all duration-200">
-                                <div class="px-4 py-3 border-b border-gray-100 bg-gray-50 rounded-t-xl">
-                                    <p class="text-sm text-gray-500">Đăng nhập với tên</p>
-                                    <p id="acc-name" class="text-sm font-bold text-gray-900 truncate">User Name</p>
-                                    <p id="acc-email" class="text-xs text-gray-500 truncate mt-0.5">email@example.com</p>
-                                </div>
-                                <div class="py-1">
-                                    <a href="#" class="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-50 hover:text-blue-600 transition-colors">
-                                        Hồ sơ cá nhân
-                                    </a>
-                                    <!-- Nút mở lịch sử thông báo từ menu -->
-                                    <button id="menu-history-btn" class="block w-full text-left px-4 py-2 text-sm text-gray-700 hover:bg-gray-50 hover:text-blue-600 transition-colors">
-                                        Lịch sử thông báo
-                                    </button>
-                                </div>
-                                <div class="py-1 border-t border-gray-100">
-                                    <button id="acc-logout" class="block w-full text-left px-4 py-2 text-sm text-red-600 hover:bg-red-50 transition-colors rounded-b-xl">
-                                        Đăng xuất
-                                    </button>
-                                </div>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-
-                <!-- Mobile Account Sheet (Chỉ hiện khi gọi bằng JS trên mobile) -->
-                <div id="acc-mobile-sheet" class="fixed inset-0 hidden z-50">
-                    <div id="acc-mobile-backdrop" class="absolute inset-0 bg-black/40 backdrop-blur-sm transition-opacity"></div>
-                    <div class="absolute bottom-0 left-0 right-0 bg-white rounded-t-2xl p-5 shadow-2xl transform transition-transform duration-300 ease-out">
-                        <div class="flex items-center justify-center mb-2">
-                             <div class="w-12 h-1.5 bg-gray-300 rounded-full"></div>
-                        </div>
-                        <div class="flex items-center gap-4 mb-6 mt-4">
-                            <img id="acc-mobile-avatar-sheet" class="w-14 h-14 rounded-full border-2 border-blue-100" alt="avatar">
-                            <div class="leading-tight overflow-hidden">
-                                <div id="acc-mobile-name" class="text-lg font-bold text-gray-800 truncate"></div>
-                                <div id="acc-mobile-email" class="text-sm text-gray-500 truncate"></div>
-                            </div>
-                        </div>
-                        <hr class="border-gray-100 mb-4">
-                        <div class="space-y-2">
-                            <button class="w-full flex items-center gap-3 px-4 py-3 text-gray-700 bg-gray-50 hover:bg-gray-100 rounded-xl transition-colors">
-                                <svg class="w-5 h-5 text-gray-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z"></path></svg>
-                                Hồ sơ cá nhân
-                            </button>
-                            <button id="mobile-history-btn" class="w-full flex items-center gap-3 px-4 py-3 text-gray-700 bg-gray-50 hover:bg-gray-100 rounded-xl transition-colors">
-                                <svg class="w-5 h-5 text-gray-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 17h5l-1.405-1.405A2.032 2.032 0 0118 14.158V11a6.002 6.002 0 00-4-5.659V5a2 2 0 10-4 0v.341C7.67 6.165 6 8.388 6 11v3.159c0 .538-.214 1.055-.595 1.436L4 17h5m6 0v1a3 3 0 11-6 0v-1m6 0H9"></path></svg>
-                                Lịch sử thông báo
-                            </button>
-                            <button id="acc-mobile-logout" class="w-full flex items-center gap-3 px-4 py-3 text-red-600 bg-red-50 hover:bg-red-100 rounded-xl transition-colors font-medium">
-                                <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1"></path></svg>
-                                Đăng xuất
-                            </button>
-                        </div>
-                    </div>
-                </div>
-
-                <!-- Tìm kiếm nhanh -->
-                <div class="w-full mb-6 flex justify-center">
-                    <div class="flex flex-col space-y-2 md:space-y-1 md:items-center md:max-w-xs w-full max-w-xs">
-                        <input
-                            id="global-search-input"
-                            type="text"
-                            placeholder="Tìm kiếm..."
-                            class="w-full px-3 py-2 border border-gray-300 rounded-lg shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-400 focus:border-blue-400 text-sm"
-                        >
-                        <!-- Gợi ý tìm kiếm -->
-                        <div id="global-search-results" class="space-y-2 text-sm text-gray-700"></div>
-                    </div>
-                </div>
-                
-                <div class="grid grid-cols-2 md:grid-cols-3 gap-4 md:gap-6">
-                    <!-- Cards Menu (Giữ nguyên) -->
-                    <!-- Card Ôn thi -->
-                    <div class="menu-card subject-card p-3 md:p-4 bg-white border border-gray-200 rounded-xl cursor-pointer hover:border-blue-500 aspect-square" data-link="./practice/index.html">
-                        <div class="flex flex-col items-center justify-center h-full space-y-2 text-center">
-                            <div class="p-2 md:p-3 rounded-full bg-blue-100 text-blue-600">
-                                <svg class="w-8 h-8 md:w-10 md:h-10" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.747 0 3.332.477 4.5 1.253v13C19.832 18.477 18.246 18 16.5 18c-1.746 0-3.332.477-4.5 1.253"></path></svg>
-                            </div>
-                            <span class="text-base md:text-xl font-semibold text-gray-800">Bài thi</span>
-                        </div>
+                    <!-- Admin Links (Hidden by default) -->
+                    <div id="admin-links" class="hidden">
+                        <div class="px-4 py-1 text-xs font-bold text-gray-400 uppercase tracking-wider">Quản trị</div>
+                        <a href="#" class="block px-4 py-2 text-sm text-yellow-700 hover:bg-yellow-50 font-medium">
+                            ⚡ Quản lý User (Console)
+                        </a>
+                        <div class="border-t border-gray-100 my-1"></div>
                     </div>
 
-                    <!-- Card Lịch học -->
-                    <div class="menu-card subject-card p-3 md:p-4 bg-white border border-gray-200 rounded-xl cursor-pointer hover:border-blue-500 aspect-square" data-link="./schedule/index.html">
-                         <div class="flex flex-col items-center justify-center h-full space-y-2 text-center">
-                            <div class="p-2 md:p-3 rounded-full bg-green-100 text-green-600">
-                                <svg class="w-8 h-8 md:w-10 md:h-10" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"></path></svg>
-                            </div>
-                            <span class="text-base md:text-xl font-semibold text-gray-800">Thời Khoá Biểu</span>
-                        </div>
-                    </div>
-
-                    <!-- Card Lịch thi -->
-                    <div class="menu-card subject-card p-3 md:p-4 bg-white border border-gray-200 rounded-xl cursor-pointer hover:border-blue-500 aspect-square" data-target="coming-soon">
-                         <div class="flex flex-col items-center justify-center h-full space-y-2 text-center">
-                            <div class="p-2 md:p-3 rounded-full bg-red-100 text-red-600">
-                                <svg class="w-8 h-8 md:w-10 md:h-10" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>
-                            </div>
-                            <span class="text-base md:text-xl font-semibold text-gray-800">Lịch thi</span>
-                        </div>
-                    </div>
-
-                    <!-- Card Tài liệu -->
-                    <div class="menu-card subject-card p-3 md:p-4 bg-white border border-gray-200 rounded-xl cursor-pointer hover:border-blue-500 aspect-square" data-target="tai-lieu-main">
-                         <div class="flex flex-col items-center justify-center h-full space-y-2 text-center">
-                            <div class="p-2 md:p-3 rounded-full bg-indigo-100 text-indigo-600">
-                                <svg class="w-8 h-8 md:w-10 md:h-10" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 7v10a2 2 0 002 2h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2z"></path></svg>
-                            </div>
-                            <span class="text-base md:text-xl font-semibold text-gray-800">Tài liệu</span>
-                        </div>
-                    </div>
-
-                    <!-- Card Study Flow -->
-                    <div class="menu-card subject-card p-3 md:p-4 bg-white border border-gray-200 rounded-xl cursor-pointer hover:border-blue-500 aspect-square" data-link="./studyflow/index.html">
-                         <div class="flex flex-col items-center justify-center h-full space-y-2 text-center">
-                            <div class="p-2 md:p-3 rounded-full bg-purple-100 text-purple-600">
-                                <svg class="w-8 h-8 md:w-10 md:h-10" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9.663 17h4.673M12 3v1m6.364 1.636l-.707.707M21 12h-1M4 12H3m3.343-5.657l-.707-.707m12.728 0l-.707.707M6.343 17.657l-.707.707m12.728 0l-.707-.707"></path></svg>
-                            </div>
-                            <span class="text-base md:text-xl font-semibold text-gray-800">Study Flow</span>
-                        </div>
-                    </div>
-
-                    <!-- Card Flashcard -->
-                    <div class="menu-card subject-card p-3 md:p-4 bg-white border border-gray-200 rounded-xl cursor-pointer hover:border-blue-500 aspect-square" data-link="./vocab/index.html">
-                         <div class="flex flex-col items-center justify-center h-full space-y-2 text-center">
-                            <div class="p-2 md:p-3 rounded-full bg-yellow-100 text-yellow-600">
-                                <svg class="w-8 h-8 md:w-10 md:h-10" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6v6l4 2m4 0a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>
-                            </div>
-                            <span class="text-base md:text-xl font-semibold text-gray-800">Flashcard</span>
-                        </div>
-                    </div>
+                    <a href="#" class="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-50 hover:text-blue-600">Hồ sơ cá nhân</a>
+                    <a href="#" class="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-50 hover:text-blue-600">Cài đặt</a>
+                    <div class="border-t border-gray-100 my-1"></div>
+                    <button id="acc-logout" class="block w-full text-left px-4 py-2 text-sm text-red-600 hover:bg-red-50 font-medium">
+                        Đăng xuất
+                    </button>
                 </div>
             </div>
+        </header>
 
-            <!-- 2. Trang Chọn Môn Học (Ôn thi) -->
-            <div id="on-thi-main" class="page-content">
-                <!-- Nút Quay lại Menu -->
-                <button class="back-to-menu-btn flex items-center space-x-2 text-gray-600 hover:text-blue-600 transition-colors duration-300 mb-6 group">
-                    <svg class="w-5 h-5 transition-transform duration-300 group-hover:-translate-x-1" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 19l-7-7m0 0l7-7m-7 7h18"></path></svg>
-                    <span class="font-medium">Quay lại Menu</span>
-                </button>
-                <h2 class="text-3xl md:text-4xl font-bold text-gray-800 mb-8">Chọn môn học (Ôn thi)</h2>
-                
-                <div class="grid grid-cols-2 gap-6">
-                    <a href="./practice/vat-li.html" class="subject-card block p-6 bg-gradient-to-br from-blue-500 to-blue-600 text-white rounded-xl cursor-pointer decoration-0 hover:no-underline">
-                        <h3 class="text-xl md:text-2xl font-semibold mb-2">Vật lí</h3>
-                        <p class="font-light">Các định luật Newton, điện học, quang học và hơn thế nữa.</p>
-                    </a>
-                    <a href="./practice/sinh-hoc.html" class="subject-card block p-6 bg-gradient-to-br from-green-500 to-green-600 text-white rounded-xl cursor-pointer decoration-0 hover:no-underline">
-                        <h3 class="text-xl md:text-2xl font-semibold mb-2">Sinh học</h3>
-                        <p class="font-light">Di truyền, tế bào, hệ sinh thái và quá trình tiến hóa.</p>
-                    </a>
-                    <a href="./practice/tin-hoc.html" class="subject-card block p-6 bg-gradient-to-br from-purple-500 to-purple-600 text-white rounded-xl cursor-pointer decoration-0 hover:no-underline">
-                        <h3 class="text-xl md:text-2xl font-semibold mb-2">Tin học</h3>
-                        <p class="font-light">Cấu trúc dữ liệu, giải thuật và lập trình cơ bản.</p>
-                    </a>
-                    <a href="./practice/lich-su.html" class="subject-card block p-6 bg-gradient-to-br from-yellow-500 to-orange-500 text-white rounded-xl cursor-pointer decoration-0 hover:no-underline">
-                        <h3 class="text-xl md:text-2xl font-semibold mb-2">Lịch sử</h3>
-                        <p class="font-light">Các cuộc chiến tranh, cách mạng và các triều đại.</p>
-                    </a>
-                </div>
-            </div>
-
-            <!-- 2b. Trang Chọn Môn Học (Tài liệu) -->
-            <div id="tai-lieu-main" class="page-content">
-                <button class="back-to-menu-btn flex items-center space-x-2 text-gray-600 hover:text-blue-600 transition-colors duration-300 mb-6 group">
-                    <svg class="w-5 h-5 transition-transform duration-300 group-hover:-translate-x-1" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 19l-7-7m0 0l7-7m-7 7h18"></path></svg>
-                    <span class="font-medium">Quay lại Menu</span>
-                </button>
-                <h2 class="text-3xl md:text-4xl font-bold text-gray-800 mb-8">Chọn môn học (Tài liệu)</h2>
-                
-                <div class="grid grid-cols-2 gap-6">
-                    <a href="./docs/vat-li.html" class="subject-card block p-6 bg-gradient-to-br from-blue-500 to-blue-600 text-white rounded-xl cursor-pointer decoration-0 hover:no-underline">
-                        <h3 class="text-xl md:text-2xl font-semibold mb-2">Vật lí</h3>
-                        <p class="font-light">Tổng hợp tài liệu, ghi chú và đề cương môn Vật lí.</p>
-                    </a>
-                    <a href="./docs/sinh-hoc.html" class="subject-card block p-6 bg-gradient-to-br from-green-500 to-green-600 text-white rounded-xl cursor-pointer decoration-0 hover:no-underline">
-                        <h3 class="text-xl md:text-2xl font-semibold mb-2">Sinh học</h3>
-                        <p class="font-light">Tài liệu về di truyền, tế bào, hệ sinh thái và tiến hóa.</p>
-                    </a>
-                    <a href="./docs/tin-hoc.html" class="subject-card block p-6 bg-gradient-to-br from-purple-500 to-purple-600 text-white rounded-xl cursor-pointer decoration-0 hover:no-underline">
-                        <h3 class="text-xl md:text-2xl font-semibold mb-2">Tin học</h3>
-                        <p class="font-light">Tài liệu cấu trúc dữ liệu, giải thuật và lập trình.</p>
-                    </a>
-                    <a href="./docs/lich-su.html" class="subject-card block p-6 bg-gradient-to-br from-yellow-500 to-orange-500 text-white rounded-xl cursor-pointer decoration-0 hover:no-underline">
-                        <h3 class="text-xl md:text-2xl font-semibold mb-2">Lịch sử</h3>
-                        <p class="font-light">Tài liệu các giai đoạn lịch sử và sự kiện quan trọng.</p>
-                    </a>
-                </div>
-            </div>
+        <!-- CONTENT BODY -->
+        <main class="flex-grow p-6 md:p-10">
             
-            <!-- NEW: Trang Lịch sử Thông Báo -->
-            <div id="notification-history" class="page-content">
-                <button class="back-to-menu-btn flex items-center space-x-2 text-gray-600 hover:text-blue-600 transition-colors duration-300 mb-6 group">
-                    <svg class="w-5 h-5 transition-transform duration-300 group-hover:-translate-x-1" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 19l-7-7m0 0l7-7m-7 7h18"></path></svg>
-                    <span class="font-medium">Quay lại Menu</span>
-                </button>
-                
-                <div class="flex items-center justify-between mb-8">
-                    <h2 class="text-3xl md:text-4xl font-bold text-gray-800">Lịch sử cập nhật</h2>
-                    <span class="bg-blue-100 text-blue-800 text-xs font-semibold px-2.5 py-0.5 rounded border border-blue-400">News</span>
-                </div>
-
-                <div class="space-y-4" id="notification-list-container">
-                    <!-- Danh sách thông báo sẽ được render tại đây bởi JS -->
+            <!-- ADMIN DASHBOARD WIDGET (Chỉ hiện khi là Admin) -->
+            <div id="admin-dashboard-widget" class="hidden mb-8 bg-gradient-to-r from-slate-800 to-slate-900 rounded-2xl p-6 text-white shadow-lg relative overflow-hidden">
+                <div class="absolute top-0 right-0 -mt-4 -mr-4 w-24 h-24 bg-white opacity-5 rounded-full blur-xl"></div>
+                <div class="relative z-10 flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
+                    <div>
+                        <h2 class="text-xl font-bold flex items-center gap-2">
+                            <svg class="w-5 h-5 text-yellow-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z"></path></svg>
+                            Khu vực Quản Trị Viên
+                        </h2>
+                        <p class="text-slate-300 text-sm mt-1">Bạn có quyền truy cập toàn bộ hệ thống và quản lý người dùng.</p>
+                    </div>
+                    <button class="bg-white/10 hover:bg-white/20 text-white px-4 py-2 rounded-lg text-sm font-semibold transition-colors border border-white/10">
+                        Mở Firebase Console &rarr;
+                    </button>
                 </div>
             </div>
 
-            <!-- 4. Trang "Đang phát triển" -->
-            <div id="coming-soon" class="page-content">
-                <button class="back-to-menu-btn flex items-center space-x-2 text-gray-600 hover:text-blue-600 transition-colors duration-300 mb-6 group">
-                    <svg class="w-5 h-5 transition-transform duration-300 group-hover:-translate-x-1" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 19l-7-7m0 0l7-7m-7 7h18"></path></svg>
-                    <span class="font-medium">Quay lại Menu</span>
+            <!-- SEARCH BAR -->
+            <div class="w-full max-w-md mx-auto mb-8 relative z-10">
+                <div class="relative">
+                    <input id="global-search-input" type="text" placeholder="Tìm kiếm bài học, tài liệu..." 
+                        class="w-full pl-10 pr-4 py-3 bg-gray-50 border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500 focus:bg-white transition-all shadow-sm">
+                    <svg class="w-5 h-5 text-gray-400 absolute left-3 top-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"></path></svg>
+                </div>
+                <div id="global-search-results" class="absolute top-full left-0 right-0 mt-2 bg-white rounded-xl shadow-xl border border-gray-100 overflow-hidden hidden"></div>
+            </div>
+
+            <!-- 1. HUB TRUNG TÂM (MENU CHÍNH) -->
+            <div id="menu-cards" class="page-content active">
+                <div class="grid grid-cols-2 md:grid-cols-3 gap-4 md:gap-6">
+                    
+                    <!-- Ôn Thi (Target: internal page) -->
+                    <div class="menu-card subject-card bg-white border border-gray-200 rounded-2xl p-4 cursor-pointer hover:border-blue-400 group aspect-square flex flex-col items-center justify-center text-center gap-3" data-target="on-thi-main">
+                        <div class="w-14 h-14 rounded-full bg-blue-50 text-blue-600 flex items-center justify-center group-hover:scale-110 transition-transform">
+                            <svg class="w-7 h-7" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-6 9l2 2 4-4"></path></svg>
+                        </div>
+                        <span class="font-bold text-gray-700 text-lg">Bài Thi</span>
+                    </div>
+
+                    <!-- Thời Khóa Biểu (Link: external) -->
+                    <div class="menu-card subject-card bg-white border border-gray-200 rounded-2xl p-4 cursor-pointer hover:border-green-400 group aspect-square flex flex-col items-center justify-center text-center gap-3" data-link="./schedule/index.html">
+                        <div class="w-14 h-14 rounded-full bg-green-50 text-green-600 flex items-center justify-center group-hover:scale-110 transition-transform">
+                            <svg class="w-7 h-7" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"></path></svg>
+                        </div>
+                        <span class="font-bold text-gray-700 text-lg">Lịch Học</span>
+                    </div>
+
+                    <!-- Tài Liệu (Target: internal page) -->
+                    <div class="menu-card subject-card bg-white border border-gray-200 rounded-2xl p-4 cursor-pointer hover:border-indigo-400 group aspect-square flex flex-col items-center justify-center text-center gap-3" data-target="tai-lieu-main">
+                        <div class="w-14 h-14 rounded-full bg-indigo-50 text-indigo-600 flex items-center justify-center group-hover:scale-110 transition-transform">
+                            <svg class="w-7 h-7" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.747 0 3.332.477 4.5 1.253v13C19.832 18.477 18.246 18 16.5 18c-1.746 0-3.332.477-4.5 1.253"></path></svg>
+                        </div>
+                        <span class="font-bold text-gray-700 text-lg">Tài Liệu</span>
+                    </div>
+
+                    <!-- Flashcard (Link: external) -->
+                    <div class="menu-card subject-card bg-white border border-gray-200 rounded-2xl p-4 cursor-pointer hover:border-yellow-400 group aspect-square flex flex-col items-center justify-center text-center gap-3" data-link="./vocab/index.html">
+                        <div class="w-14 h-14 rounded-full bg-yellow-50 text-yellow-600 flex items-center justify-center group-hover:scale-110 transition-transform">
+                            <svg class="w-7 h-7" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19.428 15.428a2 2 0 00-1.022-.547l-2.387-.477a6 6 0 00-3.86.517l-.318.158a6 6 0 01-3.86.517L6.05 15.21a2 2 0 00-1.806.547M8 4h8l-1 1v5.172a2 2 0 00.586 1.414l5 5c1.26 1.26.367 3.414-1.415 3.414H4.828c-1.782 0-2.674-2.154-1.414-3.414l5-5A2 2 0 009 10.172V5L8 4z"></path></svg>
+                        </div>
+                        <span class="font-bold text-gray-700 text-lg">Flashcard</span>
+                    </div>
+
+                    <!-- Study Flow (Link: external) -->
+                    <div class="menu-card subject-card bg-white border border-gray-200 rounded-2xl p-4 cursor-pointer hover:border-purple-400 group aspect-square flex flex-col items-center justify-center text-center gap-3" data-link="./studyflow/index.html">
+                        <div class="w-14 h-14 rounded-full bg-purple-50 text-purple-600 flex items-center justify-center group-hover:scale-110 transition-transform">
+                            <svg class="w-7 h-7" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z"></path></svg>
+                        </div>
+                        <span class="font-bold text-gray-700 text-lg">Study Flow</span>
+                    </div>
+
+                    <!-- Coming Soon -->
+                    <div class="menu-card subject-card bg-white border border-gray-200 rounded-2xl p-4 cursor-pointer hover:border-gray-400 group aspect-square flex flex-col items-center justify-center text-center gap-3" data-target="coming-soon">
+                        <div class="w-14 h-14 rounded-full bg-gray-50 text-gray-400 flex items-center justify-center group-hover:scale-110 transition-transform">
+                            <svg class="w-7 h-7" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>
+                        </div>
+                        <span class="font-bold text-gray-400 text-lg">Sắp Ra Mắt</span>
+                    </div>
+
+                </div>
+            </div>
+
+            <!-- 2. TRANG CHỌN MÔN: ÔN THI -->
+            <div id="on-thi-main" class="page-content">
+                <button class="back-btn mb-6 flex items-center gap-2 text-gray-500 hover:text-blue-600 font-medium transition-colors">
+                    <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 19l-7-7m0 0l7-7m-7 7h18"></path></svg>
+                    Quay lại Menu
                 </button>
-                <div class="text-center mt-10">
-                    <svg class="w-24 h-24 text-gray-400 mx-auto mb-6" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19.428 15.428a2 2 0 00-1.022-.547l-2.387-.477a6 6 0 00-3.86.517l-.318.158a6 6 0 01-3.86.517L6.05 15.21a2 2 0 00-1.806.547M8 4h8l-1 1v5.172a2 2 0 00.586 1.414l5 5c1.26 1.26.367 3.414-1.415 3.414H4.828c-1.782 0-2.674-2.154-1.414-3.414l5-5A2 2 0 009 10.172V5L8 4z"></path></svg>
-                    <h2 class="text-3xl md:text-4xl font-bold text-gray-800 mb-4">Tính năng đang phát triển</h2>
-                    <p class="text-base md:text-lg text-gray-600">Chúng tôi đang nỗ lực làm việc để sớm ra mắt tính năng này. <br>Vui lòng quay lại sau nhé!</p>
+                <h2 class="text-2xl font-bold text-gray-800 mb-6 border-b pb-4">Chọn Môn Ôn Tập</h2>
+                
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <a href="./practice/vat-li.html" class="p-6 bg-blue-50 hover:bg-blue-100 rounded-xl border border-blue-100 transition-colors group">
+                        <h3 class="text-xl font-bold text-blue-800 mb-2 group-hover:translate-x-1 transition-transform">🔭 Vật Lí</h3>
+                        <p class="text-blue-600 text-sm">Cơ học, Điện từ, Quang học...</p>
+                    </a>
+                    <a href="./practice/sinh-hoc.html" class="p-6 bg-green-50 hover:bg-green-100 rounded-xl border border-green-100 transition-colors group">
+                        <h3 class="text-xl font-bold text-green-800 mb-2 group-hover:translate-x-1 transition-transform">🧬 Sinh Học</h3>
+                        <p class="text-green-600 text-sm">Di truyền, Tế bào, Sinh thái...</p>
+                    </a>
+                    <a href="./practice/tin-hoc.html" class="p-6 bg-purple-50 hover:bg-purple-100 rounded-xl border border-purple-100 transition-colors group">
+                        <h3 class="text-xl font-bold text-purple-800 mb-2 group-hover:translate-x-1 transition-transform">💻 Tin Học</h3>
+                        <p class="text-purple-600 text-sm">Python, C++, Thuật toán...</p>
+                    </a>
+                    <a href="./practice/lich-su.html" class="p-6 bg-orange-50 hover:bg-orange-100 rounded-xl border border-orange-100 transition-colors group">
+                        <h3 class="text-xl font-bold text-orange-800 mb-2 group-hover:translate-x-1 transition-transform">📜 Lịch Sử</h3>
+                        <p class="text-orange-600 text-sm">Lịch sử VN, Lịch sử thế giới...</p>
+                    </a>
+                </div>
+            </div>
+
+            <!-- 3. TRANG CHỌN MÔN: TÀI LIỆU -->
+            <div id="tai-lieu-main" class="page-content">
+                <button class="back-btn mb-6 flex items-center gap-2 text-gray-500 hover:text-blue-600 font-medium transition-colors">
+                    <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 19l-7-7m0 0l7-7m-7 7h18"></path></svg>
+                    Quay lại Menu
+                </button>
+                <h2 class="text-2xl font-bold text-gray-800 mb-6 border-b pb-4">Kho Tài Liệu</h2>
+                
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <!-- Giữ cấu trúc tương tự Ôn Thi, chỉ đổi màu/link -->
+                    <a href="./docs/vat-li.html" class="p-6 bg-white border border-gray-200 hover:border-blue-400 hover:shadow-md rounded-xl transition-all">
+                        <h3 class="text-lg font-bold text-gray-800 mb-1">Tài liệu Vật Lí</h3>
+                        <p class="text-gray-500 text-sm">Sách giáo khoa, chuyên đề nâng cao.</p>
+                    </a>
+                     <a href="./docs/sinh-hoc.html" class="p-6 bg-white border border-gray-200 hover:border-green-400 hover:shadow-md rounded-xl transition-all">
+                        <h3 class="text-lg font-bold text-gray-800 mb-1">Tài liệu Sinh Học</h3>
+                        <p class="text-gray-500 text-sm">Sơ đồ tư duy, bài giảng tóm tắt.</p>
+                    </a>
+                    <a href="./docs/tin-hoc.html" class="p-6 bg-white border border-gray-200 hover:border-purple-400 hover:shadow-md rounded-xl transition-all">
+                        <h3 class="text-lg font-bold text-gray-800 mb-1">Tài liệu Tin Học</h3>
+                        <p class="text-gray-500 text-sm">Code mẫu, đề thi HSG.</p>
+                    </a>
+                    <a href="./docs/lich-su.html" class="p-6 bg-white border border-gray-200 hover:border-orange-400 hover:shadow-md rounded-xl transition-all">
+                        <h3 class="text-lg font-bold text-gray-800 mb-1">Tài liệu Lịch Sử</h3>
+                        <p class="text-gray-500 text-sm">Niên biểu, sự kiện quan trọng.</p>
+                    </a>
+                </div>
+            </div>
+
+            <!-- 4. TRANG ĐANG PHÁT TRIỂN -->
+            <div id="coming-soon" class="page-content">
+                <button class="back-btn mb-6 flex items-center gap-2 text-gray-500 hover:text-blue-600 font-medium transition-colors">
+                    <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 19l-7-7m0 0l7-7m-7 7h18"></path></svg>
+                    Quay lại
+                </button>
+                <div class="flex flex-col items-center justify-center py-12 text-center">
+                    <div class="w-24 h-24 bg-gray-100 rounded-full flex items-center justify-center mb-4 text-gray-400">
+                        <svg class="w-12 h-12" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19.428 15.428a2 2 0 00-1.022-.547l-2.387-.477a6 6 0 00-3.86.517l-.318.158a6 6 0 01-3.86.517L6.05 15.21a2 2 0 00-1.806.547M8 4h8l-1 1v5.172a2 2 0 00.586 1.414l5 5c1.26 1.26.367 3.414-1.415 3.414H4.828c-1.782 0-2.674-2.154-1.414-3.414l5-5A2 2 0 009 10.172V5L8 4z"></path></svg>
+                    </div>
+                    <h3 class="text-xl font-bold text-gray-800">Tính năng đang phát triển</h3>
+                    <p class="text-gray-500 mt-2 max-w-sm">Chúng tôi đang nỗ lực để hoàn thiện tính năng này. Hãy quay lại sau nhé!</p>
                 </div>
             </div>
 
         </main>
     </div>
 
+    <!-- SCRIPT ĐIỀU HƯỚNG UI -->
     <script>
         document.addEventListener('DOMContentLoaded', () => {
-            // --- DATA THÔNG BÁO ---
-            // ID càng lớn thì thông báo càng mới
-            const notifications = [
-                {
-                    id: 4,
-                    date: '05/12/2025',
-                    author: 'Trọng Phúc',
-                    title: 'Thay đổi tên miền thành studystation.site',
-                    content: 'Tên miền chính thức đổi thành studystation.site để dễ dàng truy cập.',
-                    isNew: true
-                },
-                {
-                    id: 3,
-                    date: '04/12/2025',
-                    author: 'Trọng Phúc',
-                    title: 'Ra mắt tính năng Thông báo và Lịch sử',
-                    content: 'Giờ đây bạn đã có thể nhận được các cập nhật mới nhất thông qua tính năng thông báo và lịch sử thông báo!',
-                    isNew: false
-                },
-                {
-                    id: 2,
-                    date: '04/12/2025',
-                    author: 'Trọng Phúc',
-                    title: 'Thêm Account ở menu chính',
-                    content: 'Đã bổ sung mục Tài Khoản ở menu chính, để người chơi theo dõi tài khoản và có thể đăng xuất bất cứ lúc nào.',
-                    isNew: false
-                },
-                {
-                    id: 1,
-                    date: '04/12/2025',
-                    author: 'Trọng Phúc',
-                    title: 'Tối ưu hoá logic scan vocab',
-                    content: 'Hệ thống scan từ vựng vocab giờ đây đã được nâng cấp để scan nhanh hơn. Người dùng đã không cần phải đợi để hiển thị kết quả nữa!',
-                    isNew: false
-                }
-            ];
-
-            // --- Hằng số và Biến ---
-            const pages = document.querySelectorAll('.page-content');
-            
-            // Trang 1: Menu
-            const menuCards = document.querySelectorAll('.menu-card');
-            
-            // Trang 2: Chọn môn
-            const backToMenuButtons = document.querySelectorAll('.back-to-menu-btn');
-
-            // Account Logic
-            const accAvatarBtn = document.getElementById('acc-avatar-btn');
-            const accDropdown = document.getElementById('acc-dropdown');
-            const accInfo = document.getElementById('account-info');
-            
-            // Mobile Sheet Elements
-            const accMobileSheet = document.getElementById('acc-mobile-sheet');
-            const accMobileBackdrop = document.getElementById('acc-mobile-backdrop');
-            
-            // Notification Elements
-            const notificationModal = document.getElementById('notification-modal');
-            const notificationBackdrop = document.getElementById('modal-backdrop');
-            const notificationCard = document.getElementById('modal-card');
-            
-            const closeModalBtns = document.querySelectorAll('#close-modal-btn, #close-modal-btn-sub');
-            const viewHistoryBtnModal = document.getElementById('view-history-btn-modal');
-            const notificationBellBtn = document.getElementById('notification-bell-btn');
-            const notificationBadge = document.getElementById('notification-badge');
-            
-            const menuHistoryBtn = document.getElementById('menu-history-btn');
-            const mobileHistoryBtn = document.getElementById('mobile-history-btn');
-            
-            const notificationListContainer = document.getElementById('notification-list-container');
-            const latestContentContainer = document.getElementById('latest-notification-content');
-
-            // Logic xử lý Click vào Avatar (Thông minh)
-            if (accAvatarBtn) {
-                accAvatarBtn.addEventListener('click', (e) => {
-                    e.stopPropagation();
-                    
-                    if (window.innerWidth < 768) {
-                        accMobileSheet.classList.remove('hidden');
-                    } else {
-                        const isExpanded = accAvatarBtn.getAttribute('aria-expanded') === 'true';
-                        accAvatarBtn.setAttribute('aria-expanded', !isExpanded);
-                        
-                        if (isExpanded) {
-                            closeDropdown();
-                        } else {
-                            openDropdown();
-                        }
-                    }
-                });
-            }
-
-            function openDropdown() {
-                if(!accDropdown) return;
-                accDropdown.classList.remove('hidden');
-                requestAnimationFrame(() => {
-                    accDropdown.classList.add('dropdown-enter-active');
-                    accDropdown.classList.remove('dropdown-enter');
-                });
-            }
-
-            function closeDropdown() {
-                if(!accDropdown) return;
-                accAvatarBtn.setAttribute('aria-expanded', 'false');
-                accDropdown.classList.add('dropdown-exit');
-                accDropdown.classList.remove('dropdown-enter', 'dropdown-enter-active');
-                setTimeout(() => {
-                    accDropdown.classList.add('hidden');
-                    accDropdown.classList.remove('dropdown-exit', 'dropdown-exit-active');
-                }, 75);
-            }
-
-            // Đóng dropdown khi click ra ngoài (Desktop)
-            document.addEventListener('click', (e) => {
-                if (accInfo && !accInfo.contains(e.target)) {
-                     closeDropdown();
-                }
-            });
-
-            // Logic đóng Mobile Sheet
-            if (accMobileBackdrop && accMobileSheet) {
-                accMobileBackdrop.addEventListener('click', () => {
-                    accMobileSheet.classList.add('hidden');
-                });
-            }
-            
-            // --- Hàm Điều Hướng ---
-
+            // UI Navigation Logic
             function showPage(pageId) {
-                pages.forEach(page => {
-                    page.classList.remove('active');
-                });
-                const targetPage = document.getElementById(pageId);
-                if (targetPage) {
-                    targetPage.classList.add('active');
-                    window.scrollTo(0, 0);
+                document.querySelectorAll('.page-content').forEach(p => p.classList.remove('active'));
+                const target = document.getElementById(pageId);
+                if(target) {
+                    target.classList.add('active');
+                    window.scrollTo({top: 0, behavior: 'smooth'});
                 }
             }
 
-            // --- Gán Sự Kiện Menu Cards ---
-            menuCards.forEach(card => {
-                card.addEventListener('click', (e) => {
+            // Click Card Event
+            document.querySelectorAll('.menu-card').forEach(card => {
+                card.addEventListener('click', () => {
                     card.classList.add('clicked');
-                    setTimeout(() => {
-                        card.classList.remove('clicked');
-                    }, 350);
-
-                    const externalLink = card.dataset.link;
-                    if (externalLink) {
-                        window.location.href = externalLink;
-                        return;
-                    }
-
-                    const targetId = card.dataset.target;
-                    if (targetId) {
-                        e.preventDefault();
-                        showPage(targetId);
-                    }
-                });
-            });
-
-            // --- LOGIC THÔNG BÁO (NOTIFICATION) ---
-
-            function renderNotifications() {
-                // 1. Render Latest Notification into Modal
-                if (notifications.length > 0) {
-                    const latest = notifications[0];
-                    if (latestContentContainer) {
-                        latestContentContainer.innerHTML = `
-                            <div class="mb-2">
-                                <span class="text-xs font-semibold text-blue-600 bg-blue-50 px-2 py-1 rounded-md border border-blue-100">${latest.date}</span>
-                                <span class="text-xs text-gray-400 ml-2">Bởi: ${latest.author}</span>
-                            </div>
-                            <h4 class="text-xl font-bold text-gray-800 mb-2">${latest.title}</h4>
-                            <p class="text-gray-600 text-sm leading-relaxed">${latest.content}</p>
-                        `;
-                    }
-                }
-
-                // 2. Render List into History Page
-                if (notificationListContainer) {
-                    notificationListContainer.innerHTML = ''; // Clear old
-                    notifications.forEach(notif => {
-                        const item = document.createElement('div');
-                        item.className = "bg-white p-5 rounded-xl border border-gray-100 shadow-sm hover:shadow-md transition-shadow relative overflow-hidden";
-                        
-                        // Badge "Mới" nếu là item mới
-                        const newBadge = notif.isNew ? 
-                            `<div class="absolute top-0 right-0 bg-red-500 text-white text-[10px] font-bold px-2 py-1 rounded-bl-lg uppercase tracking-wider">Mới</div>` : '';
-
-                        item.innerHTML = `
-                            ${newBadge}
-                            <div class="flex items-center gap-2 mb-2">
-                                <span class="inline-flex items-center justify-center w-8 h-8 rounded-full bg-blue-100 text-blue-600">
-                                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>
-                                </span>
-                                <div class="flex flex-col">
-                                    <span class="text-sm font-bold text-gray-800">${notif.author}</span>
-                                    <span class="text-xs text-gray-500">${notif.date}</span>
-                                </div>
-                            </div>
-                            <h3 class="text-lg font-bold text-gray-800 mb-2 mt-1">${notif.title}</h3>
-                            <p class="text-gray-600 text-sm">${notif.content}</p>
-                        `;
-                        notificationListContainer.appendChild(item);
-                    });
-                }
-            }
-
-            function openModal() {
-                renderNotifications();
-                notificationModal.classList.remove('hidden');
-                notificationModal.classList.add('flex');
-                
-                // Animation triggers
-                requestAnimationFrame(() => {
-                   if(notificationBackdrop) notificationBackdrop.classList.remove('opacity-0');
-                   if(notificationCard) notificationCard.classList.add('show');
-                });
-            }
-
-            function closeModal() {
-                if(notificationBackdrop) notificationBackdrop.classList.add('opacity-0');
-                if(notificationCard) notificationCard.classList.remove('show');
-                
-                // Đợi animation chạy xong mới ẩn display
-                setTimeout(() => {
-                    notificationModal.classList.add('hidden');
-                    notificationModal.classList.remove('flex');
-                }, 300);
-
-                // Lưu lại ID của thông báo mới nhất đã xem vào LocalStorage (lưu lâu dài)
-                if (notifications.length > 0) {
-                    localStorage.setItem('seen_notification_id', notifications[0].id.toString());
-                    updateBadge(false); // Ẩn badge đỏ
-                }
-            }
-
-            function updateBadge(show) {
-                if (notificationBadge) {
-                    if (show) notificationBadge.classList.remove('hidden');
-                    else notificationBadge.classList.add('hidden');
-                }
-            }
-
-            // Gán sự kiện đóng modal
-            closeModalBtns.forEach(btn => btn.addEventListener('click', closeModal));
-            if (notificationBackdrop) notificationBackdrop.addEventListener('click', closeModal);
-
-            // Nút "Xem lịch sử" trong modal
-            if (viewHistoryBtnModal) {
-                viewHistoryBtnModal.addEventListener('click', () => {
-                    closeModal();
-                    showPage('notification-history');
-                });
-            }
-
-            // Nút Bell ở Header
-            if (notificationBellBtn) {
-                notificationBellBtn.addEventListener('click', () => {
-                    // Nếu bấm chuông, coi như đã xem thông báo mới nhất
-                    if (notifications.length > 0) {
-                        localStorage.setItem('seen_notification_id', notifications[0].id.toString());
-                        updateBadge(false);
-                    }
-                    showPage('notification-history');
-                });
-            }
-
-            // Nút Lịch sử trong Dropdown Desktop
-            if (menuHistoryBtn) {
-                menuHistoryBtn.addEventListener('click', () => {
-                    closeDropdown();
-                    showPage('notification-history');
-                });
-            }
-
-            // Nút Lịch sử trong Mobile Sheet
-            if (mobileHistoryBtn) {
-                mobileHistoryBtn.addEventListener('click', () => {
-                    accMobileSheet.classList.add('hidden');
-                    showPage('notification-history');
-                });
-            }
-
-            // --- AUTO SHOW LOGIC (QUAN TRỌNG) ---
-            renderNotifications(); // Render dữ liệu trước
-            
-            if (notifications.length > 0) {
-                const latestId = notifications[0].id;
-                const seenId = localStorage.getItem('seen_notification_id');
-                
-                // Nếu chưa có seenId HOẶC seenId khác với latestId (có thông báo mới hơn)
-                if (!seenId || parseInt(seenId) !== latestId) {
-                    updateBadge(true); // Hiện chấm đỏ
+                    setTimeout(() => card.classList.remove('clicked'), 350);
                     
-                    // Tự động mở Modal sau 1s
-                    setTimeout(() => {
-                        openModal();
-                    }, 1000);
-                } else {
-                    updateBadge(false); // Không hiện chấm đỏ
-                }
-            }
-
-
-            // --- Tìm kiếm nhanh trên toàn website (UI Only) ---
-            const globalSearchInput = document.getElementById('global-search-input');
-            const globalSearchResults = document.getElementById('global-search-results');
-
-            function clearSearchHighlights() {
-                const highlighted = document.querySelectorAll('.search-highlight-ring');
-                highlighted.forEach(el => {
-                    el.classList.remove('search-highlight-ring', 'ring-2', 'ring-blue-400', 'ring-offset-2');
-                });
-            }
-
-            function performGlobalSearch(query) {
-                clearSearchHighlights();
-                if (!globalSearchResults) return;
-                globalSearchResults.innerHTML = '';
-
-                const trimmed = (query || '').trim();
-                if (!trimmed) return;
-
-                const q = trimmed.toLowerCase();
-                const candidates = document.querySelectorAll('h1,h2,h3,h4,p,span,button,a');
-                const results = [];
-
-                candidates.forEach(el => {
-                    const text = (el.textContent || '').trim();
-                    if (!text) return;
-                    if (text.toLowerCase().includes(q)) {
-                        results.push({ el, text });
-                    }
-                });
-
-                if (results.length === 0) {
-                    const noResult = document.createElement('p');
-                    noResult.className = 'text-gray-500';
-                    noResult.textContent = 'Không tìm thấy kết quả phù hợp.';
-                    globalSearchResults.appendChild(noResult);
-                    return;
-                }
-
-                const maxResults = 10;
-                results.slice(0, maxResults).forEach((item, index) => {
-                    const resultBtn = document.createElement('button');
-                    resultBtn.type = 'button';
-                    resultBtn.className = 'w-full text-left px-3 py-2 bg-gray-50 hover:bg-gray-100 border border-gray-200 rounded-md transition-colors duration-150';
-
-                    const preview = item.text.length > 120 ? item.text.slice(0, 117) + '...' : item.text;
-                    const hostPage = item.el.closest('.page-content');
-                    let pageLabel = '';
-                    if (hostPage) {
-                        const heading = hostPage.querySelector('h1, h2, h3');
-                        pageLabel = heading ? heading.textContent.trim() : hostPage.id;
-                    }
-
-                    resultBtn.innerHTML = `
-                        <div class="text-xs text-blue-600 mb-0.5">[${pageLabel || 'Trang'}]</div>
-                        <div>${preview}</div>
-                    `;
-
-                    resultBtn.addEventListener('click', () => {
-                        const hostPage = item.el.closest('.page-content');
-                        if (hostPage && hostPage.id) {
-                            showPage(hostPage.id);
-                        }
-                        item.el.scrollIntoView({ behavior: 'smooth', block: 'center' });
-                        item.el.classList.add('search-highlight-ring', 'ring-2', 'ring-blue-400', 'ring-offset-2');
-                        setTimeout(() => {
-                            item.el.classList.remove('search-highlight-ring', 'ring-2', 'ring-blue-400', 'ring-offset-2');
-                        }, 2000);
-                    });
-
-                    globalSearchResults.appendChild(resultBtn);
-                });
-            }
-
-            let searchTimeout;
-            if (globalSearchInput) {
-                globalSearchInput.addEventListener('input', (e) => {
-                    const value = globalSearchInput.value;
-                    clearTimeout(searchTimeout);
-                    searchTimeout = setTimeout(() => {
-                        performGlobalSearch(value);
-                    }, 250);
-                });
-            }
-            
-            // --- Các Nút Quay Lại ---
-
-            // Quay lại Menu (từ các trang chọn môn)
-            backToMenuButtons.forEach(button => {
-                button.addEventListener('click', () => {
-                    showPage('menu-cards');
+                    const link = card.dataset.link;
+                    if(link) { window.location.href = link; return; }
+                    
+                    const target = card.dataset.target;
+                    if(target) showPage(target);
                 });
             });
 
-            // --- Khởi động ---
-            showPage('menu-cards');
+            // Back Buttons
+            document.querySelectorAll('.back-btn').forEach(btn => {
+                btn.addEventListener('click', () => showPage('menu-cards'));
+            });
 
+            // Dropdown Toggle
+            const avatarBtn = document.getElementById('acc-avatar-btn');
+            const dropdown = document.getElementById('acc-dropdown');
+            
+            avatarBtn.addEventListener('click', (e) => {
+                e.stopPropagation();
+                dropdown.classList.toggle('hidden');
+            });
+            
+            document.addEventListener('click', (e) => {
+                if(!dropdown.contains(e.target) && !avatarBtn.contains(e.target)) {
+                    dropdown.classList.add('hidden');
+                }
+            });
+
+            // Search (Mockup)
+            const searchInput = document.getElementById('global-search-input');
+            const searchResults = document.getElementById('global-search-results');
+            
+            searchInput.addEventListener('input', (e) => {
+                const val = e.target.value.toLowerCase().trim();
+                if(!val) { searchResults.classList.add('hidden'); return; }
+                
+                // Logic tìm kiếm đơn giản demo
+                searchResults.classList.remove('hidden');
+                searchResults.innerHTML = `
+                    <div class="p-3 text-sm text-gray-500">Kết quả tìm kiếm cho: "<b>${val}</b>"</div>
+                    <div class="px-3 pb-2 text-xs text-gray-400 italic">Tính năng tìm kiếm nâng cao đang được cập nhật.</div>
+                `;
+            });
         });
     </script>
+
+    <!-- SCRIPT GATEKEEPER & ADMIN LOGIC -->
     <script type="module">
-        import { initGatekeeper, onUserChange, logoutUser } from "../gatekeeper.js";
+        import { initGatekeeper, logoutUser, checkIsAdmin, getCurrentUserRole, onUserChange } from "../gatekeeper.js";
+
+        // 1. Khởi tạo bảo vệ
         initGatekeeper('protected');
-        
-        // Desktop Elements
-        const accInfo = document.getElementById('account-info');
-        const accName = document.getElementById('acc-name');
-        const accEmail = document.getElementById('acc-email');
-        const accAvatar = document.getElementById('acc-avatar');
-        const accLogout = document.getElementById('acc-logout');
-        
-        // Mobile Sheet Elements
-        const accMobileSheet = document.getElementById('acc-mobile-sheet');
-        const accMobileName = document.getElementById('acc-mobile-name');
-        const accMobileEmail = document.getElementById('acc-mobile-email');
-        const accMobileAvatarSheetImg = document.getElementById('acc-mobile-avatar-sheet');
-        const accMobileLogout = document.getElementById('acc-mobile-logout');
-        
-        if (accLogout) accLogout.addEventListener('click', () => logoutUser());
-        
-        if (accMobileLogout) {
-            accMobileLogout.addEventListener('click', () => {
-                logoutUser();
-                if (accMobileSheet) accMobileSheet.classList.add('hidden');
+
+        // 2. Elements cần thao tác
+        const els = {
+            name: document.getElementById('acc-name'),
+            role: document.getElementById('acc-role'),
+            avatar: document.getElementById('acc-avatar'),
+            mobileName: document.getElementById('acc-name-mobile'),
+            mobileEmail: document.getElementById('acc-email-mobile'),
+            
+            // Admin Elements
+            adminBadge: document.getElementById('admin-badge'),
+            adminLinks: document.getElementById('admin-links'),
+            adminWidget: document.getElementById('admin-dashboard-widget'),
+            
+            logoutBtn: document.getElementById('acc-logout')
+        };
+
+        // 3. Xử lý Đăng xuất
+        if(els.logoutBtn) {
+            els.logoutBtn.addEventListener('click', async () => {
+                if(confirm("Bạn có chắc chắn muốn đăng xuất?")) {
+                    await logoutUser();
+                }
             });
         }
 
+        // 4. Lắng nghe thay đổi User & Role
         onUserChange((user) => {
-            if (!user) {
-                if (accInfo) accInfo.classList.add('hidden');
-                if (accMobileSheet) accMobileSheet.classList.add('hidden');
-                return;
-            }
-            if (accInfo) accInfo.classList.remove('hidden');
-            
-            // Cập nhật thông tin cho cả Desktop và Mobile từ cùng một nguồn dữ liệu
-            const userName = user.displayName || 'Người dùng';
-            const userEmail = user.email || '';
-            const userPhoto = user.photoURL || '../favicon.png';
+            if (user) {
+                // Cập nhật thông tin cơ bản
+                const displayName = user.displayName || user.email.split('@')[0];
+                const displayEmail = user.email;
+                const photoURL = user.photoURL || '../favicon.png';
 
-            // Desktop Updates
-            if (accName) accName.textContent = userName;
-            if (accEmail) accEmail.textContent = userEmail;
-            if (accAvatar) accAvatar.src = userPhoto;
-            
-            // Mobile Sheet Updates
-            if (accMobileName) accMobileName.textContent = userName;
-            if (accMobileEmail) accMobileEmail.textContent = userEmail;
-            if (accMobileAvatarSheetImg) accMobileAvatarSheetImg.src = userPhoto;
+                els.name.textContent = displayName;
+                els.mobileName.textContent = displayName;
+                els.mobileEmail.textContent = displayEmail;
+                els.avatar.src = photoURL;
+
+                // Cập nhật Role và giao diện Admin
+                const role = getCurrentUserRole(); // Lấy từ SessionStorage
+                const isAdmin = checkIsAdmin();    // Kiểm tra logic admin
+
+                els.role.textContent = role.toUpperCase(); // Hiển thị role (VD: ADMIN/USER)
+
+                if (isAdmin) {
+                    // HIỆN CÁC PHẦN TỬ ADMIN
+                    els.adminBadge.classList.remove('hidden');
+                    els.adminLinks.classList.remove('hidden');
+                    els.adminWidget.classList.remove('hidden');
+                    
+                    // Style lại Role text cho nổi bật
+                    els.role.className = "text-xs font-bold text-yellow-600";
+                } else {
+                    // ẨN CÁC PHẦN TỬ ADMIN
+                    els.adminBadge.classList.add('hidden');
+                    els.adminLinks.classList.add('hidden');
+                    els.adminWidget.classList.add('hidden');
+                    
+                    els.role.className = "text-xs text-gray-500";
+                }
+
+            } else {
+                // Chưa đăng nhập (thường Gatekeeper đã redirect, đây là dự phòng)
+                els.name.textContent = "Khách";
+                els.role.textContent = "";
+            }
         });
     </script>
 
