@@ -1,18 +1,21 @@
 <!DOCTYPE html>
 <html lang="vi" class="">
+
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <title>StudyStation Practice</title>
-    
+
     <!-- Tailwind CSS (CDN) -->
     <script src="https://cdn.tailwindcss.com"></script>
-    
+
     <!-- Fonts -->
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;500;600;700;800&family=Be+Vietnam+Pro:wght@400;500;600&display=swap" rel="stylesheet">
-    
+    <link
+        href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;500;600;700;800&family=Be+Vietnam+Pro:wght@400;500;600&display=swap"
+        rel="stylesheet">
+
     <!-- Custom CSS -->
     <link rel="stylesheet" href="style.css">
 
@@ -33,15 +36,19 @@
             list-style: none;
             cursor: pointer;
         }
+
         .music-section summary::-webkit-details-marker {
             display: none;
         }
+
         .music-section summary span.toggle-icon {
             transition: transform 0.2s ease;
         }
+
         .music-section[open] summary span.toggle-icon {
             transform: rotate(90deg);
         }
+
         #music-panel input[type="range"] {
             -webkit-appearance: none;
             appearance: none;
@@ -49,6 +56,7 @@
             height: 4px;
             border-radius: 999px;
         }
+
         #music-panel input[type="range"]::-webkit-slider-thumb {
             -webkit-appearance: none;
             width: 16px;
@@ -58,6 +66,7 @@
             border: 2px solid #2563eb;
             box-shadow: 0 2px 6px rgba(37, 99, 235, 0.35);
         }
+
         #music-panel input[type="range"]::-moz-range-thumb {
             width: 16px;
             height: 16px;
@@ -66,6 +75,7 @@
             border: 2px solid #2563eb;
             box-shadow: 0 2px 6px rgba(37, 99, 235, 0.35);
         }
+
         @media (max-width: 768px) {
             #music-panel {
                 top: 50% !important;
@@ -81,9 +91,12 @@
         }
     </style>
 </head>
-<body class="h-screen flex flex-col overflow-hidden text-slate-800 dark:text-slate-100 dark:bg-slate-900 transition-colors duration-300">
 
-    <div id="gatekeeper-loading" style="position:fixed;top:0;left:0;width:100%;height:100%;background:#0f172a;display:none;justify-content:center;align-items:center;color:#ffffff;z-index:9999">
+<body
+    class="h-screen flex flex-col overflow-hidden text-slate-800 dark:text-slate-100 dark:bg-slate-900 transition-colors duration-300">
+
+    <div id="gatekeeper-loading"
+        style="position:fixed;top:0;left:0;width:100%;height:100%;background:#0f172a;display:none;justify-content:center;align-items:center;color:#ffffff;z-index:9999">
         <div style="display:flex;flex-direction:column;align-items:center;gap:10px">
             <img src="../../favicon.png" alt="StudyStation" style="width:56px;height:56px;border-radius:12px">
             <div style="font-weight:700;font-size:18px">StudyStation</div>
@@ -94,56 +107,85 @@
     <!-- Header -->
     <header class="h-16 glass-header fixed w-full top-0 z-30 flex items-center justify-between px-4 lg:px-10">
         <div class="flex items-center gap-3 cursor-pointer group" onclick="app.goHome()">
-            <div class="w-9 h-9 bg-gradient-to-br from-blue-600 to-indigo-600 rounded-xl flex items-center justify-center text-white font-bold text-lg shadow-glow transition-transform group-hover:scale-105">S</div>
-            <h1 class="text-lg font-bold tracking-tight text-slate-800 dark:text-white group-hover:text-primary transition-colors">StudyStation</h1>
+            <div
+                class="w-9 h-9 bg-gradient-to-br from-blue-600 to-indigo-600 rounded-xl flex items-center justify-center text-white font-bold text-lg shadow-glow transition-transform group-hover:scale-105">
+                S</div>
+            <h1
+                class="text-lg font-bold tracking-tight text-slate-800 dark:text-white group-hover:text-primary transition-colors">
+                StudyStation</h1>
         </div>
         <div class="flex items-center gap-2">
-            <div id="exam-timer" class="hidden font-mono text-base lg:text-lg font-bold text-blue-600 dark:text-blue-400 bg-blue-50/80 dark:bg-blue-900/30 backdrop-blur px-3 py-1 lg:px-4 lg:py-1.5 rounded-lg border border-blue-100 dark:border-blue-800 shadow-sm mr-2">
+            <div id="exam-timer"
+                class="hidden font-mono text-base lg:text-lg font-bold text-blue-600 dark:text-blue-400 bg-blue-50/80 dark:bg-blue-900/30 backdrop-blur px-3 py-1 lg:px-4 lg:py-1.5 rounded-lg border border-blue-100 dark:border-blue-800 shadow-sm mr-2">
                 45:00
             </div>
-            
+
             <!-- Music Button -->
-            <button id="music-toggle-btn" class="p-2 rounded-full hover:bg-slate-100 dark:hover:bg-slate-800 text-slate-500 dark:text-slate-400 transition-colors relative" title="Âm nhạc học tập">
-                <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+            <button id="music-toggle-btn"
+                class="p-2 rounded-full hover:bg-slate-100 dark:hover:bg-slate-800 text-slate-500 dark:text-slate-400 transition-colors relative"
+                title="Âm nhạc học tập">
+                <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24"
+                    stroke="currentColor">
                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 19V6l12-2v13" />
-                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 19a3 3 0 106-0 3 3 0 00-6 0zM15 17a3 3 0 106 0 3 3 0 00-6 0z" />
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                        d="M6 19a3 3 0 106-0 3 3 0 00-6 0zM15 17a3 3 0 106 0 3 3 0 00-6 0z" />
                 </svg>
-                <span id="music-badge" class="hidden absolute -top-1 -right-1 w-2 h-2 bg-emerald-500 rounded-full animate-ping"></span>
+                <span id="music-badge"
+                    class="hidden absolute -top-1 -right-1 w-2 h-2 bg-emerald-500 rounded-full animate-ping"></span>
             </button>
-            
+
             <!-- Stats Button -->
-            <button onclick="app.toggleStats()" class="p-2 rounded-full hover:bg-slate-100 dark:hover:bg-slate-800 text-slate-500 dark:text-slate-400 transition-colors" title="Thống kê">
-                <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z" />
+            <button onclick="app.toggleStats()"
+                class="p-2 rounded-full hover:bg-slate-100 dark:hover:bg-slate-800 text-slate-500 dark:text-slate-400 transition-colors"
+                title="Thống kê">
+                <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24"
+                    stroke="currentColor">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                        d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z" />
                 </svg>
             </button>
 
             <!-- Settings Button -->
-            <button onclick="app.toggleSettings()" class="p-2 rounded-full hover:bg-slate-100 dark:hover:bg-slate-800 text-slate-500 dark:text-slate-400 transition-colors" title="Cài đặt">
-                <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z" />
-                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
+            <button onclick="app.toggleSettings()"
+                class="p-2 rounded-full hover:bg-slate-100 dark:hover:bg-slate-800 text-slate-500 dark:text-slate-400 transition-colors"
+                title="Cài đặt">
+                <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24"
+                    stroke="currentColor">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                        d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z" />
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                        d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
                 </svg>
             </button>
         </div>
     </header>
 
     <!-- Stats Modal -->
-    <div id="stats-modal" class="hidden fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm animate-fade-in p-4">
-        <div class="bg-white dark:bg-slate-800 w-full max-w-md rounded-2xl p-6 shadow-2xl transform transition-all border border-slate-100 dark:border-slate-700">
+    <div id="stats-modal"
+        class="hidden fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm animate-fade-in p-4">
+        <div
+            class="bg-white dark:bg-slate-800 w-full max-w-md rounded-2xl p-6 shadow-2xl transform transition-all border border-slate-100 dark:border-slate-700">
             <div class="flex justify-between items-center mb-6">
                 <h3 class="text-xl font-bold text-slate-800 dark:text-white">Thống kê học tập</h3>
-                <button onclick="app.toggleStats()" class="text-slate-400 hover:text-slate-600 dark:hover:text-slate-200">
-                    <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" /></svg>
+                <button onclick="app.toggleStats()"
+                    class="text-slate-400 hover:text-slate-600 dark:hover:text-slate-200">
+                    <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24"
+                        stroke="currentColor">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                            d="M6 18L18 6M6 6l12 12" />
+                    </svg>
                 </button>
             </div>
-            
+
             <div class="grid grid-cols-2 gap-4 mb-6">
-                <div class="bg-blue-50 dark:bg-blue-900/20 p-4 rounded-xl text-center border border-blue-100 dark:border-blue-800">
+                <div
+                    class="bg-blue-50 dark:bg-blue-900/20 p-4 rounded-xl text-center border border-blue-100 dark:border-blue-800">
                     <div class="text-3xl font-bold text-blue-600 dark:text-blue-400 mb-1" id="stat-exams">0</div>
-                    <div class="text-xs text-slate-500 dark:text-slate-400 font-medium uppercase">Bài thi hoàn thành</div>
+                    <div class="text-xs text-slate-500 dark:text-slate-400 font-medium uppercase">Bài thi hoàn thành
+                    </div>
                 </div>
-                <div class="bg-purple-50 dark:bg-purple-900/20 p-4 rounded-xl text-center border border-purple-100 dark:border-purple-800">
+                <div
+                    class="bg-purple-50 dark:bg-purple-900/20 p-4 rounded-xl text-center border border-purple-100 dark:border-purple-800">
                     <div class="text-3xl font-bold text-purple-600 dark:text-purple-400 mb-1" id="stat-time">0h</div>
                     <div class="text-xs text-slate-500 dark:text-slate-400 font-medium uppercase">Thời gian học</div>
                 </div>
@@ -155,7 +197,8 @@
                     <span class="text-2xl font-bold text-emerald-600 dark:text-emerald-400" id="stat-avg">0.0</span>
                 </div>
                 <div class="w-full bg-slate-200 dark:bg-slate-600 rounded-full h-2.5 mb-1">
-                    <div class="bg-emerald-500 h-2.5 rounded-full transition-all duration-1000" id="stat-avg-bar" style="width: 0%"></div>
+                    <div class="bg-emerald-500 h-2.5 rounded-full transition-all duration-1000" id="stat-avg-bar"
+                        style="width: 0%"></div>
                 </div>
                 <p class="text-xs text-slate-400 italic text-right">*Chỉ tính 3 lần thi đầu tiên của mỗi bài</p>
             </div>
@@ -163,40 +206,60 @@
     </div>
 
     <!-- Settings Modal -->
-    <div id="settings-modal" class="hidden fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm animate-fade-in p-4">
-        <div class="bg-white dark:bg-slate-800 w-full max-w-md rounded-2xl p-6 shadow-2xl transform transition-all border border-slate-100 dark:border-slate-700">
+    <div id="settings-modal"
+        class="hidden fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm animate-fade-in p-4">
+        <div
+            class="bg-white dark:bg-slate-800 w-full max-w-md rounded-2xl p-6 shadow-2xl transform transition-all border border-slate-100 dark:border-slate-700">
             <div class="flex justify-between items-center mb-6">
                 <h3 class="text-xl font-bold text-slate-800 dark:text-white">Cài đặt</h3>
-                <button onclick="app.toggleSettings()" class="text-slate-400 hover:text-slate-600 dark:hover:text-slate-200">
-                    <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" /></svg>
+                <button onclick="app.toggleSettings()"
+                    class="text-slate-400 hover:text-slate-600 dark:hover:text-slate-200">
+                    <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24"
+                        stroke="currentColor">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                            d="M6 18L18 6M6 6l12 12" />
+                    </svg>
                 </button>
             </div>
-            
+
             <div class="space-y-6">
                 <!-- Dark Mode Toggle -->
                 <div class="flex items-center justify-between p-4 rounded-xl bg-slate-50 dark:bg-slate-700/50">
                     <div class="flex items-center gap-3">
-                        <div class="p-2 bg-indigo-100 dark:bg-indigo-900 rounded-lg text-indigo-600 dark:text-indigo-400">
-                            <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M20.354 15.354A9 9 0 018.646 3.646 9.003 9.003 0 0012 21a9.003 9.003 0 008.354-5.646z" /></svg>
+                        <div
+                            class="p-2 bg-indigo-100 dark:bg-indigo-900 rounded-lg text-indigo-600 dark:text-indigo-400">
+                            <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24"
+                                stroke="currentColor">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                    d="M20.354 15.354A9 9 0 018.646 3.646 9.003 9.003 0 0012 21a9.003 9.003 0 008.354-5.646z" />
+                            </svg>
                         </div>
                         <span class="font-medium text-slate-700 dark:text-slate-200">Giao diện tối</span>
                     </div>
-                    <div class="relative inline-block w-12 mr-2 align-middle select-none transition duration-200 ease-in">
-                        <input type="checkbox" name="toggle" id="dark-mode-toggle" class="toggle-checkbox absolute block w-6 h-6 rounded-full bg-white border-4 border-slate-300 appearance-none cursor-pointer transition-all duration-300"/>
-                        <label for="dark-mode-toggle" class="toggle-label block overflow-hidden h-6 rounded-full bg-slate-300 cursor-pointer transition-colors duration-300"></label>
+                    <div
+                        class="relative inline-block w-12 mr-2 align-middle select-none transition duration-200 ease-in">
+                        <input type="checkbox" name="toggle" id="dark-mode-toggle"
+                            class="toggle-checkbox absolute block w-6 h-6 rounded-full bg-white border-4 border-slate-300 appearance-none cursor-pointer transition-all duration-300" />
+                        <label for="dark-mode-toggle"
+                            class="toggle-label block overflow-hidden h-6 rounded-full bg-slate-300 cursor-pointer transition-colors duration-300"></label>
                     </div>
                 </div>
 
                 <!-- Font Size Slider -->
                 <div class="p-4 rounded-xl bg-slate-50 dark:bg-slate-700/50">
                     <div class="flex justify-between items-center mb-3">
-                         <div class="flex items-center gap-3">
+                        <div class="flex items-center gap-3">
                             <div class="p-2 bg-blue-100 dark:bg-blue-900 rounded-lg text-blue-600 dark:text-blue-400">
-                                <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16M4 18h7" /></svg>
+                                <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24"
+                                    stroke="currentColor">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                        d="M4 6h16M4 12h16M4 18h7" />
+                                </svg>
                             </div>
                             <span class="font-medium text-slate-700 dark:text-slate-200">Cỡ chữ câu hỏi</span>
                         </div>
-                        <span id="font-size-display" class="text-sm font-bold text-blue-600 dark:text-blue-400">16px</span>
+                        <span id="font-size-display"
+                            class="text-sm font-bold text-blue-600 dark:text-blue-400">16px</span>
                     </div>
                     <div class="flex items-center gap-4">
                         <span class="text-xs font-bold text-slate-400">A-</span>
@@ -205,9 +268,10 @@
                     </div>
                 </div>
             </div>
-            
+
             <div class="mt-6 pt-4 border-t border-slate-100 dark:border-slate-700 text-center text-xs text-slate-400">
-                StudyStation Practice v1.7 • Phát triển bởi: <span class="font-bold text-slate-500 dark:text-slate-300">Trọng Phúc</span>
+                StudyStation Practice v1.7 • Phát triển bởi: <span
+                    class="font-bold text-slate-500 dark:text-slate-300">Trọng Phúc</span>
             </div>
         </div>
     </div>
@@ -215,104 +279,157 @@
     <div id="music-overlay" class="hidden fixed inset-0 z-30 bg-slate-900/60 backdrop-blur-sm"></div>
 
     <!-- Music Player Panel -->
-    <div id="music-panel" class="hidden fixed z-40 md:bottom-4 md:right-4 bottom-0 left-0 right-0 md:left-auto w-full md:w-auto md:max-w-md bg-white dark:bg-slate-900/95 border-t md:border border-slate-200 dark:border-slate-700 md:rounded-2xl rounded-t-3xl shadow-2xl p-4 md:p-5 space-y-3 md:space-y-4 transition-all max-h-[80vh] overflow-y-auto">
+    <div id="music-panel"
+        class="hidden fixed z-40 md:bottom-4 md:right-4 bottom-0 left-0 right-0 md:left-auto w-full md:w-auto md:max-w-md bg-white dark:bg-slate-900/95 border-t md:border border-slate-200 dark:border-slate-700 md:rounded-2xl rounded-t-3xl shadow-2xl p-4 md:p-5 space-y-3 md:space-y-4 transition-all max-h-[80vh] overflow-y-auto">
         <div class="flex items-start justify-between gap-4">
             <div>
                 <p class="text-xs font-semibold text-slate-400 uppercase">Đang phát</p>
-                <h3 id="music-current-title" class="text-lg font-bold text-slate-900 dark:text-white">Chưa chọn bài hát</h3>
-                <p id="music-current-source" class="text-sm text-slate-500 dark:text-slate-400">Thêm bài hát để bắt đầu</p>
+                <h3 id="music-current-title" class="text-lg font-bold text-slate-900 dark:text-white">Chưa chọn bài hát
+                </h3>
+                <p id="music-current-source" class="text-sm text-slate-500 dark:text-slate-400">Thêm bài hát để bắt đầu
+                </p>
             </div>
             <div class="flex gap-2">
-                <button id="music-hide-btn" class="px-3 py-1.5 text-xs font-semibold rounded-lg border border-slate-200 dark:border-slate-700 text-slate-500 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-800">Thu gọn</button>
-                <button id="music-stop-btn" class="px-3 py-1.5 text-xs font-semibold rounded-lg border border-rose-200 text-rose-500 hover:bg-rose-50 dark:border-rose-500 dark:text-rose-300 dark:hover:bg-rose-900/20">Tắt</button>
+                <button id="music-hide-btn"
+                    class="px-3 py-1.5 text-xs font-semibold rounded-lg border border-slate-200 dark:border-slate-700 text-slate-500 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-800">Thu
+                    gọn</button>
+                <button id="music-stop-btn"
+                    class="px-3 py-1.5 text-xs font-semibold rounded-lg border border-rose-200 text-rose-500 hover:bg-rose-50 dark:border-rose-500 dark:text-rose-300 dark:hover:bg-rose-900/20">Tắt</button>
             </div>
         </div>
-        <div class="bg-slate-900/90 rounded-2xl overflow-hidden h-44 md:h-auto md:aspect-video flex items-center justify-center">
+        <div
+            class="bg-slate-900/90 rounded-2xl overflow-hidden h-44 md:h-auto md:aspect-video flex items-center justify-center">
             <div id="music-player" class="w-full h-full"></div>
-            <div id="music-player-placeholder" class="w-full h-full flex items-center justify-center flex-col text-white text-sm gap-2">
-                <svg xmlns="http://www.w3.org/2000/svg" class="h-10 w-10 text-white/80" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+            <div id="music-player-placeholder"
+                class="w-full h-full flex items-center justify-center flex-col text-white text-sm gap-2">
+                <svg xmlns="http://www.w3.org/2000/svg" class="h-10 w-10 text-white/80" fill="none" viewBox="0 0 24 24"
+                    stroke="currentColor">
                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 19V6l12-2v13" />
-                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 19a3 3 0 106-0 3 3 0 00-6 0zM15 17a3 3 0 106 0 3 3 0 00-6 0z" />
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                        d="M6 19a3 3 0 106-0 3 3 0 00-6 0zM15 17a3 3 0 106 0 3 3 0 00-6 0z" />
                 </svg>
                 <p>Chọn bài hát để khởi tạo trình phát</p>
             </div>
         </div>
         <div class="flex items-center justify-between gap-2 md:gap-3">
-            <button id="music-prev-btn" class="control-button w-10 h-10 md:w-11 md:h-11 rounded-full border border-slate-200 dark:border-slate-700 text-slate-600 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800 flex items-center justify-center">
-                <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 19l-7-7 7-7m9 14V5l-7 7 7 7z"/></svg>
+            <button id="music-prev-btn"
+                class="control-button w-10 h-10 md:w-11 md:h-11 rounded-full border border-slate-200 dark:border-slate-700 text-slate-600 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800 flex items-center justify-center">
+                <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24"
+                    stroke="currentColor">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                        d="M11 19l-7-7 7-7m9 14V5l-7 7 7 7z" />
+                </svg>
             </button>
-            <button id="music-play-btn" class="main-play-button flex-1 py-2.5 md:py-3 rounded-2xl bg-blue-600 hover:bg-blue-700 text-white font-semibold flex items-center justify-center gap-2 shadow-blue-500/20 shadow">
-                <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="currentColor" viewBox="0 0 24 24"><path d="M5 3l14 9-14 9V3z"/></svg>
+            <button id="music-play-btn"
+                class="main-play-button flex-1 py-2.5 md:py-3 rounded-2xl bg-blue-600 hover:bg-blue-700 text-white font-semibold flex items-center justify-center gap-2 shadow-blue-500/20 shadow">
+                <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="currentColor" viewBox="0 0 24 24">
+                    <path d="M5 3l14 9-14 9V3z" />
+                </svg>
                 <span>Phát</span>
             </button>
-            <button id="music-next-btn" class="control-button w-10 h-10 md:w-11 md:h-11 rounded-full border border-slate-200 dark:border-slate-700 text-slate-600 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800 flex items-center justify-center">
-                <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 5l7 7-7 7M5 5v14l7-7-7-7z"/></svg>
+            <button id="music-next-btn"
+                class="control-button w-10 h-10 md:w-11 md:h-11 rounded-full border border-slate-200 dark:border-slate-700 text-slate-600 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800 flex items-center justify-center">
+                <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24"
+                    stroke="currentColor">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                        d="M13 5l7 7-7 7M5 5v14l7-7-7-7z" />
+                </svg>
             </button>
         </div>
         <div class="flex items-center gap-3 text-xs font-semibold text-slate-500 dark:text-slate-400">
             <div class="flex items-center gap-1 text-slate-400">
-                <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5l-7 7 7 7m0-14v14m4-10h4m0 0l2-2m-2 2l2 2" /></svg>
+                <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24"
+                    stroke="currentColor">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                        d="M11 5l-7 7 7 7m0-14v14m4-10h4m0 0l2-2m-2 2l2 2" />
+                </svg>
                 <span>Âm lượng</span>
             </div>
             <input id="music-volume" type="range" min="0" max="100" value="70" class="flex-1 accent-blue-600">
             <span id="music-volume-label" class="text-[11px] font-bold text-slate-600 dark:text-slate-300">70%</span>
         </div>
-        <details class="music-section rounded-xl border border-slate-200 dark:border-slate-700 bg-slate-50/60 dark:bg-slate-800/40 px-4 py-3" open>
-            <summary class="flex items-center justify-between text-xs font-semibold text-slate-500 dark:text-slate-300 uppercase tracking-wide">
+        <details
+            class="music-section rounded-xl border border-slate-200 dark:border-slate-700 bg-slate-50/60 dark:bg-slate-800/40 px-4 py-3"
+            open>
+            <summary
+                class="flex items-center justify-between text-xs font-semibold text-slate-500 dark:text-slate-300 uppercase tracking-wide">
                 Thêm bài hát
                 <span class="toggle-icon text-lg text-slate-400">›</span>
             </summary>
             <div class="music-section-content mt-3 space-y-2">
                 <form id="music-add-form" class="space-y-2">
                     <div class="flex flex-col gap-2 sm:flex-row">
-                        <input id="music-link-input" type="url" placeholder="Dán link YouTube..." class="flex-1 px-3 py-2 rounded-xl border border-slate-200 dark:border-slate-700 bg-white/80 dark:bg-slate-800/80 text-sm focus:ring-2 focus:ring-blue-500 outline-none">
-                        <button type="submit" class="px-4 py-2 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white font-semibold text-sm whitespace-nowrap">Thêm</button>
+                        <input id="music-link-input" type="url" placeholder="Dán link YouTube..."
+                            class="flex-1 px-3 py-2 rounded-xl border border-slate-200 dark:border-slate-700 bg-white/80 dark:bg-slate-800/80 text-sm focus:ring-2 focus:ring-blue-500 outline-none">
+                        <button type="submit"
+                            class="px-4 py-2 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white font-semibold text-sm whitespace-nowrap">Thêm</button>
                     </div>
                     <p id="music-feedback" class="text-xs text-slate-500 dark:text-slate-400"></p>
                 </form>
             </div>
         </details>
-        <details class="music-section rounded-xl border border-slate-200 dark:border-slate-700 bg-slate-50/60 dark:bg-slate-800/40 px-4 py-3" open>
-            <summary class="flex items-center justify-between text-xs font-semibold text-slate-500 dark:text-slate-300 uppercase tracking-wide">
+        <details
+            class="music-section rounded-xl border border-slate-200 dark:border-slate-700 bg-slate-50/60 dark:bg-slate-800/40 px-4 py-3"
+            open>
+            <summary
+                class="flex items-center justify-between text-xs font-semibold text-slate-500 dark:text-slate-300 uppercase tracking-wide">
                 Danh sách phát
                 <span class="toggle-icon text-lg text-slate-400">›</span>
             </summary>
             <div class="music-section-content mt-3 space-y-2">
                 <div class="flex items-center justify-between text-[11px] font-semibold text-slate-400">
                     <span>Quản lý nhanh</span>
-                    <button id="music-reset-btn" class="underline underline-offset-2 hover:text-blue-500">Khôi phục mặc định</button>
+                    <button id="music-reset-btn" class="underline underline-offset-2 hover:text-blue-500">Khôi phục mặc
+                        định</button>
                 </div>
                 <div id="music-track-list" class="max-h-40 overflow-y-auto custom-scrollbar space-y-2 pr-1"></div>
             </div>
         </details>
     </div>
-    <div id="music-mini-player" class="hidden fixed z-30 bottom-3 left-3 right-3 md:left-auto md:right-4 md:bottom-4 md:w-64 bg-white/95 dark:bg-slate-900/95 border border-slate-200 dark:border-slate-700 rounded-2xl shadow-lg p-2.5 flex items-center gap-3 backdrop-blur">
-        <button id="music-mini-play" class="w-9 h-9 rounded-full border border-slate-200 dark:border-slate-600 flex items-center justify-center text-slate-600 dark:text-slate-200">
-            <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="currentColor" viewBox="0 0 24 24"><path d="M5 3l14 9-14 9V3z"/></svg>
+    <div id="music-mini-player"
+        class="hidden fixed z-30 bottom-3 left-3 right-3 md:left-auto md:right-4 md:bottom-4 md:w-64 bg-white/95 dark:bg-slate-900/95 border border-slate-200 dark:border-slate-700 rounded-2xl shadow-lg p-2.5 flex items-center gap-3 backdrop-blur">
+        <button id="music-mini-play"
+            class="w-9 h-9 rounded-full border border-slate-200 dark:border-slate-600 flex items-center justify-center text-slate-600 dark:text-slate-200">
+            <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="currentColor" viewBox="0 0 24 24">
+                <path d="M5 3l14 9-14 9V3z" />
+            </svg>
         </button>
         <div class="flex-1 min-w-0">
             <p class="text-[11px] uppercase font-semibold text-slate-400">Âm nhạc học tập</p>
-            <p id="music-mini-title" class="text-sm font-semibold text-slate-800 dark:text-slate-100 truncate">Chưa chọn bài hát</p>
+            <p id="music-mini-title" class="text-sm font-semibold text-slate-800 dark:text-slate-100 truncate">Chưa chọn
+                bài hát</p>
         </div>
         <div class="flex gap-1">
-            <button id="music-mini-open" class="px-2.5 py-1 text-xs font-semibold rounded-lg bg-blue-600 text-white">Mở</button>
-            <button id="music-mini-close" class="px-2 py-1 text-xs font-semibold rounded-lg border border-slate-200 dark:border-slate-600 text-slate-500 dark:text-slate-300">✕</button>
+            <button id="music-mini-open"
+                class="px-2.5 py-1 text-xs font-semibold rounded-lg bg-blue-600 text-white">Mở</button>
+            <button id="music-mini-close"
+                class="px-2 py-1 text-xs font-semibold rounded-lg border border-slate-200 dark:border-slate-600 text-slate-500 dark:text-slate-300">✕</button>
         </div>
     </div>
 
     <!-- Submit Confirmation Modal -->
-    <div id="submit-confirm-modal" class="hidden fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm animate-fade-in p-4">
-        <div class="bg-white dark:bg-slate-800 w-full max-w-sm rounded-2xl p-6 shadow-2xl transform transition-all border border-slate-100 dark:border-slate-700 text-center">
-            <div class="w-16 h-16 bg-blue-50 dark:bg-blue-900/30 rounded-full flex items-center justify-center mx-auto mb-4 text-blue-600 dark:text-blue-400">
-                <svg xmlns="http://www.w3.org/2000/svg" class="h-8 w-8" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
+    <div id="submit-confirm-modal"
+        class="hidden fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm animate-fade-in p-4">
+        <div
+            class="bg-white dark:bg-slate-800 w-full max-w-sm rounded-2xl p-6 shadow-2xl transform transition-all border border-slate-100 dark:border-slate-700 text-center">
+            <div
+                class="w-16 h-16 bg-blue-50 dark:bg-blue-900/30 rounded-full flex items-center justify-center mx-auto mb-4 text-blue-600 dark:text-blue-400">
+                <svg xmlns="http://www.w3.org/2000/svg" class="h-8 w-8" fill="none" viewBox="0 0 24 24"
+                    stroke="currentColor">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                        d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
                 </svg>
             </div>
             <h3 class="text-xl font-bold text-slate-900 dark:text-white mb-2">Nộp bài thi?</h3>
-            <p class="text-slate-500 dark:text-slate-400 mb-6">Bạn có chắc chắn muốn nộp bài không? Thời gian làm bài sẽ dừng lại.</p>
+            <p class="text-slate-500 dark:text-slate-400 mb-6">Bạn có chắc chắn muốn nộp bài không? Thời gian làm bài sẽ
+                dừng lại.</p>
             <div class="flex gap-3">
-                <button onclick="document.getElementById('submit-confirm-modal').classList.add('hidden')" class="flex-1 py-3 px-4 rounded-xl border border-slate-200 dark:border-slate-600 text-slate-600 dark:text-slate-300 font-bold hover:bg-slate-50 dark:hover:bg-slate-700">Quay lại</button>
-                <button onclick="app.confirmSubmit()" class="flex-1 py-3 px-4 rounded-xl bg-blue-600 text-white font-bold hover:bg-blue-700 shadow-lg shadow-blue-500/30">Nộp bài</button>
+                <button onclick="document.getElementById('submit-confirm-modal').classList.add('hidden')"
+                    class="flex-1 py-3 px-4 rounded-xl border border-slate-200 dark:border-slate-600 text-slate-600 dark:text-slate-300 font-bold hover:bg-slate-50 dark:hover:bg-slate-700">Quay
+                    lại</button>
+                <button onclick="app.confirmSubmit()"
+                    class="flex-1 py-3 px-4 rounded-xl bg-blue-600 text-white font-bold hover:bg-blue-700 shadow-lg shadow-blue-500/30">Nộp
+                    bài</button>
             </div>
         </div>
     </div>
@@ -331,7 +448,8 @@
     <template id="tpl-home">
         <div class="h-full overflow-y-auto px-4 py-6 lg:px-10 animate-enter custom-scrollbar scroll-smooth">
             <div class="max-w-6xl mx-auto">
-                <div class="flex flex-col md:flex-row items-center justify-between bg-white dark:bg-slate-800 rounded-2xl p-6 border border-slate-200 dark:border-slate-700 shadow-sm mb-8 gap-4">
+                <div
+                    class="flex flex-col md:flex-row items-center justify-between bg-white dark:bg-slate-800 rounded-2xl p-6 border border-slate-200 dark:border-slate-700 shadow-sm mb-8 gap-4">
                     <div>
                         <h2 class="text-xl md:text-2xl font-bold text-slate-900 dark:text-white mb-1">
                             Ôn thi THPT QG 2025
@@ -340,7 +458,8 @@
                             Cấu trúc đề mới nhất. Tích hợp công thức Toán/Lý/Hóa.
                         </p>
                     </div>
-                    <button class="bg-blue-600 hover:bg-blue-700 text-white px-5 py-2.5 rounded-xl font-semibold text-sm transition-colors shadow-lg shadow-blue-500/20 whitespace-nowrap w-full md:w-auto">
+                    <button
+                        class="bg-blue-600 hover:bg-blue-700 text-white px-5 py-2.5 rounded-xl font-semibold text-sm transition-colors shadow-lg shadow-blue-500/20 whitespace-nowrap w-full md:w-auto">
                         Bắt đầu ngay
                     </button>
                 </div>
@@ -353,19 +472,25 @@
     <template id="tpl-exam-list">
         <div class="h-full overflow-y-auto px-4 py-6 lg:px-10 animate-enter custom-scrollbar">
             <div class="max-w-4xl mx-auto">
-                <button onclick="app.goHome()" class="group flex items-center text-slate-500 dark:text-slate-400 hover:text-blue-600 dark:hover:text-blue-400 mb-6 transition-colors font-medium text-sm">
-                    <div class="w-8 h-8 rounded-full bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 flex items-center justify-center mr-3 group-hover:border-blue-200 group-hover:bg-blue-50 dark:group-hover:bg-slate-700 transition-all">
-                        <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <button onclick="app.goHome()"
+                    class="group flex items-center text-slate-500 dark:text-slate-400 hover:text-blue-600 dark:hover:text-blue-400 mb-6 transition-colors font-medium text-sm">
+                    <div
+                        class="w-8 h-8 rounded-full bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 flex items-center justify-center mr-3 group-hover:border-blue-200 group-hover:bg-blue-50 dark:group-hover:bg-slate-700 transition-all">
+                        <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24"
+                            stroke="currentColor">
                             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7" />
                         </svg>
                     </div>
                     Quay lại chọn môn
                 </button>
-                <div class="bg-white dark:bg-slate-800 rounded-3xl p-6 shadow-soft border border-slate-100 dark:border-slate-700 mb-6 flex items-center gap-6">
+                <div
+                    class="bg-white dark:bg-slate-800 rounded-3xl p-6 shadow-soft border border-slate-100 dark:border-slate-700 mb-6 flex items-center gap-6">
                     <div id="subject-icon-large" class="p-4 bg-slate-50 dark:bg-slate-700/50 rounded-2xl"></div>
                     <div>
-                        <h2 id="subject-title" class="text-2xl md:text-3xl font-bold text-slate-900 dark:text-white mb-1"></h2>
-                        <p class="text-slate-500 dark:text-slate-400 text-sm md:text-base">Danh sách đề thi thử chọn lọc</p>
+                        <h2 id="subject-title"
+                            class="text-2xl md:text-3xl font-bold text-slate-900 dark:text-white mb-1"></h2>
+                        <p class="text-slate-500 dark:text-slate-400 text-sm md:text-base">Danh sách đề thi thử chọn lọc
+                        </p>
                     </div>
                 </div>
                 <div class="space-y-4">
@@ -379,16 +504,25 @@
     <!-- 3. Taking Exam View -->
     <template id="tpl-taking-exam">
         <div class="flex h-full animate-enter relative">
-            <div class="flex-1 overflow-y-auto bg-slate-50 dark:bg-slate-900 px-3 py-6 lg:px-12 scroll-smooth custom-scrollbar" id="questions-container">
+            <div class="flex-1 overflow-y-auto bg-slate-50 dark:bg-slate-900 px-3 py-6 lg:px-12 scroll-smooth custom-scrollbar"
+                id="questions-container">
                 <div class="max-w-3xl mx-auto pb-32">
                     <!-- Review Controls -->
-                    <div id="review-controls" class="hidden mb-6 sticky top-0 z-20 bg-white/90 dark:bg-slate-800/90 backdrop-blur p-3 rounded-xl border border-slate-200 dark:border-slate-700 shadow-sm flex flex-col sm:flex-row gap-3 items-center justify-between">
-                         <div class="flex gap-2 overflow-x-auto no-scrollbar w-full sm:w-auto pb-1 sm:pb-0">
-                             <button onclick="app.filterReview('all')" class="whitespace-nowrap px-3 py-1.5 rounded-lg text-sm font-bold bg-slate-100 dark:bg-slate-700 text-slate-600 dark:text-slate-300 hover:bg-slate-200 dark:hover:bg-slate-600 transition-colors filter-btn active" data-filter="all">Tất cả</button>
-                             <button onclick="app.filterReview('wrong')" class="whitespace-nowrap px-3 py-1.5 rounded-lg text-sm font-bold bg-red-50 dark:bg-red-900/30 text-red-600 dark:text-red-400 hover:bg-red-100 dark:hover:bg-red-900/50 transition-colors filter-btn" data-filter="wrong">Câu Sai</button>
-                             <button onclick="app.filterReview('correct')" class="whitespace-nowrap px-3 py-1.5 rounded-lg text-sm font-bold bg-green-50 dark:bg-green-900/30 text-green-600 dark:text-green-400 hover:bg-green-100 dark:hover:bg-green-900/50 transition-colors filter-btn" data-filter="correct">Câu Đúng</button>
-                         </div>
-                         <button onclick="app.goHome()" class="w-full sm:w-auto text-sm font-medium text-blue-600 hover:underline text-center sm:text-right">Thoát</button>
+                    <div id="review-controls"
+                        class="hidden mb-6 sticky top-0 z-20 bg-white/90 dark:bg-slate-800/90 backdrop-blur p-3 rounded-xl border border-slate-200 dark:border-slate-700 shadow-sm flex flex-col sm:flex-row gap-3 items-center justify-between">
+                        <div class="flex gap-2 overflow-x-auto no-scrollbar w-full sm:w-auto pb-1 sm:pb-0">
+                            <button onclick="app.filterReview('all')"
+                                class="whitespace-nowrap px-3 py-1.5 rounded-lg text-sm font-bold bg-slate-100 dark:bg-slate-700 text-slate-600 dark:text-slate-300 hover:bg-slate-200 dark:hover:bg-slate-600 transition-colors filter-btn active"
+                                data-filter="all">Tất cả</button>
+                            <button onclick="app.filterReview('wrong')"
+                                class="whitespace-nowrap px-3 py-1.5 rounded-lg text-sm font-bold bg-red-50 dark:bg-red-900/30 text-red-600 dark:text-red-400 hover:bg-red-100 dark:hover:bg-red-900/50 transition-colors filter-btn"
+                                data-filter="wrong">Câu Sai</button>
+                            <button onclick="app.filterReview('correct')"
+                                class="whitespace-nowrap px-3 py-1.5 rounded-lg text-sm font-bold bg-green-50 dark:bg-green-900/30 text-green-600 dark:text-green-400 hover:bg-green-100 dark:hover:bg-green-900/50 transition-colors filter-btn"
+                                data-filter="correct">Câu Đúng</button>
+                        </div>
+                        <button onclick="app.goHome()"
+                            class="w-full sm:w-auto text-sm font-medium text-blue-600 hover:underline text-center sm:text-right">Thoát</button>
                     </div>
 
                     <div class="space-y-8">
@@ -396,8 +530,11 @@
                             <div class="flex items-center gap-3 mb-4">
                                 <div class="h-6 w-1 bg-blue-600 rounded-full"></div>
                                 <div>
-                                    <h3 class="font-bold text-slate-800 dark:text-white text-base md:text-lg uppercase tracking-tight">Phần I: Trắc nghiệm</h3>
-                                    <p class="text-xs md:text-sm text-slate-500 dark:text-slate-400">Chọn 01 phương án đúng nhất.</p>
+                                    <h3
+                                        class="font-bold text-slate-800 dark:text-white text-base md:text-lg uppercase tracking-tight">
+                                        Phần I: Trắc nghiệm</h3>
+                                    <p class="text-xs md:text-sm text-slate-500 dark:text-slate-400">Chọn 01 phương án
+                                        đúng nhất.</p>
                                 </div>
                             </div>
                             <div id="part-1-questions" class="space-y-4 md:space-y-6"></div>
@@ -407,8 +544,11 @@
                             <div class="flex items-center gap-3 mb-4">
                                 <div class="h-6 w-1 bg-indigo-600 rounded-full"></div>
                                 <div>
-                                    <h3 class="font-bold text-slate-800 dark:text-white text-base md:text-lg uppercase tracking-tight">Phần II: Đúng / Sai</h3>
-                                    <p class="text-xs md:text-sm text-slate-500 dark:text-slate-400">Quyết định tính Đúng/Sai.</p>
+                                    <h3
+                                        class="font-bold text-slate-800 dark:text-white text-base md:text-lg uppercase tracking-tight">
+                                        Phần II: Đúng / Sai</h3>
+                                    <p class="text-xs md:text-sm text-slate-500 dark:text-slate-400">Quyết định tính
+                                        Đúng/Sai.</p>
                                 </div>
                             </div>
                             <div id="part-2-questions" class="space-y-6"></div>
@@ -418,8 +558,11 @@
                             <div class="flex items-center gap-3 mb-4">
                                 <div class="h-6 w-1 bg-emerald-600 rounded-full"></div>
                                 <div>
-                                    <h3 class="font-bold text-slate-800 dark:text-white text-base md:text-lg uppercase tracking-tight">Phần III: Trả lời ngắn</h3>
-                                    <p class="text-xs md:text-sm text-slate-500 dark:text-slate-400">Điền đáp án chính xác.</p>
+                                    <h3
+                                        class="font-bold text-slate-800 dark:text-white text-base md:text-lg uppercase tracking-tight">
+                                        Phần III: Trả lời ngắn</h3>
+                                    <p class="text-xs md:text-sm text-slate-500 dark:text-slate-400">Điền đáp án chính
+                                        xác.</p>
                                 </div>
                             </div>
                             <div id="part-3-questions" class="space-y-4 md:space-y-6"></div>
@@ -429,7 +572,8 @@
             </div>
 
             <!-- Desktop Sidebar -->
-            <div id="desktop-palette-sidebar" class="hidden lg:flex w-80 bg-white dark:bg-slate-800 border-l border-slate-100 dark:border-slate-700 flex-col shrink-0 shadow-[-4px_0_20px_rgba(0,0,0,0.02)] z-10">
+            <div id="desktop-palette-sidebar"
+                class="hidden lg:flex w-80 bg-white dark:bg-slate-800 border-l border-slate-100 dark:border-slate-700 flex-col shrink-0 shadow-[-4px_0_20px_rgba(0,0,0,0.02)] z-10">
                 <div class="p-6 border-b border-slate-50 dark:border-slate-700">
                     <h3 class="font-bold text-slate-800 dark:text-white text-lg">Mục lục câu hỏi</h3>
                     <p class="text-xs text-slate-400 mt-1">Trạng thái làm bài của bạn</p>
@@ -437,29 +581,41 @@
                 <div class="flex-1 overflow-y-auto p-6 custom-scrollbar">
                     <div id="question-palette" class="grid grid-cols-5 gap-3"></div>
                 </div>
-                <div id="submit-btn-container" class="p-6 border-t border-slate-50 dark:border-slate-700 bg-slate-50/50 dark:bg-slate-800">
-                    <button onclick="app.submitExam()" class="w-full bg-blue-600 hover:bg-blue-700 active:scale-[0.98] text-white font-bold py-3.5 px-4 rounded-xl transition-all shadow-lg shadow-blue-600/20 flex items-center justify-center gap-2">
+                <div id="submit-btn-container"
+                    class="p-6 border-t border-slate-50 dark:border-slate-700 bg-slate-50/50 dark:bg-slate-800">
+                    <button onclick="app.submitExam()"
+                        class="w-full bg-blue-600 hover:bg-blue-700 active:scale-[0.98] text-white font-bold py-3.5 px-4 rounded-xl transition-all shadow-lg shadow-blue-600/20 flex items-center justify-center gap-2">
                         <span>Nộp bài thi</span>
                     </button>
                 </div>
             </div>
         </div>
         <!-- Mobile Footer -->
-        <div id="mobile-footer" class="lg:hidden fixed bottom-0 left-0 right-0 bg-white/90 dark:bg-slate-800/90 backdrop-blur border-t border-slate-200 dark:border-slate-700 p-3 z-40 flex gap-3 shadow-[0_-4px_20px_rgba(0,0,0,0.05)]">
-             <button onclick="document.getElementById('mobile-palette').classList.remove('hidden')" class="px-4 py-3 bg-slate-100 dark:bg-slate-700 text-slate-700 dark:text-slate-200 rounded-xl font-bold flex items-center gap-2">
+        <div id="mobile-footer"
+            class="lg:hidden fixed bottom-0 left-0 right-0 bg-white/90 dark:bg-slate-800/90 backdrop-blur border-t border-slate-200 dark:border-slate-700 p-3 z-40 flex gap-3 shadow-[0_-4px_20px_rgba(0,0,0,0.05)]">
+            <button onclick="document.getElementById('mobile-palette').classList.remove('hidden')"
+                class="px-4 py-3 bg-slate-100 dark:bg-slate-700 text-slate-700 dark:text-slate-200 rounded-xl font-bold flex items-center gap-2">
                 Mục lục
             </button>
-            <button onclick="app.submitExam()" class="flex-1 bg-blue-600 text-white font-bold py-3 px-4 rounded-xl shadow-lg shadow-blue-600/20">
+            <button onclick="app.submitExam()"
+                class="flex-1 bg-blue-600 text-white font-bold py-3 px-4 rounded-xl shadow-lg shadow-blue-600/20">
                 Nộp bài
             </button>
         </div>
         <!-- Mobile Palette Modal -->
-        <div id="mobile-palette" class="hidden fixed inset-0 bg-slate-900/40 backdrop-blur-sm z-50 flex items-end animate-fade-in">
-            <div class="bg-white dark:bg-slate-800 w-full rounded-t-3xl p-5 max-h-[80vh] overflow-y-auto custom-scrollbar pb-10">
+        <div id="mobile-palette"
+            class="hidden fixed inset-0 bg-slate-900/40 backdrop-blur-sm z-50 flex items-end animate-fade-in">
+            <div
+                class="bg-white dark:bg-slate-800 w-full rounded-t-3xl p-5 max-h-[80vh] overflow-y-auto custom-scrollbar pb-10">
                 <div class="flex justify-between items-center mb-6">
                     <h3 class="font-bold text-lg text-slate-900 dark:text-white">Danh sách câu hỏi</h3>
-                    <button onclick="document.getElementById('mobile-palette').classList.add('hidden')" class="p-2 bg-slate-100 dark:bg-slate-700 rounded-full text-slate-500">
-                        <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" /></svg>
+                    <button onclick="document.getElementById('mobile-palette').classList.add('hidden')"
+                        class="p-2 bg-slate-100 dark:bg-slate-700 rounded-full text-slate-500">
+                        <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24"
+                            stroke="currentColor">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                d="M6 18L18 6M6 6l12 12" />
+                        </svg>
                     </button>
                 </div>
                 <div id="mobile-palette-grid" class="grid grid-cols-5 gap-3"></div>
@@ -469,44 +625,58 @@
 
     <!-- 4. Result View -->
     <template id="tpl-result">
-        <div class="h-full overflow-y-auto p-4 lg:p-8 animate-enter flex items-center justify-center bg-slate-50 dark:bg-slate-900 custom-scrollbar">
-            <div class="bg-white dark:bg-slate-800 w-full max-w-2xl rounded-3xl shadow-soft border border-slate-100 dark:border-slate-700 overflow-hidden relative">
+        <div
+            class="h-full overflow-y-auto p-4 lg:p-8 animate-enter flex items-center justify-center bg-slate-50 dark:bg-slate-900 custom-scrollbar">
+            <div
+                class="bg-white dark:bg-slate-800 w-full max-w-2xl rounded-3xl shadow-soft border border-slate-100 dark:border-slate-700 overflow-hidden relative">
                 <div class="absolute top-0 left-0 w-full h-40 bg-gradient-to-br from-blue-600 to-indigo-700"></div>
                 <div class="relative pt-10 pb-6 px-6 text-center text-white">
                     <h2 class="text-2xl md:text-3xl font-bold mb-1">Kết quả bài thi</h2>
                     <p id="result-subject-name" class="opacity-90 font-medium text-blue-100 text-sm md:text-base"></p>
                 </div>
-                
+
                 <div class="relative px-6 pb-8">
                     <div class="flex flex-col items-center justify-center -mt-10 mb-6">
-                        <div class="w-32 h-32 md:w-40 md:h-40 rounded-full bg-white dark:bg-slate-800 p-2 shadow-xl mb-4 transition-colors">
-                            <div class="w-full h-full rounded-full border-8 border-blue-50 dark:border-slate-700 flex flex-col items-center justify-center">
-                                <span id="score-display" class="text-4xl md:text-5xl font-extrabold text-slate-800 dark:text-white tracking-tighter"></span>
-                                <span class="text-[10px] md:text-xs font-bold text-slate-400 uppercase tracking-widest mt-1">Thang điểm 10</span>
+                        <div
+                            class="w-32 h-32 md:w-40 md:h-40 rounded-full bg-white dark:bg-slate-800 p-2 shadow-xl mb-4 transition-colors">
+                            <div
+                                class="w-full h-full rounded-full border-8 border-blue-50 dark:border-slate-700 flex flex-col items-center justify-center">
+                                <span id="score-display"
+                                    class="text-4xl md:text-5xl font-extrabold text-slate-800 dark:text-white tracking-tighter"></span>
+                                <span
+                                    class="text-[10px] md:text-xs font-bold text-slate-400 uppercase tracking-widest mt-1">Thang
+                                    điểm 10</span>
                             </div>
                         </div>
                     </div>
 
                     <div class="grid grid-cols-1 sm:grid-cols-3 gap-3 sm:gap-4 mb-6 sm:mb-8">
-                        <div class="bg-slate-50 dark:bg-slate-700 p-4 rounded-2xl border border-slate-100 dark:border-slate-600 text-center flex sm:block items-center justify-between sm:justify-center">
+                        <div
+                            class="bg-slate-50 dark:bg-slate-700 p-4 rounded-2xl border border-slate-100 dark:border-slate-600 text-center flex sm:block items-center justify-between sm:justify-center">
                             <div class="text-xs font-bold text-slate-400 uppercase mb-0 sm:mb-2">Thời gian</div>
                             <div id="result-time" class="font-bold text-lg text-slate-700 dark:text-slate-200"></div>
                         </div>
-                        <div class="bg-green-50 dark:bg-green-900/20 p-4 rounded-2xl border border-green-100 dark:border-green-900/30 text-center flex sm:block items-center justify-between sm:justify-center">
-                            <div class="text-xs font-bold text-green-600 dark:text-green-400 uppercase mb-0 sm:mb-2">Số câu đúng</div>
+                        <div
+                            class="bg-green-50 dark:bg-green-900/20 p-4 rounded-2xl border border-green-100 dark:border-green-900/30 text-center flex sm:block items-center justify-between sm:justify-center">
+                            <div class="text-xs font-bold text-green-600 dark:text-green-400 uppercase mb-0 sm:mb-2">Số
+                                câu đúng</div>
                             <div id="result-correct" class="font-bold text-lg text-green-700 dark:text-green-300"></div>
                         </div>
-                         <div class="bg-red-50 dark:bg-red-900/20 p-4 rounded-2xl border border-red-100 dark:border-red-900/30 text-center flex sm:block items-center justify-between sm:justify-center">
-                            <div class="text-xs font-bold text-red-600 dark:text-red-400 uppercase mb-0 sm:mb-2">Số câu sai</div>
+                        <div
+                            class="bg-red-50 dark:bg-red-900/20 p-4 rounded-2xl border border-red-100 dark:border-red-900/30 text-center flex sm:block items-center justify-between sm:justify-center">
+                            <div class="text-xs font-bold text-red-600 dark:text-red-400 uppercase mb-0 sm:mb-2">Số câu
+                                sai</div>
                             <div id="result-wrong" class="font-bold text-lg text-red-700 dark:text-red-300"></div>
                         </div>
                     </div>
 
                     <div class="flex flex-col sm:flex-row gap-3">
-                        <button onclick="app.goHome()" class="flex-1 py-3.5 px-6 border border-slate-200 dark:border-slate-600 rounded-xl text-slate-600 dark:text-slate-200 font-bold hover:bg-slate-50 dark:hover:bg-slate-700 transition-colors text-sm md:text-base">
+                        <button onclick="app.goHome()"
+                            class="flex-1 py-3.5 px-6 border border-slate-200 dark:border-slate-600 rounded-xl text-slate-600 dark:text-slate-200 font-bold hover:bg-slate-50 dark:hover:bg-slate-700 transition-colors text-sm md:text-base">
                             Về trang chủ
                         </button>
-                        <button onclick="app.reviewExam()" class="flex-1 py-3.5 px-6 bg-slate-900 dark:bg-slate-100 rounded-xl text-white dark:text-slate-900 font-bold hover:bg-slate-800 dark:hover:bg-slate-200 transition-colors shadow-lg shadow-slate-200 dark:shadow-none text-sm md:text-base">
+                        <button onclick="app.reviewExam()"
+                            class="flex-1 py-3.5 px-6 bg-slate-900 dark:bg-slate-100 rounded-xl text-white dark:text-slate-900 font-bold hover:bg-slate-800 dark:hover:bg-slate-200 transition-colors shadow-lg shadow-slate-200 dark:shadow-none text-sm md:text-base">
                             Xem chi tiết & Lời giải
                         </button>
                     </div>
@@ -519,8 +689,16 @@
     <script src="https://www.youtube.com/iframe_api"></script>
     <script src="script.js"></script>
     <script type="module">
-        import { initGatekeeper } from "../../gatekeeper.js";
+        import { initGatekeeper, getAllExams, getSubjects } from "../../gatekeeper.js";
+
+        // Make Firebase functions available globally for the app
+        window.firebaseExams = {
+            getAllExams,
+            getSubjects
+        };
+
         initGatekeeper('protected');
     </script>
 </body>
+
 </html>
