@@ -697,7 +697,12 @@
             getSubjects
         };
 
+        // Initialize Gatekeeper
         initGatekeeper('protected');
+
+        // Initialize App after Firebase is ready
+        if (window.musicPlayer) window.musicPlayer.init();
+        if (window.app) window.app.init();
     </script>
 </body>
 
