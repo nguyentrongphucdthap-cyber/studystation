@@ -610,7 +610,7 @@ async function confirmDeleteExam() {
 
 // Gemini API configuration
 const GEMINI_API_KEY = "AIzaSyCdRcAgVsXiuKDsNSzeLs6C7i64uluccsM"; // API key sẽ được cung cấp
-const GEMINI_API_URL = "https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent";
+const GEMINI_API_URL = "https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash-latest:generateContent";
 
 /**
  * Handle file import - supports JSON, DOC, DOCX, PDF, and images
