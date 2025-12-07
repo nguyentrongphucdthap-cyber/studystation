@@ -41,11 +41,14 @@ const refs = {
     subjectFilter: document.getElementById('subject-filter'),
     examList: document.getElementById('exam-list'),
     btnNewExam: document.getElementById('btn-new-exam'),
+    btnNewExamEmpty: document.getElementById('btn-new-exam-empty'),
+    importFile: document.getElementById('import-file'),
 
     // Editor
     editorEmpty: document.getElementById('editor-empty'),
     editorForm: document.getElementById('editor-form'),
     editorTitle: document.getElementById('editor-title'),
+    btnExport: document.getElementById('btn-export'),
     btnDelete: document.getElementById('btn-delete'),
     btnCancel: document.getElementById('btn-cancel'),
     btnSave: document.getElementById('btn-save'),
@@ -166,6 +169,7 @@ async function loadExams() {
 function bindEvents() {
     refs.subjectFilter.addEventListener('change', renderExamList);
     refs.btnNewExam.addEventListener('click', () => showEditor(null));
+    if (refs.btnNewExamEmpty) refs.btnNewExamEmpty.addEventListener('click', () => showEditor(null));
     refs.btnCancel.addEventListener('click', hideEditor);
     refs.btnSave.addEventListener('click', saveExam);
     refs.btnDelete.addEventListener('click', () => refs.deleteModal.classList.remove('hidden'));
@@ -175,6 +179,15 @@ function bindEvents() {
     refs.btnAddPart1.addEventListener('click', () => addQuestion(1));
     refs.btnAddPart2.addEventListener('click', () => addQuestion(2));
     refs.btnAddPart3.addEventListener('click', () => addQuestion(3));
+
+    // Import/Export
+    if (refs.importFile) refs.importFile.addEventListener('change', handleFileImport);
+    if (refs.btnExport) refs.btnExport.addEventListener('click', handleExport);
+
+    // Import triggers from empty state
+    document.querySelectorAll('.import-file-trigger').forEach(input => {
+        input.addEventListener('change', handleFileImport);
+    });
 }
 
 // ============================================================
@@ -248,6 +261,7 @@ function showEditor(examId) {
         // Editing existing
         refs.editorTitle.textContent = 'Chỉnh sửa bài thi';
         refs.btnDelete.classList.remove('hidden');
+        if (refs.btnExport) refs.btnExport.classList.remove('hidden');
 
         const exam = state.exams.find(e => e.id === examId);
         if (exam) {
@@ -263,6 +277,7 @@ function showEditor(examId) {
         // Creating new
         refs.editorTitle.textContent = 'Tạo bài thi mới';
         refs.btnDelete.classList.add('hidden');
+        if (refs.btnExport) refs.btnExport.classList.add('hidden');
 
         refs.examSubject.value = '';
         refs.examTime.value = '50';
@@ -575,6 +590,297 @@ async function confirmDeleteExam() {
         console.error('Delete failed:', error);
         showToast('Lỗi khi xóa bài thi: ' + error.message, 'error');
     }
+}
+
+// ============================================================
+// IMPORT / EXPORT
+// ============================================================
+
+// Gemini API configuration
+const GEMINI_API_KEY = "AIzaSyA8MwvgJvybwY6tszMQnbjPt41R5dxZE9A"; // API key sẽ được cung cấp
+const GEMINI_API_URL = "https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent";
+
+/**
+ * Handle file import - supports JSON, DOC, DOCX, PDF, and images
+ */
+async function handleFileImport(e) {
+    const file = e.target.files[0];
+    if (!file) return;
+
+    const fileName = file.name.toLowerCase();
+    const fileExt = fileName.split('.').pop();
+
+    // Handle JSON directly
+    if (fileExt === 'json') {
+        handleJsonImport(file);
+        return;
+    }
+
+    // Handle other formats with AI
+    const supportedFormats = ['doc', 'docx', 'pdf', 'png', 'jpg', 'jpeg', 'svg', 'webp'];
+    if (!supportedFormats.includes(fileExt)) {
+        showToast(`Định dạng .${fileExt} không được hỗ trợ`, 'error');
+        return;
+    }
+
+    showToast('Đang phân tích file bằng AI...', 'info');
+
+    try {
+        // Convert file to base64
+        const base64Data = await fileToBase64(file);
+        const mimeType = file.type || getMimeType(fileExt);
+
+        // Call Gemini API to extract exam data
+        const examData = await parseFileWithAI(base64Data, mimeType, fileName);
+
+        if (!examData) {
+            showToast('AI không thể trích xuất dữ liệu từ file', 'error');
+            return;
+        }
+
+        // Validate and create exam
+        if (!examData.subjectId) {
+            // Show subject selection dialog
+            const subjectId = await selectSubjectDialog();
+            if (!subjectId) return;
+            examData.subjectId = subjectId;
+        }
+
+        if (!examData.title) {
+            examData.title = fileName.replace(/\.[^/.]+$/, '');
+        }
+
+        const newId = await createExam(examData);
+        await loadExams();
+        showEditor(newId);
+
+        const totalQ = (examData.part1?.length || 0) + (examData.part2?.length || 0) + (examData.part3?.length || 0);
+        showToast(`Đã import thành công: ${totalQ} câu hỏi`);
+
+    } catch (error) {
+        console.error('AI Import failed:', error);
+        showToast('Lỗi phân tích file: ' + error.message, 'error');
+    }
+
+    e.target.value = '';
+}
+
+/**
+ * Handle JSON file import directly
+ */
+function handleJsonImport(file) {
+    const reader = new FileReader();
+    reader.onload = async (event) => {
+        try {
+            const data = JSON.parse(event.target.result);
+
+            if (!data.subjectId || !data.title) {
+                showToast('File JSON không hợp lệ. Cần có subjectId và title.', 'error');
+                return;
+            }
+
+            const validSubject = state.subjects.find(s => s.id === data.subjectId);
+            if (!validSubject) {
+                showToast(`Môn học "${data.subjectId}" không tồn tại.`, 'error');
+                return;
+            }
+
+            showToast('Đang import bài thi...', 'info');
+
+            const examData = {
+                subjectId: data.subjectId,
+                title: data.title,
+                time: data.time || 50,
+                part1: data.part1 || [],
+                part2: data.part2 || [],
+                part3: data.part3 || []
+            };
+
+            const newId = await createExam(examData);
+            await loadExams();
+            showEditor(newId);
+            showToast(`Đã import thành công: ${data.title}`);
+
+        } catch (error) {
+            console.error('JSON Import failed:', error);
+            showToast('Lỗi đọc file JSON: ' + error.message, 'error');
+        }
+    };
+    reader.readAsText(file);
+}
+
+/**
+ * Convert file to base64
+ */
+function fileToBase64(file) {
+    return new Promise((resolve, reject) => {
+        const reader = new FileReader();
+        reader.onload = () => {
+            const base64 = reader.result.split(',')[1];
+            resolve(base64);
+        };
+        reader.onerror = reject;
+        reader.readAsDataURL(file);
+    });
+}
+
+/**
+ * Get MIME type from extension
+ */
+function getMimeType(ext) {
+    const mimeTypes = {
+        'doc': 'application/msword',
+        'docx': 'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
+        'pdf': 'application/pdf',
+        'png': 'image/png',
+        'jpg': 'image/jpeg',
+        'jpeg': 'image/jpeg',
+        'svg': 'image/svg+xml',
+        'webp': 'image/webp'
+    };
+    return mimeTypes[ext] || 'application/octet-stream';
+}
+
+/**
+ * Parse file using Gemini Vision API
+ */
+async function parseFileWithAI(base64Data, mimeType, fileName) {
+    const systemPrompt = `Bạn là trợ lý AI chuyên phân tích đề thi. 
+Nhiệm vụ: Trích xuất tất cả câu hỏi từ tài liệu này và chuyển thành định dạng JSON.
+
+Quy tắc phân loại câu hỏi:
+- part1: Trắc nghiệm 4 đáp án (A, B, C, D)
+- part2: Đúng/Sai với 4 mệnh đề a, b, c, d
+- part3: Trả lời ngắn (điền số, từ, công thức)
+
+Các môn học hợp lệ: bio (Sinh học), physics (Vật lí), info (Tin học), history (Lịch sử)
+
+Trả về JSON với cấu trúc:
+{
+  "subjectId": "bio|physics|info|history hoặc null nếu không xác định được",
+  "title": "Tiêu đề đề thi",
+  "time": 50,
+  "part1": [{"id": 1, "text": "Câu hỏi?", "options": ["A", "B", "C", "D"], "correct": 0}],
+  "part2": [{"id": 1, "text": "Mô tả", "subQuestions": [{"id": "a", "text": "...", "correct": true/false}]}],
+  "part3": [{"id": 1, "text": "Câu hỏi?", "correct": "đáp án"}]
+}`;
+
+    const payload = {
+        contents: [{
+            parts: [
+                { text: `Phân tích đề thi từ file "${fileName}" và trích xuất tất cả câu hỏi:` },
+                { inline_data: { mime_type: mimeType, data: base64Data } }
+            ]
+        }],
+        systemInstruction: { parts: [{ text: systemPrompt }] },
+        generationConfig: {
+            responseMimeType: "application/json",
+            temperature: 0.2
+        }
+    };
+
+    const response = await fetch(`${GEMINI_API_URL}?key=${GEMINI_API_KEY}`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(payload)
+    });
+
+    if (!response.ok) {
+        const errorData = await response.json();
+        throw new Error(errorData.error?.message || `API Error: ${response.status}`);
+    }
+
+    const result = await response.json();
+
+    if (result.candidates && result.candidates[0]?.content?.parts?.[0]?.text) {
+        const jsonText = result.candidates[0].content.parts[0].text;
+        return JSON.parse(jsonText);
+    }
+
+    throw new Error('Không nhận được phản hồi hợp lệ từ AI');
+}
+
+/**
+ * Show subject selection dialog
+ */
+function selectSubjectDialog() {
+    return new Promise((resolve) => {
+        const modal = document.createElement('div');
+        modal.className = 'fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm p-4';
+        modal.innerHTML = `
+            <div class="bg-white rounded-2xl p-6 max-w-sm w-full shadow-2xl">
+                <h3 class="text-lg font-bold text-gray-800 mb-4">Chọn môn học</h3>
+                <p class="text-gray-500 text-sm mb-4">AI không thể xác định môn học. Vui lòng chọn:</p>
+                <select id="subject-select-dialog" class="w-full px-3 py-2 border border-gray-200 rounded-lg mb-4">
+                    ${state.subjects.map(s => `<option value="${s.id}">${s.name}</option>`).join('')}
+                </select>
+                <div class="flex gap-3">
+                    <button id="dialog-cancel" class="flex-1 px-4 py-2.5 border border-gray-200 text-gray-600 font-semibold rounded-xl hover:bg-gray-50">Hủy</button>
+                    <button id="dialog-confirm" class="flex-1 px-4 py-2.5 bg-blue-600 text-white font-semibold rounded-xl hover:bg-blue-700">Xác nhận</button>
+                </div>
+            </div>
+        `;
+        document.body.appendChild(modal);
+
+        modal.querySelector('#dialog-cancel').onclick = () => {
+            modal.remove();
+            resolve(null);
+        };
+
+        modal.querySelector('#dialog-confirm').onclick = () => {
+            const value = modal.querySelector('#subject-select-dialog').value;
+            modal.remove();
+            resolve(value);
+        };
+    });
+}
+
+/**
+ * Handle export current exam to JSON
+ */
+function handleExport() {
+    if (!state.currentExamId) {
+        showToast('Chưa chọn bài thi để xuất', 'error');
+        return;
+    }
+
+    const exam = state.exams.find(e => e.id === state.currentExamId);
+    if (!exam) {
+        showToast('Không tìm thấy bài thi', 'error');
+        return;
+    }
+
+    // Create export data (exclude Firebase-specific fields)
+    const exportData = {
+        subjectId: exam.subjectId,
+        title: exam.title,
+        time: exam.time,
+        part1: exam.part1 || [],
+        part2: exam.part2 || [],
+        part3: exam.part3 || []
+    };
+
+    // Generate filename
+    const slug = (exam.title || 'exam')
+        .toLowerCase()
+        .normalize('NFD').replace(/[\u0300-\u036f]/g, '') // Remove diacritics
+        .replace(/[^a-z0-9]+/g, '_')
+        .replace(/^_|_$/g, '')
+        .substring(0, 50);
+    const filename = `${exam.subjectId}_${slug}.json`;
+
+    // Download
+    const blob = new Blob([JSON.stringify(exportData, null, 2)], { type: 'application/json' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = filename;
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    URL.revokeObjectURL(url);
+
+    showToast(`Đã xuất: ${filename}`);
 }
 
 // ============================================================
