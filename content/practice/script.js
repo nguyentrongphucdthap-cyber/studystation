@@ -753,8 +753,53 @@ const app = {
         const subject = this.subjects[subId];
         if (!subject) { alert('Không tìm thấy môn học này.'); return; }
         const examMeta = subject.exams.find(e => e.id === examId);
-        const examData = this.examContentDB[examId];
-        if (!examMeta || !examData) { alert('Không tìm thấy dữ liệu bài thi.'); return; }
+        const originalData = this.examContentDB[examId];
+
+        if (!examMeta || !originalData) { alert('Không tìm thấy dữ liệu bài thi.'); return; }
+
+        // Deep copy for session to enable shuffling without mutating original
+        const examData = JSON.parse(JSON.stringify(originalData));
+
+        // Shuffle Helper
+        const shuffle = (array) => {
+            for (let i = array.length - 1; i > 0; i--) {
+                const j = Math.floor(Math.random() * (i + 1));
+                [array[i], array[j]] = [array[j], array[i]];
+            }
+            return array;
+        };
+
+        // 1. Shuffle Question Order (Part 1, 2, 3)
+        if (examData.part1) shuffle(examData.part1);
+        if (examData.part2) shuffle(examData.part2);
+        if (examData.part3) shuffle(examData.part3);
+
+        // 2. Shuffle Options for Part 1 & Remap Correct Index
+        if (examData.part1) {
+            examData.part1.forEach(q => {
+                const originalOptions = q.options || [];
+                // Store pairs of {text, isCorrect} to track the answer
+                const optionObjs = originalOptions.map((opt, i) => ({
+                    text: opt,
+                    isCorrect: i === (q.correct ?? 0)
+                }));
+
+                shuffle(optionObjs); // Shuffle the options
+
+                // Reconstruct options and find new correct index
+                q.options = optionObjs.map(o => o.text);
+                const newCorrectIndex = optionObjs.findIndex(o => o.isCorrect);
+                q.correct = newCorrectIndex >= 0 ? newCorrectIndex : 0;
+            });
+        }
+
+        // 3. Shuffle Sub-questions for Part 2
+        if (examData.part2) {
+            examData.part2.forEach(q => {
+                if (q.subQuestions) shuffle(q.subQuestions);
+            });
+        }
+
         this.currentExam = { meta: examMeta, data: examData, subId: subId };
         this.answers = {};
         this.isReviewMode = false;
