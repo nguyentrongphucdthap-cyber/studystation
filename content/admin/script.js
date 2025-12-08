@@ -302,6 +302,15 @@ function hideEditor() {
 // QUESTION RENDERING
 // ============================================================
 
+/**
+ * Trigger MathJax to render math/chemistry symbols
+ */
+function renderMath() {
+    if (window.MathJax) {
+        window.MathJax.typesetPromise();
+    }
+}
+
 function renderQuestionsPart1(questions) {
     if (questions.length === 0) {
         refs.part1Questions.innerHTML = '<p class="text-gray-400 text-sm text-center py-4">Chưa có câu hỏi nào</p>';
@@ -310,6 +319,7 @@ function renderQuestionsPart1(questions) {
         bindQuestionEvents(1);
     }
     refs.part1Count.textContent = `${questions.length} câu`;
+    renderMath();
 }
 
 function renderQuestionsPart2(questions) {
@@ -320,6 +330,7 @@ function renderQuestionsPart2(questions) {
         bindQuestionEvents(2);
     }
     refs.part2Count.textContent = `${questions.length} câu`;
+    renderMath();
 }
 
 function renderQuestionsPart3(questions) {
@@ -330,6 +341,7 @@ function renderQuestionsPart3(questions) {
         bindQuestionEvents(3);
     }
     refs.part3Count.textContent = `${questions.length} câu`;
+    renderMath();
 }
 
 function createPart1QuestionHTML(q, idx) {
