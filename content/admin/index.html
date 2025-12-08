@@ -1,89 +1,71 @@
 <!DOCTYPE html>
 <html lang="vi">
 
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Admin - Quản lý bài thi | StudyStation</title>
-    <link rel="icon" type="image/png" href="../../favicon.png">
+}
 
-    <!-- Tailwind CSS -->
-    <script src="https://cdn.tailwindcss.com"></script>
+/* Loading Spinner */
+@keyframes spin {
+to {
+transform: rotate(360deg);
+}
+}
 
-    <!-- Fonts -->
-    <link rel="preconnect" href="https://fonts.googleapis.com">
-    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Be+Vietnam+Pro:wght@400;500;600;700&display=swap"
-        rel="stylesheet">
+.spinner {
+animation: spin 1s linear infinite;
+}
 
-    <style>
-        body {
-            font-family: 'Be Vietnam Pro', sans-serif;
-        }
+/* Custom scrollbar */
+.custom-scrollbar::-webkit-scrollbar {
+width: 6px;
+}
 
-        /* Loading Spinner */
-        @keyframes spin {
-            to {
-                transform: rotate(360deg);
-            }
-        }
+.custom-scrollbar::-webkit-scrollbar-track {
+background: #f1f5f9;
+border-radius: 999px;
+}
 
-        .spinner {
-            animation: spin 1s linear infinite;
-        }
+.custom-scrollbar::-webkit-scrollbar-thumb {
+background: #cbd5e1;
+border-radius: 999px;
+}
 
-        /* Custom scrollbar */
-        .custom-scrollbar::-webkit-scrollbar {
-            width: 6px;
-        }
+.custom-scrollbar::-webkit-scrollbar-thumb:hover {
+background: #94a3b8;
+}
 
-        .custom-scrollbar::-webkit-scrollbar-track {
-            background: #f1f5f9;
-            border-radius: 999px;
-        }
+/* Toast animations */
+.toast-enter {
+animation: slideIn 0.3s ease-out forwards;
+}
 
-        .custom-scrollbar::-webkit-scrollbar-thumb {
-            background: #cbd5e1;
-            border-radius: 999px;
-        }
+.toast-exit {
+animation: slideOut 0.3s ease-in forwards;
+}
 
-        .custom-scrollbar::-webkit-scrollbar-thumb:hover {
-            background: #94a3b8;
-        }
+@keyframes slideIn {
+from {
+transform: translateX(100%);
+opacity: 0;
+}
 
-        /* Toast animations */
-        .toast-enter {
-            animation: slideIn 0.3s ease-out forwards;
-        }
+to {
+transform: translateX(0);
+opacity: 1;
+}
+}
 
-        .toast-exit {
-            animation: slideOut 0.3s ease-in forwards;
-        }
+@keyframes slideOut {
+from {
+transform: translateX(0);
+opacity: 1;
+}
 
-        @keyframes slideIn {
-            from {
-                transform: translateX(100%);
-                opacity: 0;
-            }
-
-            to {
-                transform: translateX(0);
-                opacity: 1;
-            }
-        }
-
-        @keyframes slideOut {
-            from {
-                transform: translateX(0);
-                opacity: 1;
-            }
-
-            to {
-                transform: translateX(100%);
-                opacity: 0;
-            }
-        }
-    </style>
+to {
+transform: translateX(100%);
+opacity: 0;
+}
+}
+</style>
 </head>
 
 <body class="bg-gray-50 min-h-screen">
@@ -222,7 +204,7 @@
                             </div>
                             <h3 class="text-lg font-bold text-gray-800 mb-2">Chọn hoặc tạo bài thi</h3>
                             <p class="text-gray-500 text-sm mb-6">Chọn một bài thi từ danh sách, nhấn "Thêm" để tạo mới,
-                                hoặc Import từ file JSON.</p>
+                                hoặc Import từ file JSON/Word/PDF/Ảnh.</p>
                             <div class="flex flex-col sm:flex-row gap-3 justify-center">
                                 <button id="btn-new-exam-empty"
                                     class="px-4 py-2 bg-blue-600 text-white text-sm font-semibold rounded-lg hover:bg-blue-700 transition-colors flex items-center justify-center gap-2">
