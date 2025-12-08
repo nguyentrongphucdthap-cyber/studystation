@@ -641,12 +641,8 @@ async function confirmDeleteExam() {
 }
 
 // ============================================================
-// IMPORT / EXPORT
+// IMPORT / EXPORT (LOCAL OCR)
 // ============================================================
-
-// Gemini API configuration
-const GEMINI_API_KEY = ""; // API key sẽ được cung cấp
-const GEMINI_API_URL = "https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash-lite-preview-02-05:generateContent";
 
 /**
  * Handle file import - supports JSON, DOC, DOCX, PDF, and images
@@ -664,31 +660,46 @@ async function handleFileImport(e) {
         return;
     }
 
-    // Handle other formats with AI
+    // Handle other formats with Local OCR
     const supportedFormats = ['doc', 'docx', 'pdf', 'png', 'jpg', 'jpeg', 'svg', 'webp'];
     if (!supportedFormats.includes(fileExt)) {
         showToast(`Định dạng .${fileExt} không được hỗ trợ`, 'error');
         return;
     }
 
-    showToast('Đang phân tích file bằng AI...', 'info');
+    showToast('Đang xử lý file (OCR)... Vui lòng chờ.', 'info');
 
     try {
-        // Convert file to base64
-        const base64Data = await fileToBase64(file);
-        const mimeType = file.type || getMimeType(fileExt);
+        let text = '';
 
-        // Call Gemini API to extract exam data
-        const examData = await parseFileWithAI(base64Data, mimeType, fileName);
+        // Extract text based on file type
+        if (['png', 'jpg', 'jpeg', 'svg', 'webp'].includes(fileExt)) {
+            text = await extractTextFromImage(file);
+        } else if (fileExt === 'pdf') {
+            text = await extractTextFromPDF(file);
+        } else if (fileExt === 'docx') {
+            text = await extractTextFromDocx(file);
+        } else {
+            throw new Error(`Chưa hỗ trợ xử lý file .${fileExt}`);
+        }
+
+        if (!text || text.trim().length === 0) {
+            showToast('Không tìm thấy văn bản trong file', 'error');
+            return;
+        }
+
+        console.log("Raw Extracted Text:", text);
+
+        // Parse text into exam structure
+        const examData = parseExamText(text, fileName);
 
         if (!examData) {
-            showToast('AI không thể trích xuất dữ liệu từ file', 'error');
+            showToast('Không thể phân tích cấu trúc đề thi', 'error');
             return;
         }
 
         // Validate and create exam
         if (!examData.subjectId) {
-            // Show subject selection dialog
             const subjectId = await selectSubjectDialog();
             if (!subjectId) return;
             examData.subjectId = subjectId;
@@ -706,168 +717,150 @@ async function handleFileImport(e) {
         showToast(`Đã import thành công: ${totalQ} câu hỏi`);
 
     } catch (error) {
-        console.error('AI Import failed:', error);
-        showToast('Lỗi phân tích file: ' + error.message, 'error');
+        console.error('OCR Import failed:', error);
+        showToast('Lỗi xử lý file: ' + error.message, 'error');
     }
 
     e.target.value = '';
 }
 
 /**
- * Handle JSON file import directly
+ * Extract text from Image using Tesseract.js
  */
-function handleJsonImport(file) {
-    const reader = new FileReader();
-    reader.onload = async (event) => {
-        try {
-            const data = JSON.parse(event.target.result);
-
-            if (!data.subjectId || !data.title) {
-                showToast('File JSON không hợp lệ. Cần có subjectId và title.', 'error');
-                return;
-            }
-
-            const validSubject = state.subjects.find(s => s.id === data.subjectId);
-            if (!validSubject) {
-                showToast(`Môn học "${data.subjectId}" không tồn tại.`, 'error');
-                return;
-            }
-
-            showToast('Đang import bài thi...', 'info');
-
-            const examData = {
-                subjectId: data.subjectId,
-                title: data.title,
-                time: data.time || 50,
-                part1: data.part1 || [],
-                part2: data.part2 || [],
-                part3: data.part3 || []
-            };
-
-            const newId = await createExam(examData);
-            await loadExams();
-            showEditor(newId);
-            showToast(`Đã import thành công: ${data.title}`);
-
-        } catch (error) {
-            console.error('JSON Import failed:', error);
-            showToast('Lỗi đọc file JSON: ' + error.message, 'error');
-        }
-    };
-    reader.readAsText(file);
+async function extractTextFromImage(file) {
+    showToast('Đang đọc chữ từ hình ảnh...', 'info');
+    const worker = await Tesseract.createWorker('vie');
+    const ret = await worker.recognize(file);
+    await worker.terminate();
+    return ret.data.text;
 }
 
 /**
- * Convert file to base64
+ * Extract text from PDF using PDF.js
  */
-function fileToBase64(file) {
-    return new Promise((resolve, reject) => {
-        const reader = new FileReader();
-        reader.onload = () => {
-            const base64 = reader.result.split(',')[1];
-            resolve(base64);
-        };
-        reader.onerror = reject;
-        reader.readAsDataURL(file);
-    });
+async function extractTextFromPDF(file) {
+    showToast('Đang đọc file PDF...', 'info');
+    const arrayBuffer = await file.arrayBuffer();
+    const pdf = await pdfjsLib.getDocument({ data: arrayBuffer }).promise;
+    let fullText = '';
+
+    for (let i = 1; i <= pdf.numPages; i++) {
+        showToast(`Đang đọc trang ${i}/${pdf.numPages}...`, 'info');
+        const page = await pdf.getPage(i);
+        const textContent = await page.getTextContent();
+        const pageText = textContent.items.map(item => item.str).join(' ');
+        fullText += pageText + '\n';
+    }
+    return fullText;
 }
 
 /**
- * Get MIME type from extension
+ * Extract text from DOCX using Mammoth.js
  */
-function getMimeType(ext) {
-    const mimeTypes = {
-        'doc': 'application/msword',
-        'docx': 'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
-        'pdf': 'application/pdf',
-        'png': 'image/png',
-        'jpg': 'image/jpeg',
-        'jpeg': 'image/jpeg',
-        'svg': 'image/svg+xml',
-        'webp': 'image/webp'
-    };
-    return mimeTypes[ext] || 'application/octet-stream';
+async function extractTextFromDocx(file) {
+    showToast('Đang đọc file Word...', 'info');
+    const arrayBuffer = await file.arrayBuffer();
+    const result = await mammoth.extractRawText({ arrayBuffer: arrayBuffer });
+    return result.value;
 }
 
-async function parseFileWithAI(base64Data, mimeType, fileName) {
-    const systemPrompt = `You are a Smart OCR for Exam Extraction.
-    Goal: Extract content from the provided exam file into valid JSON.
+/**
+ * Parse raw text into structured Exam Object (Regex Engine)
+ */
+function parseExamText(text, fileName) {
+    // 1. Normalization
+    // Remove headers/footers (naive)
+    let cleanText = text.replace(/(Sở GD&ĐT|Trang \d+\/\d+|Mã đề \d+)/gi, '');
 
-    # LOGIC RULES (Strictly Follow):
-    1.  **Noise Filtering**: Ignore headers/footers like "Sở GD&ĐT", "Trang X/Y", "Mã đề", "Thời gian làm bài".
-    2.  **Formatting**:
-        - Convert all Math symbols (approx, neq, pi, beta, etc.) to valid LaTeX (e.g., \\approx, \\pi).
-        - Format fractions as $\\frac{a}{b}$ (e.g., 1/2 -> $\\frac{1}{2}$).
-        - **Superscripts**: Auto-format units/vars: cm2 -> cm^2, x3 -> x^3.
-        - **Chemistry**: Wrap chemical formulas in \\ce{...} (e.g., H2SO4 -> \\ce{H2SO4}). Heuristic: Words with >=2 uppercase or Digits (NaCl, Fe2O3). Ignore common English/Vietnamese words.
-        - **Functions**: Format sin, cos, tan, log, ln as LaTeX math $\\sin, \\cos...$
-    3.  **Classification**:
-        - **Multiple Choice (MC)**: Questions with options A, B, C, D.
-        - **True/False (TF)**: Questions with sub-questions (a, b, c, d) asking True/False (Đúng/Sai).
-        - **Short Answer (SA)**: No options provided.
-    4.  **Grading Key**: Look for "KEY", "Bảng đáp án", or inline answers to detect correct answers. Default MC correct index to 0 (A) if not found.
+    // Normalize spaces
+    cleanText = cleanText.replace(/\s+/g, ' ');
 
-    # OUTPUT FORMAT (JSON ONLY):
-    {
-      "subjectId": "math/physics/chemistry/biology/history/geography/civic_education/english/informatics/technology (detect based on content, return null if unsure)",
-      "title": "Extracted from ${fileName}",
-      "time": 50,
-      "part1": [ // Multiple Choice
-        { "id": 1, "text": "Question content...", "options": ["A content", "B content", "C content", "D content"], "correct": 0 }
-      ],
-      "part2": [ // True/False
-        {
-          "id": 1, "text": "Common text...",
-          "subQuestions": [
-             { "id": "a", "text": "Sub Q1", "correct": true },
-             { "id": "b", "text": "Sub Q2", "correct": false },
-             { "id": "c", "text": "Sub Q3", "correct": true },
-             { "id": "d", "text": "Sub Q4", "correct": false }
-          ]
-        }
-      ],
-      "part3": [ // Short Answer
-        { "id": 1, "text": "Question content...", "correct": "Answer key (if found)" }
-      ]
-    }
-    RETURN ONLY RAW JSON. NO MARKDOWN BLOCK.`;
+    // 2. Math/Science Formatting (Heuristics)
+    // Fractions: 1 / 2 -> \frac{1}{2}
+    cleanText = cleanText.replace(/(\d+)\s*\/\s*(\d+)/g, '\\frac{$1}{$2}');
 
-    const payload = {
-        contents: [{
-            parts: [
-                { text: `Extract questions from file "${fileName}":` },
-                { inline_data: { mime_type: mimeType, data: base64Data } }
-            ]
-        }],
-        systemInstruction: { parts: [{ text: systemPrompt }] },
-        generationConfig: {
-            responseMimeType: "application/json",
-            temperature: 0.2
-        }
+    // Auto-detect chemistry (Basic: Words with numbers like H2SO4)
+    // Avoid common words mixed with numbers. Look for Uppercase followed by (lower|digit)
+    cleanText = cleanText.replace(/\b([A-Z][a-z]?\d*([A-Z][a-z]?\d*)+)\b/g, '\\ce{$1}');
+
+    // 3. Structure Parsing
+    const examData = {
+        subjectId: null, // User selects manually usually
+        title: `Imported: ${fileName}`,
+        time: 50,
+        part1: [], // MC
+        part2: [], // TF
+        part3: []  // SA
     };
 
-    const response = await fetch(`${GEMINI_API_URL}?key=${GEMINI_API_KEY}`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(payload)
+    // Split into questions based on "Câu X:" or "Question X:" or just "X."
+    const questionRegex = /(?:Câu|Question|Bài)\s*(\d+)[:.]|^\s*(\d+)[\.\)]/gmi;
+
+    // We need to split text by these indices
+    const matches = [...cleanText.matchAll(questionRegex)];
+
+    if (matches.length === 0) {
+        throw new Error("Không tìm thấy câu hỏi nào (Định dạng: 'Câu 1:', '1.', ...)");
+    }
+
+    const questions = [];
+    for (let i = 0; i < matches.length; i++) {
+        const start = matches[i].index;
+        const end = i < matches.length - 1 ? matches[i + 1].index : cleanText.length;
+        const qContent = cleanText.substring(start, end).trim();
+        questions.push(qContent);
+    }
+
+    // 4. Classify and Parsing Individual Questions
+    let currentPart = 1; // Default to Part 1 (MC) if unsure
+
+    questions.forEach((qText, idx) => {
+        // Detect Part headers if they exist in the text flow (not implemented fully here, assumes uniform for now or manual part switching)
+        // For now, heuristic classification:
+
+        // Remove label "Câu 1:"
+        let content = qText.replace(/^(?:Câu|Question|Bài)\s*\d+[:.]|^\s*\d+[\.\)]\s*/i, '').trim();
+
+        // Check for Options (A. B. C. D.)
+        const optionRegex = /(?:^|\s)([A-D])[\.\)]\s/g;
+        const optionMatches = [...content.matchAll(optionRegex)];
+
+        if (optionMatches.length >= 2) {
+            // It's likely Multiple Choice
+            const options = ['', '', '', ''];
+
+            // Naive option splitting
+            // Better: split by token
+            const splitOpts = content.split(/(?:^|\s)[A-D][\.\)]\s/);
+            // splitOpts[0] is question text
+            const qBody = splitOpts[0].trim();
+
+            // Fill options (up to 4)
+            for (let k = 1; k < splitOpts.length && k <= 4; k++) {
+                options[k - 1] = splitOpts[k].trim();
+            }
+
+            examData.part1.push({
+                id: idx + 1,
+                text: qBody || content, // Fallback
+                options: options,
+                correct: 0 // Default A
+            });
+        }
+        else {
+            // Short Answer or True/False (Hard to distinguish via Regex usually without strict format)
+            // Defaulting to Short Answer for non-MC text
+            examData.part3.push({
+                id: idx + 1,
+                text: content,
+                correct: ""
+            });
+        }
     });
 
-    if (!response.ok) {
-        const errorData = await response.json();
-        throw new Error(errorData.error?.message || `API Error: ${response.status}`);
-    }
-
-    const result = await response.json();
-
-    if (result.candidates && result.candidates[0]?.content?.parts?.[0]?.text) {
-        let jsonText = result.candidates[0].content.parts[0].text;
-        // Clean markdown code blocks if present (just in case model disobeys)
-        jsonText = jsonText.replace(/^```json\s*/, '').replace(/\s*```$/, '');
-        return JSON.parse(jsonText);
-    }
-
-    throw new Error('Không nhận được phản hồi hợp lệ từ AI');
+    return examData;
 }
+
 
 /**
  * Show subject selection dialog
