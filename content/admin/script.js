@@ -777,38 +777,56 @@ async function extractTextFromDocx(file) {
 }
 
 /**
- * Parse raw text into structured Exam Object (Regex Engine)
+ * Parse raw text into structured Exam Object (Enhanced Regex Engine)
+ * Supports: Multiple Choice (A.B.C.D), True/False (a.b.c.d sub-items), Short Answer (Đáp án:)
  */
 function parseExamText(text, fileName) {
-    // 1. Normalization
-    // Remove headers/footers (naive)
-    let cleanText = text.replace(/(Sở GD&ĐT|Trang \d+\/\d+|Mã đề \d+)/gi, '');
+    // ============================================
+    // 1. NORMALIZATION
+    // ============================================
+    let cleanText = text
+        .replace(/(Sở GD&ĐT|THPT|Trang \d+\/\d+|Mã đề:?\s*\d+|ĐỀ THI|ĐỀ KIỂM TRA)/gi, '')
+        .replace(/\r\n/g, '\n')
+        .replace(/[ \t]+/g, ' ')
+        .trim();
 
-    // Normalize spaces
-    cleanText = cleanText.replace(/\s+/g, ' ');
+    // ============================================
+    // 2. MATH/CHEMISTRY FORMATTING FOR MATHJAX
+    // ============================================
 
-    // 2. Math/Science Formatting (Heuristics)
-    // Fractions: 1 / 2 -> \frac{1}{2}
-    cleanText = cleanText.replace(/(\d+)\s*\/\s*(\d+)/g, '\\frac{$1}{$2}');
+    // Superscripts: x^2 -> $x^{2}$
+    cleanText = cleanText.replace(/([a-zA-Z])(\^)(\d+)/g, '$$$1^{$3}$$');
 
-    // Auto-detect chemistry (Basic: Words with numbers like H2SO4)
-    // Avoid common words mixed with numbers. Look for Uppercase followed by (lower|digit)
-    cleanText = cleanText.replace(/\b([A-Z][a-z]?\d*([A-Z][a-z]?\d*)+)\b/g, '\\ce{$1}');
+    // Chemistry formulas: H2O, NaCl, H2SO4, etc.
+    cleanText = cleanText.replace(/\b([A-Z][a-z]?)(\d+)([A-Z][a-z]?\d*)*\b/g, (match) => {
+        if (/^[A-Z]\d+$/.test(match) && match.length <= 3) return match;
+        return `$\\ce{${match}}$`;
+    });
 
-    // 3. Structure Parsing
+    // Fractions: 1/2 -> $\frac{1}{2}$
+    cleanText = cleanText.replace(/(\d+)\s*\/\s*(\d+)/g, '$\\frac{$1}{$2}$');
+
+    // Square roots: sqrt(x) or căn(x) -> $\sqrt{x}$
+    cleanText = cleanText.replace(/(?:sqrt|căn)\s*\(([^)]+)\)/gi, '$\\sqrt{$1}$');
+
+    // Common math symbols
+    cleanText = cleanText.replace(/≤/g, '$\\leq$').replace(/≥/g, '$\\geq$')
+        .replace(/≠/g, '$\\neq$').replace(/±/g, '$\\pm$')
+        .replace(/→/g, '$\\rightarrow$').replace(/π/g, '$\\pi$');
+
+    // ============================================
+    // 3. SPLIT INTO INDIVIDUAL QUESTIONS
+    // ============================================
     const examData = {
-        subjectId: null, // User selects manually usually
-        title: `Imported: ${fileName}`,
+        subjectId: null,
+        title: `Imported: ${fileName.replace(/\.[^/.]+$/, '')}`,
         time: 50,
-        part1: [], // MC
-        part2: [], // TF
-        part3: []  // SA
+        part1: [], // Multiple Choice
+        part2: [], // True/False
+        part3: []  // Short Answer
     };
 
-    // Split into questions based on "Câu X:" or "Question X:" or just "X."
-    const questionRegex = /(?:Câu|Question|Bài)\s*(\d+)[:.]|^\s*(\d+)[\.\)]/gmi;
-
-    // We need to split text by these indices
+    const questionRegex = /(?:Câu|Question|Bài)\s*(\d+)\s*[:.)]|(?:^|\n)\s*(\d+)\s*[.)]/gm;
     const matches = [...cleanText.matchAll(questionRegex)];
 
     if (matches.length === 0) {
@@ -820,58 +838,141 @@ function parseExamText(text, fileName) {
         const start = matches[i].index;
         const end = i < matches.length - 1 ? matches[i + 1].index : cleanText.length;
         const qContent = cleanText.substring(start, end).trim();
-        questions.push(qContent);
+        const qNum = matches[i][1] || matches[i][2];
+        questions.push({ num: parseInt(qNum), content: qContent });
     }
 
-    // 4. Classify and Parsing Individual Questions
-    let currentPart = 1; // Default to Part 1 (MC) if unsure
+    // ============================================
+    // 4. CLASSIFY AND PARSE EACH QUESTION
+    // ============================================
 
-    questions.forEach((qText, idx) => {
-        // Detect Part headers if they exist in the text flow (not implemented fully here, assumes uniform for now or manual part switching)
-        // For now, heuristic classification:
+    questions.forEach((q) => {
+        let content = q.content.replace(/^(?:Câu|Question|Bài)\s*\d+\s*[:.)]|^\s*\d+\s*[.)]\s*/i, '').trim();
 
-        // Remove label "Câu 1:"
-        let content = qText.replace(/^(?:Câu|Question|Bài)\s*\d+[:.]|^\s*\d+[\.\)]\s*/i, '').trim();
+        // --- TRUE/FALSE: lowercase a) b) c) d) sub-items ---
+        const tfSubRegex = /(?:^|\s)([a-d])\s*[.)]\s*/gi;
+        const tfMatches = [...content.matchAll(tfSubRegex)];
 
-        // Check for Options (A. B. C. D.)
-        const optionRegex = /(?:^|\s)([A-D])[\.\)]\s/g;
-        const optionMatches = [...content.matchAll(optionRegex)];
+        if (tfMatches.length >= 2 && tfMatches.length <= 4) {
+            const subQuestions = [];
+            const subIds = ['a', 'b', 'c', 'd'];
+            const parts = content.split(/(?:^|\s)[a-d]\s*[.)]\s*/i);
+            const mainText = parts[0].trim();
 
-        if (optionMatches.length >= 2) {
-            // It's likely Multiple Choice
+            for (let i = 1; i < parts.length && i <= 4; i++) {
+                let subText = parts[i].trim();
+                let correct = true;
+
+                const answerMatch = subText.match(/\s*[(\[]?\s*(Đ|S|Đúng|Sai)\s*[)\]]?\s*$/i);
+                if (answerMatch) {
+                    correct = /^(Đ|Đúng)$/i.test(answerMatch[1]);
+                    subText = subText.replace(/\s*[(\[]?\s*(Đ|S|Đúng|Sai)\s*[)\]]?\s*$/i, '').trim();
+                }
+
+                subQuestions.push({ id: subIds[i - 1], text: subText, correct: correct });
+            }
+
+            examData.part2.push({
+                id: examData.part2.length + 1,
+                text: mainText,
+                subQuestions: subQuestions
+            });
+            return;
+        }
+
+        // --- MULTIPLE CHOICE: uppercase A. B. C. D. ---
+        const mcOptionRegex = /(?:^|\s)([A-D])\s*[.)]\s*/g;
+        const mcMatches = [...content.matchAll(mcOptionRegex)];
+
+        if (mcMatches.length >= 2) {
             const options = ['', '', '', ''];
+            const parts = content.split(/(?:^|\s)[A-D]\s*[.)]\s*/);
+            const questionText = parts[0].trim();
 
-            // Naive option splitting
-            // Better: split by token
-            const splitOpts = content.split(/(?:^|\s)[A-D][\.\)]\s/);
-            // splitOpts[0] is question text
-            const qBody = splitOpts[0].trim();
+            for (let i = 1; i < parts.length && i <= 4; i++) {
+                options[i - 1] = parts[i].trim();
+            }
 
-            // Fill options (up to 4)
-            for (let k = 1; k < splitOpts.length && k <= 4; k++) {
-                options[k - 1] = splitOpts[k].trim();
+            let correctIndex = 0;
+            const answerMatch = content.match(/(?:Đáp án|Chọn|ĐA)[:\s]*([A-D])/i);
+            if (answerMatch) {
+                correctIndex = answerMatch[1].toUpperCase().charCodeAt(0) - 65;
             }
 
             examData.part1.push({
-                id: idx + 1,
-                text: qBody || content, // Fallback
+                id: examData.part1.length + 1,
+                text: questionText,
                 options: options,
-                correct: 0 // Default A
+                correct: correctIndex
             });
+            return;
         }
-        else {
-            // Short Answer or True/False (Hard to distinguish via Regex usually without strict format)
-            // Defaulting to Short Answer for non-MC text
-            examData.part3.push({
-                id: idx + 1,
-                text: content,
-                correct: ""
-            });
+
+        // --- SHORT ANSWER: contains "Đáp án:" or no options ---
+        let correctAnswer = '';
+        const saAnswerMatch = content.match(/(?:Đáp án|Kết quả|Trả lời)[:\s]*([^\n.]+)/i);
+        if (saAnswerMatch) {
+            correctAnswer = saAnswerMatch[1].trim();
+            content = content.replace(/(?:Đáp án|Kết quả|Trả lời)[:\s]*[^\n.]+/i, '').trim();
         }
+
+        examData.part3.push({
+            id: examData.part3.length + 1,
+            text: content,
+            correct: correctAnswer
+        });
     });
 
     return examData;
 }
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 
 /**
