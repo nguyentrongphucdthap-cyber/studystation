@@ -24,8 +24,10 @@
         window.MathJax = {
             tex: {
                 inlineMath: [['$', '$'], ['\\(', '\\)']],
-                displayMath: [['$$', '$$'], ['\\[', '\\]']]
+                displayMath: [['$$', '$$'], ['\\[', '\\]']],
+                packages: { '[+]': ['mhchem'] }
             },
+            loader: { load: ['[tex]/mhchem'] },
             svg: { fontCache: 'global' },
             startup: { typeset: false }
         };
