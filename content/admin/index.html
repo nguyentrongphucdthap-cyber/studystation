@@ -1,71 +1,100 @@
 <!DOCTYPE html>
 <html lang="vi">
 
-}
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Admin - Quản lý bài thi | StudyStation</title>
+    <link rel="icon" type="image/png" href="../../favicon.png">
 
-/* Loading Spinner */
-@keyframes spin {
-to {
-transform: rotate(360deg);
-}
-}
+    <!-- Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
 
-.spinner {
-animation: spin 1s linear infinite;
-}
+    <!-- Fonts -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Be+Vietnam+Pro:wght@400;500;600;700&display=swap"
+        rel="stylesheet">
 
-/* Custom scrollbar */
-.custom-scrollbar::-webkit-scrollbar {
-width: 6px;
-}
+    <!-- Firebase SDKs -->
+    <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-database-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-auth-compat.js"></script>
 
-.custom-scrollbar::-webkit-scrollbar-track {
-background: #f1f5f9;
-border-radius: 999px;
-}
+    <!-- OCR & Document Processing Libraries -->
+    <script src='https://cdn.jsdelivr.net/npm/tesseract.js@5/dist/tesseract.min.js'></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js"></script>
+    <script>pdfjsLib.GlobalWorkerOptions.workerSrc = 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js';</script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/mammoth/1.6.0/mammoth.browser.min.js"></script>
 
-.custom-scrollbar::-webkit-scrollbar-thumb {
-background: #cbd5e1;
-border-radius: 999px;
-}
+    <style>
+        body {
+            font-family: 'Be Vietnam Pro', sans-serif;
+        }
 
-.custom-scrollbar::-webkit-scrollbar-thumb:hover {
-background: #94a3b8;
-}
+        /* Loading Spinner */
+        @keyframes spin {
+            to {
+                transform: rotate(360deg);
+            }
+        }
 
-/* Toast animations */
-.toast-enter {
-animation: slideIn 0.3s ease-out forwards;
-}
+        .spinner {
+            animation: spin 1s linear infinite;
+        }
 
-.toast-exit {
-animation: slideOut 0.3s ease-in forwards;
-}
+        /* Custom scrollbar */
+        .custom-scrollbar::-webkit-scrollbar {
+            width: 6px;
+        }
 
-@keyframes slideIn {
-from {
-transform: translateX(100%);
-opacity: 0;
-}
+        .custom-scrollbar::-webkit-scrollbar-track {
+            background: #f1f5f9;
+            border-radius: 999px;
+        }
 
-to {
-transform: translateX(0);
-opacity: 1;
-}
-}
+        .custom-scrollbar::-webkit-scrollbar-thumb {
+            background: #cbd5e1;
+            border-radius: 999px;
+        }
 
-@keyframes slideOut {
-from {
-transform: translateX(0);
-opacity: 1;
-}
+        .custom-scrollbar::-webkit-scrollbar-thumb:hover {
+            background: #94a3b8;
+        }
 
-to {
-transform: translateX(100%);
-opacity: 0;
-}
-}
-</style>
+        /* Toast animations */
+        .toast-enter {
+            animation: slideIn 0.3s ease-out forwards;
+        }
+
+        .toast-exit {
+            animation: slideOut 0.3s ease-in forwards;
+        }
+
+        @keyframes slideIn {
+            from {
+                transform: translateX(100%);
+                opacity: 0;
+            }
+
+            to {
+                transform: translateX(0);
+                opacity: 1;
+            }
+        }
+
+        @keyframes slideOut {
+            from {
+                transform: translateX(0);
+                opacity: 1;
+            }
+
+            to {
+                transform: translateX(100%);
+                opacity: 0;
+            }
+        }
+    </style>
 </head>
 
 <body class="bg-gray-50 min-h-screen">
