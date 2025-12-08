@@ -788,18 +788,49 @@ function getMimeType(ext) {
     };
     return mimeTypes[ext] || 'application/octet-stream';
 }
+
 async function parseFileWithAI(base64Data, mimeType, fileName) {
-    const systemPrompt = `Extract exam to JSON.
-Subjects: bio, physics, info, history (or null).
-Format:
-{
-  "subjectId": "subject|null",
-  "title": "Exam Title",
-  "time": 50,
-  "part1": [{"id": 1, "text": "Q", "options": ["A","B","C","D"], "correct": 0}],
-  "part2": [{"id": 1, "text": "Desc", "subQuestions": [{"id": "a", "text": "Q", "correct": true}]}],
-  "part3": [{"id": 1, "text": "Q", "correct": "Ans"}]
-}`;
+    const systemPrompt = `You are a Smart OCR for Exam Extraction.
+    Goal: Extract content from the provided exam file into valid JSON.
+
+    # LOGIC RULES (Strictly Follow):
+    1.  **Noise Filtering**: Ignore headers/footers like "Sở GD&ĐT", "Trang X/Y", "Mã đề", "Thời gian làm bài".
+    2.  **Formatting**:
+        - Convert all Math symbols (approx, neq, pi, beta, etc.) to valid LaTeX (e.g., \\approx, \\pi).
+        - Format fractions as $\\frac{a}{b}$ (e.g., 1/2 -> $\\frac{1}{2}$).
+        - **Superscripts**: Auto-format units/vars: cm2 -> cm^2, x3 -> x^3.
+        - **Chemistry**: Wrap chemical formulas in \\ce{...} (e.g., H2SO4 -> \\ce{H2SO4}). Heuristic: Words with >=2 uppercase or Digits (NaCl, Fe2O3). Ignore common English/Vietnamese words.
+        - **Functions**: Format sin, cos, tan, log, ln as LaTeX math $\\sin, \\cos...$
+    3.  **Classification**:
+        - **Multiple Choice (MC)**: Questions with options A, B, C, D.
+        - **True/False (TF)**: Questions with sub-questions (a, b, c, d) asking True/False (Đúng/Sai).
+        - **Short Answer (SA)**: No options provided.
+    4.  **Grading Key**: Look for "KEY", "Bảng đáp án", or inline answers to detect correct answers. Default MC correct index to 0 (A) if not found.
+
+    # OUTPUT FORMAT (JSON ONLY):
+    {
+      "subjectId": "math/physics/chemistry/biology/history/geography/civic_education/english/informatics/technology (detect based on content, return null if unsure)",
+      "title": "Extracted from ${fileName}",
+      "time": 50,
+      "part1": [ // Multiple Choice
+        { "id": 1, "text": "Question content...", "options": ["A content", "B content", "C content", "D content"], "correct": 0 }
+      ],
+      "part2": [ // True/False
+        {
+          "id": 1, "text": "Common text...",
+          "subQuestions": [
+             { "id": "a", "text": "Sub Q1", "correct": true },
+             { "id": "b", "text": "Sub Q2", "correct": false },
+             { "id": "c", "text": "Sub Q3", "correct": true },
+             { "id": "d", "text": "Sub Q4", "correct": false }
+          ]
+        }
+      ],
+      "part3": [ // Short Answer
+        { "id": 1, "text": "Question content...", "correct": "Answer key (if found)" }
+      ]
+    }
+    RETURN ONLY RAW JSON. NO MARKDOWN BLOCK.`;
 
     const payload = {
         contents: [{
@@ -829,7 +860,9 @@ Format:
     const result = await response.json();
 
     if (result.candidates && result.candidates[0]?.content?.parts?.[0]?.text) {
-        const jsonText = result.candidates[0].content.parts[0].text;
+        let jsonText = result.candidates[0].content.parts[0].text;
+        // Clean markdown code blocks if present (just in case model disobeys)
+        jsonText = jsonText.replace(/^```json\s*/, '').replace(/\s*```$/, '');
         return JSON.parse(jsonText);
     }
 
@@ -924,5 +957,3 @@ function handleExport() {
 // ============================================================
 
 init();
-
-
