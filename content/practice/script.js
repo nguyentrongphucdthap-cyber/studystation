@@ -749,6 +749,12 @@ const app = {
         });
     },
 
+    renderMath() {
+        if (window.MathJax) {
+            window.MathJax.typesetPromise();
+        }
+    },
+
     startExam(subId, examId) {
         const subject = this.subjects[subId];
         if (!subject) { alert('Không tìm thấy môn học này.'); return; }
@@ -812,7 +818,7 @@ const app = {
         this.renderPalette(examData);
         this.startTimer(examMeta.time * 60);
 
-        if (window.MathJax) MathJax.typesetPromise();
+        this.renderMath();
     },
 
     renderQuestions(data) {
@@ -1038,7 +1044,7 @@ const app = {
         document.getElementById('review-controls').classList.remove('hidden');
 
         this.renderQuestions(this.currentExam.data);
-        if (window.MathJax) MathJax.typesetPromise();
+        this.renderMath();
 
         const data = this.currentExam.data;
         const setStatus = (id, isCorrect) => {
