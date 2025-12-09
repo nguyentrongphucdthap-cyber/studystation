@@ -188,6 +188,12 @@ function bindEvents() {
     document.querySelectorAll('.import-file-trigger').forEach(input => {
         input.addEventListener('change', handleFileImport);
     });
+
+    // Raw Text Import
+    const btnParseRawText = document.getElementById('btn-parse-raw-text');
+    const btnClearRawText = document.getElementById('btn-clear-raw-text');
+    if (btnParseRawText) btnParseRawText.addEventListener('click', handleRawTextParse);
+    if (btnClearRawText) btnClearRawText.addEventListener('click', handleRawTextClear);
 }
 
 // ============================================================
@@ -776,6 +782,109 @@ async function extractTextFromDocx(file) {
     const arrayBuffer = await file.arrayBuffer();
     const result = await mammoth.extractRawText({ arrayBuffer: arrayBuffer });
     return result.value;
+}
+
+/**
+ * Handle raw text parse from textarea
+ */
+function handleRawTextParse() {
+    const rawTextInput = document.getElementById('raw-text-input');
+    const resultDiv = document.getElementById('raw-text-result');
+    const text = rawTextInput?.value?.trim();
+
+    if (!text) {
+        showToast('Vui lòng nhập văn bản để phân tích', 'error');
+        return;
+    }
+
+    try {
+        const examData = parseExamText(text, 'raw-text');
+
+        const totalQuestions = (examData.part1?.length || 0) + (examData.part2?.length || 0) + (examData.part3?.length || 0);
+
+        if (totalQuestions === 0) {
+            resultDiv.className = 'text-sm p-3 rounded-lg bg-yellow-50 text-yellow-700 border border-yellow-200';
+            resultDiv.textContent = '⚠️ Không tìm thấy câu hỏi nào. Vui lòng kiểm tra định dạng (Câu 1:, 1., A. B. C. D., a) b) c) d))';
+            resultDiv.classList.remove('hidden');
+            return;
+        }
+
+        // Append questions to existing lists
+        if (examData.part1 && examData.part1.length > 0) {
+            const existingCount = refs.part1Questions.querySelectorAll('.question-block').length;
+            if (existingCount === 0) refs.part1Questions.innerHTML = '';
+
+            examData.part1.forEach((q, idx) => {
+                q.id = existingCount + idx + 1;
+                refs.part1Questions.insertAdjacentHTML('beforeend', createPart1QuestionHTML(q, existingCount + idx));
+            });
+            bindQuestionEvents(1);
+            updateQuestionCount(1);
+        }
+
+        if (examData.part2 && examData.part2.length > 0) {
+            const existingCount = refs.part2Questions.querySelectorAll('.question-block').length;
+            if (existingCount === 0) refs.part2Questions.innerHTML = '';
+
+            examData.part2.forEach((q, idx) => {
+                q.id = existingCount + idx + 1;
+                refs.part2Questions.insertAdjacentHTML('beforeend', createPart2QuestionHTML(q, existingCount + idx));
+            });
+            bindQuestionEvents(2);
+            updateQuestionCount(2);
+        }
+
+        if (examData.part3 && examData.part3.length > 0) {
+            const existingCount = refs.part3Questions.querySelectorAll('.question-block').length;
+            if (existingCount === 0) refs.part3Questions.innerHTML = '';
+
+            examData.part3.forEach((q, idx) => {
+                q.id = existingCount + idx + 1;
+                refs.part3Questions.insertAdjacentHTML('beforeend', createPart3QuestionHTML(q, existingCount + idx));
+            });
+            bindQuestionEvents(3);
+            updateQuestionCount(3);
+        }
+
+        // Show success message
+        resultDiv.className = 'text-sm p-3 rounded-lg bg-emerald-50 text-emerald-700 border border-emerald-200';
+        resultDiv.innerHTML = `✅ Đã thêm <strong>${totalQuestions}</strong> câu hỏi: 
+            <span class="font-medium">${examData.part1?.length || 0} trắc nghiệm</span>, 
+            <span class="font-medium">${examData.part2?.length || 0} đúng/sai</span>, 
+            <span class="font-medium">${examData.part3?.length || 0} tự luận</span>`;
+        resultDiv.classList.remove('hidden');
+
+        // Render MathJax
+        renderMath();
+
+        showToast(`Đã thêm ${totalQuestions} câu hỏi từ text`, 'success');
+
+        // Clear textarea after successful parse
+        rawTextInput.value = '';
+
+    } catch (error) {
+        console.error('Raw text parse error:', error);
+        resultDiv.className = 'text-sm p-3 rounded-lg bg-red-50 text-red-700 border border-red-200';
+        resultDiv.textContent = '❌ Lỗi phân tích: ' + error.message;
+        resultDiv.classList.remove('hidden');
+        showToast('Lỗi phân tích văn bản: ' + error.message, 'error');
+    }
+}
+
+/**
+ * Clear raw text input
+ */
+function handleRawTextClear() {
+    const rawTextInput = document.getElementById('raw-text-input');
+    const resultDiv = document.getElementById('raw-text-result');
+
+    if (rawTextInput) rawTextInput.value = '';
+    if (resultDiv) {
+        resultDiv.classList.add('hidden');
+        resultDiv.textContent = '';
+    }
+
+    showToast('Đã xóa text', 'info');
 }
 
 /**
