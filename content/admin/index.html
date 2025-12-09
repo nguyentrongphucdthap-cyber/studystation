@@ -331,6 +331,60 @@
                                         placeholder="Đề thi thử THPT QG 2025 - Mã 001" required>
                                 </div>
 
+                                <!-- Raw Text Import Section -->
+                                <details
+                                    class="border border-gray-200 rounded-xl overflow-hidden bg-gradient-to-r from-amber-50 to-orange-50">
+                                    <summary
+                                        class="px-4 py-3 cursor-pointer flex items-center justify-between border-b border-amber-100 hover:bg-amber-100/50 transition-colors">
+                                        <div class="flex items-center gap-2">
+                                            <div
+                                                class="w-6 h-6 bg-amber-500 text-white text-xs font-bold rounded flex items-center justify-center">
+                                                <svg class="w-4 h-4" fill="none" stroke="currentColor"
+                                                    viewBox="0 0 24 24">
+                                                    <path stroke-linecap="round" stroke-linejoin="round"
+                                                        stroke-width="2"
+                                                        d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+                                                </svg>
+                                            </div>
+                                            <h3 class="font-semibold text-amber-800">📋 Nhập Text thô (OCR)</h3>
+                                            <span
+                                                class="text-xs bg-amber-100 text-amber-700 px-2 py-0.5 rounded-full">Tùy
+                                                chọn</span>
+                                        </div>
+                                        <svg class="w-5 h-5 text-amber-600 transform transition-transform" fill="none"
+                                            stroke="currentColor" viewBox="0 0 24 24">
+                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                                d="M19 9l-7 7-7-7" />
+                                        </svg>
+                                    </summary>
+                                    <div class="p-4 space-y-3 bg-white">
+                                        <p class="text-xs text-gray-500">Paste văn bản đề thi vào đây để tự động phân
+                                            tích thành các câu hỏi. Hỗ trợ: Trắc nghiệm (A.B.C.D), Đúng/Sai (a.b.c.d),
+                                            Tự luận.</p>
+                                        <textarea id="raw-text-input"
+                                            class="w-full px-3 py-3 border border-gray-200 rounded-lg text-sm focus:ring-2 focus:ring-amber-500 focus:border-amber-500 outline-none resize-y font-mono bg-gray-50"
+                                            rows="8"
+                                            placeholder="Câu 1: Nội dung câu hỏi...&#10;A. Đáp án A&#10;B. Đáp án B&#10;C. Đáp án C&#10;D. Đáp án D&#10;Đáp án: A&#10;&#10;Câu 2: Cho các phát biểu sau:&#10;a) Mệnh đề 1 (Đúng)&#10;b) Mệnh đề 2 (Sai)&#10;..."></textarea>
+                                        <div class="flex flex-wrap gap-2">
+                                            <button type="button" id="btn-parse-raw-text"
+                                                class="px-4 py-2 bg-amber-500 text-white text-sm font-semibold rounded-lg hover:bg-amber-600 transition-colors flex items-center gap-2">
+                                                <svg class="w-4 h-4" fill="none" stroke="currentColor"
+                                                    viewBox="0 0 24 24">
+                                                    <path stroke-linecap="round" stroke-linejoin="round"
+                                                        stroke-width="2"
+                                                        d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
+                                                </svg>
+                                                Phân tích Text
+                                            </button>
+                                            <button type="button" id="btn-clear-raw-text"
+                                                class="px-4 py-2 border border-gray-200 text-gray-600 text-sm font-semibold rounded-lg hover:bg-gray-50 transition-colors">
+                                                Xóa
+                                            </button>
+                                        </div>
+                                        <div id="raw-text-result" class="hidden text-sm p-3 rounded-lg"></div>
+                                    </div>
+                                </details>
+
                                 <!-- Part 1: Multiple Choice -->
                                 <div class="border border-gray-200 rounded-xl overflow-hidden">
                                     <div
