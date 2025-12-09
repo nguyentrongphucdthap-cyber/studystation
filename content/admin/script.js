@@ -666,6 +666,7 @@ async function confirmDeleteExam() {
 
 /**
  * Handle file import - supports JSON, DOC, DOCX, PDF, and images
+ * Now displays extracted text in textarea for editing before parsing
  */
 async function handleFileImport(e) {
     const file = e.target.files[0];
@@ -710,31 +711,39 @@ async function handleFileImport(e) {
 
         console.log("Raw Extracted Text:", text);
 
-        // Parse text into exam structure
-        const examData = parseExamText(text, fileName);
-
-        if (!examData) {
-            showToast('Không thể phân tích cấu trúc đề thi', 'error');
-            return;
+        // Show editor if not already visible
+        if (!state.currentExamId && refs.editorForm.classList.contains('hidden')) {
+            showEditor(null);
         }
 
-        // Validate and create exam
-        if (!examData.subjectId) {
-            const subjectId = await selectSubjectDialog();
-            if (!subjectId) return;
-            examData.subjectId = subjectId;
+        // Set title from filename if empty
+        if (!refs.examTitle.value) {
+            refs.examTitle.value = file.name.replace(/\.[^/.]+$/, '');
         }
 
-        if (!examData.title) {
-            examData.title = fileName.replace(/\.[^/.]+$/, '');
+        // Display extracted text in the raw text textarea for editing
+        const rawTextInput = document.getElementById('raw-text-input');
+        const rawTextDetails = rawTextInput?.closest('details');
+        const resultDiv = document.getElementById('raw-text-result');
+
+        if (rawTextInput) {
+            rawTextInput.value = text;
+            // Open the details panel
+            if (rawTextDetails) rawTextDetails.open = true;
+            // Scroll to the textarea
+            rawTextInput.scrollIntoView({ behavior: 'smooth', block: 'center' });
+            rawTextInput.focus();
         }
 
-        const newId = await createExam(examData);
-        await loadExams();
-        showEditor(newId);
+        // Show info message
+        if (resultDiv) {
+            resultDiv.className = 'text-sm p-3 rounded-lg bg-blue-50 text-blue-700 border border-blue-200';
+            resultDiv.innerHTML = `📄 Đã trích xuất <strong>${text.length}</strong> ký tự từ <strong>${file.name}</strong>. 
+                <br><span class="text-xs">Xem lại và chỉnh sửa nếu cần, sau đó nhấn <strong>"Phân tích Text"</strong> để tạo câu hỏi.</span>`;
+            resultDiv.classList.remove('hidden');
+        }
 
-        const totalQ = (examData.part1?.length || 0) + (examData.part2?.length || 0) + (examData.part3?.length || 0);
-        showToast(`Đã import thành công: ${totalQ} câu hỏi`);
+        showToast(`Đã trích xuất text từ ${file.name}. Vui lòng xem lại và nhấn "Phân tích Text"`, 'success');
 
     } catch (error) {
         console.error('OCR Import failed:', error);
@@ -994,19 +1003,20 @@ function parseExamText(text, fileName) {
     questions.forEach((q) => {
         let content = q.content.replace(/^(?:Câu|Question|Bài)\s*\d+\s*[:.)]|^\s*\d+\s*[.)]\s*/i, '').trim();
 
-        // --- TRUE/FALSE: lowercase a) b) c) d) sub-items with Đ/S markers ---
-        // Enhanced pattern to detect True/False questions
+        // --- TRUE/FALSE: lowercase a) b) c) d) or a b c d sub-items ---
+        // Pattern: a) b) c) d) or a. b. c. d. with lowercase letters = True/False questions
         const tfSubRegex = /(?:^|[\s\n])([a-d])\s*[.):]\s*/gi;
         const tfMatches = [...content.matchAll(tfSubRegex)];
 
-        // Check for True/False indicators: (Đ), (S), [Đúng], [Sai], - Đúng, - Sai
-        const hasTFIndicators = /[(\[][ĐS](?:úng|ai)?[)\]]|[\-–]\s*(?:Đúng|Sai|Đ|S)\b/i.test(content);
+        // Check if it has lowercase a-d sub-items (2-4 items) - this is True/False format
+        // Also check there are NO uppercase A-D options (which would be multiple choice)
+        const hasUppercaseOptions = /(?:^|[\s\n])[A-D]\s*[.):]/.test(content);
 
-        if (tfMatches.length >= 2 && tfMatches.length <= 4 && hasTFIndicators) {
+        if (tfMatches.length >= 2 && tfMatches.length <= 4 && !hasUppercaseOptions) {
             const subQuestions = [];
             const subIds = ['a', 'b', 'c', 'd'];
 
-            // Better split for sub-questions
+            // Split for sub-questions
             const parts = content.split(/(?:^|[\s\n])([a-d])\s*[.):]\s*/i);
             const mainText = parts[0].trim();
 
@@ -1020,7 +1030,8 @@ function parseExamText(text, fileName) {
                 const answerPatterns = [
                     /\s*[(\[][\s]*(Đ|S|Đúng|Sai)[\s]*[)\]]\s*$/i,  // (Đ), [S], (Đúng), [Sai]
                     /\s*[\-–]\s*(Đ|S|Đúng|Sai)\s*$/i,              // - Đúng, – Sai
-                    /\s*(Đ|S|Đúng|Sai)\s*$/i                        // Just Đ or S at end
+                    /\s*(Đúng|Sai)\s*$/i,                           // Đúng or Sai at end (full word)
+                    /\s+([ĐS])\s*$/i                                // Single Đ or S at end with space before
                 ];
 
                 for (const pattern of answerPatterns) {
@@ -1037,7 +1048,7 @@ function parseExamText(text, fileName) {
                 }
             }
 
-            // Only classify as Part 2 if we have valid subquestions
+            // Classify as Part 2 (True/False) if we have valid subquestions
             if (subQuestions.length >= 2) {
                 examData.part2.push({
                     id: examData.part2.length + 1,
