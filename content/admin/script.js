@@ -1,1413 +1,1120 @@
-/**
- * ADMIN PANEL - Script for managing exams
- * Features:
- * 1. CRUD operations for exams stored in Firebase
- * 2. Question type builders (Part 1, 2, 3)
- * 3. Admin access control
- */
-
-import {
-    initGatekeeper,
-    checkIsAdmin,
-    onUserChange,
-    getAllExams,
-    createExam,
-    updateExam,
-    deleteExam,
-    getSubjects
-} from "../../gatekeeper.js";
-
-// ============================================================
-// STATE
-// ============================================================
-
-const state = {
-    exams: [],
-    subjects: [],
-    currentExamId: null, // null = creating new, string = editing existing
-    isLoading: false
-};
-
-// ============================================================
-// DOM REFERENCES
-// ============================================================
-
-const refs = {
-    mainContent: document.getElementById('main-content'),
-    accessDenied: document.getElementById('access-denied'),
-    adminEmail: document.getElementById('admin-email'),
-
-    // List
-    subjectFilter: document.getElementById('subject-filter'),
-    examList: document.getElementById('exam-list'),
-    btnNewExam: document.getElementById('btn-new-exam'),
-    btnNewExamEmpty: document.getElementById('btn-new-exam-empty'),
-    importFile: document.getElementById('import-file'),
-
-    // Editor
-    editorEmpty: document.getElementById('editor-empty'),
-    editorForm: document.getElementById('editor-form'),
-    editorTitle: document.getElementById('editor-title'),
-    btnExport: document.getElementById('btn-export'),
-    btnDelete: document.getElementById('btn-delete'),
-    btnCancel: document.getElementById('btn-cancel'),
-    btnSave: document.getElementById('btn-save'),
-
-    // Form fields
-    examSubject: document.getElementById('exam-subject'),
-    examTime: document.getElementById('exam-time'),
-    examTitle: document.getElementById('exam-title'),
-
-    // Question containers
-    part1Questions: document.getElementById('part1-questions'),
-    part2Questions: document.getElementById('part2-questions'),
-    part3Questions: document.getElementById('part3-questions'),
-    part1Count: document.getElementById('part1-count'),
-    part2Count: document.getElementById('part2-count'),
-    part3Count: document.getElementById('part3-count'),
-
-    // Add buttons
-    btnAddPart1: document.getElementById('btn-add-part1'),
-    btnAddPart2: document.getElementById('btn-add-part2'),
-    btnAddPart3: document.getElementById('btn-add-part3'),
-
-    // Modal
-    deleteModal: document.getElementById('delete-modal'),
-    btnCancelDelete: document.getElementById('btn-cancel-delete'),
-    btnConfirmDelete: document.getElementById('btn-confirm-delete'),
-
-    // Toast
-    toastContainer: document.getElementById('toast-container')
-};
-
-// ============================================================
-// TOAST NOTIFICATIONS
-// ============================================================
-
-function showToast(message, type = 'success') {
-    const toast = document.createElement('div');
-    const bgColor = type === 'success' ? 'bg-emerald-600' : type === 'error' ? 'bg-red-600' : 'bg-blue-600';
-    toast.className = `${bgColor} text-white px-4 py-3 rounded-xl shadow-lg flex items-center gap-3 toast-enter max-w-sm`;
-    toast.innerHTML = `
-        <svg class="w-5 h-5 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-            ${type === 'success'
-            ? '<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"/>'
-            : type === 'error'
-                ? '<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/>'
-                : '<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/>'}
-        </svg>
-        <span class="font-medium text-sm">${message}</span>
-    `;
-    refs.toastContainer.appendChild(toast);
-
-    setTimeout(() => {
-        toast.classList.remove('toast-enter');
-        toast.classList.add('toast-exit');
-        setTimeout(() => toast.remove(), 300);
-    }, 3000);
+// --- Tailwind Configuration ---
+tailwind.config = {
+    darkMode: 'class',
+    theme: {
+        extend: {
+            fontFamily: {
+                sans: ['"Plus Jakarta Sans"', 'sans-serif'],
+                question: ['"Be Vietnam Pro"', 'sans-serif'],
+            },
+            colors: {
+                primary: '#2563eb',
+                secondary: '#475569',
+                background: '#f8fafc',
+                correct: '#10b981', // Emerald 500
+                wrong: '#ef4444',   // Red 500
+            },
+            boxShadow: {
+                'soft': '0 4px 20px -2px rgba(0, 0, 0, 0.05)',
+                'glow': '0 0 15px rgba(37, 99, 235, 0.2)',
+            }
+        }
+    }
 }
 
-// ============================================================
-// INITIALIZATION
-// ============================================================
+// --- Music Feature ---
+const DEFAULT_MUSIC_TRACKS = [
+    { url: 'https://www.youtube.com/watch?v=JdqL89ZZwFw', title: 'Quiet - Lofi Hip Hop Summer', author: 'LOFI KEEP YOU SAFE' },
+    { url: 'https://www.youtube.com/watch?v=PLLRRXURicM&list=RDPLLRRXURicM&start_radio=1', title: 'Japan Coastal Vibes', author: 'Calm City' },
+    { url: 'https://www.youtube.com/watch?v=08oD5oJb6Rk&list=RD08oD5oJb6Rk&start_radio=1', title: 'Peaceful Medieval Celtic', author: 'Olde World Melodies' },
+    { url: 'https://www.youtube.com/watch?v=VRcPypm6YWo&list=RDVRcPypm6YWo&start_radio=1', title: 'Deep Focus | Calm Ambient', author: 'Deep Focus Sphere – Focus, Relax & Study Music' },
+    { url: 'https://www.youtube.com/watch?v=0w80F8FffQ4&list=RD0w80F8FffQ4&start_radio=1', title: 'Zero Distractions', author: 'Cosmic Hippo' },
+    { url: 'https://www.youtube.com/watch?v=RG2IK8oRZNA', title: 'ADHD Relief Music', author: 'Greenred Productions - Relaxing Music' },
+    { url: 'https://www.youtube.com/watch?v=JdqL89ZZwFw', title: 'Quiet - Lofi Hip Hop Summer', author: 'LOFI KEEP YOU SAFE' },
+    { url: 'https://www.youtube.com/watch?v=OkNo_N85em0&list=RDOkNo_N85em0&start_radio=1', title: 'some peace for hard nights...', author: 'Drift Away Ambience' },
+    { url: 'https://www.youtube.com/watch?v=gUbNlN_SqpE&list=RDgUbNlN_SqpE&start_radio=1', title: 'Seaside Coffee', author: 'Healing Me' },
+    { url: 'https://www.youtube.com/watch?v=lriMaWESbuU&list=RDlriMaWESbuU&start_radio=1', title: 'pluggnb instrumental mix', author: 'geekum' },
+    { url: 'https://www.youtube.com/watch?v=WPni755-Krg&list=RDWPni755-Krg&start_radio=1&t=83s', title: 'Study Music Alpha Waves', author: '☯161' },
+    { url: 'https://www.youtube.com/watch?v=qQzf-xzZO7M&list=RDqQzf-xzZO7M&start_radio=1', title: 'Exam Study Music', author: 'Study Sonic Focus' },
+    { url: 'https://www.youtube.com/watch?v=yIQd2Ya0Ziw', title: 'Rainstorm Sounds for Relaxing', author: 'Calm' },
+    { url: 'https://www.youtube.com/watch?v=mPZkdNFkNps', title: 'Rain Sound On Window with Thunder Sounds', author: 'Relaxing Ambience ASMR' }
+];
+const MUSIC_STORAGE_KEY = 'studyStation_musicTracks';
 
-async function init() {
-    initGatekeeper('protected');
+const musicPlayer = {
+    baseTracks: [],
+    customTracks: [],
+    tracks: [],
+    currentIndex: 0,
+    refs: {},
+    player: null,
+    playerReady: false,
+    apiReady: false,
+    pendingActions: [],
+    isPanelVisible: false,
+    isPlaying: false,
+    miniForced: false,
 
-    onUserChange(async (user) => {
-        if (!user) return;
+    init() {
+        this.refs = {
+            panel: document.getElementById('music-panel'),
+            toggleBtn: document.getElementById('music-toggle-btn'),
+            hideBtn: document.getElementById('music-hide-btn'),
+            stopBtn: document.getElementById('music-stop-btn'),
+            prevBtn: document.getElementById('music-prev-btn'),
+            nextBtn: document.getElementById('music-next-btn'),
+            playBtn: document.getElementById('music-play-btn'),
+            volumeInput: document.getElementById('music-volume'),
+            volumeLabel: document.getElementById('music-volume-label'),
+            trackList: document.getElementById('music-track-list'),
+            currentTitle: document.getElementById('music-current-title'),
+            currentSource: document.getElementById('music-current-source'),
+            addForm: document.getElementById('music-add-form'),
+            addInput: document.getElementById('music-link-input'),
+            feedback: document.getElementById('music-feedback'),
+            resetBtn: document.getElementById('music-reset-btn'),
+            placeholder: document.getElementById('music-player-placeholder'),
+            badge: document.getElementById('music-badge'),
+            overlay: document.getElementById('music-overlay'),
+            mini: document.getElementById('music-mini-player'),
+            miniPlay: document.getElementById('music-mini-play'),
+            miniTitle: document.getElementById('music-mini-title'),
+            miniOpen: document.getElementById('music-mini-open'),
+            miniClose: document.getElementById('music-mini-close')
+        };
 
-        // Check admin access
-        setTimeout(() => {
-            if (!checkIsAdmin()) {
-                refs.accessDenied.classList.remove('hidden');
+        if (!this.refs.panel) return;
+
+        this.baseTracks = DEFAULT_MUSIC_TRACKS.map(track => this.enrichTrack(track)).filter(Boolean);
+        this.customTracks = this.loadCustomTracks().map(track => this.enrichTrack(track)).filter(Boolean);
+        this.tracks = [...this.baseTracks, ...this.customTracks];
+
+        this.bindEvents();
+        this.renderTrackList();
+        this.updateCurrentTrackInfo();
+    },
+
+    bindEvents() {
+        this.refs.toggleBtn?.addEventListener('click', () => this.togglePanel());
+        this.refs.hideBtn?.addEventListener('click', () => this.hidePanel());
+        this.refs.stopBtn?.addEventListener('click', () => {
+            this.stopPlayback();
+            if (this.refs.panel) this.refs.panel.classList.add('hidden');
+            this.isPanelVisible = false;
+            this.refs.overlay?.classList.add('hidden');
+        });
+        this.refs.prevBtn?.addEventListener('click', () => this.previousTrack());
+        this.refs.nextBtn?.addEventListener('click', () => this.nextTrack());
+        this.refs.playBtn?.addEventListener('click', () => this.togglePlayPause());
+        this.refs.volumeInput?.addEventListener('input', (e) => this.setVolume(parseInt(e.target.value, 10)));
+        this.refs.addForm?.addEventListener('submit', (e) => {
+            e.preventDefault();
+            const value = this.refs.addInput.value.trim();
+            if (!value) {
+                this.displayFeedback('Hãy dán link YouTube trước khi thêm.', 'error');
                 return;
             }
-
-            refs.adminEmail.textContent = user.email;
-            refs.mainContent.classList.remove('hidden');
-
-            loadSubjects();
-            loadExams();
-            bindEvents();
-        }, 500);
-    });
-}
-
-function loadSubjects() {
-    state.subjects = getSubjects();
-
-    // Populate filter dropdown
-    refs.subjectFilter.innerHTML = '<option value="">Tất cả môn học</option>';
-    state.subjects.forEach(sub => {
-        refs.subjectFilter.innerHTML += `<option value="${sub.id}">${sub.name}</option>`;
-    });
-
-    // Populate editor dropdown
-    refs.examSubject.innerHTML = '<option value="">Chọn môn học</option>';
-    state.subjects.forEach(sub => {
-        refs.examSubject.innerHTML += `<option value="${sub.id}">${sub.name}</option>`;
-    });
-}
-
-async function loadExams() {
-    try {
-        state.exams = await getAllExams();
-        renderExamList();
-    } catch (error) {
-        console.error('Failed to load exams:', error);
-        showToast('Không thể tải danh sách bài thi', 'error');
-        refs.examList.innerHTML = `
-            <div class="p-8 text-center text-red-500">
-                <p class="font-medium">Lỗi tải dữ liệu</p>
-                <p class="text-sm text-gray-400 mt-1">${error.message}</p>
-            </div>
-        `;
-    }
-}
-
-function bindEvents() {
-    refs.subjectFilter.addEventListener('change', renderExamList);
-    refs.btnNewExam.addEventListener('click', () => showEditor(null));
-    if (refs.btnNewExamEmpty) refs.btnNewExamEmpty.addEventListener('click', () => showEditor(null));
-    refs.btnCancel.addEventListener('click', hideEditor);
-    refs.btnSave.addEventListener('click', saveExam);
-    refs.btnDelete.addEventListener('click', () => refs.deleteModal.classList.remove('hidden'));
-    refs.btnCancelDelete.addEventListener('click', () => refs.deleteModal.classList.add('hidden'));
-    refs.btnConfirmDelete.addEventListener('click', confirmDeleteExam);
-
-    refs.btnAddPart1.addEventListener('click', () => addQuestion(1));
-    refs.btnAddPart2.addEventListener('click', () => addQuestion(2));
-    refs.btnAddPart3.addEventListener('click', () => addQuestion(3));
-
-    // Import/Export
-    if (refs.importFile) refs.importFile.addEventListener('change', handleFileImport);
-    if (refs.btnExport) refs.btnExport.addEventListener('click', handleExport);
-
-    // Import triggers from empty state
-    document.querySelectorAll('.import-file-trigger').forEach(input => {
-        input.addEventListener('change', handleFileImport);
-    });
-
-    // Raw Text Import
-    const btnParseRawText = document.getElementById('btn-parse-raw-text');
-    const btnClearRawText = document.getElementById('btn-clear-raw-text');
-    if (btnParseRawText) btnParseRawText.addEventListener('click', handleRawTextParse);
-    if (btnClearRawText) btnClearRawText.addEventListener('click', handleRawTextClear);
-}
-
-// ============================================================
-// RENDER EXAM LIST
-// ============================================================
-
-function renderExamList() {
-    const filter = refs.subjectFilter.value;
-    const exams = filter
-        ? state.exams.filter(e => e.subjectId === filter)
-        : state.exams;
-
-    if (exams.length === 0) {
-        refs.examList.innerHTML = `
-            <div class="p-8 text-center text-gray-400">
-                <svg class="w-12 h-12 mx-auto mb-3 text-gray-300" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/>
-                </svg>
-                <p class="font-medium">Chưa có bài thi nào</p>
-                <p class="text-sm mt-1">Nhấn "Thêm" để tạo bài thi mới</p>
-            </div>
-        `;
-        return;
-    }
-
-    refs.examList.innerHTML = exams.map(exam => {
-        const subject = state.subjects.find(s => s.id === exam.subjectId);
-        const totalQuestions = (exam.part1?.length || 0) + (exam.part2?.length || 0) + (exam.part3?.length || 0);
-        const isActive = exam.id === state.currentExamId;
-
-        return `
-            <div class="exam-item p-4 border-b border-gray-100 cursor-pointer hover:bg-gray-50 transition-colors ${isActive ? 'bg-blue-50 border-l-4 border-l-blue-500' : ''}" data-id="${exam.id}">
-                <div class="flex items-start justify-between gap-3">
-                    <div class="flex-1 min-w-0">
-                        <h4 class="font-semibold text-gray-800 truncate">${exam.title || 'Chưa đặt tên'}</h4>
-                        <div class="flex items-center gap-2 mt-1 flex-wrap">
-                            <span class="text-xs px-2 py-0.5 rounded-full ${subject?.bg || 'bg-gray-100'} ${subject?.color || 'text-gray-600'}">${subject?.name || 'Chưa chọn môn'}</span>
-                            <span class="text-xs text-gray-400">${exam.time || 0} phút</span>
-                            <span class="text-xs text-gray-400">•</span>
-                            <span class="text-xs text-gray-400">${totalQuestions} câu</span>
-                        </div>
-                    </div>
-                    <svg class="w-5 h-5 text-gray-300 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"/>
-                    </svg>
-                </div>
-            </div>
-        `;
-    }).join('');
-
-    // Bind click events
-    refs.examList.querySelectorAll('.exam-item').forEach(item => {
-        item.addEventListener('click', () => {
-            const examId = item.dataset.id;
-            showEditor(examId);
+            this.handleAddTrack(value);
         });
-    });
-}
-
-// ============================================================
-// EDITOR
-// ============================================================
-
-function showEditor(examId) {
-    state.currentExamId = examId;
-
-    refs.editorEmpty.classList.add('hidden');
-    refs.editorForm.classList.remove('hidden');
-
-    if (examId) {
-        // Editing existing
-        refs.editorTitle.textContent = 'Chỉnh sửa bài thi';
-        refs.btnDelete.classList.remove('hidden');
-        if (refs.btnExport) refs.btnExport.classList.remove('hidden');
-
-        const exam = state.exams.find(e => e.id === examId);
-        if (exam) {
-            refs.examSubject.value = exam.subjectId || '';
-            refs.examTime.value = exam.time || '';
-            refs.examTitle.value = exam.title || '';
-
-            renderQuestionsPart1(exam.part1 || []);
-            renderQuestionsPart2(exam.part2 || []);
-            renderQuestionsPart3(exam.part3 || []);
-        }
-    } else {
-        // Creating new
-        refs.editorTitle.textContent = 'Tạo bài thi mới';
-        refs.btnDelete.classList.add('hidden');
-        if (refs.btnExport) refs.btnExport.classList.add('hidden');
-
-        refs.examSubject.value = '';
-        refs.examTime.value = '50';
-        refs.examTitle.value = '';
-
-        renderQuestionsPart1([]);
-        renderQuestionsPart2([]);
-        renderQuestionsPart3([]);
-    }
-
-    renderExamList();
-}
-
-function hideEditor() {
-    state.currentExamId = null;
-    refs.editorEmpty.classList.remove('hidden');
-    refs.editorForm.classList.add('hidden');
-    renderExamList();
-}
-
-// ============================================================
-// QUESTION RENDERING
-// ============================================================
-
-/**
- * Trigger MathJax to render math/chemistry symbols
- */
-function renderMath() {
-    if (window.MathJax) {
-        window.MathJax.typesetPromise();
-    }
-}
-
-function renderQuestionsPart1(questions) {
-    if (questions.length === 0) {
-        refs.part1Questions.innerHTML = '<p class="text-gray-400 text-sm text-center py-4">Chưa có câu hỏi nào</p>';
-    } else {
-        refs.part1Questions.innerHTML = questions.map((q, idx) => createPart1QuestionHTML(q, idx)).join('');
-        bindQuestionEvents(1);
-    }
-    refs.part1Count.textContent = `${questions.length} câu`;
-    renderMath();
-}
-
-function renderQuestionsPart2(questions) {
-    if (questions.length === 0) {
-        refs.part2Questions.innerHTML = '<p class="text-gray-400 text-sm text-center py-4">Chưa có câu hỏi nào</p>';
-    } else {
-        refs.part2Questions.innerHTML = questions.map((q, idx) => createPart2QuestionHTML(q, idx)).join('');
-        bindQuestionEvents(2);
-    }
-    refs.part2Count.textContent = `${questions.length} câu`;
-    renderMath();
-}
-
-function renderQuestionsPart3(questions) {
-    if (questions.length === 0) {
-        refs.part3Questions.innerHTML = '<p class="text-gray-400 text-sm text-center py-4">Chưa có câu hỏi nào</p>';
-    } else {
-        refs.part3Questions.innerHTML = questions.map((q, idx) => createPart3QuestionHTML(q, idx)).join('');
-        bindQuestionEvents(3);
-    }
-    refs.part3Count.textContent = `${questions.length} câu`;
-    renderMath();
-}
-
-function createPart1QuestionHTML(q, idx) {
-    const options = q.options || ['', '', '', ''];
-    const correctIdx = q.correct ?? 0;
-    // Use unique question ID for radio button name to prevent conflicts
-    const uniqueQId = q.id || `q${Date.now()}_${idx}`;
-
-    return `
-        <div class="question-block border border-gray-200 rounded-xl p-4 bg-white shadow-sm" data-idx="${idx}" data-qid="${uniqueQId}">
-            <div class="flex items-center justify-between gap-2 mb-4">
-                <div class="flex items-center gap-2">
-                    <span class="w-8 h-8 bg-gradient-to-br from-blue-500 to-blue-600 text-white text-sm font-bold rounded-lg flex items-center justify-center shadow-sm">C${q.id || idx + 1}</span>
-                    <span class="text-xs text-gray-400 font-medium">Trắc nghiệm</span>
-                </div>
-                <button type="button" class="btn-remove-question p-1.5 text-gray-400 hover:text-red-500 hover:bg-red-50 rounded-lg transition-all">
-                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"/></svg>
-                </button>
-            </div>
-            <div class="space-y-4">
-                <div>
-                    <label class="text-xs font-semibold text-gray-600 mb-2 block">📝 Nội dung câu hỏi</label>
-                    <textarea class="q-text w-full px-4 py-3 border border-gray-200 rounded-xl text-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none resize-none bg-gray-50 focus:bg-white transition-colors" rows="2" placeholder="Nhập nội dung câu hỏi...">${q.text || ''}</textarea>
-                </div>
-                <div>
-                    <label class="text-xs font-semibold text-gray-600 mb-2 block">🎯 Các đáp án <span class="text-blue-500">(Click để chọn đáp án đúng)</span></label>
-                    <div class="grid grid-cols-1 sm:grid-cols-2 gap-2">
-                        ${options.map((opt, i) => `
-                            <label class="option-card cursor-pointer group">
-                                <input type="radio" name="correct-${uniqueQId}" value="${i}" ${correctIdx === i ? 'checked' : ''} class="q-correct sr-only">
-                                <div class="option-content flex items-center gap-3 p-3 border-2 rounded-xl transition-all ${correctIdx === i ? 'border-emerald-500 bg-emerald-50' : 'border-gray-200 hover:border-blue-300 hover:bg-blue-50'}">
-                                    <span class="option-badge w-7 h-7 rounded-lg flex items-center justify-center text-sm font-bold shrink-0 transition-colors ${correctIdx === i ? 'bg-emerald-500 text-white' : 'bg-gray-100 text-gray-600 group-hover:bg-blue-100 group-hover:text-blue-600'}">${String.fromCharCode(65 + i)}</span>
-                                    <input type="text" class="q-option flex-1 bg-transparent border-0 text-sm focus:ring-0 outline-none placeholder-gray-400" placeholder="Nhập đáp án ${String.fromCharCode(65 + i)}..." value="${opt || ''}" onclick="event.stopPropagation()">
-                                    <svg class="option-check w-5 h-5 text-emerald-500 shrink-0 ${correctIdx === i ? '' : 'hidden'}" fill="currentColor" viewBox="0 0 20 20"><path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clip-rule="evenodd"/></svg>
-                                </div>
-                            </label>
-                        `).join('')}
-                    </div>
-                </div>
-            </div>
-        </div>
-    `;
-}
-
-function createPart2QuestionHTML(q, idx) {
-    const subQuestions = q.subQuestions || [
-        { id: 'a', text: '', correct: true },
-        { id: 'b', text: '', correct: false },
-        { id: 'c', text: '', correct: true },
-        { id: 'd', text: '', correct: false }
-    ];
-
-    return `
-        <div class="question-block border border-gray-200 rounded-lg p-4 bg-gray-50" data-idx="${idx}">
-            <div class="flex items-start justify-between gap-2 mb-3">
-                <span class="w-7 h-7 bg-indigo-600 text-white text-xs font-bold rounded flex items-center justify-center shrink-0">${q.id || idx + 1}</span>
-                <button type="button" class="btn-remove-question text-gray-400 hover:text-red-500 transition-colors">
-                    <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"/></svg>
-                </button>
-            </div>
-            <div class="space-y-3">
-                <div>
-                    <label class="text-xs font-semibold text-gray-500 mb-1 block">Nội dung câu hỏi chính (tùy chọn)</label>
-                    <textarea class="q-text w-full px-3 py-2 border border-gray-200 rounded-lg text-sm focus:ring-2 focus:ring-indigo-500 outline-none resize-none" rows="2" placeholder="Mô tả hoặc đề dẫn...">${q.text || ''}</textarea>
-                </div>
-                <div class="space-y-2">
-                    ${subQuestions.map((sub, i) => `
-                        <div class="flex items-center gap-2 sub-question" data-sub-id="${sub.id}">
-                            <span class="text-xs font-bold text-indigo-600 w-4">${sub.id})</span>
-                            <input type="text" class="sq-text flex-1 px-2 py-1.5 border border-gray-200 rounded text-sm focus:ring-2 focus:ring-indigo-500 outline-none" placeholder="Nội dung mệnh đề ${sub.id}" value="${sub.text || ''}">
-                            <select class="sq-correct px-2 py-1.5 border border-gray-200 rounded text-sm focus:ring-2 focus:ring-indigo-500 outline-none">
-                                <option value="true" ${sub.correct === true ? 'selected' : ''}>Đúng</option>
-                                <option value="false" ${sub.correct === false ? 'selected' : ''}>Sai</option>
-                            </select>
-                        </div>
-                    `).join('')}
-                </div>
-            </div>
-        </div>
-    `;
-}
-
-function createPart3QuestionHTML(q, idx) {
-    return `
-        <div class="question-block border border-gray-200 rounded-lg p-4 bg-gray-50" data-idx="${idx}">
-            <div class="flex items-start justify-between gap-2 mb-3">
-                <span class="w-7 h-7 bg-emerald-600 text-white text-xs font-bold rounded flex items-center justify-center shrink-0">${q.id || idx + 1}</span>
-                <button type="button" class="btn-remove-question text-gray-400 hover:text-red-500 transition-colors">
-                    <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"/></svg>
-                </button>
-            </div>
-            <div class="space-y-3">
-                <div>
-                    <label class="text-xs font-semibold text-gray-500 mb-1 block">Nội dung câu hỏi</label>
-                    <textarea class="q-text w-full px-3 py-2 border border-gray-200 rounded-lg text-sm focus:ring-2 focus:ring-emerald-500 outline-none resize-none" rows="2" placeholder="Nhập nội dung câu hỏi...">${q.text || ''}</textarea>
-                </div>
-                <div>
-                    <label class="text-xs font-semibold text-gray-500 mb-1 block">Đáp án đúng</label>
-                    <input type="text" class="q-correct w-full px-3 py-2 border border-gray-200 rounded-lg text-sm focus:ring-2 focus:ring-emerald-500 outline-none" placeholder="VD: 123, -5.5, ABC" value="${q.correct || ''}">
-                </div>
-            </div>
-        </div>
-    `;
-}
-
-function bindQuestionEvents(part) {
-    const container = part === 1 ? refs.part1Questions : part === 2 ? refs.part2Questions : refs.part3Questions;
-
-    // Remove handlers
-    container.querySelectorAll('.btn-remove-question').forEach(btn => {
-        btn.addEventListener('click', (e) => {
-            const block = e.target.closest('.question-block');
-            block.remove();
-            updateQuestionIds(part);
-            updateQuestionCount(part);
+        this.refs.resetBtn?.addEventListener('click', (e) => {
+            e.preventDefault();
+            this.customTracks = [];
+            this.saveCustomTracks();
+            this.rebuildTrackList();
+            this.displayFeedback('Đã khôi phục danh sách mặc định.', 'success');
         });
-    });
-
-    // Part 1 Radio handlers for visual update
-    if (part === 1) {
-        container.querySelectorAll('.q-correct').forEach(radio => {
-            radio.addEventListener('change', (e) => {
-                const checkedRadio = e.target;
-                const questionBlock = checkedRadio.closest('.question-block');
-
-                // Reset all options in this question
-                questionBlock.querySelectorAll('.option-content').forEach(card => {
-                    card.classList.remove('border-emerald-500', 'bg-emerald-50');
-                    card.classList.add('border-gray-200', 'hover:border-blue-300', 'hover:bg-blue-50');
-
-                    const badge = card.querySelector('.option-badge');
-                    badge.classList.remove('bg-emerald-500', 'text-white');
-                    badge.classList.add('bg-gray-100', 'text-gray-600', 'group-hover:bg-blue-100', 'group-hover:text-blue-600');
-
-                    const check = card.querySelector('.option-check');
-                    if (check) check.classList.add('hidden');
-                });
-
-                // Set selected option
-                const selectedCard = checkedRadio.closest('.option-card').querySelector('.option-content');
-                selectedCard.classList.remove('border-gray-200', 'hover:border-blue-300', 'hover:bg-blue-50');
-                selectedCard.classList.add('border-emerald-500', 'bg-emerald-50');
-
-                const selectedBadge = selectedCard.querySelector('.option-badge');
-                selectedBadge.classList.remove('bg-gray-100', 'text-gray-600', 'group-hover:bg-blue-100', 'group-hover:text-blue-600');
-                selectedBadge.classList.add('bg-emerald-500', 'text-white');
-
-                const selectedCheck = selectedCard.querySelector('.option-check');
-                if (selectedCheck) selectedCheck.classList.remove('hidden');
-            });
+        this.refs.miniPlay?.addEventListener('click', () => this.togglePlayPause());
+        this.refs.miniOpen?.addEventListener('click', () => this.togglePanel(true));
+        this.refs.miniClose?.addEventListener('click', () => {
+            this.stopPlayback();
+            this.hideMiniPlayer();
         });
-    }
-}
+        this.refs.overlay?.addEventListener('click', () => this.hidePanel());
+    },
 
-function addQuestion(part) {
-    const container = part === 1 ? refs.part1Questions : part === 2 ? refs.part2Questions : refs.part3Questions;
-    const count = container.querySelectorAll('.question-block').length;
+    enrichTrack(track) {
+        if (!track) return null;
+        const existingUrl = track.url || (track.videoId ? `https://www.youtube.com/watch?v=${track.videoId}` : '');
+        const videoId = track.videoId || this.extractVideoId(existingUrl || '');
+        if (!videoId) return null;
+        const url = existingUrl || `https://www.youtube.com/watch?v=${videoId}`;
+        return { ...track, videoId, url };
+    },
 
-    // Clear empty message if present
-    if (count === 0) {
-        container.innerHTML = '';
-    }
+    showMiniPlayer(force = false) {
+        if (!this.refs.mini) return;
+        if (force) this.miniForced = true;
+        if (!force && !this.isPlaying) return;
+        this.updateMiniInfo();
+        this.refs.mini.classList.remove('hidden');
+    },
 
-    const newQ = part === 1
-        ? { id: count + 1, text: '', options: ['', '', '', ''], correct: 0 }
-        : part === 2
-            ? {
-                id: count + 1, text: '', subQuestions: [
-                    { id: 'a', text: '', correct: true },
-                    { id: 'b', text: '', correct: false },
-                    { id: 'c', text: '', correct: true },
-                    { id: 'd', text: '', correct: false }
-                ]
-            }
-            : { id: count + 1, text: '', correct: '' };
+    hideMiniPlayer() {
+        if (!this.refs.mini) return;
+        this.refs.mini.classList.add('hidden');
+        this.miniForced = false;
+    },
 
-    const html = part === 1
-        ? createPart1QuestionHTML(newQ, count)
-        : part === 2
-            ? createPart2QuestionHTML(newQ, count)
-            : createPart3QuestionHTML(newQ, count);
+    updateMiniInfo() {
+        if (!this.refs.miniTitle) return;
+        const track = this.tracks[this.currentIndex];
+        this.refs.miniTitle.textContent = track ? track.title : 'Chưa chọn bài hát';
+        this.updateMiniPlayButton();
+    },
 
-    container.insertAdjacentHTML('beforeend', html);
-    bindQuestionEvents(part);
-    updateQuestionCount(part);
+    updateMiniPlayButton() {
+        if (!this.refs.miniPlay) return;
+        this.refs.miniPlay.innerHTML = this.isPlaying
+            ? `<svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="currentColor" viewBox="0 0 24 24"><path d="M6 4h4v16H6zm8 0h4v16h-4z"/></svg>`
+            : `<svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="currentColor" viewBox="0 0 24 24"><path d="M5 3l14 9-14 9V3z"/></svg>`;
+    },
 
-    // Scroll to new question
-    container.lastElementChild.scrollIntoView({ behavior: 'smooth', block: 'center' });
-}
-
-function updateQuestionIds(part) {
-    const container = part === 1 ? refs.part1Questions : part === 2 ? refs.part2Questions : refs.part3Questions;
-    container.querySelectorAll('.question-block').forEach((block, idx) => {
-        block.dataset.idx = idx;
-        const badge = block.querySelector('span');
-        if (badge) badge.textContent = idx + 1;
-    });
-}
-
-function updateQuestionCount(part) {
-    const container = part === 1 ? refs.part1Questions : part === 2 ? refs.part2Questions : refs.part3Questions;
-    const countEl = part === 1 ? refs.part1Count : part === 2 ? refs.part2Count : refs.part3Count;
-    const count = container.querySelectorAll('.question-block').length;
-    countEl.textContent = `${count} câu`;
-}
-
-// ============================================================
-// SAVE & DELETE
-// ============================================================
-
-function collectFormData() {
-    // Basic info
-    const subjectId = refs.examSubject.value;
-    const time = parseInt(refs.examTime.value) || 50;
-    const title = refs.examTitle.value.trim();
-
-    // Collect Part 1
-    const part1 = [];
-    refs.part1Questions.querySelectorAll('.question-block').forEach((block, idx) => {
-        const text = block.querySelector('.q-text').value.trim();
-        const options = Array.from(block.querySelectorAll('.q-option')).map(i => i.value.trim());
-        const correctRadio = block.querySelector('.q-correct:checked');
-        const correct = correctRadio ? parseInt(correctRadio.value) : 0;
-
-        part1.push({ id: idx + 1, text, options, correct });
-    });
-
-    // Collect Part 2
-    const part2 = [];
-    refs.part2Questions.querySelectorAll('.question-block').forEach((block, idx) => {
-        const text = block.querySelector('.q-text').value.trim();
-        const subQuestions = [];
-        block.querySelectorAll('.sub-question').forEach(sq => {
-            const subId = sq.dataset.subId;
-            const subText = sq.querySelector('.sq-text').value.trim();
-            const subCorrect = sq.querySelector('.sq-correct').value === 'true';
-            subQuestions.push({ id: subId, text: subText, correct: subCorrect });
-        });
-
-        part2.push({ id: idx + 1, text, subQuestions });
-    });
-
-    // Collect Part 3
-    const part3 = [];
-    refs.part3Questions.querySelectorAll('.question-block').forEach((block, idx) => {
-        const text = block.querySelector('.q-text').value.trim();
-        const correct = block.querySelector('.q-correct').value.trim();
-
-        part3.push({ id: idx + 1, text, correct });
-    });
-
-    return { subjectId, time, title, part1, part2, part3 };
-}
-
-async function saveExam() {
-    const data = collectFormData();
-
-    // Validation
-    if (!data.subjectId) {
-        showToast('Vui lòng chọn môn học', 'error');
-        refs.examSubject.focus();
-        return;
-    }
-    if (!data.title) {
-        showToast('Vui lòng nhập tiêu đề bài thi', 'error');
-        refs.examTitle.focus();
-        return;
-    }
-
-    refs.btnSave.disabled = true;
-    refs.btnSave.innerHTML = '<svg class="w-4 h-4 spinner" fill="none" stroke="currentColor" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10" stroke-width="4" stroke-dasharray="31.416" stroke-dashoffset="10"/></svg> Đang lưu...';
-
-    try {
-        if (state.currentExamId) {
-            // Update existing
-            await updateExam(state.currentExamId, data);
-            showToast('Đã cập nhật bài thi thành công');
+    togglePanel(force) {
+        if (!this.refs.panel) return;
+        const shouldShow = typeof force === 'boolean' ? force : this.refs.panel.classList.contains('hidden');
+        if (shouldShow) {
+            this.refs.panel.classList.remove('hidden');
+            this.isPanelVisible = true;
+            this.refs.overlay?.classList.remove('hidden');
+            this.hideMiniPlayer();
         } else {
-            // Create new
-            const newId = await createExam(data);
-            state.currentExamId = newId;
-            showToast('Đã tạo bài thi mới thành công');
+            this.refs.panel.classList.add('hidden');
+            this.isPanelVisible = false;
+            this.refs.overlay?.classList.add('hidden');
+            this.showMiniPlayer(true);
         }
+    },
 
-        await loadExams();
-        renderExamList();
+    hidePanel() {
+        if (!this.refs.panel) return;
+        this.refs.panel.classList.add('hidden');
+        this.isPanelVisible = false;
+        this.refs.overlay?.classList.add('hidden');
+        this.showMiniPlayer(true);
+    },
 
-    } catch (error) {
-        console.error('Save failed:', error);
-        showToast('Lỗi khi lưu bài thi: ' + error.message, 'error');
-    } finally {
-        refs.btnSave.disabled = false;
-        refs.btnSave.innerHTML = '<svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"/></svg> Lưu';
-    }
-}
-
-async function confirmDeleteExam() {
-    if (!state.currentExamId) return;
-
-    refs.deleteModal.classList.add('hidden');
-
-    try {
-        await deleteExam(state.currentExamId);
-        showToast('Đã xóa bài thi thành công');
-        hideEditor();
-        await loadExams();
-    } catch (error) {
-        console.error('Delete failed:', error);
-        showToast('Lỗi khi xóa bài thi: ' + error.message, 'error');
-    }
-}
-
-// ============================================================
-// IMPORT / EXPORT (LOCAL OCR)
-// ============================================================
-
-/**
- * Handle file import - supports JSON, DOC, DOCX, PDF, and images
- * Now displays extracted text in textarea for editing before parsing
- */
-async function handleFileImport(e) {
-    const file = e.target.files[0];
-    if (!file) return;
-
-    const fileName = file.name.toLowerCase();
-    const fileExt = fileName.split('.').pop();
-
-    // Handle JSON directly
-    if (fileExt === 'json') {
-        handleJsonImport(file);
-        return;
-    }
-
-    // Handle other formats with Local OCR
-    const supportedFormats = ['doc', 'docx', 'pdf', 'png', 'jpg', 'jpeg', 'svg', 'webp'];
-    if (!supportedFormats.includes(fileExt)) {
-        showToast(`Định dạng .${fileExt} không được hỗ trợ`, 'error');
-        return;
-    }
-
-    showToast('Đang xử lý file (OCR)... Vui lòng chờ.', 'info');
-
-    try {
-        let text = '';
-
-        // Extract text based on file type
-        if (['png', 'jpg', 'jpeg', 'svg', 'webp'].includes(fileExt)) {
-            text = await extractTextFromImage(file);
-        } else if (fileExt === 'pdf') {
-            text = await extractTextFromPDF(file);
-        } else if (fileExt === 'docx') {
-            text = await extractTextFromDocx(file);
-        } else {
-            throw new Error(`Chưa hỗ trợ xử lý file .${fileExt}`);
+    loadCustomTracks() {
+        try {
+            const saved = localStorage.getItem(MUSIC_STORAGE_KEY);
+            return saved ? JSON.parse(saved) : [];
+        } catch (error) {
+            console.warn('Không thể đọc danh sách nhạc đã lưu.', error);
+            return [];
         }
+    },
 
-        if (!text || text.trim().length === 0) {
-            showToast('Không tìm thấy văn bản trong file', 'error');
+    saveCustomTracks() {
+        try {
+            localStorage.setItem(MUSIC_STORAGE_KEY, JSON.stringify(this.customTracks));
+        } catch (error) {
+            console.warn('Không thể lưu danh sách nhạc.', error);
+        }
+    },
+
+    renderTrackList() {
+        if (!this.refs.trackList) return;
+        this.refs.trackList.innerHTML = '';
+        if (!this.tracks.length) {
+            this.refs.trackList.innerHTML = '<p class="text-sm text-slate-500 dark:text-slate-400">Chưa có bài hát nào.</p>';
             return;
         }
+        this.tracks.forEach((track, index) => {
+            const button = document.createElement('button');
+            button.type = 'button';
+            button.className = `w-full text-left px-3 py-2 rounded-xl border border-slate-200 dark:border-slate-700 text-sm hover:border-blue-400 dark:hover:border-blue-400 transition-colors ${index === this.currentIndex ? 'bg-blue-50 dark:bg-slate-800 border-blue-300 dark:border-blue-500 text-blue-700 dark:text-blue-200' : 'bg-white dark:bg-slate-800 text-slate-600 dark:text-slate-300'}`;
+            button.innerHTML = `<div class="font-semibold truncate">${track.title}</div><p class="text-xs text-slate-400 dark:text-slate-500 truncate">${track.author || 'YouTube'}</p>`;
+            button.addEventListener('click', () => {
+                this.currentIndex = index;
+                this.updateCurrentTrackInfo();
+                this.renderTrackList();
+                this.playTrack(true);
+                this.togglePanel(true);
+            });
+            this.refs.trackList.appendChild(button);
+        });
+    },
 
-        console.log("Raw Extracted Text:", text);
-
-        // Show editor if not already visible
-        if (!state.currentExamId && refs.editorForm.classList.contains('hidden')) {
-            showEditor(null);
+    updateCurrentTrackInfo() {
+        const track = this.tracks[this.currentIndex];
+        if (track) {
+            if (this.refs.currentTitle) this.refs.currentTitle.textContent = track.title;
+            if (this.refs.currentSource) this.refs.currentSource.textContent = track.author || 'YouTube';
+        } else {
+            if (this.refs.currentTitle) this.refs.currentTitle.textContent = 'Chưa chọn bài hát';
+            if (this.refs.currentSource) this.refs.currentSource.textContent = 'Thêm bài hát để bắt đầu';
         }
+        this.updateMiniInfo();
+    },
 
-        // Set title from filename if empty
-        if (!refs.examTitle.value) {
-            refs.examTitle.value = file.name.replace(/\.[^/.]+$/, '');
+    previousTrack() {
+        if (!this.tracks.length) return;
+        this.currentIndex = (this.currentIndex - 1 + this.tracks.length) % this.tracks.length;
+        this.updateCurrentTrackInfo();
+        this.renderTrackList();
+        this.playTrack(true);
+    },
+
+    nextTrack() {
+        if (!this.tracks.length) return;
+        this.currentIndex = (this.currentIndex + 1) % this.tracks.length;
+        this.updateCurrentTrackInfo();
+        this.renderTrackList();
+        this.playTrack(true);
+    },
+
+    togglePlayPause() {
+        if (!this.playerReady) {
+            this.playTrack(true);
+            return;
         }
-
-        // Display extracted text in the raw text textarea for editing
-        const rawTextInput = document.getElementById('raw-text-input');
-        const rawTextDetails = rawTextInput?.closest('details');
-        const resultDiv = document.getElementById('raw-text-result');
-
-        if (rawTextInput) {
-            rawTextInput.value = text;
-            // Open the details panel
-            if (rawTextDetails) rawTextDetails.open = true;
-            // Scroll to the textarea
-            rawTextInput.scrollIntoView({ behavior: 'smooth', block: 'center' });
-            rawTextInput.focus();
+        const state = this.player.getPlayerState();
+        if (state === window.YT?.PlayerState?.PLAYING) {
+            this.player.pauseVideo();
+        } else {
+            this.player.playVideo();
         }
+    },
 
-        // Show info message
-        if (resultDiv) {
-            resultDiv.className = 'text-sm p-3 rounded-lg bg-blue-50 text-blue-700 border border-blue-200';
-            resultDiv.innerHTML = `📄 Đã trích xuất <strong>${text.length}</strong> ký tự từ <strong>${file.name}</strong>. 
-                <br><span class="text-xs">Xem lại và chỉnh sửa nếu cần, sau đó nhấn <strong>"Phân tích Text"</strong> để tạo câu hỏi.</span>`;
-            resultDiv.classList.remove('hidden');
+    playTrack(autoPlay = false) {
+        const track = this.tracks[this.currentIndex];
+        if (!track) return;
+        this.updateCurrentTrackInfo();
+        this.renderTrackList();
+        this.ensurePlayerReady(() => {
+            if (autoPlay) {
+                this.player.loadVideoById(track.videoId);
+            } else {
+                this.player.cueVideoById(track.videoId);
+            }
+            if (autoPlay) this.player.playVideo();
+        });
+    },
+
+    stopPlayback() {
+        if (!this.playerReady) return;
+        this.player.stopVideo();
+        this.setPlayingState(false);
+        this.hideMiniPlayer();
+    },
+
+    setPlayingState(isPlaying) {
+        this.isPlaying = isPlaying;
+        if (this.refs.playBtn) {
+            this.refs.playBtn.innerHTML = isPlaying
+                ? `<svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="currentColor" viewBox="0 0 24 24"><path d="M6 4h4v16H6zm8 0h4v16h-4z"/></svg><span>Tạm dừng</span>`
+                : `<svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="currentColor" viewBox="0 0 24 24"><path d="M5 3l14 9-14 9V3z"/></svg><span>Phát</span>`;
         }
+        if (this.refs.badge) {
+            this.refs.badge.classList.toggle('hidden', !isPlaying);
+        }
+        this.updateMiniPlayButton();
+        if (isPlaying) {
+            if (!this.isPanelVisible) this.showMiniPlayer();
+        } else if (!this.miniForced) {
+            this.hideMiniPlayer();
+        }
+    },
 
-        showToast(`Đã trích xuất text từ ${file.name}. Vui lòng xem lại và nhấn "Phân tích Text"`, 'success');
+    setVolume(value) {
+        if (this.refs.volumeLabel) this.refs.volumeLabel.textContent = `${value}%`;
+        const applyVolume = () => {
+            this.player.setVolume(value);
+        };
+        if (this.playerReady) applyVolume();
+        else this.pendingActions.push(applyVolume);
+    },
 
-    } catch (error) {
-        console.error('OCR Import failed:', error);
-        showToast('Lỗi xử lý file: ' + error.message, 'error');
+    handleAddTrack(url) {
+        const videoId = this.extractVideoId(url);
+        if (!videoId) {
+            this.displayFeedback('Link YouTube không hợp lệ.', 'error');
+            return;
+        }
+        this.displayFeedback('Đang lấy thông tin bài hát...', 'info');
+        this.fetchVideoMeta(videoId)
+            .then(meta => {
+                const newTrack = this.enrichTrack({
+                    videoId,
+                    url: `https://www.youtube.com/watch?v=${videoId}`,
+                    title: meta.title || `Video ${videoId}`,
+                    author: meta.author || 'YouTube'
+                });
+                if (this.tracks.find(t => t.videoId === videoId)) {
+                    this.displayFeedback('Bài hát đã có trong danh sách.', 'error');
+                    return;
+                }
+                if (newTrack) this.customTracks.push(newTrack);
+                this.saveCustomTracks();
+                this.rebuildTrackList(videoId);
+                this.refs.addInput.value = '';
+                this.displayFeedback('Đã thêm vào danh sách và phát ngay.', 'success');
+                this.playTrack(true);
+                this.togglePanel(true);
+            })
+            .catch(() => {
+                this.displayFeedback('Không thể lấy thông tin bài hát. Vẫn sẽ thêm link.', 'info');
+                const fallbackTrack = this.enrichTrack({
+                    videoId,
+                    url: `https://www.youtube.com/watch?v=${videoId}`,
+                    title: `Video ${videoId}`,
+                    author: 'YouTube'
+                });
+                if (fallbackTrack) this.customTracks.push(fallbackTrack);
+                this.saveCustomTracks();
+                this.rebuildTrackList(videoId);
+                this.refs.addInput.value = '';
+                this.playTrack(true);
+            });
+    },
+
+    rebuildTrackList(activeVideoId) {
+        const activeId = activeVideoId || (this.tracks[this.currentIndex] && this.tracks[this.currentIndex].videoId);
+        this.tracks = [...this.baseTracks, ...this.customTracks];
+        const idx = this.tracks.findIndex(t => t.videoId === activeId);
+        this.currentIndex = idx >= 0 ? idx : 0;
+        this.renderTrackList();
+        this.updateCurrentTrackInfo();
+    },
+
+    extractVideoId(url) {
+        try {
+            const reg = /(?:youtu\.be\/|youtube\.com\/(?:shorts\/|watch\?(?:.*&)?v=|embed\/))([\w-]{11})/;
+            const match = url.match(reg);
+            return match ? match[1] : null;
+        } catch (error) {
+            return null;
+        }
+    },
+
+    async fetchVideoMeta(videoId) {
+        const endpoint = `https://noembed.com/embed?url=https://www.youtube.com/watch?v=${videoId}`;
+        const res = await fetch(endpoint);
+        if (!res.ok) throw new Error('Meta fetch failed');
+        const data = await res.json();
+        return {
+            title: data.title,
+            author: data.author_name
+        };
+    },
+
+    displayFeedback(message, type = 'info') {
+        if (!this.refs.feedback) return;
+        const colorMap = {
+            success: 'text-emerald-500',
+            error: 'text-rose-500',
+            info: 'text-slate-500 dark:text-slate-400'
+        };
+        this.refs.feedback.className = `text-xs ${colorMap[type] || colorMap.info}`;
+        this.refs.feedback.textContent = message;
+        if (type !== 'info') {
+            setTimeout(() => {
+                if (this.refs.feedback?.textContent === message) {
+                    this.refs.feedback.textContent = '';
+                }
+            }, 3000);
+        }
+    },
+
+    ensurePlayerReady(callback) {
+        if (this.playerReady && this.player) {
+            callback();
+            return;
+        }
+        this.pendingActions.push(callback);
+        if (this.apiReady && !this.player) this.setupPlayer();
+    },
+
+    setupPlayer() {
+        if (this.player || !window.YT || !document.getElementById('music-player')) return;
+        this.player = new YT.Player('music-player', {
+            height: '200',
+            width: '320',
+            playerVars: {
+                rel: 0,
+                controls: 0
+            },
+            events: {
+                onReady: () => {
+                    this.playerReady = true;
+                    this.refs.placeholder?.classList.add('hidden');
+                    if (this.refs.volumeInput) this.setVolume(parseInt(this.refs.volumeInput.value, 10));
+                    while (this.pendingActions.length) {
+                        const fn = this.pendingActions.shift();
+                        try { fn(); } catch (error) { console.error(error); }
+                    }
+                },
+                onStateChange: (event) => {
+                    const PLAYING = window.YT.PlayerState.PLAYING;
+                    const PAUSED = window.YT.PlayerState.PAUSED;
+                    const ENDED = window.YT.PlayerState.ENDED;
+                    if (event.data === PLAYING) {
+                        this.setPlayingState(true);
+                    } else if (event.data === PAUSED) {
+                        this.setPlayingState(false);
+                    } else if (event.data === ENDED) {
+                        this.nextTrack();
+                    }
+                }
+            }
+        });
     }
+};
 
-    e.target.value = '';
-}
+window.musicPlayer = musicPlayer;
 
-/**
- * Extract text from Image using Tesseract.js (Vietnamese OCR)
- */
-async function extractTextFromImage(file) {
-    showToast('Đang OCR hình ảnh...', 'info');
-    const worker = await Tesseract.createWorker('vie');
-    await worker.setParameters({ preserve_interword_spaces: '1' });
-    const ret = await worker.recognize(file);
-    await worker.terminate();
-    return cleanGlobalNoise(ret.data.text);
-}
+window.onYouTubeIframeAPIReady = function () {
+    musicPlayer.apiReady = true;
+    musicPlayer.setupPlayer();
+};
 
-/**
- * Extract text from PDF using PDF.js with image extraction
- */
-async function extractTextFromPDF(file) {
-    showToast('Đang phân tích PDF...', 'info');
-    const arrayBuffer = await file.arrayBuffer();
-    const pdf = await pdfjsLib.getDocument({ data: arrayBuffer }).promise;
-    let fullText = '';
+// --- Dynamic Test Loading ---
+const TESTS_BASE_PATH = 'tests';
+const MANIFEST_PATH = `${TESTS_BASE_PATH}/manifest.json`;
 
-    for (let i = 1; i <= pdf.numPages; i++) {
-        showToast(`Đang đọc trang ${i}/${pdf.numPages}...`, 'info');
-        const page = await pdf.getPage(i);
+// --- LOGIC ---
+const app = {
+    container: document.getElementById('app-container'),
+    timerEl: document.getElementById('exam-timer'),
+    currentExam: null, answers: {}, timerInterval: null, startTime: null, endTime: null,
+    examResult: null, isReviewMode: false,
+    subjects: {},
+    examContentDB: {},
+    subjectLoadError: null,
+    testsBasePath: TESTS_BASE_PATH,
+    // Statistics State
+    stats: { attempts: {}, totalTime: 0 },
 
-        // 1. Get Text Content
-        const textContent = await page.getTextContent();
+    async init() {
+        // Theme Init
+        if (localStorage.theme === 'dark' || (!('theme' in localStorage) && window.matchMedia('(prefers-color-scheme: dark)').matches)) {
+            document.documentElement.classList.add('dark'); document.getElementById('dark-mode-toggle').checked = true;
+        } else { document.getElementById('dark-mode-toggle').checked = false; }
 
-        // 2. Sort text items by Y position (top to bottom), then X (left to right)
-        const items = textContent.items.sort((a, b) => {
-            const yDiff = b.transform[5] - a.transform[5];
-            if (Math.abs(yDiff) > 5) return yDiff; // Different lines
-            return a.transform[4] - b.transform[4]; // Same line, sort by X
+        // Load Stats
+        const savedStats = localStorage.getItem('studyStation_stats');
+        if (savedStats) this.stats = JSON.parse(savedStats);
+
+        // Listeners
+        document.getElementById('dark-mode-toggle').addEventListener('change', (e) => this.toggleDarkMode(e.target.checked));
+        document.getElementById('font-size-slider').addEventListener('input', (e) => {
+            document.documentElement.style.setProperty('--question-font-size', e.target.value + 'px');
+            document.getElementById('font-size-display').innerText = e.target.value + 'px';
         });
 
-        // 3. Build page text with proper line breaks
-        let pageText = '';
-        let lastY = -1;
+        await this.loadSubjects();
+        this.goHome();
+    },
 
-        for (const item of items) {
-            const currentY = item.transform[5];
-            if (lastY !== -1 && Math.abs(currentY - lastY) > 10) {
-                pageText += '\n'; // New line when Y changes significantly
-            } else if (lastY !== -1) {
-                pageText += ' ';
-            }
-            pageText += item.str;
-            lastY = currentY;
-        }
-
-        // 4. Try to extract images from page
+    async loadSubjects() {
         try {
-            const ops = await page.getOperatorList();
-            const pageImages = [];
+            // Try Firebase first (if available)
+            if (window.firebaseExams && typeof window.firebaseExams.getAllExams === 'function') {
+                try {
+                    const firebaseExams = await window.firebaseExams.getAllExams();
+                    const firebaseSubjects = window.firebaseExams.getSubjects();
 
-            for (let j = 0; j < ops.fnArray.length; j++) {
-                if (ops.fnArray[j] === pdfjsLib.OPS.paintImageXObject) {
-                    const imgName = ops.argsArray[j][0];
-                    try {
-                        const imgObj = await page.objs.get(imgName);
-                        if (imgObj && imgObj.width > 50 && imgObj.height > 50) {
-                            // Filter out small icons
-                            pageImages.push(`[Hình ảnh ${pageImages.length + 1}]`);
-                        }
-                    } catch (e) { /* ignore image errors */ }
+                    if (firebaseExams && firebaseExams.length > 0) {
+                        console.log('Loaded exams from Firebase:', firebaseExams.length);
+
+                        // Build subjects from Firebase data
+                        this.subjects = {};
+                        this.examContentDB = {};
+
+                        firebaseSubjects.forEach(sub => {
+                            this.subjects[sub.id] = {
+                                id: sub.id,
+                                name: sub.name,
+                                color: sub.color,
+                                bg: sub.bg,
+                                icon: sub.icon,
+                                exams: []
+                            };
+                        });
+
+                        firebaseExams.forEach(exam => {
+                            const subId = exam.subjectId;
+                            if (this.subjects[subId]) {
+                                this.subjects[subId].exams.push({
+                                    id: exam.id,
+                                    title: exam.title,
+                                    time: exam.time || 50,
+                                    examCode: exam.examCode || '',
+                                    createdAt: exam.createdAt || ''
+                                });
+                                this.examContentDB[exam.id] = {
+                                    id: exam.id,
+                                    title: exam.title,
+                                    time: exam.time || 50,
+                                    part1: exam.part1 || [],
+                                    part2: exam.part2 || [],
+                                    part3: exam.part3 || []
+                                };
+                            }
+                        });
+
+                        // Sort exams by createdAt descending (newest first)
+                        Object.keys(this.subjects).forEach(key => {
+                            this.subjects[key].exams.sort((a, b) => {
+                                if (a.createdAt && b.createdAt) return b.createdAt.localeCompare(a.createdAt);
+                                return 0;
+                            });
+                        });
+
+                        // Remove empty subjects
+                        Object.keys(this.subjects).forEach(key => {
+                            if (this.subjects[key].exams.length === 0) {
+                                delete this.subjects[key];
+                            }
+                        });
+
+                        this.subjectLoadError = Object.keys(this.subjects).length ? null : 'Chưa có bài thi nào. Admin có thể thêm bài thi mới.';
+                        return;
+                    }
+                } catch (fbError) {
+                    console.warn('Firebase load failed, falling back to local files:', fbError);
                 }
             }
 
-            // Append image markers at end of page
-            if (pageImages.length > 0) {
-                pageText += '\n' + pageImages.join('\n');
-            }
-        } catch (e) { /* ignore ops errors */ }
+            // Fallback to local JSON files
+            const res = await fetch(`${MANIFEST_PATH}?v=${Date.now()}`);
+            if (!res.ok) throw new Error('Manifest not found');
+            const data = await res.json();
+            const subjectList = data.subjects || [];
+            this.subjects = {};
+            this.examContentDB = {};
 
-        fullText += pageText + '\n\n';
-    }
+            await Promise.all(subjectList.map(async (sub) => {
+                const normalized = {
+                    id: sub.id,
+                    name: sub.name,
+                    color: sub.color,
+                    bg: sub.bg,
+                    icon: sub.icon,
+                    dir: sub.dir || sub.id,
+                    exams: []
+                };
+                this.subjects[normalized.id] = normalized;
+                const files = sub.files || [];
 
-    return cleanGlobalNoise(fullText);
-}
+                await Promise.all(files.map(async (fileName) => {
+                    try {
+                        const examRes = await fetch(`${this.testsBasePath}/${normalized.dir}/${fileName}?v=${Date.now()}`);
+                        if (!examRes.ok) throw new Error(`Missing exam ${fileName}`);
+                        const examJson = await examRes.json();
+                        normalized.exams.push({ id: examJson.id, title: examJson.title, time: examJson.time || 50 });
+                        this.examContentDB[examJson.id] = {
+                            ...examJson,
+                            part1: examJson.part1 || [],
+                            part2: examJson.part2 || [],
+                            part3: examJson.part3 || []
+                        };
+                    } catch (examErr) {
+                        console.error(`Không thể tải đề thi ${fileName}`, examErr);
+                    }
+                }));
+            }));
 
-/**
- * Extract text from DOCX using Mammoth.js
- */
-async function extractTextFromDocx(file) {
-    showToast('Đang đọc file Word...', 'info');
-    const arrayBuffer = await file.arrayBuffer();
-    const result = await mammoth.extractRawText({ arrayBuffer: arrayBuffer });
-    return cleanGlobalNoise(result.value);
-}
+            this.subjectLoadError = subjectList.length ? null : 'Chưa có môn học nào trong thư mục tests.';
+        } catch (error) {
+            console.error('Load subjects failed', error);
+            this.subjects = {};
+            this.examContentDB = {};
+            this.subjectLoadError = 'Không thể tải danh sách đề thi. Vui lòng kiểm tra lại.';
+        }
+    },
 
-/**
- * Clean common noise from extracted text (headers, footers, page numbers)
- */
-function cleanGlobalNoise(text) {
-    return text
-        // Page numbers
-        .replace(/Trang\s+\d+(\/\d+)?/gi, '')
-        // Common headers
-        .replace(/(Sở GD&ĐT|Sở Giáo dục|Trường THPT|Mã đề|Năm học|Thời gian làm bài).*$/gim, '')
-        // Exam headers
-        .replace(/(ĐỀ THI|ĐỀ KIỂM TRA|KIỂM TRA|BÀI KIỂM TRA|ĐỀ CƯƠNG|ĐỀ ÔN TẬP).*$/gim, '')
-        // Multiple blank lines -> single
-        .replace(/\n{3,}/g, '\n\n')
-        .trim();
-}
+    toggleDarkMode(checked) {
+        if (checked) { document.documentElement.classList.add('dark'); localStorage.theme = 'dark'; }
+        else { document.documentElement.classList.remove('dark'); localStorage.theme = 'light'; }
+    },
 
-/**
- * Handle raw text parse from textarea
- */
-function handleRawTextParse() {
-    const rawTextInput = document.getElementById('raw-text-input');
-    const resultDiv = document.getElementById('raw-text-result');
-    const text = rawTextInput?.value?.trim();
+    renderTemplate(tplId) {
+        const tpl = document.getElementById(tplId);
+        this.container.innerHTML = '';
+        this.container.appendChild(tpl.content.cloneNode(true));
+        window.scrollTo(0, 0);
+    },
 
-    if (!text) {
-        showToast('Vui lòng nhập văn bản để phân tích', 'error');
-        return;
-    }
+    // --- Stats Logic ---
+    toggleStats() {
+        const modal = document.getElementById('stats-modal');
+        if (modal.classList.contains('hidden')) {
+            // Update content before showing
+            const totalExams = Object.values(this.stats.attempts).flat().length;
+            const hours = Math.floor(this.stats.totalTime / 3600);
+            const minutes = Math.floor((this.stats.totalTime % 3600) / 60);
 
-    try {
-        const examData = parseExamText(text, 'raw-text');
+            document.getElementById('stat-exams').innerText = totalExams;
+            document.getElementById('stat-time').innerText = `${hours}h ${minutes}m`;
 
-        const totalQuestions = (examData.part1?.length || 0) + (examData.part2?.length || 0) + (examData.part3?.length || 0);
+            // Calculate Average (First 3 attempts per exam)
+            let totalScore = 0;
+            let count = 0;
+            Object.values(this.stats.attempts).forEach(scores => {
+                const first3 = scores.slice(0, 3);
+                first3.forEach(s => { totalScore += s; count++; });
+            });
+            const avg = count > 0 ? (totalScore / count) : 0;
 
-        if (totalQuestions === 0) {
-            resultDiv.className = 'text-sm p-3 rounded-lg bg-yellow-50 text-yellow-700 border border-yellow-200';
-            resultDiv.textContent = '⚠️ Không tìm thấy câu hỏi nào. Vui lòng kiểm tra định dạng (Câu 1:, 1., A. B. C. D., a) b) c) d))';
-            resultDiv.classList.remove('hidden');
+            document.getElementById('stat-avg').innerText = avg.toFixed(1);
+            document.getElementById('stat-avg-bar').style.width = `${avg * 10}%`; // 0-10 scale maps to 0-100%
+
+            modal.classList.remove('hidden');
+        } else {
+            modal.classList.add('hidden');
+        }
+    },
+
+    updateStats(examId, score, durationSeconds) {
+        if (!this.stats.attempts[examId]) this.stats.attempts[examId] = [];
+        this.stats.attempts[examId].push(score);
+        this.stats.totalTime += durationSeconds;
+        localStorage.setItem('studyStation_stats', JSON.stringify(this.stats));
+    },
+
+    // --- Navigation ---
+    goHome() {
+        this.isReviewMode = false;
+        this.stopTimer(); this.timerEl.classList.add('hidden');
+        this.renderTemplate('tpl-home');
+        const grid = this.container.querySelector('.grid');
+        const subjectEntries = Object.values(this.subjects || {});
+
+        if (this.subjectLoadError) {
+            grid.innerHTML = `<div class="col-span-full bg-white dark:bg-slate-800 p-6 rounded-2xl border border-red-200 dark:border-red-800 text-red-600 dark:text-red-300">${this.subjectLoadError}</div>`;
             return;
         }
 
-        // Append questions to existing lists
-        if (examData.part1 && examData.part1.length > 0) {
-            const existingCount = refs.part1Questions.querySelectorAll('.question-block').length;
-            if (existingCount === 0) refs.part1Questions.innerHTML = '';
-
-            examData.part1.forEach((q, idx) => {
-                q.id = existingCount + idx + 1;
-                refs.part1Questions.insertAdjacentHTML('beforeend', createPart1QuestionHTML(q, existingCount + idx));
-            });
-            bindQuestionEvents(1);
-            updateQuestionCount(1);
+        if (!subjectEntries.length) {
+            grid.innerHTML = `<div class="col-span-full bg-white dark:bg-slate-800 p-6 rounded-2xl border border-slate-200 dark:border-slate-700 text-slate-500 dark:text-slate-300">Chưa có đề thi nào trong thư mục tests.</div>`;
+            return;
         }
 
-        if (examData.part2 && examData.part2.length > 0) {
-            const existingCount = refs.part2Questions.querySelectorAll('.question-block').length;
-            if (existingCount === 0) refs.part2Questions.innerHTML = '';
-
-            examData.part2.forEach((q, idx) => {
-                q.id = existingCount + idx + 1;
-                refs.part2Questions.insertAdjacentHTML('beforeend', createPart2QuestionHTML(q, existingCount + idx));
-            });
-            bindQuestionEvents(2);
-            updateQuestionCount(2);
-        }
-
-        if (examData.part3 && examData.part3.length > 0) {
-            const existingCount = refs.part3Questions.querySelectorAll('.question-block').length;
-            if (existingCount === 0) refs.part3Questions.innerHTML = '';
-
-            examData.part3.forEach((q, idx) => {
-                q.id = existingCount + idx + 1;
-                refs.part3Questions.insertAdjacentHTML('beforeend', createPart3QuestionHTML(q, existingCount + idx));
-            });
-            bindQuestionEvents(3);
-            updateQuestionCount(3);
-        }
-
-        // Show success message
-        resultDiv.className = 'text-sm p-3 rounded-lg bg-emerald-50 text-emerald-700 border border-emerald-200';
-        resultDiv.innerHTML = `✅ Đã thêm <strong>${totalQuestions}</strong> câu hỏi: 
-            <span class="font-medium">${examData.part1?.length || 0} trắc nghiệm</span>, 
-            <span class="font-medium">${examData.part2?.length || 0} đúng/sai</span>, 
-            <span class="font-medium">${examData.part3?.length || 0} tự luận</span>`;
-        resultDiv.classList.remove('hidden');
-
-        // Render MathJax
-        renderMath();
-
-        showToast(`Đã thêm ${totalQuestions} câu hỏi từ text`, 'success');
-
-        // Clear textarea after successful parse
-        rawTextInput.value = '';
-
-    } catch (error) {
-        console.error('Raw text parse error:', error);
-        resultDiv.className = 'text-sm p-3 rounded-lg bg-red-50 text-red-700 border border-red-200';
-        resultDiv.textContent = '❌ Lỗi phân tích: ' + error.message;
-        resultDiv.classList.remove('hidden');
-        showToast('Lỗi phân tích văn bản: ' + error.message, 'error');
-    }
-}
-
-/**
- * Clear raw text input
- */
-function handleRawTextClear() {
-    const rawTextInput = document.getElementById('raw-text-input');
-    const resultDiv = document.getElementById('raw-text-result');
-
-    if (rawTextInput) rawTextInput.value = '';
-    if (resultDiv) {
-        resultDiv.classList.add('hidden');
-        resultDiv.textContent = '';
-    }
-
-    showToast('Đã xóa text', 'info');
-}
-
-/**
- * Parse raw text into structured Exam Object
- * COMPLETE REWRITE - Improved accuracy for question type detection
- * 
- * Question Types:
- * - Part 1 (Multiple Choice): Has A. B. C. D. options (uppercase)
- * - Part 2 (True/False): Has a) b) c) d) sub-items (lowercase)  
- * - Part 3 (Short Answer): No options, may have "Đáp án:" answer
- */
-function parseExamText(text, fileName) {
-    // ============================================
-    // STEP 1: TEXT NORMALIZATION
-    // ============================================
-    let cleanText = text
-        // Remove common headers/footers
-        .replace(/(Sở GD&ĐT|THPT|Trang \d+\/\d+|Mã đề:?\s*\d+|ĐỀ THI|ĐỀ KIỂM TRA|KIỂM TRA|BÀI KIỂM TRA)/gi, '')
-        // Normalize line endings
-        .replace(/\r\n/g, '\n')
-        .replace(/\r/g, '\n')
-        // Normalize whitespace (but keep newlines)
-        .replace(/[ \t]+/g, ' ')
-        // Remove multiple consecutive newlines
-        .replace(/\n{3,}/g, '\n\n')
-        .trim();
-
-    // ============================================
-    // STEP 2: MATH/CHEMISTRY SYMBOL CONVERSION
-    // ============================================
-    cleanText = convertMathChemSymbols(cleanText);
-
-    // ============================================
-    // STEP 3: SPLIT INTO INDIVIDUAL QUESTIONS
-    // ============================================
-    const examData = {
-        subjectId: null,
-        title: `Imported: ${fileName.replace(/\.[^/.]+$/, '')}`,
-        time: 50,
-        part1: [], // Multiple Choice (A.B.C.D)
-        part2: [], // True/False (a.b.c.d)
-        part3: []  // Short Answer
-    };
-
-    // Pattern to find question starts: "Câu 1:", "Câu 1.", "1.", "1)", etc.
-    const questionStartPattern = /(?:^|\n)\s*(?:Câu|Question|Bài)?\s*(\d+)\s*[.:)]\s*/gi;
-    const matches = [...cleanText.matchAll(questionStartPattern)];
-
-    if (matches.length === 0) {
-        throw new Error("Không tìm thấy câu hỏi nào. Định dạng cần có: 'Câu 1:', '1.', '1)', ...");
-    }
-
-    // Extract each question's content
-    const rawQuestions = [];
-    for (let i = 0; i < matches.length; i++) {
-        const startIdx = matches[i].index;
-        const endIdx = (i < matches.length - 1) ? matches[i + 1].index : cleanText.length;
-        const fullContent = cleanText.substring(startIdx, endIdx).trim();
-        const questionNum = parseInt(matches[i][1]);
-
-        // Remove the question number prefix from content
-        const content = fullContent.replace(/^(?:Câu|Question|Bài)?\s*\d+\s*[.:)]\s*/i, '').trim();
-
-        rawQuestions.push({
-            num: questionNum,
-            content: content,
-            fullContent: fullContent
+        subjectEntries.forEach(sub => {
+            const card = document.createElement('div');
+            card.className = `bg-white dark:bg-slate-800 p-6 rounded-3xl border-2 border-slate-200 dark:border-slate-700 shadow-soft card-hover cursor-pointer group flex flex-col items-center text-center py-8 hover:border-blue-400 dark:hover:border-blue-500`;
+            card.onclick = () => this.goSubject(sub.id);
+            card.innerHTML = `<div class="w-16 h-16 rounded-2xl ${sub.bg} flex items-center justify-center mb-5 group-hover:scale-110 transition-transform duration-300 shadow-sm">${sub.icon}</div><h3 class="text-xl font-bold text-slate-800 dark:text-white mb-2">${sub.name}</h3><p class="text-slate-400 text-sm font-medium bg-slate-50 dark:bg-slate-700 dark:text-slate-300 px-3 py-1 rounded-full">${sub.exams.length} đề thi</p>`;
+            grid.appendChild(card);
         });
-    }
+    },
 
-    // ============================================
-    // STEP 4: CLASSIFY EACH QUESTION
-    // ============================================
-    rawQuestions.forEach((q) => {
-        const classified = classifyQuestion(q.content);
-
-        if (classified.type === 'true_false') {
-            examData.part2.push({
-                id: examData.part2.length + 1,
-                text: classified.mainText,
-                subQuestions: classified.subQuestions
-            });
-        } else if (classified.type === 'multiple_choice') {
-            examData.part1.push({
-                id: examData.part1.length + 1,
-                text: classified.questionText,
-                options: classified.options,
-                correct: classified.correctIndex
-            });
-        } else {
-            // Short answer
-            examData.part3.push({
-                id: examData.part3.length + 1,
-                text: classified.questionText,
-                correct: classified.answer || ''
-            });
+    goSubject(subId) {
+        const sub = this.subjects[subId];
+        if (!sub) { alert('Không tìm thấy môn học này.'); return; }
+        this.renderTemplate('tpl-exam-list');
+        this.container.querySelector('#subject-title').innerText = sub.name;
+        this.container.querySelector('#subject-icon-large').innerHTML = sub.icon;
+        this.container.querySelector('#subject-icon-large').className = `p-4 rounded-2xl ${sub.bg}`;
+        const grid = this.container.querySelector('#exam-grid');
+        if (!sub.exams.length) {
+            grid.innerHTML = `<div class="bg-white dark:bg-slate-800 p-6 rounded-2xl border border-slate-200 dark:border-slate-700 text-slate-500 dark:text-slate-300">Chưa có đề thi nào trong môn này.</div>`;
+            return;
         }
-    });
-
-    return examData;
-}
-
-/**
- * Convert math and chemistry symbols to LaTeX format
- */
-function convertMathChemSymbols(text) {
-    let result = text;
-
-    // Superscripts: x^2 -> $x^{2}$
-    result = result.replace(/([a-zA-Z])\^(\d+)/g, '$$$1^{$2}$$');
-
-    // Subscripts: x_1 -> $x_{1}$
-    result = result.replace(/([a-zA-Z])_(\d+)/g, '$$$1_{$2}$$');
-
-    // Common chemistry formulas (specific patterns)
-    const chemFormulas = ['H2O', 'CO2', 'H2SO4', 'HNO3', 'HCl', 'NaOH', 'KOH', 'NaCl', 'KCl',
-        'CaCO3', 'NaHCO3', 'NH3', 'CH4', 'C2H5OH', 'Fe2O3', 'CuSO4',
-        'H3PO4', 'Ca(OH)2', 'Mg(OH)2', 'Al2O3', 'Fe3O4', 'O2', 'N2', 'Cl2', 'H2'];
-    chemFormulas.forEach(formula => {
-        const regex = new RegExp(`\\b${formula}\\b`, 'g');
-        result = result.replace(regex, `$\\ce{${formula}}$`);
-    });
-
-    // Fractions: 1/2 -> $\frac{1}{2}$
-    result = result.replace(/(\d+)\s*\/\s*(\d+)/g, '$\\frac{$1}{$2}$');
-
-    // Square roots: sqrt(...), căn(...), √
-    result = result.replace(/(?:sqrt|căn)\s*\(([^)]+)\)/gi, '$\\sqrt{$1}$');
-    result = result.replace(/√(\d+)/g, '$\\sqrt{$1}$');
-
-    // Math symbols
-    const symbolMap = {
-        '≤': '$\\leq$', '≥': '$\\geq$', '≠': '$\\neq$', '±': '$\\pm$',
-        '→': '$\\rightarrow$', '←': '$\\leftarrow$', '↔': '$\\leftrightarrow$',
-        '∞': '$\\infty$', '∈': '$\\in$', '∉': '$\\notin$',
-        '⊂': '$\\subset$', '∪': '$\\cup$', '∩': '$\\cap$',
-        '∑': '$\\sum$', '∏': '$\\prod$', '∫': '$\\int$',
-        'π': '$\\pi$', 'α': '$\\alpha$', 'β': '$\\beta$', 'γ': '$\\gamma$',
-        'δ': '$\\delta$', 'θ': '$\\theta$', 'λ': '$\\lambda$', 'ω': '$\\omega$'
-    };
-    Object.entries(symbolMap).forEach(([sym, latex]) => {
-        result = result.split(sym).join(latex);
-    });
-
-    return result;
-}
-
-/**
- * Classify a question into type: multiple_choice, true_false, or short_answer
- */
-function classifyQuestion(content) {
-    // ========================================
-    // CHECK 1: TRUE/FALSE (lowercase a, b, c, d)
-    // Pattern: a) ... b) ... c) ... d) ... OR a. ... b. ... c. ... d. ...
-    // ========================================
-    const lowercasePattern = /(?:^|[\n\s])([a-d])\s*[.)]\s*/gi;
-    const lowercaseMatches = [...content.matchAll(lowercasePattern)];
-
-    // Must have 2-4 lowercase sub-items and NO uppercase A-D options
-    const hasUppercaseABCD = /(?:^|[\n\s])[A-D]\s*[.)]\s*\S/m.test(content);
-
-    if (lowercaseMatches.length >= 2 && lowercaseMatches.length <= 4 && !hasUppercaseABCD) {
-        return parseTrueFalseQuestion(content, lowercaseMatches);
-    }
-
-    // ========================================
-    // CHECK 2: MULTIPLE CHOICE (uppercase A, B, C, D)
-    // Pattern: A. ... B. ... C. ... D. ... OR A) ... B) ... C) ... D) ...
-    // ========================================
-    const uppercasePattern = /(?:^|[\n\s])([A-D])\s*[.)]\s*/gi;
-    const uppercaseMatches = [...content.matchAll(uppercasePattern)];
-
-    if (uppercaseMatches.length >= 3) {
-        return parseMultipleChoiceQuestion(content, uppercaseMatches);
-    }
-
-    // ========================================
-    // CHECK 3: SHORT ANSWER (fallback)
-    // ========================================
-    return parseShortAnswerQuestion(content);
-}
-
-/**
- * Parse True/False question with a) b) c) d) sub-items
- */
-function parseTrueFalseQuestion(content, matches) {
-    const subQuestions = [];
-
-    // Split content by lowercase letter patterns
-    const splitPattern = /(?:^|[\n\s])([a-d])\s*[.)]\s*/i;
-    const parts = content.split(splitPattern);
-
-    // First part is the main question text
-    const mainText = parts[0].trim();
-
-    // Process remaining parts in pairs: [letter, content, letter, content, ...]
-    for (let i = 1; i < parts.length; i += 2) {
-        const letter = parts[i]?.toLowerCase();
-        let subContent = (parts[i + 1] || '').trim();
-
-        if (!letter || !['a', 'b', 'c', 'd'].includes(letter)) continue;
-
-        // Try to extract True/False answer from the sub-content
-        let isCorrect = true; // Default to true
-
-        // Patterns to detect answer indicators
-        const answerPatterns = [
-            { regex: /\s*[([\s]*(Đúng|Đ)[\s]*[)\]]\s*$/i, value: true },
-            { regex: /\s*[([\s]*(Sai|S)[\s]*[)\]]\s*$/i, value: false },
-            { regex: /\s*[-–]\s*(Đúng|Đ)\s*$/i, value: true },
-            { regex: /\s*[-–]\s*(Sai|S)\s*$/i, value: false },
-            { regex: /\s+(Đúng)\s*$/i, value: true },
-            { regex: /\s+(Sai)\s*$/i, value: false }
-        ];
-
-        for (const pattern of answerPatterns) {
-            if (pattern.regex.test(subContent)) {
-                isCorrect = pattern.value;
-                subContent = subContent.replace(pattern.regex, '').trim();
-                break;
-            }
-        }
-
-        subQuestions.push({
-            id: letter,
-            text: subContent,
-            correct: isCorrect
-        });
-    }
-
-    return {
-        type: 'true_false',
-        mainText: mainText,
-        subQuestions: subQuestions
-    };
-}
-
-/**
- * Parse Multiple Choice question with A. B. C. D. options
- */
-function parseMultipleChoiceQuestion(content, matches) {
-    const options = ['', '', '', ''];
-
-    // Split content by uppercase letter patterns
-    const splitPattern = /(?:^|[\n\s])[A-D]\s*[.)]\s*/i;
-    const parts = content.split(splitPattern);
-
-    // First part is the question text
-    let questionText = parts[0].trim();
-
-    // Extract options (parts 1-4)
-    for (let i = 1; i < parts.length && i <= 4; i++) {
-        let optionText = parts[i].trim();
-        // Remove trailing answer indicator if present
-        optionText = optionText.replace(/\s*(?:Đáp án|Chọn|ĐA)[:\s]*[A-D]\s*$/i, '').trim();
-        options[i - 1] = optionText;
-    }
-
-    // Try to find the correct answer
-    let correctIndex = 0;
-    const answerPatterns = [
-        /(?:Đáp án|Chọn|ĐA|Answer)[:\s]*([A-D])/i,
-        /\*\s*([A-D])\s*\*/,  // *A*
-        /([A-D])\s*✓/,        // A ✓
-    ];
-
-    for (const pattern of answerPatterns) {
-        const match = content.match(pattern);
-        if (match) {
-            correctIndex = match[1].toUpperCase().charCodeAt(0) - 65; // A=0, B=1, C=2, D=3
-            break;
-        }
-    }
-
-    // Clean question text - remove answer indicator
-    questionText = questionText.replace(/\s*(?:Đáp án|Chọn|ĐA)[:\s]*[A-D]\s*$/i, '').trim();
-
-    return {
-        type: 'multiple_choice',
-        questionText: questionText,
-        options: options,
-        correctIndex: correctIndex
-    };
-}
-
-/**
- * Parse Short Answer question
- */
-function parseShortAnswerQuestion(content) {
-    let questionText = content;
-    let answer = '';
-
-    // Try to extract answer
-    const answerPatterns = [
-        /(?:Đáp án|Kết quả|Trả lời|Answer)[:\s]*(.+?)(?:\n|$)/i,
-        /=\s*(.+?)(?:\n|$)/
-    ];
-
-    for (const pattern of answerPatterns) {
-        const match = content.match(pattern);
-        if (match) {
-            answer = match[1].trim();
-            questionText = content.replace(pattern, '').trim();
-            break;
-        }
-    }
-
-    return {
-        type: 'short_answer',
-        questionText: questionText,
-        answer: answer
-    };
-}
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-/**
- * Show subject selection dialog
- */
-function selectSubjectDialog() {
-    return new Promise((resolve) => {
-        const modal = document.createElement('div');
-        modal.className = 'fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm p-4';
-        modal.innerHTML = `
-            <div class="bg-white rounded-2xl p-6 max-w-sm w-full shadow-2xl">
-                <h3 class="text-lg font-bold text-gray-800 mb-4">Chọn môn học</h3>
-                <p class="text-gray-500 text-sm mb-4">AI không thể xác định môn học. Vui lòng chọn:</p>
-                <select id="subject-select-dialog" class="w-full px-3 py-2 border border-gray-200 rounded-lg mb-4">
-                    ${state.subjects.map(s => `<option value="${s.id}">${s.name}</option>`).join('')}
-                </select>
-                <div class="flex gap-3">
-                    <button id="dialog-cancel" class="flex-1 px-4 py-2.5 border border-gray-200 text-gray-600 font-semibold rounded-xl hover:bg-gray-50">Hủy</button>
-                    <button id="dialog-confirm" class="flex-1 px-4 py-2.5 bg-blue-600 text-white font-semibold rounded-xl hover:bg-blue-700">Xác nhận</button>
+        sub.exams.forEach((exam, index) => {
+            const el = document.createElement('div');
+            el.className = 'bg-white dark:bg-slate-800 p-6 rounded-2xl border border-slate-200 dark:border-slate-700 shadow-sm hover:border-blue-300 dark:hover:border-blue-500 hover:shadow-md transition-all cursor-pointer flex justify-between items-center group';
+            el.onclick = () => this.startExam(subId, exam.id);
+
+            const badgeCode = exam.examCode
+                ? `<span class="text-xs font-mono font-semibold text-slate-500 dark:text-slate-400 bg-slate-100 dark:bg-slate-700 px-2 py-1 rounded ml-2 border border-slate-200 dark:border-slate-600">ID: ${exam.examCode}</span>`
+                : '';
+
+            const createdDate = exam.createdAt
+                ? `<span class="text-xs text-slate-400 dark:text-slate-500 ml-auto flex items-center"><svg class="w-3 h-3 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"/></svg>${new Date(exam.createdAt).toLocaleDateString('vi-VN')}</span>`
+                : '';
+
+            el.innerHTML = `
+                <div class="flex items-start gap-4 flex-1">
+                    <div class="shrink-0 w-10 h-10 rounded-full bg-blue-50 dark:bg-blue-900/30 text-blue-600 dark:text-blue-400 flex items-center justify-center font-bold text-sm mt-1">${(index + 1).toString().padStart(2, '0')}</div>
+                    <div class="flex-1 min-w-0">
+                        <div class="flex flex-wrap items-center gap-2 mb-1">
+                            <h4 class="font-bold text-lg text-slate-800 dark:text-white group-hover:text-blue-600 dark:group-hover:text-blue-400 transition-colors truncate">${exam.title}</h4>
+                            ${badgeCode}
+                        </div>
+                        <div class="flex items-center gap-4 mt-2">
+                            <span class="text-xs font-semibold text-slate-500 dark:text-slate-400 bg-slate-100 dark:bg-slate-700 px-2 py-1 rounded flex items-center">
+                                <svg class="w-3 h-3 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>
+                                ${exam.time} phút
+                            </span>
+                            ${createdDate}
+                        </div>
+                    </div>
                 </div>
-            </div>
-        `;
-        document.body.appendChild(modal);
+                <div class="ml-4 opacity-0 group-hover:opacity-100 transition-opacity">
+                     <svg class="w-6 h-6 text-blue-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"/></svg>
+                </div>
+            `;
+            grid.appendChild(el);
+        });
+    },
 
-        modal.querySelector('#dialog-cancel').onclick = () => {
-            modal.remove();
-            resolve(null);
+    renderMath() {
+        if (window.MathJax) {
+            window.MathJax.typesetPromise();
+        }
+    },
+
+    startExam(subId, examId) {
+        const subject = this.subjects[subId];
+        if (!subject) { alert('Không tìm thấy môn học này.'); return; }
+        const examMeta = subject.exams.find(e => e.id === examId);
+        const originalData = this.examContentDB[examId];
+
+        if (!examMeta || !originalData) { alert('Không tìm thấy dữ liệu bài thi.'); return; }
+
+        // Deep copy for session to enable shuffling without mutating original
+        const examData = JSON.parse(JSON.stringify(originalData));
+
+        // Shuffle Helper
+        const shuffle = (array) => {
+            for (let i = array.length - 1; i > 0; i--) {
+                const j = Math.floor(Math.random() * (i + 1));
+                [array[i], array[j]] = [array[j], array[i]];
+            }
+            return array;
         };
 
-        modal.querySelector('#dialog-confirm').onclick = () => {
-            const value = modal.querySelector('#subject-select-dialog').value;
-            modal.remove();
-            resolve(value);
+        // 1. Shuffle Question Order (Part 1, 2, 3)
+        if (examData.part1) shuffle(examData.part1);
+        if (examData.part2) shuffle(examData.part2);
+        if (examData.part3) shuffle(examData.part3);
+
+        // 2. Shuffle Options for Part 1 & Remap Correct Index
+        if (examData.part1) {
+            examData.part1.forEach(q => {
+                const originalOptions = q.options || [];
+                // Store pairs of {text, isCorrect} to track the answer
+                const optionObjs = originalOptions.map((opt, i) => ({
+                    text: opt,
+                    isCorrect: i === (q.correct ?? 0)
+                }));
+
+                shuffle(optionObjs); // Shuffle the options
+
+                // Reconstruct options and find new correct index
+                q.options = optionObjs.map(o => o.text);
+                const newCorrectIndex = optionObjs.findIndex(o => o.isCorrect);
+                q.correct = newCorrectIndex >= 0 ? newCorrectIndex : 0;
+            });
+        }
+
+        // 3. Shuffle Sub-questions for Part 2
+        if (examData.part2) {
+            examData.part2.forEach(q => {
+                if (q.subQuestions) shuffle(q.subQuestions);
+            });
+        }
+
+        this.currentExam = { meta: examMeta, data: examData, subId: subId };
+        this.answers = {};
+        this.isReviewMode = false;
+        this.startTime = new Date();
+
+        this.renderTemplate('tpl-taking-exam');
+        this.timerEl.classList.remove('hidden');
+
+        this.renderQuestions(examData);
+        this.renderPalette(examData);
+        this.startTimer(examMeta.time * 60);
+
+        this.renderMath();
+    },
+
+    renderQuestions(data) {
+        let globalQIndex = 0;
+        const renderQ = (q, index, type) => {
+            globalQIndex++;
+            const displayId = globalQIndex;
+            const div = document.createElement('div');
+            const uniqueId = `${type}_${q.id}`;
+            div.id = `q-${uniqueId}`;
+            div.dataset.type = type;
+            div.className = 'bg-white dark:bg-slate-800 p-5 md:p-8 rounded-3xl border border-slate-100 dark:border-slate-700 shadow-soft question-card';
+
+            let content = `
+                <div class="mb-4 md:mb-6 font-medium text-slate-800 dark:text-white flex gap-4">
+                    <div class="shrink-0 w-10 h-10 bg-blue-100 dark:bg-blue-900/30 text-blue-700 dark:text-blue-400 rounded-xl flex items-center justify-center font-bold shadow-sm">${displayId}</div>
+                    <span class="pt-1.5 leading-relaxed font-question dynamic-text">${q.text}</span>
+                </div>`;
+
+            if (type === 1) {
+                content += `<div class="grid grid-cols-1 md:grid-cols-2 gap-3 md:gap-4 items-start">
+                    ${q.options.map((opt, i) => `
+                        <label class="cursor-pointer group relative option-label" data-idx="${i}">
+                            <input type="radio" name="q_${uniqueId}" value="${i}" class="peer sr-only option-radio" onchange="app.handleAnswer(1, ${q.id}, ${i})" ${this.isReviewMode ? 'disabled' : ''}>
+                            <div class="p-3 md:p-4 rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 hover:bg-slate-50 dark:hover:bg-slate-700 transition-all flex items-center">
+                                <div class="option-dot-outer w-6 h-6 rounded-full border-2 border-slate-300 dark:border-slate-500 mr-3 flex items-center justify-center shrink-0">
+                                    <div class="option-dot-inner w-2.5 h-2.5 bg-white rounded-full"></div>
+                                </div>
+                                <span class="font-medium text-slate-600 dark:text-slate-300 group-hover:text-slate-800 dark:group-hover:text-white font-question dynamic-text text-left break-words w-full">${opt}</span>
+                            </div>
+                        </label>`).join('')}</div>`;
+            } else if (type === 2) {
+                content += `<div class="space-y-3 md:space-y-4">
+                    ${q.subQuestions.map(sub => `
+                        <div class="flex items-center justify-between p-3 md:p-4 rounded-2xl bg-slate-50/80 dark:bg-slate-700/30 border border-slate-100 dark:border-slate-700 transition-colors sub-question-row" data-sub="${sub.id}">
+                            <div class="flex-1 pr-4 text-slate-700 dark:text-slate-300 font-question dynamic-text"><span class="font-bold mr-2 text-indigo-600 dark:text-indigo-400 font-sans">${sub.id})</span> ${sub.text}</div>
+                            <div class="flex bg-white dark:bg-slate-800 rounded-lg p-1 border border-slate-200 dark:border-slate-600 shadow-sm shrink-0 h-fit self-center">
+                                <button onclick="app.handleTFAnswer(${q.id}, '${sub.id}', true, this)" class="tf-btn w-14 md:w-16 py-1.5 md:py-2 text-xs md:text-sm font-bold rounded-md text-slate-500 dark:text-slate-400 hover:bg-slate-50 dark:hover:bg-slate-700" ${this.isReviewMode ? 'disabled' : ''}>ĐÚNG</button>
+                                <button onclick="app.handleTFAnswer(${q.id}, '${sub.id}', false, this)" class="tf-btn w-14 md:w-16 py-1.5 md:py-2 text-xs md:text-sm font-bold rounded-md text-slate-500 dark:text-slate-400 hover:bg-slate-50 dark:hover:bg-slate-700" ${this.isReviewMode ? 'disabled' : ''}>SAI</button>
+                            </div>
+                        </div>`).join('')}</div>`;
+            } else if (type === 3) {
+                content += `<div class="relative">
+                    <input type="text" id="input-${uniqueId}" oninput="app.handleAnswer(3, ${q.id}, this.value)" placeholder="Nhập đáp án..." class="w-full md:w-2/3 p-3 md:p-4 pl-5 border border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-900 rounded-xl focus:ring-4 focus:ring-emerald-100 dark:focus:ring-emerald-900 focus:border-emerald-500 outline-none transition-all font-medium text-lg text-slate-800 dark:text-white placeholder:text-slate-400 font-question" ${this.isReviewMode ? 'disabled' : ''}>
+                    ${this.isReviewMode ? `<div class="mt-2 text-sm font-bold text-emerald-600">Đáp án đúng: ${q.correct}</div>` : ''}
+                </div>`;
+            }
+            div.innerHTML = content;
+            return div;
         };
-    });
-}
 
-/**
- * Handle export current exam to JSON
- */
-function handleExport() {
-    if (!state.currentExamId) {
-        showToast('Chưa chọn bài thi để xuất', 'error');
-        return;
+        const p1 = document.getElementById('part-1-questions');
+        const p2 = document.getElementById('part-2-questions');
+        const p3 = document.getElementById('part-3-questions');
+
+        if (data.part1.length) data.part1.forEach(q => p1.appendChild(renderQ(q, 0, 1))); else document.getElementById('part-1-container').classList.add('hidden');
+        if (data.part2.length) data.part2.forEach(q => p2.appendChild(renderQ(q, 0, 2))); else document.getElementById('part-2-container').classList.add('hidden');
+        if (data.part3.length) data.part3.forEach(q => p3.appendChild(renderQ(q, 0, 3))); else document.getElementById('part-3-container').classList.add('hidden');
+    },
+
+    renderPalette(data) {
+        let globalQIndex = 0;
+        const createBtn = (id, type, isMobile) => {
+            globalQIndex++;
+            const uniqueId = `${type}_${id}`;
+            const btnId = isMobile ? `mob-pal-btn-${uniqueId}` : `pal-btn-${uniqueId}`;
+            return `<button id="${btnId}" onclick="document.getElementById('q-${uniqueId}').scrollIntoView({behavior: 'smooth', block: 'center'})" class="question-nav-item w-full aspect-square flex items-center justify-center rounded-xl border border-slate-200 dark:border-slate-600 text-sm font-bold text-slate-500 dark:text-slate-400 bg-white dark:bg-slate-800">${globalQIndex}</button>`;
+        };
+        const allQuestions = [
+            ...data.part1.map(q => ({ id: q.id, type: 1 })),
+            ...data.part2.map(q => ({ id: q.id, type: 2 })),
+            ...data.part3.map(q => ({ id: q.id, type: 3 }))
+        ];
+        // We need to render independent lists for desktop and mobile because the counter increments
+
+        // Reset and render for Desktop
+        globalQIndex = 0;
+        document.getElementById('question-palette').innerHTML = allQuestions.map(q => createBtn(q.id, q.type, false)).join('');
+
+        // Reset and render for Mobile
+        globalQIndex = 0;
+        document.getElementById('mobile-palette-grid').innerHTML = allQuestions.map(q => createBtn(q.id, q.type, true)).join('');
+    },
+
+    handleAnswer(part, qId, value) {
+        if (this.isReviewMode) return;
+        const key = `${part}_${qId}`;
+        if (!this.answers[key]) this.answers[key] = {};
+        this.answers[key].val = value;
+        this.answers[key].part = part;
+        this.updatePalette(key, value !== "" && value !== undefined);
+    },
+
+    handleTFAnswer(qId, subId, isTrue, btnEl) {
+        if (this.isReviewMode) return;
+        const key = `2_${qId}`;
+        if (!this.answers[key]) this.answers[key] = { part: 2, sub: {} };
+        if (!this.answers[key].sub) this.answers[key].sub = {};
+        this.answers[key].sub[subId] = isTrue;
+
+        const parent = btnEl.parentElement;
+        parent.querySelectorAll('.tf-btn').forEach(b => {
+            b.classList.remove('active-tf', 'bg-blue-600', 'text-white');
+            b.classList.add('text-slate-500', 'dark:text-slate-400');
+        });
+        if (btnEl.classList.contains('active-tf')) {
+            // Already active? usually logic is simple toggle, here we set
+        }
+        btnEl.classList.remove('text-slate-500', 'dark:text-slate-400');
+        btnEl.classList.add('active-tf', 'bg-blue-600', 'text-white');
+
+        const ansCount = Object.keys(this.answers[key].sub).length;
+        // In this logic, update palette if at least one is answered? or all?
+        // Original logic checked against qData req.
+        // Let's rely on simple check for now or restore the full check.
+        // To query full check we need qData.
+
+        const qData = this.currentExam.data.part2.find(q => q.id === qId);
+        const req = qData ? qData.subQuestions.map(s => s.id) : [];
+        const ans = Object.keys(this.answers[key].sub);
+        this.updatePalette(key, req.every(k => ans.includes(k)));
+    },
+
+    updatePalette(uniqueId, isAnswered) {
+        [`pal-btn-${uniqueId}`, `mob-pal-btn-${uniqueId}`].forEach(id => {
+            const el = document.getElementById(id);
+            if (el) isAnswered ? el.classList.add('answered') : el.classList.remove('answered');
+        });
+    },
+
+    startTimer(duration) {
+        let timer = duration;
+        const updateDisplay = () => {
+            const minutes = parseInt(timer / 60, 10);
+            const seconds = parseInt(timer % 60, 10);
+            this.timerEl.textContent = (minutes < 10 ? "0" + minutes : minutes) + ":" + (seconds < 10 ? "0" + seconds : seconds);
+            if (--timer < 0) { this.stopTimer(); alert("Hết giờ!"); this.submitExamLogic(); }
+        };
+        updateDisplay();
+        this.timerInterval = setInterval(updateDisplay, 1000);
+    },
+
+    stopTimer() { if (this.timerInterval) clearInterval(this.timerInterval); },
+
+    toggleSettings() { document.getElementById('settings-modal').classList.toggle('hidden'); },
+
+    submitExam() { document.getElementById('submit-confirm-modal').classList.remove('hidden'); },
+
+    confirmSubmit() {
+        document.getElementById('submit-confirm-modal').classList.add('hidden');
+        this.submitExamLogic();
+    },
+
+    submitExamLogic() {
+        this.stopTimer();
+        this.endTime = new Date();
+        const durationSeconds = Math.floor((this.endTime - this.startTime) / 1000);
+
+        const data = this.currentExam.data;
+        let maxScore = 0;
+        let earnedScore = 0;
+        let correctCount = 0;
+        let totalQuestions = data.part1.length + data.part2.length + data.part3.length;
+        let wrongCount = 0;
+
+        // Grading
+        maxScore += data.part1.length * 0.25;
+        data.part1.forEach(q => {
+            const key = `1_${q.id}`;
+            if (this.answers[key]?.val == q.correct) { earnedScore += 0.25; correctCount++; }
+        });
+
+        maxScore += data.part2.length * 1.0;
+        data.part2.forEach(q => {
+            const key = `2_${q.id}`;
+            let qCorrectSub = 0;
+            if (this.answers[key]?.sub) {
+                q.subQuestions.forEach(sub => {
+                    if (this.answers[key].sub[sub.id] === sub.correct) qCorrectSub++;
+                });
+            }
+            if (qCorrectSub === 1) earnedScore += 0.1;
+            if (qCorrectSub === 2) earnedScore += 0.25;
+            if (qCorrectSub === 3) earnedScore += 0.5;
+            if (qCorrectSub === 4) { earnedScore += 1.0; correctCount++; }
+        });
+
+        maxScore += data.part3.length * 0.25;
+        data.part3.forEach(q => {
+            const key = `3_${q.id}`;
+            const userVal = String(this.answers[key]?.val || "").trim().toLowerCase();
+            const correctVal = String(q.correct).trim().toLowerCase();
+            // Basic matching, could be improved
+            if (userVal === correctVal) { earnedScore += 0.25; correctCount++; }
+        });
+
+        const finalScore = maxScore > 0 ? (earnedScore / maxScore) * 10 : 0;
+        wrongCount = totalQuestions - correctCount;
+
+        // Update Statistics
+        this.updateStats(this.currentExam.meta.id, finalScore, durationSeconds);
+
+        // Show Result
+        const minutes = Math.floor(durationSeconds / 60);
+        const seconds = durationSeconds % 60;
+        const timeStr = `${minutes} phút ${seconds} giây`;
+
+        this.renderTemplate('tpl-result');
+        this.timerEl.classList.add('hidden');
+
+        document.getElementById('result-subject-name').innerText = this.currentExam.meta.title;
+        document.getElementById('score-display').innerText = finalScore.toFixed(2);
+        document.getElementById('result-time').innerText = timeStr;
+        document.getElementById('result-correct').innerText = `${correctCount}/${totalQuestions}`;
+        document.getElementById('result-wrong').innerText = `${wrongCount}/${totalQuestions}`;
+    },
+
+    reviewExam() {
+        this.isReviewMode = true;
+        this.renderTemplate('tpl-taking-exam');
+        document.getElementById('desktop-palette-sidebar').classList.add('hidden');
+        document.getElementById('mobile-footer').classList.add('hidden');
+        document.getElementById('review-controls').classList.remove('hidden');
+
+        this.renderQuestions(this.currentExam.data);
+        this.renderMath();
+
+        const data = this.currentExam.data;
+        const setStatus = (id, isCorrect) => {
+            const el = document.getElementById(`q-${id}`);
+            el.dataset.status = isCorrect ? 'correct' : 'wrong';
+            el.classList.add(isCorrect ? 'border-green-200' : 'border-red-200');
+            if (isCorrect) el.classList.add('dark:border-green-900');
+            else el.classList.add('dark:border-red-900');
+        };
+
+        data.part1.forEach(q => {
+            const userVal = this.answers[q.id]?.val;
+            const isCorrect = userVal == q.correct;
+            setStatus(q.id, isCorrect);
+            const inputs = document.querySelectorAll(`input[name="q${q.id}"]`);
+            inputs.forEach(inp => {
+                const val = parseInt(inp.value);
+                const wrapper = inp.nextElementSibling;
+                if (val === q.correct) wrapper.classList.add('review-correct');
+                if (val === userVal && val !== q.correct) wrapper.classList.add('review-wrong');
+                if (val === userVal) inp.checked = true;
+            });
+        });
+
+        data.part2.forEach(q => {
+            const userSub = this.answers[q.id]?.sub || {};
+            let fullyCorrect = true;
+            q.subQuestions.forEach(sub => {
+                const userAns = userSub[sub.id];
+                const row = document.querySelector(`#q-${q.id} .sub-question-row[data-sub="${sub.id}"]`);
+                if (userAns !== sub.correct) { fullyCorrect = false; row.classList.add('bg-red-50', 'dark:bg-red-900/10'); }
+                else { row.classList.add('bg-green-50', 'dark:bg-green-900/10'); }
+                const btns = row.querySelectorAll('.tf-btn');
+                if (userAns === true) btns[0].classList.add(sub.correct === true ? 'selected-true' : 'selected-false');
+                if (userAns === false) btns[1].classList.add(sub.correct === false ? 'selected-true' : 'selected-false');
+                if (userAns !== sub.correct) {
+                    const correctBtn = sub.correct ? btns[0] : btns[1];
+                    correctBtn.style.border = "2px solid #10b981";
+                }
+            });
+            setStatus(q.id, fullyCorrect);
+        });
+
+        data.part3.forEach(q => {
+            const userVal = String(this.answers[q.id]?.val || "").trim().toLowerCase();
+            const correctVal = String(q.correct).trim().toLowerCase();
+            const isCorrect = userVal === correctVal;
+            setStatus(q.id, isCorrect);
+            const inp = document.getElementById(`input-${q.id}`);
+            inp.value = this.answers[q.id]?.val || "";
+            if (isCorrect) inp.classList.add('border-green-500', 'bg-green-50');
+            else inp.classList.add('border-red-500', 'bg-red-50');
+        });
+    },
+
+    filterReview(type) {
+        document.querySelectorAll('.filter-btn').forEach(b => {
+            if (b.dataset.filter === type) b.classList.add('ring-2', 'ring-offset-2', 'ring-blue-400');
+            else b.classList.remove('ring-2', 'ring-offset-2', 'ring-blue-400');
+        });
+        const cards = document.querySelectorAll('.question-card');
+        cards.forEach(card => {
+            const status = card.dataset.status;
+            if (type === 'all') card.classList.remove('hidden');
+            else if (type === 'correct') { if (status === 'correct') card.classList.remove('hidden'); else card.classList.add('hidden'); }
+            else if (type === 'wrong') { if (status === 'wrong') card.classList.remove('hidden'); else card.classList.add('hidden'); }
+        });
     }
+};
 
-    const exam = state.exams.find(e => e.id === state.currentExamId);
-    if (!exam) {
-        showToast('Không tìm thấy bài thi', 'error');
-        return;
-    }
-
-    // Create export data (exclude Firebase-specific fields)
-    const exportData = {
-        subjectId: exam.subjectId,
-        title: exam.title,
-        time: exam.time,
-        part1: exam.part1 || [],
-        part2: exam.part2 || [],
-        part3: exam.part3 || []
-    };
-
-    // Generate filename
-    const slug = (exam.title || 'exam')
-        .toLowerCase()
-        .normalize('NFD').replace(/[\u0300-\u036f]/g, '') // Remove diacritics
-        .replace(/[^a-z0-9]+/g, '_')
-        .replace(/^_|_$/g, '')
-        .substring(0, 50);
-    const filename = `${exam.subjectId}_${slug}.json`;
-
-    // Download
-    const blob = new Blob([JSON.stringify(exportData, null, 2)], { type: 'application/json' });
-    const url = URL.createObjectURL(blob);
-    const a = document.createElement('a');
-    a.href = url;
-    a.download = filename;
-    document.body.appendChild(a);
-    a.click();
-    document.body.removeChild(a);
-    URL.revokeObjectURL(url);
-
-    showToast(`Đã xuất: ${filename}`);
-}
-
-// ============================================================
-// START
-// ============================================================
-
-init();
+// Export app and musicPlayer for manual initialization
+window.app = app;
+window.musicPlayer = musicPlayer;
