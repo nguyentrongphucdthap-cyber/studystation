@@ -754,21 +754,22 @@ async function handleFileImport(e) {
 }
 
 /**
- * Extract text from Image using Tesseract.js
+ * Extract text from Image using Tesseract.js (Vietnamese OCR)
  */
 async function extractTextFromImage(file) {
-    showToast('Đang đọc chữ từ hình ảnh...', 'info');
+    showToast('Đang OCR hình ảnh...', 'info');
     const worker = await Tesseract.createWorker('vie');
+    await worker.setParameters({ preserve_interword_spaces: '1' });
     const ret = await worker.recognize(file);
     await worker.terminate();
-    return ret.data.text;
+    return cleanGlobalNoise(ret.data.text);
 }
 
 /**
- * Extract text from PDF using PDF.js
+ * Extract text from PDF using PDF.js with image extraction
  */
 async function extractTextFromPDF(file) {
-    showToast('Đang đọc file PDF...', 'info');
+    showToast('Đang phân tích PDF...', 'info');
     const arrayBuffer = await file.arrayBuffer();
     const pdf = await pdfjsLib.getDocument({ data: arrayBuffer }).promise;
     let fullText = '';
@@ -776,11 +777,60 @@ async function extractTextFromPDF(file) {
     for (let i = 1; i <= pdf.numPages; i++) {
         showToast(`Đang đọc trang ${i}/${pdf.numPages}...`, 'info');
         const page = await pdf.getPage(i);
+
+        // 1. Get Text Content
         const textContent = await page.getTextContent();
-        const pageText = textContent.items.map(item => item.str).join(' ');
-        fullText += pageText + '\n';
+
+        // 2. Sort text items by Y position (top to bottom), then X (left to right)
+        const items = textContent.items.sort((a, b) => {
+            const yDiff = b.transform[5] - a.transform[5];
+            if (Math.abs(yDiff) > 5) return yDiff; // Different lines
+            return a.transform[4] - b.transform[4]; // Same line, sort by X
+        });
+
+        // 3. Build page text with proper line breaks
+        let pageText = '';
+        let lastY = -1;
+
+        for (const item of items) {
+            const currentY = item.transform[5];
+            if (lastY !== -1 && Math.abs(currentY - lastY) > 10) {
+                pageText += '\n'; // New line when Y changes significantly
+            } else if (lastY !== -1) {
+                pageText += ' ';
+            }
+            pageText += item.str;
+            lastY = currentY;
+        }
+
+        // 4. Try to extract images from page
+        try {
+            const ops = await page.getOperatorList();
+            const pageImages = [];
+
+            for (let j = 0; j < ops.fnArray.length; j++) {
+                if (ops.fnArray[j] === pdfjsLib.OPS.paintImageXObject) {
+                    const imgName = ops.argsArray[j][0];
+                    try {
+                        const imgObj = await page.objs.get(imgName);
+                        if (imgObj && imgObj.width > 50 && imgObj.height > 50) {
+                            // Filter out small icons
+                            pageImages.push(`[Hình ảnh ${pageImages.length + 1}]`);
+                        }
+                    } catch (e) { /* ignore image errors */ }
+                }
+            }
+
+            // Append image markers at end of page
+            if (pageImages.length > 0) {
+                pageText += '\n' + pageImages.join('\n');
+            }
+        } catch (e) { /* ignore ops errors */ }
+
+        fullText += pageText + '\n\n';
     }
-    return fullText;
+
+    return cleanGlobalNoise(fullText);
 }
 
 /**
@@ -790,7 +840,23 @@ async function extractTextFromDocx(file) {
     showToast('Đang đọc file Word...', 'info');
     const arrayBuffer = await file.arrayBuffer();
     const result = await mammoth.extractRawText({ arrayBuffer: arrayBuffer });
-    return result.value;
+    return cleanGlobalNoise(result.value);
+}
+
+/**
+ * Clean common noise from extracted text (headers, footers, page numbers)
+ */
+function cleanGlobalNoise(text) {
+    return text
+        // Page numbers
+        .replace(/Trang\s+\d+(\/\d+)?/gi, '')
+        // Common headers
+        .replace(/(Sở GD&ĐT|Sở Giáo dục|Trường THPT|Mã đề|Năm học|Thời gian làm bài).*$/gim, '')
+        // Exam headers
+        .replace(/(ĐỀ THI|ĐỀ KIỂM TRA|KIỂM TRA|BÀI KIỂM TRA|ĐỀ CƯƠNG|ĐỀ ÔN TẬP).*$/gim, '')
+        // Multiple blank lines -> single
+        .replace(/\n{3,}/g, '\n\n')
+        .trim();
 }
 
 /**
