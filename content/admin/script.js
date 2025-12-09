@@ -347,9 +347,11 @@ function renderQuestionsPart3(questions) {
 function createPart1QuestionHTML(q, idx) {
     const options = q.options || ['', '', '', ''];
     const correctIdx = q.correct ?? 0;
+    // Use unique question ID for radio button name to prevent conflicts
+    const uniqueQId = q.id || `q${Date.now()}_${idx}`;
 
     return `
-        <div class="question-block border border-gray-200 rounded-xl p-4 bg-white shadow-sm" data-idx="${idx}">
+        <div class="question-block border border-gray-200 rounded-xl p-4 bg-white shadow-sm" data-idx="${idx}" data-qid="${uniqueQId}">
             <div class="flex items-center justify-between gap-2 mb-4">
                 <div class="flex items-center gap-2">
                     <span class="w-8 h-8 bg-gradient-to-br from-blue-500 to-blue-600 text-white text-sm font-bold rounded-lg flex items-center justify-center shadow-sm">C${q.id || idx + 1}</span>
@@ -369,7 +371,7 @@ function createPart1QuestionHTML(q, idx) {
                     <div class="grid grid-cols-1 sm:grid-cols-2 gap-2">
                         ${options.map((opt, i) => `
                             <label class="option-card cursor-pointer group">
-                                <input type="radio" name="correct-${idx}" value="${i}" ${correctIdx === i ? 'checked' : ''} class="q-correct sr-only">
+                                <input type="radio" name="correct-${uniqueQId}" value="${i}" ${correctIdx === i ? 'checked' : ''} class="q-correct sr-only">
                                 <div class="option-content flex items-center gap-3 p-3 border-2 rounded-xl transition-all ${correctIdx === i ? 'border-emerald-500 bg-emerald-50' : 'border-gray-200 hover:border-blue-300 hover:bg-blue-50'}">
                                     <span class="option-badge w-7 h-7 rounded-lg flex items-center justify-center text-sm font-bold shrink-0 transition-colors ${correctIdx === i ? 'bg-emerald-500 text-white' : 'bg-gray-100 text-gray-600 group-hover:bg-blue-100 group-hover:text-blue-600'}">${String.fromCharCode(65 + i)}</span>
                                     <input type="text" class="q-option flex-1 bg-transparent border-0 text-sm focus:ring-0 outline-none placeholder-gray-400" placeholder="Nhập đáp án ${String.fromCharCode(65 + i)}..." value="${opt || ''}" onclick="event.stopPropagation()">
@@ -794,25 +796,59 @@ function parseExamText(text, fileName) {
     // 2. MATH/CHEMISTRY FORMATTING FOR MATHJAX
     // ============================================
 
-    // Superscripts: x^2 -> $x^{2}$
-    cleanText = cleanText.replace(/([a-zA-Z])(\^)(\d+)/g, '$$$1^{$3}$$');
+    // Superscripts: x^2, x^3, x^n -> $x^{2}$
+    cleanText = cleanText.replace(/([a-zA-Z])\^(\d+|[a-zA-Z])/g, '\$$$1^{$2}\$$');
 
-    // Chemistry formulas: H2O, NaCl, H2SO4, etc.
-    cleanText = cleanText.replace(/\b([A-Z][a-z]?)(\d+)([A-Z][a-z]?\d*)*\b/g, (match) => {
-        if (/^[A-Z]\d+$/.test(match) && match.length <= 3) return match;
-        return `$\\ce{${match}}$`;
+    // Subscripts for variables: x_1, a_n -> $x_{1}$
+    cleanText = cleanText.replace(/([a-zA-Z])_(\d+|[a-zA-Z])/g, '\$$$1_{$2}\$$');
+
+    // Chemistry formulas with better detection: H2O, H2SO4, NaCl, Fe2O3, CO2, etc.
+    // Pattern: Capital letter, optional lowercase, then number, can repeat
+    cleanText = cleanText.replace(/\b([A-Z][a-z]?\d*(?:[A-Z][a-z]?\d*)+)\b/g, (match) => {
+        // Check if it looks like a chemistry formula (has numbers after elements)
+        if (/[A-Z][a-z]?\d/.test(match) || /^(?:H2O|CO2|NaCl|KCl|HCl|NaOH|KOH|H2SO4|HNO3|H3PO4|CaCO3|NaHCO3|NH3|CH4|C2H5OH|C6H12O6)$/i.test(match)) {
+            return `\$\\ce{${match}}\$`;
+        }
+        return match;
     });
 
-    // Fractions: 1/2 -> $\frac{1}{2}$
-    cleanText = cleanText.replace(/(\d+)\s*\/\s*(\d+)/g, '$\\frac{$1}{$2}$');
+    // Simple element with subscript: O2, N2, Cl2, H2
+    cleanText = cleanText.replace(/\b([A-Z][a-z]?)(\d)\b(?![A-Z])/g, (match, elem, num) => {
+        if (/^[OHNC]$/.test(elem) || /^[A-Z][a-z]$/.test(elem)) {
+            return `\$\\ce{${match}}\$`;
+        }
+        return match;
+    });
 
-    // Square roots: sqrt(x) or căn(x) -> $\sqrt{x}$
-    cleanText = cleanText.replace(/(?:sqrt|căn)\s*\(([^)]+)\)/gi, '$\\sqrt{$1}$');
+    // Fractions: 1/2, 3/4 -> $\frac{1}{2}$
+    cleanText = cleanText.replace(/(\d+)\s*\/\s*(\d+)/g, '\$\\frac{$1}{$2}\$');
+
+    // Square roots: sqrt(x), căn(x), √x -> $\sqrt{x}$
+    cleanText = cleanText.replace(/(?:sqrt|căn)\s*\(([^)]+)\)/gi, '\$\\sqrt{$1}\$');
+    cleanText = cleanText.replace(/√(\d+|[a-zA-Z])/g, '\$\\sqrt{$1}\$');
+
+    // Greek letters
+    const greekMap = {
+        'alpha': '\\alpha', 'beta': '\\beta', 'gamma': '\\gamma', 'delta': '\\delta',
+        'epsilon': '\\epsilon', 'theta': '\\theta', 'lambda': '\\lambda', 'mu': '\\mu',
+        'pi': '\\pi', 'sigma': '\\sigma', 'omega': '\\omega',
+        'α': '\\alpha', 'β': '\\beta', 'γ': '\\gamma', 'δ': '\\delta',
+        'θ': '\\theta', 'λ': '\\lambda', 'μ': '\\mu', 'π': '\\pi', 'σ': '\\sigma', 'ω': '\\omega'
+    };
+    Object.entries(greekMap).forEach(([key, val]) => {
+        cleanText = cleanText.replace(new RegExp(`\\b${key}\\b`, 'gi'), `\$${val}\$`);
+    });
 
     // Common math symbols
-    cleanText = cleanText.replace(/≤/g, '$\\leq$').replace(/≥/g, '$\\geq$')
-        .replace(/≠/g, '$\\neq$').replace(/±/g, '$\\pm$')
-        .replace(/→/g, '$\\rightarrow$').replace(/π/g, '$\\pi$');
+    cleanText = cleanText
+        .replace(/≤/g, '\$\\leq\$').replace(/≥/g, '\$\\geq\$')
+        .replace(/≠/g, '\$\\neq\$').replace(/±/g, '\$\\pm\$')
+        .replace(/→/g, '\$\\rightarrow\$').replace(/←/g, '\$\\leftarrow\$')
+        .replace(/↔/g, '\$\\leftrightarrow\$')
+        .replace(/∞/g, '\$\\infty\$').replace(/∈/g, '\$\\in\$')
+        .replace(/⊂/g, '\$\\subset\$').replace(/∪/g, '\$\\cup\$').replace(/∩/g, '\$\\cap\$')
+        .replace(/∑/g, '\$\\sum\$').replace(/∏/g, '\$\\prod\$')
+        .replace(/∫/g, '\$\\int\$');
 
     // ============================================
     // 3. SPLIT INTO INDIVIDUAL QUESTIONS
@@ -849,48 +885,74 @@ function parseExamText(text, fileName) {
     questions.forEach((q) => {
         let content = q.content.replace(/^(?:Câu|Question|Bài)\s*\d+\s*[:.)]|^\s*\d+\s*[.)]\s*/i, '').trim();
 
-        // --- TRUE/FALSE: lowercase a) b) c) d) sub-items ---
-        const tfSubRegex = /(?:^|\s)([a-d])\s*[.)]\s*/gi;
+        // --- TRUE/FALSE: lowercase a) b) c) d) sub-items with Đ/S markers ---
+        // Enhanced pattern to detect True/False questions
+        const tfSubRegex = /(?:^|[\s\n])([a-d])\s*[.):]\s*/gi;
         const tfMatches = [...content.matchAll(tfSubRegex)];
 
-        if (tfMatches.length >= 2 && tfMatches.length <= 4) {
+        // Check for True/False indicators: (Đ), (S), [Đúng], [Sai], - Đúng, - Sai
+        const hasTFIndicators = /[(\[][ĐS](?:úng|ai)?[)\]]|[\-–]\s*(?:Đúng|Sai|Đ|S)\b/i.test(content);
+
+        if (tfMatches.length >= 2 && tfMatches.length <= 4 && hasTFIndicators) {
             const subQuestions = [];
             const subIds = ['a', 'b', 'c', 'd'];
-            const parts = content.split(/(?:^|\s)[a-d]\s*[.)]\s*/i);
+
+            // Better split for sub-questions
+            const parts = content.split(/(?:^|[\s\n])([a-d])\s*[.):]\s*/i);
             const mainText = parts[0].trim();
 
-            for (let i = 1; i < parts.length && i <= 4; i++) {
-                let subText = parts[i].trim();
-                let correct = true;
+            // Process pairs: [mainText, 'a', 'content a', 'b', 'content b', ...]
+            for (let i = 1; i < parts.length; i += 2) {
+                const subId = parts[i]?.toLowerCase();
+                let subText = (parts[i + 1] || '').trim();
+                let correct = true; // Default to true if no indicator
 
-                const answerMatch = subText.match(/\s*[(\[]?\s*(Đ|S|Đúng|Sai)\s*[)\]]?\s*$/i);
-                if (answerMatch) {
-                    correct = /^(Đ|Đúng)$/i.test(answerMatch[1]);
-                    subText = subText.replace(/\s*[(\[]?\s*(Đ|S|Đúng|Sai)\s*[)\]]?\s*$/i, '').trim();
+                // Multiple patterns for True/False answers
+                const answerPatterns = [
+                    /\s*[(\[][\s]*(Đ|S|Đúng|Sai)[\s]*[)\]]\s*$/i,  // (Đ), [S], (Đúng), [Sai]
+                    /\s*[\-–]\s*(Đ|S|Đúng|Sai)\s*$/i,              // - Đúng, – Sai
+                    /\s*(Đ|S|Đúng|Sai)\s*$/i                        // Just Đ or S at end
+                ];
+
+                for (const pattern of answerPatterns) {
+                    const answerMatch = subText.match(pattern);
+                    if (answerMatch) {
+                        correct = /^(Đ|Đúng)$/i.test(answerMatch[1]);
+                        subText = subText.replace(pattern, '').trim();
+                        break;
+                    }
                 }
 
-                subQuestions.push({ id: subIds[i - 1], text: subText, correct: correct });
+                if (subId && subIds.includes(subId)) {
+                    subQuestions.push({ id: subId, text: subText, correct: correct });
+                }
             }
 
-            examData.part2.push({
-                id: examData.part2.length + 1,
-                text: mainText,
-                subQuestions: subQuestions
-            });
-            return;
+            // Only classify as Part 2 if we have valid subquestions
+            if (subQuestions.length >= 2) {
+                examData.part2.push({
+                    id: examData.part2.length + 1,
+                    text: mainText,
+                    subQuestions: subQuestions
+                });
+                return;
+            }
         }
 
         // --- MULTIPLE CHOICE: uppercase A. B. C. D. ---
-        const mcOptionRegex = /(?:^|\s)([A-D])\s*[.)]\s*/g;
+        const mcOptionRegex = /(?:^|[\s\n])([A-D])\s*[.):]\s*/g;
         const mcMatches = [...content.matchAll(mcOptionRegex)];
 
         if (mcMatches.length >= 2) {
             const options = ['', '', '', ''];
-            const parts = content.split(/(?:^|\s)[A-D]\s*[.)]\s*/);
+            const parts = content.split(/(?:^|[\s\n])[A-D]\s*[.):]\s*/);
             const questionText = parts[0].trim();
 
             for (let i = 1; i < parts.length && i <= 4; i++) {
-                options[i - 1] = parts[i].trim();
+                // Clean up the option text - remove answer indicators at end
+                let optText = parts[i].trim();
+                optText = optText.replace(/\s*(?:Đáp án|Chọn|ĐA)[:\s]*[A-D]\s*$/i, '').trim();
+                options[i - 1] = optText;
             }
 
             let correctIndex = 0;
