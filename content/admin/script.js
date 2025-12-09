@@ -897,215 +897,315 @@ function handleRawTextClear() {
 }
 
 /**
- * Parse raw text into structured Exam Object (Enhanced Regex Engine)
- * Supports: Multiple Choice (A.B.C.D), True/False (a.b.c.d sub-items), Short Answer (Đáp án:)
+ * Parse raw text into structured Exam Object
+ * COMPLETE REWRITE - Improved accuracy for question type detection
+ * 
+ * Question Types:
+ * - Part 1 (Multiple Choice): Has A. B. C. D. options (uppercase)
+ * - Part 2 (True/False): Has a) b) c) d) sub-items (lowercase)  
+ * - Part 3 (Short Answer): No options, may have "Đáp án:" answer
  */
 function parseExamText(text, fileName) {
     // ============================================
-    // 1. NORMALIZATION
+    // STEP 1: TEXT NORMALIZATION
     // ============================================
     let cleanText = text
-        .replace(/(Sở GD&ĐT|THPT|Trang \d+\/\d+|Mã đề:?\s*\d+|ĐỀ THI|ĐỀ KIỂM TRA)/gi, '')
+        // Remove common headers/footers
+        .replace(/(Sở GD&ĐT|THPT|Trang \d+\/\d+|Mã đề:?\s*\d+|ĐỀ THI|ĐỀ KIỂM TRA|KIỂM TRA|BÀI KIỂM TRA)/gi, '')
+        // Normalize line endings
         .replace(/\r\n/g, '\n')
+        .replace(/\r/g, '\n')
+        // Normalize whitespace (but keep newlines)
         .replace(/[ \t]+/g, ' ')
+        // Remove multiple consecutive newlines
+        .replace(/\n{3,}/g, '\n\n')
         .trim();
 
     // ============================================
-    // 2. MATH/CHEMISTRY FORMATTING FOR MATHJAX
+    // STEP 2: MATH/CHEMISTRY SYMBOL CONVERSION
     // ============================================
-
-    // Superscripts: x^2, x^3, x^n -> $x^{2}$
-    cleanText = cleanText.replace(/([a-zA-Z])\^(\d+|[a-zA-Z])/g, '\$$$1^{$2}\$$');
-
-    // Subscripts for variables: x_1, a_n -> $x_{1}$
-    cleanText = cleanText.replace(/([a-zA-Z])_(\d+|[a-zA-Z])/g, '\$$$1_{$2}\$$');
-
-    // Chemistry formulas with better detection: H2O, H2SO4, NaCl, Fe2O3, CO2, etc.
-    // Pattern: Capital letter, optional lowercase, then number, can repeat
-    cleanText = cleanText.replace(/\b([A-Z][a-z]?\d*(?:[A-Z][a-z]?\d*)+)\b/g, (match) => {
-        // Check if it looks like a chemistry formula (has numbers after elements)
-        if (/[A-Z][a-z]?\d/.test(match) || /^(?:H2O|CO2|NaCl|KCl|HCl|NaOH|KOH|H2SO4|HNO3|H3PO4|CaCO3|NaHCO3|NH3|CH4|C2H5OH|C6H12O6)$/i.test(match)) {
-            return `\$\\ce{${match}}\$`;
-        }
-        return match;
-    });
-
-    // Simple element with subscript: O2, N2, Cl2, H2
-    cleanText = cleanText.replace(/\b([A-Z][a-z]?)(\d)\b(?![A-Z])/g, (match, elem, num) => {
-        if (/^[OHNC]$/.test(elem) || /^[A-Z][a-z]$/.test(elem)) {
-            return `\$\\ce{${match}}\$`;
-        }
-        return match;
-    });
-
-    // Fractions: 1/2, 3/4 -> $\frac{1}{2}$
-    cleanText = cleanText.replace(/(\d+)\s*\/\s*(\d+)/g, '\$\\frac{$1}{$2}\$');
-
-    // Square roots: sqrt(x), căn(x), √x -> $\sqrt{x}$
-    cleanText = cleanText.replace(/(?:sqrt|căn)\s*\(([^)]+)\)/gi, '\$\\sqrt{$1}\$');
-    cleanText = cleanText.replace(/√(\d+|[a-zA-Z])/g, '\$\\sqrt{$1}\$');
-
-    // Greek letters
-    const greekMap = {
-        'alpha': '\\alpha', 'beta': '\\beta', 'gamma': '\\gamma', 'delta': '\\delta',
-        'epsilon': '\\epsilon', 'theta': '\\theta', 'lambda': '\\lambda', 'mu': '\\mu',
-        'pi': '\\pi', 'sigma': '\\sigma', 'omega': '\\omega',
-        'α': '\\alpha', 'β': '\\beta', 'γ': '\\gamma', 'δ': '\\delta',
-        'θ': '\\theta', 'λ': '\\lambda', 'μ': '\\mu', 'π': '\\pi', 'σ': '\\sigma', 'ω': '\\omega'
-    };
-    Object.entries(greekMap).forEach(([key, val]) => {
-        cleanText = cleanText.replace(new RegExp(`\\b${key}\\b`, 'gi'), `\$${val}\$`);
-    });
-
-    // Common math symbols
-    cleanText = cleanText
-        .replace(/≤/g, '\$\\leq\$').replace(/≥/g, '\$\\geq\$')
-        .replace(/≠/g, '\$\\neq\$').replace(/±/g, '\$\\pm\$')
-        .replace(/→/g, '\$\\rightarrow\$').replace(/←/g, '\$\\leftarrow\$')
-        .replace(/↔/g, '\$\\leftrightarrow\$')
-        .replace(/∞/g, '\$\\infty\$').replace(/∈/g, '\$\\in\$')
-        .replace(/⊂/g, '\$\\subset\$').replace(/∪/g, '\$\\cup\$').replace(/∩/g, '\$\\cap\$')
-        .replace(/∑/g, '\$\\sum\$').replace(/∏/g, '\$\\prod\$')
-        .replace(/∫/g, '\$\\int\$');
+    cleanText = convertMathChemSymbols(cleanText);
 
     // ============================================
-    // 3. SPLIT INTO INDIVIDUAL QUESTIONS
+    // STEP 3: SPLIT INTO INDIVIDUAL QUESTIONS
     // ============================================
     const examData = {
         subjectId: null,
         title: `Imported: ${fileName.replace(/\.[^/.]+$/, '')}`,
         time: 50,
-        part1: [], // Multiple Choice
-        part2: [], // True/False
+        part1: [], // Multiple Choice (A.B.C.D)
+        part2: [], // True/False (a.b.c.d)
         part3: []  // Short Answer
     };
 
-    const questionRegex = /(?:Câu|Question|Bài)\s*(\d+)\s*[:.)]|(?:^|\n)\s*(\d+)\s*[.)]/gm;
-    const matches = [...cleanText.matchAll(questionRegex)];
+    // Pattern to find question starts: "Câu 1:", "Câu 1.", "1.", "1)", etc.
+    const questionStartPattern = /(?:^|\n)\s*(?:Câu|Question|Bài)?\s*(\d+)\s*[.:)]\s*/gi;
+    const matches = [...cleanText.matchAll(questionStartPattern)];
 
     if (matches.length === 0) {
-        throw new Error("Không tìm thấy câu hỏi nào (Định dạng: 'Câu 1:', '1.', ...)");
+        throw new Error("Không tìm thấy câu hỏi nào. Định dạng cần có: 'Câu 1:', '1.', '1)', ...");
     }
 
-    const questions = [];
+    // Extract each question's content
+    const rawQuestions = [];
     for (let i = 0; i < matches.length; i++) {
-        const start = matches[i].index;
-        const end = i < matches.length - 1 ? matches[i + 1].index : cleanText.length;
-        const qContent = cleanText.substring(start, end).trim();
-        const qNum = matches[i][1] || matches[i][2];
-        questions.push({ num: parseInt(qNum), content: qContent });
+        const startIdx = matches[i].index;
+        const endIdx = (i < matches.length - 1) ? matches[i + 1].index : cleanText.length;
+        const fullContent = cleanText.substring(startIdx, endIdx).trim();
+        const questionNum = parseInt(matches[i][1]);
+
+        // Remove the question number prefix from content
+        const content = fullContent.replace(/^(?:Câu|Question|Bài)?\s*\d+\s*[.:)]\s*/i, '').trim();
+
+        rawQuestions.push({
+            num: questionNum,
+            content: content,
+            fullContent: fullContent
+        });
     }
 
     // ============================================
-    // 4. CLASSIFY AND PARSE EACH QUESTION
+    // STEP 4: CLASSIFY EACH QUESTION
     // ============================================
+    rawQuestions.forEach((q) => {
+        const classified = classifyQuestion(q.content);
 
-    questions.forEach((q) => {
-        let content = q.content.replace(/^(?:Câu|Question|Bài)\s*\d+\s*[:.)]|^\s*\d+\s*[.)]\s*/i, '').trim();
-
-        // --- TRUE/FALSE: lowercase a) b) c) d) or a b c d sub-items ---
-        // Pattern: a) b) c) d) or a. b. c. d. with lowercase letters = True/False questions
-        const tfSubRegex = /(?:^|[\s\n])([a-d])\s*[.):]\s*/gi;
-        const tfMatches = [...content.matchAll(tfSubRegex)];
-
-        // Check if it has lowercase a-d sub-items (2-4 items) - this is True/False format
-        // Also check there are NO uppercase A-D options (which would be multiple choice)
-        const hasUppercaseOptions = /(?:^|[\s\n])[A-D]\s*[.):]/.test(content);
-
-        if (tfMatches.length >= 2 && tfMatches.length <= 4 && !hasUppercaseOptions) {
-            const subQuestions = [];
-            const subIds = ['a', 'b', 'c', 'd'];
-
-            // Split for sub-questions
-            const parts = content.split(/(?:^|[\s\n])([a-d])\s*[.):]\s*/i);
-            const mainText = parts[0].trim();
-
-            // Process pairs: [mainText, 'a', 'content a', 'b', 'content b', ...]
-            for (let i = 1; i < parts.length; i += 2) {
-                const subId = parts[i]?.toLowerCase();
-                let subText = (parts[i + 1] || '').trim();
-                let correct = true; // Default to true if no indicator
-
-                // Multiple patterns for True/False answers
-                const answerPatterns = [
-                    /\s*[(\[][\s]*(Đ|S|Đúng|Sai)[\s]*[)\]]\s*$/i,  // (Đ), [S], (Đúng), [Sai]
-                    /\s*[\-–]\s*(Đ|S|Đúng|Sai)\s*$/i,              // - Đúng, – Sai
-                    /\s*(Đúng|Sai)\s*$/i,                           // Đúng or Sai at end (full word)
-                    /\s+([ĐS])\s*$/i                                // Single Đ or S at end with space before
-                ];
-
-                for (const pattern of answerPatterns) {
-                    const answerMatch = subText.match(pattern);
-                    if (answerMatch) {
-                        correct = /^(Đ|Đúng)$/i.test(answerMatch[1]);
-                        subText = subText.replace(pattern, '').trim();
-                        break;
-                    }
-                }
-
-                if (subId && subIds.includes(subId)) {
-                    subQuestions.push({ id: subId, text: subText, correct: correct });
-                }
-            }
-
-            // Classify as Part 2 (True/False) if we have valid subquestions
-            if (subQuestions.length >= 2) {
-                examData.part2.push({
-                    id: examData.part2.length + 1,
-                    text: mainText,
-                    subQuestions: subQuestions
-                });
-                return;
-            }
-        }
-
-        // --- MULTIPLE CHOICE: uppercase A. B. C. D. ---
-        const mcOptionRegex = /(?:^|[\s\n])([A-D])\s*[.):]\s*/g;
-        const mcMatches = [...content.matchAll(mcOptionRegex)];
-
-        if (mcMatches.length >= 2) {
-            const options = ['', '', '', ''];
-            const parts = content.split(/(?:^|[\s\n])[A-D]\s*[.):]\s*/);
-            const questionText = parts[0].trim();
-
-            for (let i = 1; i < parts.length && i <= 4; i++) {
-                // Clean up the option text - remove answer indicators at end
-                let optText = parts[i].trim();
-                optText = optText.replace(/\s*(?:Đáp án|Chọn|ĐA)[:\s]*[A-D]\s*$/i, '').trim();
-                options[i - 1] = optText;
-            }
-
-            let correctIndex = 0;
-            const answerMatch = content.match(/(?:Đáp án|Chọn|ĐA)[:\s]*([A-D])/i);
-            if (answerMatch) {
-                correctIndex = answerMatch[1].toUpperCase().charCodeAt(0) - 65;
-            }
-
+        if (classified.type === 'true_false') {
+            examData.part2.push({
+                id: examData.part2.length + 1,
+                text: classified.mainText,
+                subQuestions: classified.subQuestions
+            });
+        } else if (classified.type === 'multiple_choice') {
             examData.part1.push({
                 id: examData.part1.length + 1,
-                text: questionText,
-                options: options,
-                correct: correctIndex
+                text: classified.questionText,
+                options: classified.options,
+                correct: classified.correctIndex
             });
-            return;
+        } else {
+            // Short answer
+            examData.part3.push({
+                id: examData.part3.length + 1,
+                text: classified.questionText,
+                correct: classified.answer || ''
+            });
         }
-
-        // --- SHORT ANSWER: contains "Đáp án:" or no options ---
-        let correctAnswer = '';
-        const saAnswerMatch = content.match(/(?:Đáp án|Kết quả|Trả lời)[:\s]*([^\n.]+)/i);
-        if (saAnswerMatch) {
-            correctAnswer = saAnswerMatch[1].trim();
-            content = content.replace(/(?:Đáp án|Kết quả|Trả lời)[:\s]*[^\n.]+/i, '').trim();
-        }
-
-        examData.part3.push({
-            id: examData.part3.length + 1,
-            text: content,
-            correct: correctAnswer
-        });
     });
 
     return examData;
+}
+
+/**
+ * Convert math and chemistry symbols to LaTeX format
+ */
+function convertMathChemSymbols(text) {
+    let result = text;
+
+    // Superscripts: x^2 -> $x^{2}$
+    result = result.replace(/([a-zA-Z])\^(\d+)/g, '$$$1^{$2}$$');
+
+    // Subscripts: x_1 -> $x_{1}$
+    result = result.replace(/([a-zA-Z])_(\d+)/g, '$$$1_{$2}$$');
+
+    // Common chemistry formulas (specific patterns)
+    const chemFormulas = ['H2O', 'CO2', 'H2SO4', 'HNO3', 'HCl', 'NaOH', 'KOH', 'NaCl', 'KCl',
+        'CaCO3', 'NaHCO3', 'NH3', 'CH4', 'C2H5OH', 'Fe2O3', 'CuSO4',
+        'H3PO4', 'Ca(OH)2', 'Mg(OH)2', 'Al2O3', 'Fe3O4', 'O2', 'N2', 'Cl2', 'H2'];
+    chemFormulas.forEach(formula => {
+        const regex = new RegExp(`\\b${formula}\\b`, 'g');
+        result = result.replace(regex, `$\\ce{${formula}}$`);
+    });
+
+    // Fractions: 1/2 -> $\frac{1}{2}$
+    result = result.replace(/(\d+)\s*\/\s*(\d+)/g, '$\\frac{$1}{$2}$');
+
+    // Square roots: sqrt(...), căn(...), √
+    result = result.replace(/(?:sqrt|căn)\s*\(([^)]+)\)/gi, '$\\sqrt{$1}$');
+    result = result.replace(/√(\d+)/g, '$\\sqrt{$1}$');
+
+    // Math symbols
+    const symbolMap = {
+        '≤': '$\\leq$', '≥': '$\\geq$', '≠': '$\\neq$', '±': '$\\pm$',
+        '→': '$\\rightarrow$', '←': '$\\leftarrow$', '↔': '$\\leftrightarrow$',
+        '∞': '$\\infty$', '∈': '$\\in$', '∉': '$\\notin$',
+        '⊂': '$\\subset$', '∪': '$\\cup$', '∩': '$\\cap$',
+        '∑': '$\\sum$', '∏': '$\\prod$', '∫': '$\\int$',
+        'π': '$\\pi$', 'α': '$\\alpha$', 'β': '$\\beta$', 'γ': '$\\gamma$',
+        'δ': '$\\delta$', 'θ': '$\\theta$', 'λ': '$\\lambda$', 'ω': '$\\omega$'
+    };
+    Object.entries(symbolMap).forEach(([sym, latex]) => {
+        result = result.split(sym).join(latex);
+    });
+
+    return result;
+}
+
+/**
+ * Classify a question into type: multiple_choice, true_false, or short_answer
+ */
+function classifyQuestion(content) {
+    // ========================================
+    // CHECK 1: TRUE/FALSE (lowercase a, b, c, d)
+    // Pattern: a) ... b) ... c) ... d) ... OR a. ... b. ... c. ... d. ...
+    // ========================================
+    const lowercasePattern = /(?:^|[\n\s])([a-d])\s*[.)]\s*/gi;
+    const lowercaseMatches = [...content.matchAll(lowercasePattern)];
+
+    // Must have 2-4 lowercase sub-items and NO uppercase A-D options
+    const hasUppercaseABCD = /(?:^|[\n\s])[A-D]\s*[.)]\s*\S/m.test(content);
+
+    if (lowercaseMatches.length >= 2 && lowercaseMatches.length <= 4 && !hasUppercaseABCD) {
+        return parseTrueFalseQuestion(content, lowercaseMatches);
+    }
+
+    // ========================================
+    // CHECK 2: MULTIPLE CHOICE (uppercase A, B, C, D)
+    // Pattern: A. ... B. ... C. ... D. ... OR A) ... B) ... C) ... D) ...
+    // ========================================
+    const uppercasePattern = /(?:^|[\n\s])([A-D])\s*[.)]\s*/gi;
+    const uppercaseMatches = [...content.matchAll(uppercasePattern)];
+
+    if (uppercaseMatches.length >= 3) {
+        return parseMultipleChoiceQuestion(content, uppercaseMatches);
+    }
+
+    // ========================================
+    // CHECK 3: SHORT ANSWER (fallback)
+    // ========================================
+    return parseShortAnswerQuestion(content);
+}
+
+/**
+ * Parse True/False question with a) b) c) d) sub-items
+ */
+function parseTrueFalseQuestion(content, matches) {
+    const subQuestions = [];
+
+    // Split content by lowercase letter patterns
+    const splitPattern = /(?:^|[\n\s])([a-d])\s*[.)]\s*/i;
+    const parts = content.split(splitPattern);
+
+    // First part is the main question text
+    const mainText = parts[0].trim();
+
+    // Process remaining parts in pairs: [letter, content, letter, content, ...]
+    for (let i = 1; i < parts.length; i += 2) {
+        const letter = parts[i]?.toLowerCase();
+        let subContent = (parts[i + 1] || '').trim();
+
+        if (!letter || !['a', 'b', 'c', 'd'].includes(letter)) continue;
+
+        // Try to extract True/False answer from the sub-content
+        let isCorrect = true; // Default to true
+
+        // Patterns to detect answer indicators
+        const answerPatterns = [
+            { regex: /\s*[([\s]*(Đúng|Đ)[\s]*[)\]]\s*$/i, value: true },
+            { regex: /\s*[([\s]*(Sai|S)[\s]*[)\]]\s*$/i, value: false },
+            { regex: /\s*[-–]\s*(Đúng|Đ)\s*$/i, value: true },
+            { regex: /\s*[-–]\s*(Sai|S)\s*$/i, value: false },
+            { regex: /\s+(Đúng)\s*$/i, value: true },
+            { regex: /\s+(Sai)\s*$/i, value: false }
+        ];
+
+        for (const pattern of answerPatterns) {
+            if (pattern.regex.test(subContent)) {
+                isCorrect = pattern.value;
+                subContent = subContent.replace(pattern.regex, '').trim();
+                break;
+            }
+        }
+
+        subQuestions.push({
+            id: letter,
+            text: subContent,
+            correct: isCorrect
+        });
+    }
+
+    return {
+        type: 'true_false',
+        mainText: mainText,
+        subQuestions: subQuestions
+    };
+}
+
+/**
+ * Parse Multiple Choice question with A. B. C. D. options
+ */
+function parseMultipleChoiceQuestion(content, matches) {
+    const options = ['', '', '', ''];
+
+    // Split content by uppercase letter patterns
+    const splitPattern = /(?:^|[\n\s])[A-D]\s*[.)]\s*/i;
+    const parts = content.split(splitPattern);
+
+    // First part is the question text
+    let questionText = parts[0].trim();
+
+    // Extract options (parts 1-4)
+    for (let i = 1; i < parts.length && i <= 4; i++) {
+        let optionText = parts[i].trim();
+        // Remove trailing answer indicator if present
+        optionText = optionText.replace(/\s*(?:Đáp án|Chọn|ĐA)[:\s]*[A-D]\s*$/i, '').trim();
+        options[i - 1] = optionText;
+    }
+
+    // Try to find the correct answer
+    let correctIndex = 0;
+    const answerPatterns = [
+        /(?:Đáp án|Chọn|ĐA|Answer)[:\s]*([A-D])/i,
+        /\*\s*([A-D])\s*\*/,  // *A*
+        /([A-D])\s*✓/,        // A ✓
+    ];
+
+    for (const pattern of answerPatterns) {
+        const match = content.match(pattern);
+        if (match) {
+            correctIndex = match[1].toUpperCase().charCodeAt(0) - 65; // A=0, B=1, C=2, D=3
+            break;
+        }
+    }
+
+    // Clean question text - remove answer indicator
+    questionText = questionText.replace(/\s*(?:Đáp án|Chọn|ĐA)[:\s]*[A-D]\s*$/i, '').trim();
+
+    return {
+        type: 'multiple_choice',
+        questionText: questionText,
+        options: options,
+        correctIndex: correctIndex
+    };
+}
+
+/**
+ * Parse Short Answer question
+ */
+function parseShortAnswerQuestion(content) {
+    let questionText = content;
+    let answer = '';
+
+    // Try to extract answer
+    const answerPatterns = [
+        /(?:Đáp án|Kết quả|Trả lời|Answer)[:\s]*(.+?)(?:\n|$)/i,
+        /=\s*(.+?)(?:\n|$)/
+    ];
+
+    for (const pattern of answerPatterns) {
+        const match = content.match(pattern);
+        if (match) {
+            answer = match[1].trim();
+            questionText = content.replace(pattern, '').trim();
+            break;
+        }
+    }
+
+    return {
+        type: 'short_answer',
+        questionText: questionText,
+        answer: answer
+    };
 }
 
 
