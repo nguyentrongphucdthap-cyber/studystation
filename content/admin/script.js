@@ -9,6 +9,7 @@
 import {
     initGatekeeper,
     checkIsAdmin,
+    checkIsSuperAdmin,
     onUserChange,
     getAllExams,
     createExam,
@@ -128,10 +129,41 @@ async function init() {
             refs.adminEmail.textContent = user.email;
             refs.mainContent.classList.remove('hidden');
 
+            // Show Students tab for super-admin only
+            if (checkIsSuperAdmin()) {
+                const tabStudents = document.getElementById('tab-students');
+                if (tabStudents) tabStudents.classList.remove('hidden');
+            }
+
+            // Set Practice section as active by default
+            document.getElementById('section-practice')?.classList.add('active');
+
             loadSubjects();
             loadExams();
             bindEvents();
+            bindTabEvents();
         }, 500);
+    });
+}
+
+// Tab switching logic
+function bindTabEvents() {
+    const tabs = document.querySelectorAll('.admin-tab');
+    const sections = document.querySelectorAll('.admin-section');
+
+    tabs.forEach(tab => {
+        tab.addEventListener('click', () => {
+            const targetSection = tab.dataset.tab;
+
+            // Update tab active state
+            tabs.forEach(t => t.classList.remove('active'));
+            tab.classList.add('active');
+
+            // Update section visibility
+            sections.forEach(s => s.classList.remove('active'));
+            const section = document.getElementById(`section-${targetSection}`);
+            if (section) section.classList.add('active');
+        });
     });
 }
 
