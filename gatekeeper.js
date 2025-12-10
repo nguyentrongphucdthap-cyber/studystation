@@ -339,16 +339,25 @@ export async function getExamsBySubject(subjectId) {
 /**
  * Thêm exam mới với ID có cấu trúc: {subjectId}_{timestamp}_{randomCode}
  * Ví dụ: bio_20251207_a1b2c3
+ * Hoặc sử dụng customId nếu được cung cấp
  */
-export async function createExam(examData) {
-    // Generate structured ID
-    const now = new Date();
-    const dateStr = now.toISOString().slice(0, 10).replace(/-/g, ''); // YYYYMMDD
-    const randomCode = Math.random().toString(36).substring(2, 8); // 6 chars
-    const examId = `${examData.subjectId}_${dateStr}_${randomCode}`;
+export async function createExam(examData, customId = null) {
+    let examId;
+
+    // Use custom ID if provided and valid, otherwise auto-generate
+    if (customId && /^[a-zA-Z0-9_-]+$/.test(customId)) {
+        examId = customId;
+    } else {
+        // Generate structured ID
+        const now = new Date();
+        const dateStr = now.toISOString().slice(0, 10).replace(/-/g, ''); // YYYYMMDD
+        const randomCode = Math.random().toString(36).substring(2, 8); // 6 chars
+        examId = `${examData.subjectId}_${dateStr}_${randomCode}`;
+    }
 
     // Generate exam code from title (for display)
     const examCode = generateExamCode(examData.title);
+    const now = new Date();
 
     const examRef = doc(db, 'exams', examId);
     await setDoc(examRef, {
