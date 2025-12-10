@@ -15,7 +15,8 @@ import {
     createExam,
     updateExam,
     deleteExam,
-    getSubjects
+    getSubjects,
+    getAllAllowedUsers
 } from "../../gatekeeper.js";
 
 // ============================================================
@@ -163,8 +164,138 @@ function bindTabEvents() {
             sections.forEach(s => s.classList.remove('active'));
             const section = document.getElementById(`section-${targetSection}`);
             if (section) section.classList.add('active');
+
+            // Load students data when Students tab is clicked
+            if (targetSection === 'students' && checkIsSuperAdmin()) {
+                loadStudents();
+            }
         });
     });
+
+    // Bind refresh students button
+    const btnRefresh = document.getElementById('btn-refresh-students');
+    if (btnRefresh) {
+        btnRefresh.addEventListener('click', loadStudents);
+    }
+}
+
+// ============================================================
+// STUDENTS MANAGEMENT (Super-Admin Only)
+// ============================================================
+
+/**
+ * Format datetime to Vietnam timezone (UTC+7)
+ */
+function formatVietnamTime(isoString) {
+    if (!isoString) return 'Chưa đăng nhập';
+    try {
+        const date = new Date(isoString);
+        return date.toLocaleString('vi-VN', {
+            timeZone: 'Asia/Ho_Chi_Minh',
+            day: '2-digit',
+            month: '2-digit',
+            year: 'numeric',
+            hour: '2-digit',
+            minute: '2-digit',
+            second: '2-digit'
+        });
+    } catch {
+        return isoString;
+    }
+}
+
+/**
+ * Get role badge HTML
+ */
+function getRoleBadge(role) {
+    const roleLower = (role || 'user').toLowerCase();
+    if (roleLower.includes('super-admin')) {
+        return '<span class="px-2 py-1 bg-red-100 text-red-700 text-xs font-bold rounded-full">Super Admin</span>';
+    } else if (roleLower.includes('admin')) {
+        return '<span class="px-2 py-1 bg-yellow-100 text-yellow-700 text-xs font-bold rounded-full">Admin</span>';
+    } else {
+        return '<span class="px-2 py-1 bg-gray-100 text-gray-600 text-xs font-bold rounded-full">User</span>';
+    }
+}
+
+/**
+ * Load and render students/users list
+ */
+async function loadStudents() {
+    const tbody = document.getElementById('students-table-body');
+    const countEl = document.getElementById('students-count');
+
+    if (!tbody) return;
+
+    // Show loading
+    tbody.innerHTML = `
+        <tr>
+            <td colspan="3" class="px-4 py-8 text-center text-gray-400">
+                <div class="flex flex-col items-center gap-2">
+                    <svg class="w-8 h-8 spinner text-blue-500" fill="none" viewBox="0 0 24 24">
+                        <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+                        <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                    </svg>
+                    <span>Đang tải danh sách...</span>
+                </div>
+            </td>
+        </tr>
+    `;
+
+    try {
+        const users = await getAllAllowedUsers();
+
+        // Sort by last_login (most recent first)
+        users.sort((a, b) => {
+            const dateA = a.last_login ? new Date(a.last_login) : new Date(0);
+            const dateB = b.last_login ? new Date(b.last_login) : new Date(0);
+            return dateB - dateA;
+        });
+
+        // Update count
+        if (countEl) countEl.textContent = `${users.length} users`;
+
+        // Render table
+        if (users.length === 0) {
+            tbody.innerHTML = `
+                <tr>
+                    <td colspan="3" class="px-4 py-8 text-center text-gray-400">
+                        Chưa có người dùng nào
+                    </td>
+                </tr>
+            `;
+            return;
+        }
+
+        tbody.innerHTML = users.map(user => `
+            <tr class="hover:bg-gray-50 transition-colors">
+                <td class="px-4 py-3">
+                    <div class="flex items-center gap-2">
+                        <div class="w-8 h-8 bg-blue-100 rounded-full flex items-center justify-center text-blue-600 font-bold text-sm">
+                            ${(user.email || 'U')[0].toUpperCase()}
+                        </div>
+                        <span class="font-medium text-gray-800">${user.email || user.id}</span>
+                    </div>
+                </td>
+                <td class="px-4 py-3">
+                    ${getRoleBadge(user.role)}
+                </td>
+                <td class="px-4 py-3 text-gray-500">
+                    ${formatVietnamTime(user.last_login)}
+                </td>
+            </tr>
+        `).join('');
+
+    } catch (error) {
+        console.error('Load students failed:', error);
+        tbody.innerHTML = `
+            <tr>
+                <td colspan="3" class="px-4 py-8 text-center text-red-500">
+                    Lỗi: ${error.message}
+                </td>
+            </tr>
+        `;
+    }
 }
 
 function loadSubjects() {
