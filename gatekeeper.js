@@ -561,23 +561,12 @@ export async function deleteVocabSet(vocabId) {
 }
 
 // ============================================================
-// 9. STUDENTS CRUD (Super-Admin Only - Collection: students)
+// 9. ALLOWED USERS CRUD (Super-Admin Only)
 // ============================================================
 
 /**
- * Lấy tất cả students từ Firestore (Super-Admin only)
- */
-export async function getAllStudents() {
-    if (!checkIsSuperAdmin()) {
-        throw new Error('Không có quyền truy cập. Chỉ Super-Admin mới có thể xem danh sách học sinh.');
-    }
-    const studentsCol = collection(db, 'students');
-    const snapshot = await getDocs(studentsCol);
-    return snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
-}
-
-/**
  * Lấy tất cả allowed_users (Super-Admin only)
+ * Document ID = email, có field role (ví dụ: "user", "admin", "super-admin")
  */
 export async function getAllAllowedUsers() {
     if (!checkIsSuperAdmin()) {
@@ -585,25 +574,50 @@ export async function getAllAllowedUsers() {
     }
     const usersCol = collection(db, 'allowed_users');
     const snapshot = await getDocs(usersCol);
-    return snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+    return snapshot.docs.map(doc => ({ id: doc.id, email: doc.id, ...doc.data() }));
 }
 
 /**
- * Cập nhật student info (Super-Admin only)
+ * Thêm user mới vào allowed_users (Super-Admin only)
+ * @param {string} email - Email của user (sẽ dùng làm document ID)
+ * @param {string} role - Role của user (ví dụ: "user", "admin", "super-admin")
  */
-export async function updateStudent(studentId, studentData) {
+export async function addAllowedUser(email, role = 'user') {
     if (!checkIsSuperAdmin()) {
-        throw new Error('Không có quyền. Chỉ Super-Admin mới có thể cập nhật thông tin học sinh.');
+        throw new Error('Không có quyền. Chỉ Super-Admin mới có thể thêm người dùng.');
     }
-    const studentRef = doc(db, 'students', studentId);
-    await setDoc(studentRef, {
-        ...studentData,
+    if (!email || !email.includes('@')) {
+        throw new Error('Email không hợp lệ.');
+    }
+    const userRef = doc(db, 'allowed_users', email);
+    await setDoc(userRef, {
+        role: role,
+        createdAt: new Date().toISOString(),
+        updatedAt: new Date().toISOString()
+    });
+    return email;
+}
+
+/**
+ * Cập nhật thông tin user (Super-Admin only)
+ * @param {string} email - Email của user (document ID)
+ * @param {object} userData - Dữ liệu cần cập nhật (ví dụ: { role: 'admin', name: '...' })
+ */
+export async function updateAllowedUser(email, userData) {
+    if (!checkIsSuperAdmin()) {
+        throw new Error('Không có quyền. Chỉ Super-Admin mới có thể cập nhật thông tin người dùng.');
+    }
+    const userRef = doc(db, 'allowed_users', email);
+    await setDoc(userRef, {
+        ...userData,
         updatedAt: new Date().toISOString()
     }, { merge: true });
 }
 
 /**
  * Cập nhật user role (Super-Admin only)
+ * @param {string} email - Email của user
+ * @param {string} newRole - Role mới (ví dụ: "user", "admin", "super-admin")
  */
 export async function updateUserRole(email, newRole) {
     if (!checkIsSuperAdmin()) {
@@ -617,12 +631,13 @@ export async function updateUserRole(email, newRole) {
 }
 
 /**
- * Xóa student (Super-Admin only)
+ * Xóa user khỏi allowed_users (Super-Admin only)
+ * @param {string} email - Email của user cần xóa
  */
-export async function deleteStudent(studentId) {
+export async function deleteAllowedUser(email) {
     if (!checkIsSuperAdmin()) {
-        throw new Error('Không có quyền. Chỉ Super-Admin mới có thể xóa học sinh.');
+        throw new Error('Không có quyền. Chỉ Super-Admin mới có thể xóa người dùng.');
     }
-    const studentRef = doc(db, 'students', studentId);
-    await deleteDoc(studentRef);
+    const userRef = doc(db, 'allowed_users', email);
+    await deleteDoc(userRef);
 }
