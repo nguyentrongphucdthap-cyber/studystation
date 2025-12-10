@@ -198,6 +198,206 @@ function bindEvents() {
 }
 
 // ============================================================
+// RAW TEXT IMPORT (OCR)
+// ============================================================
+
+/**
+ * Handle raw text parse - convert paste text to questions
+ */
+function handleRawTextParse() {
+    const rawTextInput = document.getElementById('raw-text-input');
+    if (!rawTextInput) return;
+
+    const rawText = rawTextInput.value.trim();
+    if (!rawText) {
+        showToast('Vui lòng nhập văn bản để phân tích', 'error');
+        return;
+    }
+
+    try {
+        // Parse raw text into questions
+        const questions = parseRawTextToQuestions(rawText);
+
+        if (questions.part1.length === 0 && questions.part2.length === 0 && questions.part3.length === 0) {
+            showToast('Không tìm thấy câu hỏi nào trong văn bản', 'error');
+            return;
+        }
+
+        // Merge with existing questions
+        state.currentExam.part1 = [...state.currentExam.part1, ...questions.part1];
+        state.currentExam.part2 = [...state.currentExam.part2, ...questions.part2];
+        state.currentExam.part3 = [...state.currentExam.part3, ...questions.part3];
+
+        // Re-render questions
+        renderQuestionsPart1(state.currentExam.part1);
+        renderQuestionsPart2(state.currentExam.part2);
+        renderQuestionsPart3(state.currentExam.part3);
+
+        // Clear input
+        rawTextInput.value = '';
+
+        const totalAdded = questions.part1.length + questions.part2.length + questions.part3.length;
+        showToast(`Đã thêm ${totalAdded} câu hỏi từ văn bản`);
+
+    } catch (error) {
+        console.error('Raw text parse failed:', error);
+        showToast('Lỗi phân tích văn bản: ' + error.message, 'error');
+    }
+}
+
+/**
+ * Parse raw text into structured questions
+ */
+function parseRawTextToQuestions(text) {
+    const result = { part1: [], part2: [], part3: [] };
+
+    // Split by question pattern (Câu 1, Câu 2, etc.)
+    const questionBlocks = text.split(/(?=Câu\s*\d+[.:]\s*)/i);
+
+    for (const block of questionBlocks) {
+        if (!block.trim()) continue;
+
+        // Extract question content
+        const questionMatch = block.match(/Câu\s*\d+[.:]\s*([\s\S]*)/i);
+        if (!questionMatch) continue;
+
+        let content = questionMatch[1].trim();
+
+        // Check for multiple choice (A. B. C. D.)
+        if (/[A-D]\.\s*\S/i.test(content)) {
+            const q = parseMultipleChoice(content);
+            if (q) result.part1.push(q);
+        }
+        // Check for true/false (a) b) c) d))
+        else if (/[a-d]\)\s*\S/i.test(content)) {
+            const q = parseTrueFalse(content);
+            if (q) result.part2.push(q);
+        }
+        // Otherwise short answer
+        else {
+            const q = parseShortAnswer(content);
+            if (q) result.part3.push(q);
+        }
+    }
+
+    return result;
+}
+
+/**
+ * Parse multiple choice question
+ */
+function parseMultipleChoice(content) {
+    // Split into question and options
+    const parts = content.split(/(?=[A-D]\.)/i);
+    const questionText = parts[0]?.trim() || '';
+
+    const options = [];
+    let correctAnswer = '';
+
+    // Extract each option
+    for (let i = 1; i < parts.length && i <= 4; i++) {
+        const optMatch = parts[i].match(/([A-D])\.\s*([\s\S]*)/i);
+        if (optMatch) {
+            options.push(optMatch[2].trim());
+            // Check for correct answer marker
+            if (/\(đúng\)|✓|correct/i.test(optMatch[2])) {
+                correctAnswer = optMatch[1].toUpperCase();
+            }
+        }
+    }
+
+    // Check for answer at end (Đáp án: A)
+    const answerMatch = content.match(/Đáp án[:\s]*([A-D])/i);
+    if (answerMatch) {
+        correctAnswer = answerMatch[1].toUpperCase();
+    }
+
+    return {
+        id: Date.now() + Math.random(),
+        question: convertMathChemSymbols(questionText),
+        A: convertMathChemSymbols(options[0] || ''),
+        B: convertMathChemSymbols(options[1] || ''),
+        C: convertMathChemSymbols(options[2] || ''),
+        D: convertMathChemSymbols(options[3] || ''),
+        answer: correctAnswer || 'A'
+    };
+}
+
+/**
+ * Parse true/false question
+ */
+function parseTrueFalse(content) {
+    // Split into question and statements
+    const parts = content.split(/(?=[a-d]\))/i);
+    const questionText = parts[0]?.trim() || '';
+
+    const statements = [];
+
+    // Extract each statement
+    for (let i = 1; i < parts.length && i <= 4; i++) {
+        const stMatch = parts[i].match(/[a-d]\)\s*([\s\S]*)/i);
+        if (stMatch) {
+            let stText = stMatch[1].trim();
+            let isCorrect = false;
+
+            // Check for correct marker
+            if (/\(đúng\)|✓|Đ\b/i.test(stText)) {
+                isCorrect = true;
+                stText = stText.replace(/\s*\(đúng\)|\s*✓|\s*Đ\b/gi, '').trim();
+            }
+
+            statements.push({
+                text: convertMathChemSymbols(stText),
+                isTrue: isCorrect
+            });
+        }
+    }
+
+    return {
+        id: Date.now() + Math.random(),
+        question: convertMathChemSymbols(questionText),
+        statements: statements.length ? statements : [
+            { text: '', isTrue: false },
+            { text: '', isTrue: false },
+            { text: '', isTrue: false },
+            { text: '', isTrue: false }
+        ]
+    };
+}
+
+/**
+ * Parse short answer question
+ */
+function parseShortAnswer(content) {
+    let answer = '';
+    let question = content;
+
+    // Extract answer if present
+    const answerMatch = content.match(/Đáp án[:\s]*([\s\S]*?)(?:$|(?=\n\n))/i);
+    if (answerMatch) {
+        answer = answerMatch[1].trim();
+        question = content.replace(answerMatch[0], '').trim();
+    }
+
+    return {
+        id: Date.now() + Math.random(),
+        question: convertMathChemSymbols(question),
+        answer: convertMathChemSymbols(answer)
+    };
+}
+
+/**
+ * Handle clear raw text input
+ */
+function handleRawTextClear() {
+    const rawTextInput = document.getElementById('raw-text-input');
+    if (rawTextInput) {
+        rawTextInput.value = '';
+        showToast('Đã xóa văn bản');
+    }
+}
+
+// ============================================================
 // RENDER EXAM LIST
 // ============================================================
 
