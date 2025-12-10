@@ -53,7 +53,7 @@ const refs = {
     btnSave: document.getElementById('btn-save'),
 
     // Form fields
-    examSubject: document.getElementById('exam-subject'),
+    examType: document.getElementById('exam-type'),
     examTime: document.getElementById('exam-time'),
     examTitle: document.getElementById('exam-title'),
     examCustomId: document.getElementById('exam-custom-id'),
@@ -216,7 +216,7 @@ function showEditor(examId = null) {
         if (!exam) return;
 
         refs.editorTitle.textContent = 'Chỉnh sửa E-test';
-        refs.examSubject.value = exam.subjectId || '';
+        refs.examType.value = exam.examType || 'thpt';
         refs.examTime.value = exam.time || 45;
         refs.examTitle.value = exam.title || '';
         refs.examCustomId.value = exam.id || '';
@@ -230,7 +230,7 @@ function showEditor(examId = null) {
     } else {
         // Create new
         refs.editorTitle.textContent = 'Tạo E-test mới';
-        refs.examSubject.value = '';
+        refs.examType.value = 'thpt';
         refs.examTime.value = 45;
         refs.examTitle.value = '';
         refs.examCustomId.value = '';
@@ -515,7 +515,7 @@ function updateTotalQuestions() {
 // ============================================================
 
 async function saveExam() {
-    const subjectId = refs.examSubject?.value || 'english';
+    const examType = refs.examType?.value || 'thpt';
     const title = refs.examTitle.value.trim();
     const time = parseInt(refs.examTime.value) || 45;
     const customId = refs.examCustomId.value.trim();
@@ -529,7 +529,7 @@ async function saveExam() {
     recalculateQuestionIds();
 
     const examData = {
-        subjectId,
+        examType,
         title,
         time,
         sections: state.sections.map(sec => ({
