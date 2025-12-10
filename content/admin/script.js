@@ -353,6 +353,7 @@ function renderQuestionsPart3(questions) {
 function createPart1QuestionHTML(q, idx) {
     const options = q.options || ['', '', '', ''];
     const correctIdx = q.correct ?? 0;
+    const imageUrl = q.image || '';
     // Use unique question ID for radio button name to prevent conflicts
     const uniqueQId = q.id || `q${Date.now()}_${idx}`;
 
@@ -371,6 +372,13 @@ function createPart1QuestionHTML(q, idx) {
                 <div>
                     <label class="text-xs font-semibold text-gray-600 mb-2 block">📝 Nội dung câu hỏi</label>
                     <textarea class="q-text w-full px-4 py-3 border border-gray-200 rounded-xl text-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none resize-none bg-gray-50 focus:bg-white transition-colors" rows="2" placeholder="Nhập nội dung câu hỏi...">${q.text || ''}</textarea>
+                </div>
+                <div>
+                    <label class="text-xs font-semibold text-gray-600 mb-2 block">🖼️ Hình ảnh (URL)</label>
+                    <div class="flex gap-2">
+                        <input type="text" class="q-image flex-1 px-4 py-2 border border-gray-200 rounded-xl text-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none bg-gray-50 focus:bg-white transition-colors" placeholder="https://example.com/image.png" value="${imageUrl}">
+                    </div>
+                    ${imageUrl ? `<img src="${imageUrl}" class="mt-2 max-h-32 rounded-lg border border-gray-200" onerror="this.style.display='none'">` : ''}
                 </div>
                 <div>
                     <label class="text-xs font-semibold text-gray-600 mb-2 block">🎯 Các đáp án <span class="text-blue-500">(Click để chọn đáp án đúng)</span></label>
@@ -399,6 +407,7 @@ function createPart2QuestionHTML(q, idx) {
         { id: 'c', text: '', correct: true },
         { id: 'd', text: '', correct: false }
     ];
+    const imageUrl = q.image || '';
 
     return `
         <div class="question-block border border-gray-200 rounded-lg p-4 bg-gray-50" data-idx="${idx}">
@@ -412,6 +421,11 @@ function createPart2QuestionHTML(q, idx) {
                 <div>
                     <label class="text-xs font-semibold text-gray-500 mb-1 block">Nội dung câu hỏi chính (tùy chọn)</label>
                     <textarea class="q-text w-full px-3 py-2 border border-gray-200 rounded-lg text-sm focus:ring-2 focus:ring-indigo-500 outline-none resize-none" rows="2" placeholder="Mô tả hoặc đề dẫn...">${q.text || ''}</textarea>
+                </div>
+                <div>
+                    <label class="text-xs font-semibold text-gray-500 mb-1 block">🖼️ Hình ảnh (URL)</label>
+                    <input type="text" class="q-image w-full px-3 py-2 border border-gray-200 rounded-lg text-sm focus:ring-2 focus:ring-indigo-500 outline-none" placeholder="https://example.com/image.png" value="${imageUrl}">
+                    ${imageUrl ? `<img src="${imageUrl}" class="mt-2 max-h-32 rounded-lg border border-gray-200" onerror="this.style.display='none'">` : ''}
                 </div>
                 <div class="space-y-2">
                     ${subQuestions.map((sub, i) => `
@@ -431,6 +445,7 @@ function createPart2QuestionHTML(q, idx) {
 }
 
 function createPart3QuestionHTML(q, idx) {
+    const imageUrl = q.image || '';
     return `
         <div class="question-block border border-gray-200 rounded-lg p-4 bg-gray-50" data-idx="${idx}">
             <div class="flex items-start justify-between gap-2 mb-3">
@@ -443,6 +458,11 @@ function createPart3QuestionHTML(q, idx) {
                 <div>
                     <label class="text-xs font-semibold text-gray-500 mb-1 block">Nội dung câu hỏi</label>
                     <textarea class="q-text w-full px-3 py-2 border border-gray-200 rounded-lg text-sm focus:ring-2 focus:ring-emerald-500 outline-none resize-none" rows="2" placeholder="Nhập nội dung câu hỏi...">${q.text || ''}</textarea>
+                </div>
+                <div>
+                    <label class="text-xs font-semibold text-gray-500 mb-1 block">🖼️ Hình ảnh (URL)</label>
+                    <input type="text" class="q-image w-full px-3 py-2 border border-gray-200 rounded-lg text-sm focus:ring-2 focus:ring-emerald-500 outline-none" placeholder="https://example.com/image.png" value="${imageUrl}">
+                    ${imageUrl ? `<img src="${imageUrl}" class="mt-2 max-h-32 rounded-lg border border-gray-200" onerror="this.style.display='none'">` : ''}
                 </div>
                 <div>
                     <label class="text-xs font-semibold text-gray-500 mb-1 block">Đáp án đúng</label>
@@ -568,17 +588,21 @@ function collectFormData() {
     const part1 = [];
     refs.part1Questions.querySelectorAll('.question-block').forEach((block, idx) => {
         const text = block.querySelector('.q-text').value.trim();
+        const image = block.querySelector('.q-image')?.value?.trim() || '';
         const options = Array.from(block.querySelectorAll('.q-option')).map(i => i.value.trim());
         const correctRadio = block.querySelector('.q-correct:checked');
         const correct = correctRadio ? parseInt(correctRadio.value) : 0;
 
-        part1.push({ id: idx + 1, text, options, correct });
+        const q = { id: idx + 1, text, options, correct };
+        if (image) q.image = image;
+        part1.push(q);
     });
 
     // Collect Part 2
     const part2 = [];
     refs.part2Questions.querySelectorAll('.question-block').forEach((block, idx) => {
         const text = block.querySelector('.q-text').value.trim();
+        const image = block.querySelector('.q-image')?.value?.trim() || '';
         const subQuestions = [];
         block.querySelectorAll('.sub-question').forEach(sq => {
             const subId = sq.dataset.subId;
@@ -587,16 +611,21 @@ function collectFormData() {
             subQuestions.push({ id: subId, text: subText, correct: subCorrect });
         });
 
-        part2.push({ id: idx + 1, text, subQuestions });
+        const q = { id: idx + 1, text, subQuestions };
+        if (image) q.image = image;
+        part2.push(q);
     });
 
     // Collect Part 3
     const part3 = [];
     refs.part3Questions.querySelectorAll('.question-block').forEach((block, idx) => {
         const text = block.querySelector('.q-text').value.trim();
+        const image = block.querySelector('.q-image')?.value?.trim() || '';
         const correct = block.querySelector('.q-correct').value.trim();
 
-        part3.push({ id: idx + 1, text, correct });
+        const q = { id: idx + 1, text, correct };
+        if (image) q.image = image;
+        part3.push(q);
     });
 
     return { subjectId, time, title, part1, part2, part3 };
