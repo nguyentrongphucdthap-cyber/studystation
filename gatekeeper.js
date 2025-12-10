@@ -140,6 +140,17 @@ export function checkIsAdmin() {
     return role.includes('admin');
 }
 
+/**
+ * Kiểm tra xem User có quyền Super-Admin không
+ * Logic: Role string chứa từ khóa "super-admin" (không phân biệt hoa thường)
+ * Super-admin có toàn bộ quyền admin + quyền quản lý học sinh
+ * @returns {boolean}
+ */
+export function checkIsSuperAdmin() {
+    const role = getCurrentUserRole().toLowerCase();
+    return role.includes('super-admin');
+}
+
 // ============================================================
 // 4. LOGIC CỐT LÕI (INIT GATEKEEPER)
 // ============================================================
@@ -437,4 +448,181 @@ export function getSubjects() {
             icon: '<svg xmlns="http://www.w3.org/2000/svg" class="h-8 w-8 text-blue-600 dark:text-blue-400" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19.428 15.428a2 2 0 00-1.022-.547l-2.387-.477a6 6 0 00-3.86.517l-.318.158a6 6 0 01-3.86.517L6.05 15.21a2 2 0 00-1.806.547M8 4h8l-1 1v5.172a2 2 0 00.586 1.414l5 5c1.26 1.26.367 3.414-1.415 3.414H4.828c-1.782 0-2.674-2.154-1.414-3.414l5-5A2 2 0 009 10.172V5L8 4z" /></svg>'
         }
     ];
+}
+
+// ============================================================
+// 7. E-TEST CRUD (Collection: etest_exams)
+// ============================================================
+
+/**
+ * Lấy tất cả E-test exams từ Firestore
+ */
+export async function getAllEtestExams() {
+    const examsCol = collection(db, 'etest_exams');
+    const snapshot = await getDocs(examsCol);
+    return snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+}
+
+/**
+ * Tạo E-test exam mới
+ */
+export async function createEtestExam(examData, customId = null) {
+    let examId;
+    if (customId && /^[a-zA-Z0-9_-]+$/.test(customId)) {
+        examId = customId;
+    } else {
+        const now = new Date();
+        const dateStr = now.toISOString().slice(0, 10).replace(/-/g, '');
+        const randomCode = Math.random().toString(36).substring(2, 8);
+        examId = `etest_${examData.subjectId}_${dateStr}_${randomCode}`;
+    }
+
+    const examRef = doc(db, 'etest_exams', examId);
+    await setDoc(examRef, {
+        ...examData,
+        createdAt: new Date().toISOString(),
+        updatedAt: new Date().toISOString()
+    });
+    return examId;
+}
+
+/**
+ * Cập nhật E-test exam
+ */
+export async function updateEtestExam(examId, examData) {
+    const examRef = doc(db, 'etest_exams', examId);
+    await setDoc(examRef, {
+        ...examData,
+        updatedAt: new Date().toISOString()
+    }, { merge: true });
+}
+
+/**
+ * Xóa E-test exam
+ */
+export async function deleteEtestExam(examId) {
+    const examRef = doc(db, 'etest_exams', examId);
+    await deleteDoc(examRef);
+}
+
+// ============================================================
+// 8. VOCAB CRUD (Collection: vocab_sets)
+// ============================================================
+
+/**
+ * Lấy tất cả Vocab sets từ Firestore
+ */
+export async function getAllVocabSets() {
+    const vocabCol = collection(db, 'vocab_sets');
+    const snapshot = await getDocs(vocabCol);
+    return snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+}
+
+/**
+ * Tạo Vocab set mới
+ */
+export async function createVocabSet(vocabData, customId = null) {
+    let vocabId;
+    if (customId && /^[a-zA-Z0-9_-]+$/.test(customId)) {
+        vocabId = customId;
+    } else {
+        const now = new Date();
+        const dateStr = now.toISOString().slice(0, 10).replace(/-/g, '');
+        const randomCode = Math.random().toString(36).substring(2, 8);
+        vocabId = `vocab_${dateStr}_${randomCode}`;
+    }
+
+    const vocabRef = doc(db, 'vocab_sets', vocabId);
+    await setDoc(vocabRef, {
+        ...vocabData,
+        createdAt: new Date().toISOString(),
+        updatedAt: new Date().toISOString()
+    });
+    return vocabId;
+}
+
+/**
+ * Cập nhật Vocab set
+ */
+export async function updateVocabSet(vocabId, vocabData) {
+    const vocabRef = doc(db, 'vocab_sets', vocabId);
+    await setDoc(vocabRef, {
+        ...vocabData,
+        updatedAt: new Date().toISOString()
+    }, { merge: true });
+}
+
+/**
+ * Xóa Vocab set
+ */
+export async function deleteVocabSet(vocabId) {
+    const vocabRef = doc(db, 'vocab_sets', vocabId);
+    await deleteDoc(vocabRef);
+}
+
+// ============================================================
+// 9. STUDENTS CRUD (Super-Admin Only - Collection: students)
+// ============================================================
+
+/**
+ * Lấy tất cả students từ Firestore (Super-Admin only)
+ */
+export async function getAllStudents() {
+    if (!checkIsSuperAdmin()) {
+        throw new Error('Không có quyền truy cập. Chỉ Super-Admin mới có thể xem danh sách học sinh.');
+    }
+    const studentsCol = collection(db, 'students');
+    const snapshot = await getDocs(studentsCol);
+    return snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+}
+
+/**
+ * Lấy tất cả allowed_users (Super-Admin only)
+ */
+export async function getAllAllowedUsers() {
+    if (!checkIsSuperAdmin()) {
+        throw new Error('Không có quyền truy cập. Chỉ Super-Admin mới có thể xem danh sách người dùng.');
+    }
+    const usersCol = collection(db, 'allowed_users');
+    const snapshot = await getDocs(usersCol);
+    return snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+}
+
+/**
+ * Cập nhật student info (Super-Admin only)
+ */
+export async function updateStudent(studentId, studentData) {
+    if (!checkIsSuperAdmin()) {
+        throw new Error('Không có quyền. Chỉ Super-Admin mới có thể cập nhật thông tin học sinh.');
+    }
+    const studentRef = doc(db, 'students', studentId);
+    await setDoc(studentRef, {
+        ...studentData,
+        updatedAt: new Date().toISOString()
+    }, { merge: true });
+}
+
+/**
+ * Cập nhật user role (Super-Admin only)
+ */
+export async function updateUserRole(email, newRole) {
+    if (!checkIsSuperAdmin()) {
+        throw new Error('Không có quyền. Chỉ Super-Admin mới có thể thay đổi quyền người dùng.');
+    }
+    const userRef = doc(db, 'allowed_users', email);
+    await setDoc(userRef, {
+        role: newRole,
+        updatedAt: new Date().toISOString()
+    }, { merge: true });
+}
+
+/**
+ * Xóa student (Super-Admin only)
+ */
+export async function deleteStudent(studentId) {
+    if (!checkIsSuperAdmin()) {
+        throw new Error('Không có quyền. Chỉ Super-Admin mới có thể xóa học sinh.');
+    }
+    const studentRef = doc(db, 'students', studentId);
+    await deleteDoc(studentRef);
 }
