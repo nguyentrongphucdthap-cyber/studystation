@@ -661,12 +661,11 @@ async function confirmDeleteExam() {
 }
 
 // ============================================================
-// IMPORT / EXPORT (LOCAL OCR)
+// IMPORT / EXPORT (JSON ONLY)
 // ============================================================
 
 /**
- * Handle file import - supports JSON, DOC, DOCX, PDF, and images
- * Now displays extracted text in textarea for editing before parsing
+ * Handle file import - supports JSON files only
  */
 async function handleFileImport(e) {
     const file = e.target.files[0];
@@ -675,414 +674,62 @@ async function handleFileImport(e) {
     const fileName = file.name.toLowerCase();
     const fileExt = fileName.split('.').pop();
 
-    // Handle JSON directly
-    if (fileExt === 'json') {
-        handleJsonImport(file);
+    // Only support JSON
+    if (fileExt !== 'json') {
+        showToast(`Chỉ hỗ trợ import file .json`, 'error');
+        e.target.value = '';
         return;
     }
 
-    // Handle other formats with Local OCR
-    const supportedFormats = ['doc', 'docx', 'pdf', 'png', 'jpg', 'jpeg', 'svg', 'webp'];
-    if (!supportedFormats.includes(fileExt)) {
-        showToast(`Định dạng .${fileExt} không được hỗ trợ`, 'error');
-        return;
-    }
-
-    showToast('Đang xử lý file (OCR)... Vui lòng chờ.', 'info');
-
-    try {
-        let text = '';
-
-        // Extract text based on file type
-        if (['png', 'jpg', 'jpeg', 'svg', 'webp'].includes(fileExt)) {
-            text = await extractTextFromImage(file);
-        } else if (fileExt === 'pdf') {
-            text = await extractTextFromPDF(file);
-        } else if (fileExt === 'docx') {
-            text = await extractTextFromDocx(file);
-        } else {
-            throw new Error(`Chưa hỗ trợ xử lý file .${fileExt}`);
-        }
-
-        if (!text || text.trim().length === 0) {
-            showToast('Không tìm thấy văn bản trong file', 'error');
-            return;
-        }
-
-        console.log("Raw Extracted Text:", text);
-
-        // Show editor if not already visible
-        if (!state.currentExamId && refs.editorForm.classList.contains('hidden')) {
-            showEditor(null);
-        }
-
-        // Set title from filename if empty
-        if (!refs.examTitle.value) {
-            refs.examTitle.value = file.name.replace(/\.[^/.]+$/, '');
-        }
-
-        // Display extracted text in the raw text textarea for editing
-        const rawTextInput = document.getElementById('raw-text-input');
-        const rawTextDetails = rawTextInput?.closest('details');
-        const resultDiv = document.getElementById('raw-text-result');
-
-        if (rawTextInput) {
-            rawTextInput.value = text;
-            // Open the details panel
-            if (rawTextDetails) rawTextDetails.open = true;
-            // Scroll to the textarea
-            rawTextInput.scrollIntoView({ behavior: 'smooth', block: 'center' });
-            rawTextInput.focus();
-        }
-
-        // Show info message
-        if (resultDiv) {
-            resultDiv.className = 'text-sm p-3 rounded-lg bg-blue-50 text-blue-700 border border-blue-200';
-            resultDiv.innerHTML = `📄 Đã trích xuất <strong>${text.length}</strong> ký tự từ <strong>${file.name}</strong>. 
-                <br><span class="text-xs">Xem lại và chỉnh sửa nếu cần, sau đó nhấn <strong>"Phân tích Text"</strong> để tạo câu hỏi.</span>`;
-            resultDiv.classList.remove('hidden');
-        }
-
-        showToast(`Đã trích xuất text từ ${file.name}. Vui lòng xem lại và nhấn "Phân tích Text"`, 'success');
-
-    } catch (error) {
-        console.error('OCR Import failed:', error);
-        showToast('Lỗi xử lý file: ' + error.message, 'error');
-    }
-
+    handleJsonImport(file);
     e.target.value = '';
 }
 
 /**
- * Extract text from Image using Tesseract.js (Vietnamese OCR)
+ * Handle JSON file import
  */
-async function extractTextFromImage(file) {
-    showToast('Đang OCR hình ảnh...', 'info');
-    const worker = await Tesseract.createWorker('vie');
-    await worker.setParameters({ preserve_interword_spaces: '1' });
-    const ret = await worker.recognize(file);
-    await worker.terminate();
-    return cleanGlobalNoise(ret.data.text);
-}
-
-/**
- * Extract text from PDF using PDF.js with image extraction
- */
-async function extractTextFromPDF(file) {
-    showToast('Đang phân tích PDF...', 'info');
-    const arrayBuffer = await file.arrayBuffer();
-    const pdf = await pdfjsLib.getDocument({ data: arrayBuffer }).promise;
-    let fullText = '';
-
-    for (let i = 1; i <= pdf.numPages; i++) {
-        showToast(`Đang đọc trang ${i}/${pdf.numPages}...`, 'info');
-        const page = await pdf.getPage(i);
-
-        // 1. Get Text Content
-        const textContent = await page.getTextContent();
-
-        // 2. Sort text items by Y position (top to bottom), then X (left to right)
-        const items = textContent.items.sort((a, b) => {
-            const yDiff = b.transform[5] - a.transform[5];
-            if (Math.abs(yDiff) > 5) return yDiff; // Different lines
-            return a.transform[4] - b.transform[4]; // Same line, sort by X
-        });
-
-        // 3. Build page text with proper line breaks
-        let pageText = '';
-        let lastY = -1;
-
-        for (const item of items) {
-            const currentY = item.transform[5];
-            if (lastY !== -1 && Math.abs(currentY - lastY) > 10) {
-                pageText += '\n'; // New line when Y changes significantly
-            } else if (lastY !== -1) {
-                pageText += ' ';
-            }
-            pageText += item.str;
-            lastY = currentY;
-        }
-
-        // 4. Try to extract images from page
-        try {
-            const ops = await page.getOperatorList();
-            const pageImages = [];
-
-            for (let j = 0; j < ops.fnArray.length; j++) {
-                if (ops.fnArray[j] === pdfjsLib.OPS.paintImageXObject) {
-                    const imgName = ops.argsArray[j][0];
-                    try {
-                        const imgObj = await page.objs.get(imgName);
-                        if (imgObj && imgObj.width > 50 && imgObj.height > 50) {
-                            // Filter out small icons
-                            pageImages.push(`[Hình ảnh ${pageImages.length + 1}]`);
-                        }
-                    } catch (e) { /* ignore image errors */ }
-                }
-            }
-
-            // Append image markers at end of page
-            if (pageImages.length > 0) {
-                pageText += '\n' + pageImages.join('\n');
-            }
-        } catch (e) { /* ignore ops errors */ }
-
-        fullText += pageText + '\n\n';
-    }
-
-    return cleanGlobalNoise(fullText);
-}
-
-/**
- * Extract text from DOCX using Mammoth.js
- */
-async function extractTextFromDocx(file) {
-    showToast('Đang đọc file Word...', 'info');
-    const arrayBuffer = await file.arrayBuffer();
-    const result = await mammoth.extractRawText({ arrayBuffer: arrayBuffer });
-    return cleanGlobalNoise(result.value);
-}
-
-/**
- * Clean common noise from extracted text (headers, footers, page numbers)
- */
-function cleanGlobalNoise(text) {
-    return text
-        // Page numbers
-        .replace(/Trang\s+\d+(\/\d+)?/gi, '')
-        // Common headers
-        .replace(/(Sở GD&ĐT|Sở Giáo dục|Trường THPT|Mã đề|Năm học|Thời gian làm bài).*$/gim, '')
-        // Exam headers
-        .replace(/(ĐỀ THI|ĐỀ KIỂM TRA|KIỂM TRA|BÀI KIỂM TRA|ĐỀ CƯƠNG|ĐỀ ÔN TẬP).*$/gim, '')
-        // Multiple blank lines -> single
-        .replace(/\n{3,}/g, '\n\n')
-        .trim();
-}
-
-/**
- * Handle raw text parse from textarea
- */
-function handleRawTextParse() {
-    const rawTextInput = document.getElementById('raw-text-input');
-    const resultDiv = document.getElementById('raw-text-result');
-    const text = rawTextInput?.value?.trim();
-
-    if (!text) {
-        showToast('Vui lòng nhập văn bản để phân tích', 'error');
-        return;
-    }
-
+async function handleJsonImport(file) {
     try {
-        const examData = parseExamText(text, 'raw-text');
+        const text = await file.text();
+        const examData = JSON.parse(text);
 
-        const totalQuestions = (examData.part1?.length || 0) + (examData.part2?.length || 0) + (examData.part3?.length || 0);
-
-        if (totalQuestions === 0) {
-            resultDiv.className = 'text-sm p-3 rounded-lg bg-yellow-50 text-yellow-700 border border-yellow-200';
-            resultDiv.textContent = '⚠️ Không tìm thấy câu hỏi nào. Vui lòng kiểm tra định dạng (Câu 1:, 1., A. B. C. D., a) b) c) d))';
-            resultDiv.classList.remove('hidden');
+        // Validate structure
+        if (!examData.subjectId && !examData.title) {
+            showToast('File JSON không hợp lệ: thiếu subjectId hoặc title', 'error');
             return;
         }
 
-        // Append questions to existing lists
-        if (examData.part1 && examData.part1.length > 0) {
-            const existingCount = refs.part1Questions.querySelectorAll('.question-block').length;
-            if (existingCount === 0) refs.part1Questions.innerHTML = '';
-
-            examData.part1.forEach((q, idx) => {
-                q.id = existingCount + idx + 1;
-                refs.part1Questions.insertAdjacentHTML('beforeend', createPart1QuestionHTML(q, existingCount + idx));
-            });
-            bindQuestionEvents(1);
-            updateQuestionCount(1);
+        // Ask for subject if not provided
+        if (!examData.subjectId) {
+            const subjectId = await selectSubjectDialog();
+            if (!subjectId) return;
+            examData.subjectId = subjectId;
         }
 
-        if (examData.part2 && examData.part2.length > 0) {
-            const existingCount = refs.part2Questions.querySelectorAll('.question-block').length;
-            if (existingCount === 0) refs.part2Questions.innerHTML = '';
-
-            examData.part2.forEach((q, idx) => {
-                q.id = existingCount + idx + 1;
-                refs.part2Questions.insertAdjacentHTML('beforeend', createPart2QuestionHTML(q, existingCount + idx));
-            });
-            bindQuestionEvents(2);
-            updateQuestionCount(2);
+        // Set title from filename if not provided
+        if (!examData.title) {
+            examData.title = file.name.replace(/\.[^/.]+$/, '');
         }
 
-        if (examData.part3 && examData.part3.length > 0) {
-            const existingCount = refs.part3Questions.querySelectorAll('.question-block').length;
-            if (existingCount === 0) refs.part3Questions.innerHTML = '';
+        // Ensure parts exist
+        examData.part1 = examData.part1 || [];
+        examData.part2 = examData.part2 || [];
+        examData.part3 = examData.part3 || [];
 
-            examData.part3.forEach((q, idx) => {
-                q.id = existingCount + idx + 1;
-                refs.part3Questions.insertAdjacentHTML('beforeend', createPart3QuestionHTML(q, existingCount + idx));
-            });
-            bindQuestionEvents(3);
-            updateQuestionCount(3);
-        }
+        // Create exam in Firebase
+        const newId = await createExam(examData);
+        await loadExams();
+        showEditor(newId);
 
-        // Show success message
-        resultDiv.className = 'text-sm p-3 rounded-lg bg-emerald-50 text-emerald-700 border border-emerald-200';
-        resultDiv.innerHTML = `✅ Đã thêm <strong>${totalQuestions}</strong> câu hỏi: 
-            <span class="font-medium">${examData.part1?.length || 0} trắc nghiệm</span>, 
-            <span class="font-medium">${examData.part2?.length || 0} đúng/sai</span>, 
-            <span class="font-medium">${examData.part3?.length || 0} tự luận</span>`;
-        resultDiv.classList.remove('hidden');
-
-        // Render MathJax
-        renderMath();
-
-        showToast(`Đã thêm ${totalQuestions} câu hỏi từ text`, 'success');
-
-        // Clear textarea after successful parse
-        rawTextInput.value = '';
+        const totalQ = examData.part1.length + examData.part2.length + examData.part3.length;
+        showToast(`Đã import thành công: ${totalQ} câu hỏi`);
 
     } catch (error) {
-        console.error('Raw text parse error:', error);
-        resultDiv.className = 'text-sm p-3 rounded-lg bg-red-50 text-red-700 border border-red-200';
-        resultDiv.textContent = '❌ Lỗi phân tích: ' + error.message;
-        resultDiv.classList.remove('hidden');
-        showToast('Lỗi phân tích văn bản: ' + error.message, 'error');
+        console.error('JSON Import failed:', error);
+        showToast('Lỗi đọc file JSON: ' + error.message, 'error');
     }
 }
 
-/**
- * Clear raw text input
- */
-function handleRawTextClear() {
-    const rawTextInput = document.getElementById('raw-text-input');
-    const resultDiv = document.getElementById('raw-text-result');
-
-    if (rawTextInput) rawTextInput.value = '';
-    if (resultDiv) {
-        resultDiv.classList.add('hidden');
-        resultDiv.textContent = '';
-    }
-
-    showToast('Đã xóa text', 'info');
-}
-
-/**
- * Parse raw text into structured Exam Object
- * REFERENCE CODE LOGIC - Line-by-line parsing with smart option detection
- */
-function parseExamText(text, fileName) {
-    // Step 1: Preprocess - put options on new lines
-    let processedText = text.replace(/(\s+)([A-Da-d])([\.\)])\s/g, (match, p1, p2, p3) => `\n${p2}${p3} `);
-
-    const lines = processedText.split('\n');
-    const questions = [];
-    let currentQ = null;
-    let idCounter = 1;
-
-    // Regex patterns
-    const qStartRegex = /^(?:Câu|Bài|Question)\s*(\d+)[:.]|^\d+\./i;
-    const optRegex = /^([A-Da-d])[\.\)]\s*(.*)/;
-    const imgRegex = /^\[Hình ảnh \d+\]$|^\[\[IMG:(.*)\]\]$/;
-
-    lines.forEach(line => {
-        line = line.trim();
-        if (!line) return;
-
-        const qMatch = line.match(qStartRegex);
-        const optMatch = line.match(optRegex);
-        const imgMatch = line.match(imgRegex);
-
-        if (qMatch) {
-            // New question starts
-            if (currentQ) finalizeQuestion(currentQ, questions);
-            currentQ = {
-                id: idCounter++,
-                text: line,
-                rawOptions: [],
-                images: [],
-                type: 'SA'
-            };
-        } else if (currentQ) {
-            if (imgMatch) {
-                // Image marker
-                currentQ.images.push(imgMatch[1] || imgMatch[0]);
-            } else if (optMatch) {
-                // Option line (A. or a))
-                currentQ.rawOptions.push({ key: optMatch[1], text: optMatch[2] });
-            } else {
-                // Continuation of previous content
-                if (currentQ.rawOptions.length > 0) {
-                    currentQ.rawOptions[currentQ.rawOptions.length - 1].text += ' ' + line;
-                } else {
-                    currentQ.text += '\n' + line;
-                }
-            }
-        }
-    });
-
-    // Finalize last question
-    if (currentQ) finalizeQuestion(currentQ, questions);
-
-    // Step 2: Detect answer keys in text
-    const keys = detectAnswerKeys(text, questions);
-
-    // Step 3: Convert to Firebase format (part1/part2/part3)
-    const examData = {
-        subjectId: null,
-        title: `Imported: ${fileName.replace(/\.[^/.]+$/, '')}`,
-        time: 50,
-        part1: [], // Multiple Choice
-        part2: [], // True/False
-        part3: []  // Short Answer
-    };
-
-    questions.forEach(q => {
-        if (q.type === 'MC') {
-            // Multiple Choice
-            const options = q.options.map(o => o.text);
-            while (options.length < 4) options.push('');
-
-            let correctIndex = 0;
-            const correctKey = keys[q.id];
-            if (correctKey && typeof correctKey === 'string') {
-                correctIndex = correctKey.toUpperCase().charCodeAt(0) - 65;
-                if (correctIndex < 0 || correctIndex > 3) correctIndex = 0;
-            }
-
-            examData.part1.push({
-                id: examData.part1.length + 1,
-                text: q.text,
-                options: options,
-                correct: correctIndex
-            });
-        } else if (q.type === 'TF') {
-            // True/False
-            const subQuestions = q.options.map(o => {
-                let isCorrect = true;
-                const tfKey = keys[q.id];
-                if (tfKey && typeof tfKey === 'object' && tfKey[o.key.toLowerCase()] !== undefined) {
-                    isCorrect = tfKey[o.key.toLowerCase()];
-                }
-                return {
-                    id: o.key.toLowerCase(),
-                    text: o.text,
-                    correct: isCorrect
-                };
-            });
-
-            examData.part2.push({
-                id: examData.part2.length + 1,
-                text: q.text,
-                subQuestions: subQuestions
-            });
-        } else {
-            // Short Answer
-            examData.part3.push({
-                id: examData.part3.length + 1,
-                text: q.text,
-                correct: keys[q.id] || ''
-            });
-        }
-    });
-
-    return examData;
-}
 
 /**
  * Finalize a question - determine type and clean up
