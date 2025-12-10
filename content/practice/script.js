@@ -835,7 +835,10 @@ const app = {
             let content = `
                 <div class="mb-4 md:mb-6 font-medium text-slate-800 dark:text-white flex gap-4">
                     <div class="shrink-0 w-10 h-10 bg-blue-100 dark:bg-blue-900/30 text-blue-700 dark:text-blue-400 rounded-xl flex items-center justify-center font-bold shadow-sm">${displayId}</div>
-                    <span class="pt-1.5 leading-relaxed font-question dynamic-text">${q.text}</span>
+                    <div class="flex-1">
+                        <span class="pt-1.5 leading-relaxed font-question dynamic-text">${q.text}</span>
+                        ${q.image ? `<img src="${q.image}" class="mt-3 max-w-full md:max-w-md rounded-xl border border-slate-200 dark:border-slate-600 shadow-sm" alt="Question image" onerror="this.style.display='none'">` : ''}
+                    </div>
                 </div>`;
 
             if (type === 1) {
