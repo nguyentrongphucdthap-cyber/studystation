@@ -1,9 +1,9 @@
 /**
- * E-TEST ADMIN MODULE - Script for managing E-test exams
+ * E-TEST ADMIN MODULE - Script for managing E-test exams with dynamic sections
  * Features:
- * 1. CRUD operations for E-test exams stored in Firebase
- * 2. Question type builders (Part 1, 2, 3)
- * 3. Admin access control
+ * 1. Dynamic sections (reading, gap_fill, multiple_choice)
+ * 2. Passage editor for reading/gap_fill
+ * 3. Questions with continuous IDs across sections
  */
 
 import {
@@ -24,7 +24,8 @@ import {
 const state = {
     exams: [],
     subjects: [],
-    currentExamId: null, // null = creating new, string = editing existing
+    currentExamId: null,
+    sections: [], // Array of section objects
     isLoading: false
 };
 
@@ -59,18 +60,10 @@ const refs = {
     examTitle: document.getElementById('exam-title'),
     examCustomId: document.getElementById('exam-custom-id'),
 
-    // Question containers
-    part1Questions: document.getElementById('part1-questions'),
-    part2Questions: document.getElementById('part2-questions'),
-    part3Questions: document.getElementById('part3-questions'),
-    part1Count: document.getElementById('part1-count'),
-    part2Count: document.getElementById('part2-count'),
-    part3Count: document.getElementById('part3-count'),
-
-    // Add buttons
-    btnAddPart1: document.getElementById('btn-add-part1'),
-    btnAddPart2: document.getElementById('btn-add-part2'),
-    btnAddPart3: document.getElementById('btn-add-part3'),
+    // Sections
+    sectionsContainer: document.getElementById('sections-container'),
+    btnAddSection: document.getElementById('btn-add-section'),
+    totalQuestions: document.getElementById('total-questions'),
 
     // Modal
     deleteModal: document.getElementById('delete-modal'),
@@ -100,7 +93,6 @@ function showToast(message, type = 'success') {
         <span class="font-medium text-sm">${message}</span>
     `;
     refs.toastContainer.appendChild(toast);
-
     setTimeout(() => {
         toast.classList.remove('toast-enter');
         toast.classList.add('toast-exit');
@@ -112,334 +104,110 @@ function showToast(message, type = 'success') {
 // INITIALIZATION
 // ============================================================
 
+initGatekeeper('protected');
+
+onUserChange(async (user) => {
+    if (!user) return;
+
+    setTimeout(async () => {
+        if (!checkIsAdmin()) {
+            refs.accessDenied.classList.remove('hidden');
+            return;
+        }
+
+        refs.adminEmail.textContent = user.email;
+        refs.mainContent.classList.remove('hidden');
+
+        await init();
+    }, 500);
+});
+
 async function init() {
-    initGatekeeper('protected');
-
-    onUserChange(async (user) => {
-        if (!user) return;
-
-        // Check admin access
-        setTimeout(() => {
-            if (!checkIsAdmin()) {
-                refs.accessDenied.classList.remove('hidden');
-                return;
-            }
-
-            refs.adminEmail.textContent = user.email;
-            refs.mainContent.classList.remove('hidden');
-
-            loadSubjects();
-            loadExams();
-            bindEvents();
-        }, 500);
-    });
+    await loadSubjects();
+    await loadExams();
+    bindEvents();
 }
 
-function loadSubjects() {
-    state.subjects = getSubjects();
+// ============================================================
+// LOAD SUBJECTS
+// ============================================================
 
-    // Populate filter dropdown
-    refs.subjectFilter.innerHTML = '<option value="">Tất cả môn học</option>';
-    state.subjects.forEach(sub => {
-        refs.subjectFilter.innerHTML += `<option value="${sub.id}">${sub.name}</option>`;
-    });
+async function loadSubjects() {
+    try {
+        state.subjects = await getSubjects();
 
-    // Populate editor dropdown
-    refs.examSubject.innerHTML = '<option value="">Chọn môn học</option>';
-    state.subjects.forEach(sub => {
-        refs.examSubject.innerHTML += `<option value="${sub.id}">${sub.name}</option>`;
-    });
+        // Populate filter dropdown
+        refs.subjectFilter.innerHTML = '<option value="">Tất cả môn học</option>';
+        state.subjects.forEach(sub => {
+            refs.subjectFilter.innerHTML += `<option value="${sub.id}">${sub.name}</option>`;
+        });
+
+        // Populate exam subject dropdown
+        refs.examSubject.innerHTML = '<option value="">Chọn môn học</option>';
+        state.subjects.forEach(sub => {
+            refs.examSubject.innerHTML += `<option value="${sub.id}">${sub.name}</option>`;
+        });
+    } catch (error) {
+        console.error('Error loading subjects:', error);
+    }
 }
+
+// ============================================================
+// LOAD EXAMS
+// ============================================================
 
 async function loadExams() {
+    refs.examList.innerHTML = `
+        <div class="p-8 text-center text-gray-400">
+            <div class="w-12 h-12 border-2 border-gray-200 border-t-purple-500 rounded-full spinner mx-auto mb-3"></div>
+            <p>Đang tải danh sách...</p>
+        </div>
+    `;
+
     try {
         state.exams = await getAllEtestExams();
         renderExamList();
     } catch (error) {
-        console.error('Failed to load exams:', error);
-        showToast('Không thể tải danh sách bài thi', 'error');
-        refs.examList.innerHTML = `
-            <div class="p-8 text-center text-red-500">
-                <p class="font-medium">Lỗi tải dữ liệu</p>
-                <p class="text-sm text-gray-400 mt-1">${error.message}</p>
-            </div>
-        `;
+        console.error('Error loading exams:', error);
+        refs.examList.innerHTML = `<div class="p-8 text-center text-red-500">Lỗi: ${error.message}</div>`;
     }
 }
-
-function bindEvents() {
-    refs.subjectFilter.addEventListener('change', renderExamList);
-    refs.btnNewExam.addEventListener('click', () => showEditor(null));
-    if (refs.btnNewExamEmpty) refs.btnNewExamEmpty.addEventListener('click', () => showEditor(null));
-    refs.btnCancel.addEventListener('click', hideEditor);
-    refs.btnSave.addEventListener('click', saveExam);
-    refs.btnDelete.addEventListener('click', () => refs.deleteModal.classList.remove('hidden'));
-    refs.btnCancelDelete.addEventListener('click', () => refs.deleteModal.classList.add('hidden'));
-    refs.btnConfirmDelete.addEventListener('click', confirmDeleteExam);
-
-    refs.btnAddPart1.addEventListener('click', () => addQuestion(1));
-    refs.btnAddPart2.addEventListener('click', () => addQuestion(2));
-    refs.btnAddPart3.addEventListener('click', () => addQuestion(3));
-
-    // Import/Export
-    if (refs.importFile) refs.importFile.addEventListener('change', handleFileImport);
-    if (refs.btnExport) refs.btnExport.addEventListener('click', handleExport);
-
-    // Import triggers from empty state
-    document.querySelectorAll('.import-file-trigger').forEach(input => {
-        input.addEventListener('change', handleFileImport);
-    });
-
-    // Raw Text Import
-    const btnParseRawText = document.getElementById('btn-parse-raw-text');
-    const btnClearRawText = document.getElementById('btn-clear-raw-text');
-    if (btnParseRawText) btnParseRawText.addEventListener('click', handleRawTextParse);
-    if (btnClearRawText) btnClearRawText.addEventListener('click', handleRawTextClear);
-}
-
-// ============================================================
-// RAW TEXT IMPORT (OCR)
-// ============================================================
-
-/**
- * Handle raw text parse - convert paste text to questions
- */
-function handleRawTextParse() {
-    const rawTextInput = document.getElementById('raw-text-input');
-    if (!rawTextInput) return;
-
-    const rawText = rawTextInput.value.trim();
-    if (!rawText) {
-        showToast('Vui lòng nhập văn bản để phân tích', 'error');
-        return;
-    }
-
-    try {
-        // Parse raw text into questions
-        const questions = parseRawTextToQuestions(rawText);
-
-        if (questions.part1.length === 0 && questions.part2.length === 0 && questions.part3.length === 0) {
-            showToast('Không tìm thấy câu hỏi nào trong văn bản', 'error');
-            return;
-        }
-
-        // Merge with existing questions
-        state.currentExam.part1 = [...state.currentExam.part1, ...questions.part1];
-        state.currentExam.part2 = [...state.currentExam.part2, ...questions.part2];
-        state.currentExam.part3 = [...state.currentExam.part3, ...questions.part3];
-
-        // Re-render questions
-        renderQuestionsPart1(state.currentExam.part1);
-        renderQuestionsPart2(state.currentExam.part2);
-        renderQuestionsPart3(state.currentExam.part3);
-
-        // Clear input
-        rawTextInput.value = '';
-
-        const totalAdded = questions.part1.length + questions.part2.length + questions.part3.length;
-        showToast(`Đã thêm ${totalAdded} câu hỏi từ văn bản`);
-
-    } catch (error) {
-        console.error('Raw text parse failed:', error);
-        showToast('Lỗi phân tích văn bản: ' + error.message, 'error');
-    }
-}
-
-/**
- * Parse raw text into structured questions
- */
-function parseRawTextToQuestions(text) {
-    const result = { part1: [], part2: [], part3: [] };
-
-    // Split by question pattern (Câu 1, Câu 2, etc.)
-    const questionBlocks = text.split(/(?=Câu\s*\d+[.:]\s*)/i);
-
-    for (const block of questionBlocks) {
-        if (!block.trim()) continue;
-
-        // Extract question content
-        const questionMatch = block.match(/Câu\s*\d+[.:]\s*([\s\S]*)/i);
-        if (!questionMatch) continue;
-
-        let content = questionMatch[1].trim();
-
-        // Check for multiple choice (A. B. C. D.)
-        if (/[A-D]\.\s*\S/i.test(content)) {
-            const q = parseMultipleChoice(content);
-            if (q) result.part1.push(q);
-        }
-        // Check for true/false (a) b) c) d))
-        else if (/[a-d]\)\s*\S/i.test(content)) {
-            const q = parseTrueFalse(content);
-            if (q) result.part2.push(q);
-        }
-        // Otherwise short answer
-        else {
-            const q = parseShortAnswer(content);
-            if (q) result.part3.push(q);
-        }
-    }
-
-    return result;
-}
-
-/**
- * Parse multiple choice question
- */
-function parseMultipleChoice(content) {
-    // Split into question and options
-    const parts = content.split(/(?=[A-D]\.)/i);
-    const questionText = parts[0]?.trim() || '';
-
-    const options = [];
-    let correctAnswer = '';
-
-    // Extract each option
-    for (let i = 1; i < parts.length && i <= 4; i++) {
-        const optMatch = parts[i].match(/([A-D])\.\s*([\s\S]*)/i);
-        if (optMatch) {
-            options.push(optMatch[2].trim());
-            // Check for correct answer marker
-            if (/\(đúng\)|✓|correct/i.test(optMatch[2])) {
-                correctAnswer = optMatch[1].toUpperCase();
-            }
-        }
-    }
-
-    // Check for answer at end (Đáp án: A)
-    const answerMatch = content.match(/Đáp án[:\s]*([A-D])/i);
-    if (answerMatch) {
-        correctAnswer = answerMatch[1].toUpperCase();
-    }
-
-    return {
-        id: Date.now() + Math.random(),
-        question: convertMathChemSymbols(questionText),
-        A: convertMathChemSymbols(options[0] || ''),
-        B: convertMathChemSymbols(options[1] || ''),
-        C: convertMathChemSymbols(options[2] || ''),
-        D: convertMathChemSymbols(options[3] || ''),
-        answer: correctAnswer || 'A'
-    };
-}
-
-/**
- * Parse true/false question
- */
-function parseTrueFalse(content) {
-    // Split into question and statements
-    const parts = content.split(/(?=[a-d]\))/i);
-    const questionText = parts[0]?.trim() || '';
-
-    const statements = [];
-
-    // Extract each statement
-    for (let i = 1; i < parts.length && i <= 4; i++) {
-        const stMatch = parts[i].match(/[a-d]\)\s*([\s\S]*)/i);
-        if (stMatch) {
-            let stText = stMatch[1].trim();
-            let isCorrect = false;
-
-            // Check for correct marker
-            if (/\(đúng\)|✓|Đ\b/i.test(stText)) {
-                isCorrect = true;
-                stText = stText.replace(/\s*\(đúng\)|\s*✓|\s*Đ\b/gi, '').trim();
-            }
-
-            statements.push({
-                text: convertMathChemSymbols(stText),
-                isTrue: isCorrect
-            });
-        }
-    }
-
-    return {
-        id: Date.now() + Math.random(),
-        question: convertMathChemSymbols(questionText),
-        statements: statements.length ? statements : [
-            { text: '', isTrue: false },
-            { text: '', isTrue: false },
-            { text: '', isTrue: false },
-            { text: '', isTrue: false }
-        ]
-    };
-}
-
-/**
- * Parse short answer question
- */
-function parseShortAnswer(content) {
-    let answer = '';
-    let question = content;
-
-    // Extract answer if present
-    const answerMatch = content.match(/Đáp án[:\s]*([\s\S]*?)(?:$|(?=\n\n))/i);
-    if (answerMatch) {
-        answer = answerMatch[1].trim();
-        question = content.replace(answerMatch[0], '').trim();
-    }
-
-    return {
-        id: Date.now() + Math.random(),
-        question: convertMathChemSymbols(question),
-        answer: convertMathChemSymbols(answer)
-    };
-}
-
-/**
- * Handle clear raw text input
- */
-function handleRawTextClear() {
-    const rawTextInput = document.getElementById('raw-text-input');
-    if (rawTextInput) {
-        rawTextInput.value = '';
-        showToast('Đã xóa văn bản');
-    }
-}
-
-// ============================================================
-// RENDER EXAM LIST
-// ============================================================
 
 function renderExamList() {
-    const filter = refs.subjectFilter.value;
-    const exams = filter
-        ? state.exams.filter(e => e.subjectId === filter)
-        : state.exams;
+    const filterSubject = refs.subjectFilter.value;
+    let filtered = state.exams;
 
-    if (exams.length === 0) {
+    if (filterSubject) {
+        filtered = state.exams.filter(e => e.subjectId === filterSubject);
+    }
+
+    if (filtered.length === 0) {
         refs.examList.innerHTML = `
             <div class="p-8 text-center text-gray-400">
                 <svg class="w-12 h-12 mx-auto mb-3 text-gray-300" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/>
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 13h6m-3-3v6m-9 1V7a2 2 0 012-2h6l2 2h6a2 2 0 012 2v8a2 2 0 01-2 2H5a2 2 0 01-2-2z"/>
                 </svg>
-                <p class="font-medium">Chưa có bài thi nào</p>
-                <p class="text-sm mt-1">Nhấn "Thêm" để tạo bài thi mới</p>
+                <p>Chưa có E-test nào</p>
             </div>
         `;
         return;
     }
 
-    refs.examList.innerHTML = exams.map(exam => {
+    refs.examList.innerHTML = filtered.map(exam => {
         const subject = state.subjects.find(s => s.id === exam.subjectId);
-        const totalQuestions = (exam.part1?.length || 0) + (exam.part2?.length || 0) + (exam.part3?.length || 0);
-        const isActive = exam.id === state.currentExamId;
+        const totalQ = countTotalQuestions(exam);
+        const isSelected = exam.id === state.currentExamId;
 
         return `
-            <div class="exam-item p-4 border-b border-gray-100 cursor-pointer hover:bg-gray-50 transition-colors ${isActive ? 'bg-blue-50 border-l-4 border-l-blue-500' : ''}" data-id="${exam.id}">
-                <div class="flex items-start justify-between gap-3">
-                    <div class="flex-1 min-w-0">
-                        <h4 class="font-semibold text-gray-800 truncate">${exam.title || 'Chưa đặt tên'}</h4>
-                        <div class="flex items-center gap-2 mt-1 flex-wrap">
-                            <span class="text-xs px-2 py-0.5 rounded-full ${subject?.bg || 'bg-gray-100'} ${subject?.color || 'text-gray-600'}">${subject?.name || 'Chưa chọn môn'}</span>
-                            <span class="text-xs text-gray-400">${exam.time || 0} phút</span>
-                            <span class="text-xs text-gray-400">•</span>
-                            <span class="text-xs text-gray-400">${totalQuestions} câu</span>
-                        </div>
-                    </div>
-                    <svg class="w-5 h-5 text-gray-300 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"/>
-                    </svg>
+            <div class="exam-item p-4 border-b border-gray-100 cursor-pointer hover:bg-purple-50 transition-colors ${isSelected ? 'bg-purple-50 border-l-4 border-l-purple-500' : ''}"
+                data-id="${exam.id}">
+                <div class="font-semibold text-gray-800 mb-1 line-clamp-1">${exam.title || 'Không tiêu đề'}</div>
+                <div class="flex items-center gap-2 text-xs text-gray-500">
+                    <span class="px-1.5 py-0.5 bg-gray-100 rounded">${subject?.name || exam.subjectId}</span>
+                    <span>•</span>
+                    <span>${totalQ} câu</span>
+                    <span>•</span>
+                    <span>${exam.time || 45} phút</span>
                 </div>
             </div>
         `;
@@ -447,825 +215,499 @@ function renderExamList() {
 
     // Bind click events
     refs.examList.querySelectorAll('.exam-item').forEach(item => {
-        item.addEventListener('click', () => {
-            const examId = item.dataset.id;
-            showEditor(examId);
-        });
+        item.addEventListener('click', () => showEditor(item.dataset.id));
     });
 }
 
+function countTotalQuestions(exam) {
+    if (!exam.sections) return 0;
+    return exam.sections.reduce((total, sec) => {
+        return total + (sec.questions?.length || 0);
+    }, 0);
+}
+
 // ============================================================
-// EDITOR
+// SHOW EDITOR
 // ============================================================
 
-function showEditor(examId) {
+function showEditor(examId = null) {
     state.currentExamId = examId;
 
     refs.editorEmpty.classList.add('hidden');
     refs.editorForm.classList.remove('hidden');
 
     if (examId) {
-        // Editing existing
-        refs.editorTitle.textContent = 'Chỉnh sửa bài thi';
-        refs.btnDelete.classList.remove('hidden');
-        if (refs.btnExport) refs.btnExport.classList.remove('hidden');
-
+        // Edit existing
         const exam = state.exams.find(e => e.id === examId);
-        if (exam) {
-            refs.examSubject.value = exam.subjectId || '';
-            refs.examTime.value = exam.time || '';
-            refs.examTitle.value = exam.title || '';
-            if (refs.examCustomId) {
-                refs.examCustomId.value = examId;
-                refs.examCustomId.disabled = true; // Cannot change ID of existing exam
-            }
+        if (!exam) return;
 
-            renderQuestionsPart1(exam.part1 || []);
-            renderQuestionsPart2(exam.part2 || []);
-            renderQuestionsPart3(exam.part3 || []);
-        }
+        refs.editorTitle.textContent = 'Chỉnh sửa E-test';
+        refs.examSubject.value = exam.subjectId || '';
+        refs.examTime.value = exam.time || 45;
+        refs.examTitle.value = exam.title || '';
+        refs.examCustomId.value = exam.id || '';
+        refs.examCustomId.disabled = true;
+
+        // Load sections
+        state.sections = exam.sections ? JSON.parse(JSON.stringify(exam.sections)) : [];
+
+        refs.btnDelete.classList.remove('hidden');
+        refs.btnExport.classList.remove('hidden');
     } else {
-        // Creating new
-        refs.editorTitle.textContent = 'Tạo bài thi mới';
-        refs.btnDelete.classList.add('hidden');
-        if (refs.btnExport) refs.btnExport.classList.add('hidden');
-
+        // Create new
+        refs.editorTitle.textContent = 'Tạo E-test mới';
         refs.examSubject.value = '';
-        refs.examTime.value = '50';
+        refs.examTime.value = 45;
         refs.examTitle.value = '';
-        if (refs.examCustomId) {
-            refs.examCustomId.value = '';
-            refs.examCustomId.disabled = false; // Can set custom ID for new exam
-        }
+        refs.examCustomId.value = '';
+        refs.examCustomId.disabled = false;
 
-        renderQuestionsPart1([]);
-        renderQuestionsPart2([]);
-        renderQuestionsPart3([]);
+        state.sections = [];
+
+        refs.btnDelete.classList.add('hidden');
+        refs.btnExport.classList.add('hidden');
     }
 
+    renderSections();
     renderExamList();
 }
 
 function hideEditor() {
-    state.currentExamId = null;
     refs.editorEmpty.classList.remove('hidden');
     refs.editorForm.classList.add('hidden');
+    state.currentExamId = null;
+    state.sections = [];
     renderExamList();
 }
 
 // ============================================================
-// QUESTION RENDERING
+// SECTIONS MANAGEMENT
 // ============================================================
 
-/**
- * Trigger MathJax to render math/chemistry symbols
- */
-function renderMath() {
-    if (window.MathJax) {
-        window.MathJax.typesetPromise();
-    }
-}
-
-function renderQuestionsPart1(questions) {
-    if (questions.length === 0) {
-        refs.part1Questions.innerHTML = '<p class="text-gray-400 text-sm text-center py-4">Chưa có câu hỏi nào</p>';
-    } else {
-        refs.part1Questions.innerHTML = questions.map((q, idx) => createPart1QuestionHTML(q, idx)).join('');
-        bindQuestionEvents(1);
-    }
-    refs.part1Count.textContent = `${questions.length} câu`;
-    renderMath();
-}
-
-function renderQuestionsPart2(questions) {
-    if (questions.length === 0) {
-        refs.part2Questions.innerHTML = '<p class="text-gray-400 text-sm text-center py-4">Chưa có câu hỏi nào</p>';
-    } else {
-        refs.part2Questions.innerHTML = questions.map((q, idx) => createPart2QuestionHTML(q, idx)).join('');
-        bindQuestionEvents(2);
-    }
-    refs.part2Count.textContent = `${questions.length} câu`;
-    renderMath();
-}
-
-function renderQuestionsPart3(questions) {
-    if (questions.length === 0) {
-        refs.part3Questions.innerHTML = '<p class="text-gray-400 text-sm text-center py-4">Chưa có câu hỏi nào</p>';
-    } else {
-        refs.part3Questions.innerHTML = questions.map((q, idx) => createPart3QuestionHTML(q, idx)).join('');
-        bindQuestionEvents(3);
-    }
-    refs.part3Count.textContent = `${questions.length} câu`;
-    renderMath();
-}
-
-function createPart1QuestionHTML(q, idx) {
-    const options = q.options || ['', '', '', ''];
-    const correctIdx = q.correct ?? 0;
-    const imageUrl = q.image || '';
-    // Use unique question ID for radio button name to prevent conflicts
-    const uniqueQId = q.id || `q${Date.now()}_${idx}`;
-
-    return `
-        <div class="question-block border border-gray-200 rounded-xl p-4 bg-white shadow-sm" data-idx="${idx}" data-qid="${uniqueQId}">
-            <div class="flex items-center justify-between gap-2 mb-4">
-                <div class="flex items-center gap-2">
-                    <span class="w-8 h-8 bg-gradient-to-br from-blue-500 to-blue-600 text-white text-sm font-bold rounded-lg flex items-center justify-center shadow-sm">C${q.id || idx + 1}</span>
-                    <span class="text-xs text-gray-400 font-medium">Trắc nghiệm</span>
-                </div>
-                <button type="button" class="btn-remove-question p-1.5 text-gray-400 hover:text-red-500 hover:bg-red-50 rounded-lg transition-all">
-                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"/></svg>
-                </button>
-            </div>
-            <div class="space-y-4">
-                <div>
-                    <label class="text-xs font-semibold text-gray-600 mb-2 block">📝 Nội dung câu hỏi</label>
-                    <textarea class="q-text w-full px-4 py-3 border border-gray-200 rounded-xl text-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none resize-none bg-gray-50 focus:bg-white transition-colors" rows="2" placeholder="Nhập nội dung câu hỏi...">${q.text || ''}</textarea>
-                </div>
-                <div>
-                    <label class="text-xs font-semibold text-gray-600 mb-2 block">🖼️ Hình ảnh (URL)</label>
-                    <div class="flex gap-2">
-                        <input type="text" class="q-image flex-1 px-4 py-2 border border-gray-200 rounded-xl text-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none bg-gray-50 focus:bg-white transition-colors" placeholder="https://example.com/image.png" value="${imageUrl}">
-                    </div>
-                    ${imageUrl ? `<img src="${imageUrl}" class="mt-2 max-h-32 rounded-lg border border-gray-200" onerror="this.style.display='none'">` : ''}
-                </div>
-                <div>
-                    <label class="text-xs font-semibold text-gray-600 mb-2 block">🎯 Các đáp án <span class="text-blue-500">(Click để chọn đáp án đúng)</span></label>
-                    <div class="grid grid-cols-1 sm:grid-cols-2 gap-2">
-                        ${options.map((opt, i) => `
-                            <label class="option-card cursor-pointer group">
-                                <input type="radio" name="correct-${uniqueQId}" value="${i}" ${correctIdx === i ? 'checked' : ''} class="q-correct sr-only">
-                                <div class="option-content flex items-center gap-3 p-3 border-2 rounded-xl transition-all ${correctIdx === i ? 'border-emerald-500 bg-emerald-50' : 'border-gray-200 hover:border-blue-300 hover:bg-blue-50'}">
-                                    <span class="option-badge w-7 h-7 rounded-lg flex items-center justify-center text-sm font-bold shrink-0 transition-colors ${correctIdx === i ? 'bg-emerald-500 text-white' : 'bg-gray-100 text-gray-600 group-hover:bg-blue-100 group-hover:text-blue-600'}">${String.fromCharCode(65 + i)}</span>
-                                    <input type="text" class="q-option flex-1 bg-transparent border-0 text-sm focus:ring-0 outline-none placeholder-gray-400" placeholder="Nhập đáp án ${String.fromCharCode(65 + i)}..." value="${opt || ''}" onclick="event.stopPropagation()">
-                                    <svg class="option-check w-5 h-5 text-emerald-500 shrink-0 ${correctIdx === i ? '' : 'hidden'}" fill="currentColor" viewBox="0 0 20 20"><path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clip-rule="evenodd"/></svg>
-                                </div>
-                            </label>
-                        `).join('')}
-                    </div>
-                </div>
-            </div>
-        </div>
-    `;
-}
-
-function createPart2QuestionHTML(q, idx) {
-    const subQuestions = q.subQuestions || [
-        { id: 'a', text: '', correct: true },
-        { id: 'b', text: '', correct: false },
-        { id: 'c', text: '', correct: true },
-        { id: 'd', text: '', correct: false }
-    ];
-    const imageUrl = q.image || '';
-
-    return `
-        <div class="question-block border border-gray-200 rounded-lg p-4 bg-gray-50" data-idx="${idx}">
-            <div class="flex items-start justify-between gap-2 mb-3">
-                <span class="w-7 h-7 bg-indigo-600 text-white text-xs font-bold rounded flex items-center justify-center shrink-0">${q.id || idx + 1}</span>
-                <button type="button" class="btn-remove-question text-gray-400 hover:text-red-500 transition-colors">
-                    <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"/></svg>
-                </button>
-            </div>
-            <div class="space-y-3">
-                <div>
-                    <label class="text-xs font-semibold text-gray-500 mb-1 block">Nội dung câu hỏi chính (tùy chọn)</label>
-                    <textarea class="q-text w-full px-3 py-2 border border-gray-200 rounded-lg text-sm focus:ring-2 focus:ring-indigo-500 outline-none resize-none" rows="2" placeholder="Mô tả hoặc đề dẫn...">${q.text || ''}</textarea>
-                </div>
-                <div>
-                    <label class="text-xs font-semibold text-gray-500 mb-1 block">🖼️ Hình ảnh (URL)</label>
-                    <input type="text" class="q-image w-full px-3 py-2 border border-gray-200 rounded-lg text-sm focus:ring-2 focus:ring-indigo-500 outline-none" placeholder="https://example.com/image.png" value="${imageUrl}">
-                    ${imageUrl ? `<img src="${imageUrl}" class="mt-2 max-h-32 rounded-lg border border-gray-200" onerror="this.style.display='none'">` : ''}
-                </div>
-                <div class="space-y-2">
-                    ${subQuestions.map((sub, i) => `
-                        <div class="flex items-center gap-2 sub-question" data-sub-id="${sub.id}">
-                            <span class="text-xs font-bold text-indigo-600 w-4">${sub.id})</span>
-                            <input type="text" class="sq-text flex-1 px-2 py-1.5 border border-gray-200 rounded text-sm focus:ring-2 focus:ring-indigo-500 outline-none" placeholder="Nội dung mệnh đề ${sub.id}" value="${sub.text || ''}">
-                            <select class="sq-correct px-2 py-1.5 border border-gray-200 rounded text-sm focus:ring-2 focus:ring-indigo-500 outline-none">
-                                <option value="true" ${sub.correct === true ? 'selected' : ''}>Đúng</option>
-                                <option value="false" ${sub.correct === false ? 'selected' : ''}>Sai</option>
-                            </select>
-                        </div>
-                    `).join('')}
-                </div>
-            </div>
-        </div>
-    `;
-}
-
-function createPart3QuestionHTML(q, idx) {
-    const imageUrl = q.image || '';
-    return `
-        <div class="question-block border border-gray-200 rounded-lg p-4 bg-gray-50" data-idx="${idx}">
-            <div class="flex items-start justify-between gap-2 mb-3">
-                <span class="w-7 h-7 bg-emerald-600 text-white text-xs font-bold rounded flex items-center justify-center shrink-0">${q.id || idx + 1}</span>
-                <button type="button" class="btn-remove-question text-gray-400 hover:text-red-500 transition-colors">
-                    <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"/></svg>
-                </button>
-            </div>
-            <div class="space-y-3">
-                <div>
-                    <label class="text-xs font-semibold text-gray-500 mb-1 block">Nội dung câu hỏi</label>
-                    <textarea class="q-text w-full px-3 py-2 border border-gray-200 rounded-lg text-sm focus:ring-2 focus:ring-emerald-500 outline-none resize-none" rows="2" placeholder="Nhập nội dung câu hỏi...">${q.text || ''}</textarea>
-                </div>
-                <div>
-                    <label class="text-xs font-semibold text-gray-500 mb-1 block">🖼️ Hình ảnh (URL)</label>
-                    <input type="text" class="q-image w-full px-3 py-2 border border-gray-200 rounded-lg text-sm focus:ring-2 focus:ring-emerald-500 outline-none" placeholder="https://example.com/image.png" value="${imageUrl}">
-                    ${imageUrl ? `<img src="${imageUrl}" class="mt-2 max-h-32 rounded-lg border border-gray-200" onerror="this.style.display='none'">` : ''}
-                </div>
-                <div>
-                    <label class="text-xs font-semibold text-gray-500 mb-1 block">Đáp án đúng</label>
-                    <input type="text" class="q-correct w-full px-3 py-2 border border-gray-200 rounded-lg text-sm focus:ring-2 focus:ring-emerald-500 outline-none" placeholder="VD: 123, -5.5, ABC" value="${q.correct || ''}">
-                </div>
-            </div>
-        </div>
-    `;
-}
-
-function bindQuestionEvents(part) {
-    const container = part === 1 ? refs.part1Questions : part === 2 ? refs.part2Questions : refs.part3Questions;
-
-    // Remove handlers
-    container.querySelectorAll('.btn-remove-question').forEach(btn => {
-        btn.addEventListener('click', (e) => {
-            const block = e.target.closest('.question-block');
-            block.remove();
-            updateQuestionIds(part);
-            updateQuestionCount(part);
-        });
-    });
-
-    // Part 1 Radio handlers for visual update
-    if (part === 1) {
-        container.querySelectorAll('.q-correct').forEach(radio => {
-            radio.addEventListener('change', (e) => {
-                const checkedRadio = e.target;
-                const questionBlock = checkedRadio.closest('.question-block');
-
-                // Reset all options in this question
-                questionBlock.querySelectorAll('.option-content').forEach(card => {
-                    card.classList.remove('border-emerald-500', 'bg-emerald-50');
-                    card.classList.add('border-gray-200', 'hover:border-blue-300', 'hover:bg-blue-50');
-
-                    const badge = card.querySelector('.option-badge');
-                    badge.classList.remove('bg-emerald-500', 'text-white');
-                    badge.classList.add('bg-gray-100', 'text-gray-600', 'group-hover:bg-blue-100', 'group-hover:text-blue-600');
-
-                    const check = card.querySelector('.option-check');
-                    if (check) check.classList.add('hidden');
-                });
-
-                // Set selected option
-                const selectedCard = checkedRadio.closest('.option-card').querySelector('.option-content');
-                selectedCard.classList.remove('border-gray-200', 'hover:border-blue-300', 'hover:bg-blue-50');
-                selectedCard.classList.add('border-emerald-500', 'bg-emerald-50');
-
-                const selectedBadge = selectedCard.querySelector('.option-badge');
-                selectedBadge.classList.remove('bg-gray-100', 'text-gray-600', 'group-hover:bg-blue-100', 'group-hover:text-blue-600');
-                selectedBadge.classList.add('bg-emerald-500', 'text-white');
-
-                const selectedCheck = selectedCard.querySelector('.option-check');
-                if (selectedCheck) selectedCheck.classList.remove('hidden');
-            });
-        });
-    }
-}
-
-function addQuestion(part) {
-    const container = part === 1 ? refs.part1Questions : part === 2 ? refs.part2Questions : refs.part3Questions;
-    const count = container.querySelectorAll('.question-block').length;
-
-    // Clear empty message if present
-    if (count === 0) {
-        container.innerHTML = '';
-    }
-
-    const newQ = part === 1
-        ? { id: count + 1, text: '', options: ['', '', '', ''], correct: 0 }
-        : part === 2
-            ? {
-                id: count + 1, text: '', subQuestions: [
-                    { id: 'a', text: '', correct: true },
-                    { id: 'b', text: '', correct: false },
-                    { id: 'c', text: '', correct: true },
-                    { id: 'd', text: '', correct: false }
-                ]
-            }
-            : { id: count + 1, text: '', correct: '' };
-
-    const html = part === 1
-        ? createPart1QuestionHTML(newQ, count)
-        : part === 2
-            ? createPart2QuestionHTML(newQ, count)
-            : createPart3QuestionHTML(newQ, count);
-
-    container.insertAdjacentHTML('beforeend', html);
-    bindQuestionEvents(part);
-    updateQuestionCount(part);
-
-    // Scroll to new question
-    container.lastElementChild.scrollIntoView({ behavior: 'smooth', block: 'center' });
-}
-
-function updateQuestionIds(part) {
-    const container = part === 1 ? refs.part1Questions : part === 2 ? refs.part2Questions : refs.part3Questions;
-    container.querySelectorAll('.question-block').forEach((block, idx) => {
-        block.dataset.idx = idx;
-        const badge = block.querySelector('span');
-        if (badge) badge.textContent = idx + 1;
-    });
-}
-
-function updateQuestionCount(part) {
-    const container = part === 1 ? refs.part1Questions : part === 2 ? refs.part2Questions : refs.part3Questions;
-    const countEl = part === 1 ? refs.part1Count : part === 2 ? refs.part2Count : refs.part3Count;
-    const count = container.querySelectorAll('.question-block').length;
-    countEl.textContent = `${count} câu`;
-}
-
-// ============================================================
-// SAVE & DELETE
-// ============================================================
-
-function collectFormData() {
-    // Basic info
-    const subjectId = refs.examSubject.value;
-    const time = parseInt(refs.examTime.value) || 50;
-    const title = refs.examTitle.value.trim();
-    const customId = refs.examCustomId?.value?.trim() || '';
-
-    // Collect Part 1
-    const part1 = [];
-    refs.part1Questions.querySelectorAll('.question-block').forEach((block, idx) => {
-        const text = block.querySelector('.q-text').value.trim();
-        const image = block.querySelector('.q-image')?.value?.trim() || '';
-        const options = Array.from(block.querySelectorAll('.q-option')).map(i => i.value.trim());
-        const correctRadio = block.querySelector('.q-correct:checked');
-        const correct = correctRadio ? parseInt(correctRadio.value) : 0;
-
-        const q = { id: idx + 1, text, options, correct };
-        if (image) q.image = image;
-        part1.push(q);
-    });
-
-    // Collect Part 2
-    const part2 = [];
-    refs.part2Questions.querySelectorAll('.question-block').forEach((block, idx) => {
-        const text = block.querySelector('.q-text').value.trim();
-        const image = block.querySelector('.q-image')?.value?.trim() || '';
-        const subQuestions = [];
-        block.querySelectorAll('.sub-question').forEach(sq => {
-            const subId = sq.dataset.subId;
-            const subText = sq.querySelector('.sq-text').value.trim();
-            const subCorrect = sq.querySelector('.sq-correct').value === 'true';
-            subQuestions.push({ id: subId, text: subText, correct: subCorrect });
-        });
-
-        const q = { id: idx + 1, text, subQuestions };
-        if (image) q.image = image;
-        part2.push(q);
-    });
-
-    // Collect Part 3
-    const part3 = [];
-    refs.part3Questions.querySelectorAll('.question-block').forEach((block, idx) => {
-        const text = block.querySelector('.q-text').value.trim();
-        const image = block.querySelector('.q-image')?.value?.trim() || '';
-        const correct = block.querySelector('.q-correct').value.trim();
-
-        const q = { id: idx + 1, text, correct };
-        if (image) q.image = image;
-        part3.push(q);
-    });
-
-    return { subjectId, time, title, customId, part1, part2, part3 };
-}
-
-async function saveExam() {
-    const data = collectFormData();
-
-    // Validation
-    if (!data.subjectId) {
-        showToast('Vui lòng chọn môn học', 'error');
-        refs.examSubject.focus();
-        return;
-    }
-    if (!data.title) {
-        showToast('Vui lòng nhập tiêu đề bài thi', 'error');
-        refs.examTitle.focus();
-        return;
-    }
-
-    refs.btnSave.disabled = true;
-    refs.btnSave.innerHTML = '<svg class="w-4 h-4 spinner" fill="none" stroke="currentColor" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10" stroke-width="4" stroke-dasharray="31.416" stroke-dashoffset="10"/></svg> Đang lưu...';
-
-    try {
-        if (state.currentExamId) {
-            // Update existing
-            await updateEtestExam(state.currentExamId, data);
-            showToast('Đã cập nhật bài thi thành công');
-        } else {
-            // Create new (with optional custom ID)
-            const newId = await createEtestExam(data, data.customId);
-            state.currentExamId = newId;
-            refs.examCustomId.value = newId; // Show the actual ID used
-            showToast(`Đã tạo bài thi mới với ID: ${newId}`);
-        }
-
-        await loadExams();
-        renderExamList();
-
-    } catch (error) {
-        console.error('Save failed:', error);
-        showToast('Lỗi khi lưu bài thi: ' + error.message, 'error');
-    } finally {
-        refs.btnSave.disabled = false;
-        refs.btnSave.innerHTML = '<svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"/></svg> Lưu';
-    }
-}
-
-async function confirmDeleteExam() {
-    if (!state.currentExamId) return;
-
-    refs.deleteModal.classList.add('hidden');
-
-    try {
-        await deleteEtestExam(state.currentExamId);
-        showToast('Đã xóa bài thi thành công');
-        hideEditor();
-        await loadExams();
-    } catch (error) {
-        console.error('Delete failed:', error);
-        showToast('Lỗi khi xóa bài thi: ' + error.message, 'error');
-    }
-}
-
-// ============================================================
-// IMPORT / EXPORT (JSON ONLY)
-// ============================================================
-
-/**
- * Handle file import - supports JSON files only
- */
-async function handleFileImport(e) {
-    const file = e.target.files[0];
-    if (!file) return;
-
-    const fileName = file.name.toLowerCase();
-    const fileExt = fileName.split('.').pop();
-
-    // Only support JSON
-    if (fileExt !== 'json') {
-        showToast(`Chỉ hỗ trợ import file .json`, 'error');
-        e.target.value = '';
-        return;
-    }
-
-    handleJsonImport(file);
-    e.target.value = '';
-}
-
-/**
- * Handle JSON file import
- */
-async function handleJsonImport(file) {
-    try {
-        const text = await file.text();
-        const examData = JSON.parse(text);
-
-        // Validate structure
-        if (!examData.subjectId && !examData.title) {
-            showToast('File JSON không hợp lệ: thiếu subjectId hoặc title', 'error');
-            return;
-        }
-
-        // Ask for subject if not provided
-        if (!examData.subjectId) {
-            const subjectId = await selectSubjectDialog();
-            if (!subjectId) return;
-            examData.subjectId = subjectId;
-        }
-
-        // Set title from filename if not provided
-        if (!examData.title) {
-            examData.title = file.name.replace(/\.[^/.]+$/, '');
-        }
-
-        // Ensure parts exist
-        examData.part1 = examData.part1 || [];
-        examData.part2 = examData.part2 || [];
-        examData.part3 = examData.part3 || [];
-
-        // Create exam in Firebase
-        const newId = await createExam(examData);
-        await loadExams();
-        showEditor(newId);
-
-        const totalQ = examData.part1.length + examData.part2.length + examData.part3.length;
-        showToast(`Đã import thành công: ${totalQ} câu hỏi`);
-
-    } catch (error) {
-        console.error('JSON Import failed:', error);
-        showToast('Lỗi đọc file JSON: ' + error.message, 'error');
-    }
-}
-
-
-/**
- * Finalize a question - determine type and clean up
- */
-function finalizeQuestion(q, list) {
-    // Remove common stop words/phrases
-    const stopWords = [/Lời giải.*/is, /Hướng dẫn.*/is, /Giải thích.*/is, /Đáp án chi tiết.*/is];
-    stopWords.forEach(regex => {
-        q.text = q.text.split(regex)[0];
-    });
-    q.text = q.text.replace(/^(?:Câu|Bài|Question)\s*\d+[:.\)]\s*/i, '').trim();
-
-    // Remove duplicate options (same key)
-    let uniqueOptsMap = new Map();
-    q.rawOptions.forEach(opt => {
-        const normalizedKey = opt.key.toUpperCase();
-        if (!uniqueOptsMap.has(normalizedKey)) {
-            uniqueOptsMap.set(normalizedKey, opt);
-        }
-    });
-    const uniqueRawOptions = Array.from(uniqueOptsMap.values());
-
-    // Determine question type
-    if (uniqueRawOptions.length >= 3) {
-        const firstKey = uniqueRawOptions[0].key;
-
-        if (firstKey === firstKey.toUpperCase() && isNaN(firstKey)) {
-            // Uppercase letters (A, B, C, D) = Multiple Choice
-            q.type = 'MC';
-            const stdLabels = ['A', 'B', 'C', 'D'];
-            q.options = uniqueRawOptions.slice(0, 4).map((opt, i) => ({
-                key: stdLabels[i],
-                text: opt.text.trim()
-            }));
-        } else {
-            // Lowercase letters (a, b, c, d) = True/False
-            q.type = 'TF';
-            q.options = uniqueRawOptions.map(opt => ({
-                key: opt.key.toLowerCase(),
-                text: opt.text.trim()
-            }));
-        }
-
-        // Remove trailing option text from question
-        q.text = q.text.replace(/(\n|^)[A-Da-d][\.\)]\s*$/, '').trim();
-    } else if (uniqueRawOptions.length >= 2) {
-        // 2 options with lowercase = True/False
-        const firstKey = uniqueRawOptions[0].key;
-        if (firstKey === firstKey.toLowerCase()) {
-            q.type = 'TF';
-            q.options = uniqueRawOptions.map(opt => ({
-                key: opt.key.toLowerCase(),
-                text: opt.text.trim()
-            }));
-        } else {
-            q.type = 'SA';
-            q.options = []; // Ensure options is always an array
-        }
-    } else {
-        q.type = 'SA';
-        q.options = []; // Ensure options is always an array
-    }
-
-    list.push(q);
-}
-
-/**
- * Detect answer keys from text content
- */
-function detectAnswerKeys(fullText, questions) {
-    const keys = {};
-
-    // Pattern 1: Answer table at end (e.g., "1.A  2.B  3.C")
-    const keyTableMatch = fullText.match(/(?:Bảng đáp án|Đáp án trắc nghiệm|KEY|ĐÁP ÁN)([\s\S]*)/i);
-    if (keyTableMatch) {
-        const matches = [...keyTableMatch[1].matchAll(/(\d+)[\.\s\:\-]*([A-D])/gi)];
-        matches.forEach(m => {
-            const qNum = parseInt(m[1]);
-            if (!keys[qNum]) {
-                keys[qNum] = m[2].toUpperCase();
-            }
-        });
-    }
-
-    // Pattern 2: Inline "Đáp án: X" 
-    const inlineMatches = [...fullText.matchAll(/Câu\s*(\d+)[^]*?(?:Đáp án|ĐA|Chọn)[:\s]*([A-D])/gi)];
-    inlineMatches.forEach(m => {
-        const qNum = parseInt(m[1]);
-        if (!keys[qNum]) {
-            keys[qNum] = m[2].toUpperCase();
-        }
-    });
-
-    // Pattern 3: True/False answers (a.Đ b.S or a)Đúng b)Sai)
-    questions.forEach(q => {
-        if (q.type === 'TF') {
-            const combinedText = q.text + ' ' + (q.options || []).map(o => o.text).join(' ');
-            const tfMatches = [...combinedText.matchAll(/([a-d])[\.\)]\s*(Đ|S|Đúng|Sai)/gi)];
-            if (tfMatches.length > 0) {
-                if (!keys[q.id]) keys[q.id] = {};
-                tfMatches.forEach(m => {
-                    keys[q.id][m[1].toLowerCase()] = m[2].toLowerCase().startsWith('đ');
-                });
-            }
-        }
-
-        // Pattern 4: Short answer with answer
-        if (q.type === 'SA') {
-            const saMatch = q.text.match(/(?:Đáp án|ĐS|Kết quả|DS)[\s\:\.]*([\d\.\,\-]+)/i);
-            if (saMatch) {
-                keys[q.id] = saMatch[1];
-            }
-        }
-    });
-
-    return keys;
-}
-
-/**
- * Convert math and chemistry symbols to LaTeX format
- */
-function convertMathChemSymbols(text) {
-    let result = text;
-
-    // Superscripts: x^2 -> $x^{2}$
-    result = result.replace(/([a-zA-Z])\^(\d+)/g, '$$$1^{$2}$$');
-
-    // Subscripts: x_1 -> $x_{1}$
-    result = result.replace(/([a-zA-Z])_(\d+)/g, '$$$1_{$2}$$');
-
-    // Common chemistry formulas
-    const chemFormulas = ['H2O', 'CO2', 'H2SO4', 'HNO3', 'HCl', 'NaOH', 'KOH', 'NaCl', 'KCl',
-        'CaCO3', 'NaHCO3', 'NH3', 'CH4', 'C2H5OH', 'Fe2O3', 'CuSO4',
-        'H3PO4', 'Ca(OH)2', 'Mg(OH)2', 'Al2O3', 'Fe3O4', 'O2', 'N2', 'Cl2', 'H2'];
-    chemFormulas.forEach(formula => {
-        const regex = new RegExp(`\\b${formula}\\b`, 'g');
-        result = result.replace(regex, `$\\ce{${formula}}$`);
-    });
-
-    // Fractions: 1/2 -> $\frac{1}{2}$
-    result = result.replace(/(\d+)\s*\/\s*(\d+)/g, '$\\frac{$1}{$2}$');
-
-    // Square roots
-    result = result.replace(/(?:sqrt|căn)\s*\(([^)]+)\)/gi, '$\\sqrt{$1}$');
-    result = result.replace(/√(\d+)/g, '$\\sqrt{$1}$');
-
-    // Math symbols
-    const symbolMap = {
-        '≤': '$\\leq$', '≥': '$\\geq$', '≠': '$\\neq$', '±': '$\\pm$',
-        '→': '$\\rightarrow$', '←': '$\\leftarrow$', '↔': '$\\leftrightarrow$',
-        '∞': '$\\infty$', '∈': '$\\in$', '∉': '$\\notin$',
-        '⊂': '$\\subset$', '∪': '$\\cup$', '∩': '$\\cap$',
-        '∑': '$\\sum$', '∏': '$\\prod$', '∫': '$\\int$',
-        'π': '$\\pi$', 'α': '$\\alpha$', 'β': '$\\beta$', 'γ': '$\\gamma$',
-        'δ': '$\\delta$', 'θ': '$\\theta$', 'λ': '$\\lambda$', 'ω': '$\\omega$'
+function addSection() {
+    const newSection = {
+        id: 'sec-' + Date.now(),
+        title: '',
+        type: 'multiple_choice',
+        content: '',
+        questions: []
     };
-    Object.entries(symbolMap).forEach(([sym, latex]) => {
-        result = result.split(sym).join(latex);
-    });
-
-    return result;
+    state.sections.push(newSection);
+    renderSections();
 }
 
+function removeSection(sectionId) {
+    if (!confirm('Xóa section này và tất cả câu hỏi bên trong?')) return;
+    state.sections = state.sections.filter(s => s.id !== sectionId);
+    renderSections();
+}
 
+function updateSection(sectionId, field, value) {
+    const section = state.sections.find(s => s.id === sectionId);
+    if (section) {
+        section[field] = value;
+        if (field === 'type') {
+            renderSections(); // Re-render to show/hide passage editor
+        }
+    }
+}
 
+function renderSections() {
+    if (state.sections.length === 0) {
+        refs.sectionsContainer.innerHTML = `
+            <div class="p-8 border-2 border-dashed border-gray-200 rounded-xl text-center text-gray-400">
+                <svg class="w-10 h-10 mx-auto mb-2 text-gray-300" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                        d="M9 13h6m-3-3v6m5 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+                </svg>
+                <p>Chưa có section nào. Nhấn "Thêm Section" để bắt đầu.</p>
+            </div>
+        `;
+        updateTotalQuestions();
+        return;
+    }
 
+    refs.sectionsContainer.innerHTML = state.sections.map((section, index) => {
+        const typeColors = {
+            'multiple_choice': { bg: 'bg-blue-50', border: 'border-blue-200', text: 'text-blue-700', badge: 'bg-blue-100' },
+            'reading': { bg: 'bg-green-50', border: 'border-green-200', text: 'text-green-700', badge: 'bg-green-100' },
+            'gap_fill': { bg: 'bg-amber-50', border: 'border-amber-200', text: 'text-amber-700', badge: 'bg-amber-100' }
+        };
+        const colors = typeColors[section.type] || typeColors.multiple_choice;
+        const showPassage = section.type === 'reading' || section.type === 'gap_fill';
 
+        return `
+            <div class="section-card border ${colors.border} rounded-xl overflow-hidden" data-id="${section.id}">
+                <!-- Section Header -->
+                <div class="${colors.bg} px-4 py-3 border-b ${colors.border}">
+                    <div class="flex items-center justify-between gap-4">
+                        <div class="flex items-center gap-3 flex-1">
+                            <div class="w-8 h-8 ${colors.badge} ${colors.text} rounded-lg flex items-center justify-center font-bold text-sm">
+                                ${index + 1}
+                            </div>
+                            <input type="text" value="${section.title || ''}" placeholder="Tên section..."
+                                class="flex-1 px-3 py-1.5 border border-gray-200 rounded-lg text-sm font-semibold focus:ring-2 focus:ring-purple-500 focus:border-purple-500 outline-none"
+                                onchange="window.updateSection('${section.id}', 'title', this.value)">
+                        </div>
+                        <div class="flex items-center gap-2">
+                            <select class="px-2 py-1.5 border border-gray-200 rounded-lg text-sm focus:ring-2 focus:ring-purple-500 outline-none"
+                                onchange="window.updateSection('${section.id}', 'type', this.value)">
+                                <option value="multiple_choice" ${section.type === 'multiple_choice' ? 'selected' : ''}>Trắc nghiệm</option>
+                                <option value="reading" ${section.type === 'reading' ? 'selected' : ''}>Đọc hiểu</option>
+                                <option value="gap_fill" ${section.type === 'gap_fill' ? 'selected' : ''}>Điền từ</option>
+                            </select>
+                            <button onclick="window.removeSection('${section.id}')"
+                                class="p-1.5 text-red-500 hover:bg-red-50 rounded-lg transition-colors" title="Xóa section">
+                                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/>
+                                </svg>
+                            </button>
+                        </div>
+                    </div>
+                </div>
 
+                <!-- Passage Editor (for reading/gap_fill) -->
+                ${showPassage ? `
+                <div class="p-4 border-b border-gray-100 bg-white">
+                    <label class="block text-sm font-semibold text-gray-700 mb-2">
+                        Đoạn văn (HTML)
+                        <span class="font-normal text-gray-400">- Hỗ trợ &lt;h3&gt;, &lt;p&gt;, &lt;b&gt;, &lt;i&gt;, &lt;u&gt;</span>
+                    </label>
+                    <textarea class="passage-editor w-full px-3 py-2 border border-gray-200 rounded-lg text-sm focus:ring-2 focus:ring-purple-500 outline-none"
+                        placeholder="<h3>Tiêu đề</h3><p>Nội dung đoạn văn...</p>"
+                        onchange="window.updateSection('${section.id}', 'content', this.value)">${section.content || ''}</textarea>
+                </div>
+                ` : ''}
 
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-/**
- * Show subject selection dialog
- */
-function selectSubjectDialog() {
-    return new Promise((resolve) => {
-        const modal = document.createElement('div');
-        modal.className = 'fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm p-4';
-        modal.innerHTML = `
-            <div class="bg-white rounded-2xl p-6 max-w-sm w-full shadow-2xl">
-                <h3 class="text-lg font-bold text-gray-800 mb-4">Chọn môn học</h3>
-                <p class="text-gray-500 text-sm mb-4">AI không thể xác định môn học. Vui lòng chọn:</p>
-                <select id="subject-select-dialog" class="w-full px-3 py-2 border border-gray-200 rounded-lg mb-4">
-                    ${state.subjects.map(s => `<option value="${s.id}">${s.name}</option>`).join('')}
-                </select>
-                <div class="flex gap-3">
-                    <button id="dialog-cancel" class="flex-1 px-4 py-2.5 border border-gray-200 text-gray-600 font-semibold rounded-xl hover:bg-gray-50">Hủy</button>
-                    <button id="dialog-confirm" class="flex-1 px-4 py-2.5 bg-blue-600 text-white font-semibold rounded-xl hover:bg-blue-700">Xác nhận</button>
+                <!-- Questions -->
+                <div class="p-4 bg-white">
+                    <div class="flex items-center justify-between mb-3">
+                        <span class="text-sm font-semibold text-gray-700">
+                            Câu hỏi <span class="${colors.text}">(${section.questions?.length || 0})</span>
+                        </span>
+                        <button onclick="window.addQuestion('${section.id}')"
+                            class="px-2 py-1 ${colors.badge} ${colors.text} text-xs font-semibold rounded-lg hover:opacity-80 transition-opacity flex items-center gap-1">
+                            <svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"/>
+                            </svg>
+                            Thêm
+                        </button>
+                    </div>
+                    <div class="questions-list space-y-2" id="questions-${section.id}">
+                        ${renderQuestions(section)}
+                    </div>
                 </div>
             </div>
         `;
-        document.body.appendChild(modal);
+    }).join('');
 
-        modal.querySelector('#dialog-cancel').onclick = () => {
-            modal.remove();
-            resolve(null);
-        };
+    updateTotalQuestions();
+}
 
-        modal.querySelector('#dialog-confirm').onclick = () => {
-            const value = modal.querySelector('#subject-select-dialog').value;
-            modal.remove();
-            resolve(value);
-        };
+function renderQuestions(section) {
+    if (!section.questions || section.questions.length === 0) {
+        return '<p class="text-gray-400 text-sm text-center py-4">Chưa có câu hỏi</p>';
+    }
+
+    return section.questions.map((q, qIndex) => `
+        <div class="question-row p-3 border border-gray-100 rounded-lg" data-qindex="${qIndex}">
+            <div class="flex items-start gap-3">
+                <span class="w-6 h-6 bg-purple-100 text-purple-700 rounded text-xs font-bold flex items-center justify-center shrink-0 mt-1">
+                    ${q.id || qIndex + 1}
+                </span>
+                <div class="flex-1 space-y-2">
+                    <input type="text" value="${escapeHtml(q.text || '')}" placeholder="Nội dung câu hỏi..."
+                        class="w-full px-2 py-1 border border-gray-200 rounded text-sm focus:ring-2 focus:ring-purple-500 outline-none"
+                        onchange="window.updateQuestion('${section.id}', ${qIndex}, 'text', this.value)">
+                    <div class="grid grid-cols-2 gap-2">
+                        ${['A', 'B', 'C', 'D'].map(opt => `
+                            <div class="flex items-center gap-1">
+                                <input type="radio" name="ans-${section.id}-${qIndex}" value="${opt}" 
+                                    ${q.ans === opt ? 'checked' : ''}
+                                    onchange="window.updateQuestion('${section.id}', ${qIndex}, 'ans', '${opt}')"
+                                    class="w-4 h-4 text-purple-600">
+                                <input type="text" value="${escapeHtml(getOptionText(q.options, opt))}" 
+                                    placeholder="${opt}."
+                                    class="flex-1 px-2 py-1 border border-gray-200 rounded text-xs focus:ring-2 focus:ring-purple-500 outline-none"
+                                    onchange="window.updateOption('${section.id}', ${qIndex}, '${opt}', this.value)">
+                            </div>
+                        `).join('')}
+                    </div>
+                </div>
+                <button onclick="window.removeQuestion('${section.id}', ${qIndex})"
+                    class="p-1 text-red-400 hover:text-red-600 transition-colors shrink-0" title="Xóa câu hỏi">
+                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/>
+                    </svg>
+                </button>
+            </div>
+        </div>
+    `).join('');
+}
+
+function getOptionText(options, letter) {
+    if (!options) return '';
+    const opt = options.find(o => o.startsWith(letter + '.') || o.startsWith(letter + ' '));
+    return opt ? opt.substring(2).trim() : '';
+}
+
+function escapeHtml(str) {
+    if (!str) return '';
+    return str.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
+}
+
+// ============================================================
+// QUESTIONS MANAGEMENT
+// ============================================================
+
+function addQuestion(sectionId) {
+    const section = state.sections.find(s => s.id === sectionId);
+    if (!section) return;
+
+    if (!section.questions) section.questions = [];
+
+    // Calculate continuous ID
+    let nextId = 1;
+    state.sections.forEach(sec => {
+        if (sec.questions) {
+            sec.questions.forEach(q => {
+                if (q.id >= nextId) nextId = q.id + 1;
+            });
+        }
+    });
+
+    section.questions.push({
+        id: nextId,
+        text: '',
+        options: ['A. ', 'B. ', 'C. ', 'D. '],
+        ans: 'A'
+    });
+
+    renderSections();
+}
+
+function removeQuestion(sectionId, qIndex) {
+    const section = state.sections.find(s => s.id === sectionId);
+    if (!section || !section.questions) return;
+
+    section.questions.splice(qIndex, 1);
+
+    // Recalculate IDs
+    recalculateQuestionIds();
+    renderSections();
+}
+
+function updateQuestion(sectionId, qIndex, field, value) {
+    const section = state.sections.find(s => s.id === sectionId);
+    if (!section || !section.questions) return;
+
+    section.questions[qIndex][field] = value;
+}
+
+function updateOption(sectionId, qIndex, letter, value) {
+    const section = state.sections.find(s => s.id === sectionId);
+    if (!section || !section.questions) return;
+
+    const q = section.questions[qIndex];
+    if (!q.options) q.options = ['A. ', 'B. ', 'C. ', 'D. '];
+
+    const optIndex = ['A', 'B', 'C', 'D'].indexOf(letter);
+    if (optIndex >= 0) {
+        q.options[optIndex] = `${letter}. ${value}`;
+    }
+}
+
+function recalculateQuestionIds() {
+    let id = 1;
+    state.sections.forEach(section => {
+        if (section.questions) {
+            section.questions.forEach(q => {
+                q.id = id++;
+            });
+        }
     });
 }
 
-/**
- * Handle export current exam to JSON
- */
-function handleExport() {
-    if (!state.currentExamId) {
-        showToast('Chưa chọn bài thi để xuất', 'error');
-        return;
-    }
-
-    const exam = state.exams.find(e => e.id === state.currentExamId);
-    if (!exam) {
-        showToast('Không tìm thấy bài thi', 'error');
-        return;
-    }
-
-    // Create export data (exclude Firebase-specific fields)
-    const exportData = {
-        subjectId: exam.subjectId,
-        title: exam.title,
-        time: exam.time,
-        part1: exam.part1 || [],
-        part2: exam.part2 || [],
-        part3: exam.part3 || []
-    };
-
-    // Generate filename
-    const slug = (exam.title || 'exam')
-        .toLowerCase()
-        .normalize('NFD').replace(/[\u0300-\u036f]/g, '') // Remove diacritics
-        .replace(/[^a-z0-9]+/g, '_')
-        .replace(/^_|_$/g, '')
-        .substring(0, 50);
-    const filename = `${exam.subjectId}_${slug}.json`;
-
-    // Download
-    const blob = new Blob([JSON.stringify(exportData, null, 2)], { type: 'application/json' });
-    const url = URL.createObjectURL(blob);
-    const a = document.createElement('a');
-    a.href = url;
-    a.download = filename;
-    document.body.appendChild(a);
-    a.click();
-    document.body.removeChild(a);
-    URL.revokeObjectURL(url);
-
-    showToast(`Đã xuất: ${filename}`);
+function updateTotalQuestions() {
+    let total = 0;
+    state.sections.forEach(sec => {
+        total += sec.questions?.length || 0;
+    });
+    refs.totalQuestions.textContent = total;
 }
 
 // ============================================================
-// START APPLICATION
+// SAVE EXAM
 // ============================================================
-init();
+
+async function saveExam() {
+    const subjectId = refs.examSubject.value;
+    const title = refs.examTitle.value.trim();
+    const time = parseInt(refs.examTime.value) || 45;
+    const customId = refs.examCustomId.value.trim();
+
+    if (!subjectId) {
+        showToast('Vui lòng chọn môn học', 'error');
+        return;
+    }
+    if (!title) {
+        showToast('Vui lòng nhập tiêu đề', 'error');
+        return;
+    }
+
+    // Recalculate IDs before save
+    recalculateQuestionIds();
+
+    const examData = {
+        subjectId,
+        title,
+        time,
+        sections: state.sections.map(sec => ({
+            title: sec.title || '',
+            type: sec.type || 'multiple_choice',
+            content: sec.content || '',
+            questions: sec.questions || []
+        })),
+        updatedAt: new Date().toISOString()
+    };
+
+    try {
+        if (state.currentExamId) {
+            // Update
+            await updateEtestExam(state.currentExamId, examData);
+            showToast('Đã cập nhật E-test');
+        } else {
+            // Create
+            examData.createdAt = new Date().toISOString();
+            const newId = await createEtestExam(examData, customId || null);
+            state.currentExamId = newId;
+            showToast('Đã tạo E-test mới');
+        }
+
+        await loadExams();
+        showEditor(state.currentExamId);
+    } catch (error) {
+        console.error('Save error:', error);
+        showToast('Lỗi khi lưu: ' + error.message, 'error');
+    }
+}
+
+// ============================================================
+// DELETE EXAM
+// ============================================================
+
+function showDeleteModal() {
+    refs.deleteModal.classList.remove('hidden');
+}
+
+function hideDeleteModal() {
+    refs.deleteModal.classList.add('hidden');
+}
+
+async function confirmDelete() {
+    if (!state.currentExamId) return;
+
+    try {
+        await deleteEtestExam(state.currentExamId);
+        showToast('Đã xóa E-test');
+        hideDeleteModal();
+        hideEditor();
+        await loadExams();
+    } catch (error) {
+        console.error('Delete error:', error);
+        showToast('Lỗi khi xóa: ' + error.message, 'error');
+    }
+}
+
+// ============================================================
+// EXPORT
+// ============================================================
+
+function exportExam() {
+    const exam = state.exams.find(e => e.id === state.currentExamId);
+    if (!exam) return;
+
+    const data = JSON.stringify(exam, null, 2);
+    const blob = new Blob([data], { type: 'application/json' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = `etest-${exam.id || 'export'}.json`;
+    a.click();
+    URL.revokeObjectURL(url);
+    showToast('Đã xuất file JSON');
+}
+
+// ============================================================
+// IMPORT
+// ============================================================
+
+async function handleImport(e) {
+    const file = e.target.files[0];
+    if (!file) return;
+
+    try {
+        const text = await file.text();
+        const data = JSON.parse(text);
+
+        if (!data.title) {
+            showToast('File JSON không hợp lệ', 'error');
+            return;
+        }
+
+        // Create new exam from import
+        data.createdAt = new Date().toISOString();
+        data.updatedAt = new Date().toISOString();
+
+        const newId = await createEtestExam(data);
+        showToast('Đã import E-test');
+
+        await loadExams();
+        showEditor(newId);
+    } catch (error) {
+        console.error('Import error:', error);
+        showToast('Lỗi import: ' + error.message, 'error');
+    } finally {
+        e.target.value = '';
+    }
+}
+
+// ============================================================
+// BIND EVENTS
+// ============================================================
+
+function bindEvents() {
+    // New exam buttons
+    refs.btnNewExam?.addEventListener('click', () => showEditor(null));
+    refs.btnNewExamEmpty?.addEventListener('click', () => showEditor(null));
+
+    // Editor buttons
+    refs.btnCancel?.addEventListener('click', hideEditor);
+    refs.btnSave?.addEventListener('click', saveExam);
+    refs.btnDelete?.addEventListener('click', showDeleteModal);
+    refs.btnExport?.addEventListener('click', exportExam);
+
+    // Section
+    refs.btnAddSection?.addEventListener('click', addSection);
+
+    // Modal
+    refs.btnCancelDelete?.addEventListener('click', hideDeleteModal);
+    refs.btnConfirmDelete?.addEventListener('click', confirmDelete);
+
+    // Filter
+    refs.subjectFilter?.addEventListener('change', renderExamList);
+
+    // Import
+    refs.importFile?.addEventListener('change', handleImport);
+}
+
+// ============================================================
+// EXPOSE FUNCTIONS TO WINDOW (for inline handlers)
+// ============================================================
+
+window.updateSection = updateSection;
+window.removeSection = removeSection;
+window.addQuestion = addQuestion;
+window.removeQuestion = removeQuestion;
+window.updateQuestion = updateQuestion;
+window.updateOption = updateOption;
