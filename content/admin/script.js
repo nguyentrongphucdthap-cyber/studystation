@@ -1139,9 +1139,11 @@ function finalizeQuestion(q, list) {
             }));
         } else {
             q.type = 'SA';
+            q.options = []; // Ensure options is always an array
         }
     } else {
         q.type = 'SA';
+        q.options = []; // Ensure options is always an array
     }
 
     list.push(q);
@@ -1376,4 +1378,4 @@ function handleExport() {
     showToast(`Đã xuất: ${filename}`);
 }
 
-    // ============a    
+// ============a    
