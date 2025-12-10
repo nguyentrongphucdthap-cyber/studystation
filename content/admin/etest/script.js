@@ -515,15 +515,11 @@ function updateTotalQuestions() {
 // ============================================================
 
 async function saveExam() {
-    const subjectId = refs.examSubject.value;
+    const subjectId = refs.examSubject?.value || 'english';
     const title = refs.examTitle.value.trim();
     const time = parseInt(refs.examTime.value) || 45;
     const customId = refs.examCustomId.value.trim();
 
-    if (!subjectId) {
-        showToast('Vui lòng chọn môn học', 'error');
-        return;
-    }
     if (!title) {
         showToast('Vui lòng nhập tiêu đề', 'error');
         return;
