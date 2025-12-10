@@ -57,6 +57,7 @@ const refs = {
     examSubject: document.getElementById('exam-subject'),
     examTime: document.getElementById('exam-time'),
     examTitle: document.getElementById('exam-title'),
+    examCustomId: document.getElementById('exam-custom-id'),
 
     // Question containers
     part1Questions: document.getElementById('part1-questions'),
@@ -274,6 +275,10 @@ function showEditor(examId) {
             refs.examSubject.value = exam.subjectId || '';
             refs.examTime.value = exam.time || '';
             refs.examTitle.value = exam.title || '';
+            if (refs.examCustomId) {
+                refs.examCustomId.value = examId;
+                refs.examCustomId.disabled = true; // Cannot change ID of existing exam
+            }
 
             renderQuestionsPart1(exam.part1 || []);
             renderQuestionsPart2(exam.part2 || []);
@@ -288,6 +293,10 @@ function showEditor(examId) {
         refs.examSubject.value = '';
         refs.examTime.value = '50';
         refs.examTitle.value = '';
+        if (refs.examCustomId) {
+            refs.examCustomId.value = '';
+            refs.examCustomId.disabled = false; // Can set custom ID for new exam
+        }
 
         renderQuestionsPart1([]);
         renderQuestionsPart2([]);
@@ -583,6 +592,7 @@ function collectFormData() {
     const subjectId = refs.examSubject.value;
     const time = parseInt(refs.examTime.value) || 50;
     const title = refs.examTitle.value.trim();
+    const customId = refs.examCustomId?.value?.trim() || '';
 
     // Collect Part 1
     const part1 = [];
@@ -628,7 +638,7 @@ function collectFormData() {
         part3.push(q);
     });
 
-    return { subjectId, time, title, part1, part2, part3 };
+    return { subjectId, time, title, customId, part1, part2, part3 };
 }
 
 async function saveExam() {
@@ -655,10 +665,11 @@ async function saveExam() {
             await updateExam(state.currentExamId, data);
             showToast('Đã cập nhật bài thi thành công');
         } else {
-            // Create new
-            const newId = await createExam(data);
+            // Create new (with optional custom ID)
+            const newId = await createExam(data, data.customId);
             state.currentExamId = newId;
-            showToast('Đã tạo bài thi mới thành công');
+            refs.examCustomId.value = newId; // Show the actual ID used
+            showToast(`Đã tạo bài thi mới với ID: ${newId}`);
         }
 
         await loadExams();
