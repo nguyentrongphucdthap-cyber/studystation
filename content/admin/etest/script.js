@@ -13,8 +13,7 @@ import {
     getAllEtestExams,
     createEtestExam,
     updateEtestExam,
-    deleteEtestExam,
-    getSubjects
+    deleteEtestExam
 } from "../../../gatekeeper.js";
 
 // ============================================================
@@ -39,7 +38,6 @@ const refs = {
     adminEmail: document.getElementById('admin-email'),
 
     // List
-    subjectFilter: document.getElementById('subject-filter'),
     examList: document.getElementById('exam-list'),
     btnNewExam: document.getElementById('btn-new-exam'),
     btnNewExamEmpty: document.getElementById('btn-new-exam-empty'),
@@ -123,34 +121,15 @@ onUserChange(async (user) => {
 });
 
 async function init() {
-    await loadSubjects();
     await loadExams();
     bindEvents();
 }
 
 // ============================================================
-// LOAD SUBJECTS
+// LOAD EXAMS
 // ============================================================
 
-async function loadSubjects() {
-    try {
-        state.subjects = await getSubjects();
 
-        // Populate filter dropdown
-        refs.subjectFilter.innerHTML = '<option value="">Tất cả môn học</option>';
-        state.subjects.forEach(sub => {
-            refs.subjectFilter.innerHTML += `<option value="${sub.id}">${sub.name}</option>`;
-        });
-
-        // Populate exam subject dropdown
-        refs.examSubject.innerHTML = '<option value="">Chọn môn học</option>';
-        state.subjects.forEach(sub => {
-            refs.examSubject.innerHTML += `<option value="${sub.id}">${sub.name}</option>`;
-        });
-    } catch (error) {
-        console.error('Error loading subjects:', error);
-    }
-}
 
 // ============================================================
 // LOAD EXAMS
@@ -174,12 +153,7 @@ async function loadExams() {
 }
 
 function renderExamList() {
-    const filterSubject = refs.subjectFilter.value;
     let filtered = state.exams;
-
-    if (filterSubject) {
-        filtered = state.exams.filter(e => e.subjectId === filterSubject);
-    }
 
     if (filtered.length === 0) {
         refs.examList.innerHTML = `
