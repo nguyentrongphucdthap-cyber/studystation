@@ -133,7 +133,7 @@ async function init() {
             // Show Students tab for super-admin only
             if (checkIsSuperAdmin()) {
                 const tabStudents = document.getElementById('tab-students');
-                if (tabStudents) tabStudents.classList.remove('hidden');
+                if (tabStudents) tabStudents.style.display = 'flex';
             }
 
             // Set Practice section as active by default
