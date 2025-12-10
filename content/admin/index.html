@@ -4,7 +4,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Admin - Quản lý bài thi | StudyStation</title>
+    <title>Admin Panel | StudyStation</title>
     <link rel="icon" type="image/png" href="../../favicon.png">
 
     <!-- Tailwind CSS -->
@@ -16,125 +16,23 @@
     <link href="https://fonts.googleapis.com/css2?family=Be+Vietnam+Pro:wght@400;500;600;700&display=swap"
         rel="stylesheet">
 
-    <!-- Firebase SDKs -->
-    <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-app-compat.js"></script>
-    <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-database-compat.js"></script>
-    <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-auth-compat.js"></script>
-
-
-
-    <!-- MathJax for Math & Chemistry -->
-    <script>
-        window.MathJax = {
-            tex: {
-                inlineMath: [['$', '$'], ['\\(', '\\)']],
-                packages: { '[+]': ['mhchem'] }
-            },
-            loader: { load: ['[tex]/mhchem'] }
-        };
-    </script>
-    <script id="MathJax-script" async src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-mml-chtml.js"></script>
-
     <style>
         body {
             font-family: 'Be Vietnam Pro', sans-serif;
         }
 
-        /* Loading Spinner */
-        @keyframes spin {
-            to {
-                transform: rotate(360deg);
-            }
+        .module-card {
+            transition: all 0.3s ease;
         }
 
-        .spinner {
-            animation: spin 1s linear infinite;
-        }
-
-        /* Custom scrollbar */
-        .custom-scrollbar::-webkit-scrollbar {
-            width: 6px;
-        }
-
-        .custom-scrollbar::-webkit-scrollbar-track {
-            background: #f1f5f9;
-            border-radius: 999px;
-        }
-
-        .custom-scrollbar::-webkit-scrollbar-thumb {
-            background: #cbd5e1;
-            border-radius: 999px;
-        }
-
-        .custom-scrollbar::-webkit-scrollbar-thumb:hover {
-            background: #94a3b8;
-        }
-
-        /* Toast animations */
-        .toast-enter {
-            animation: slideIn 0.3s ease-out forwards;
-        }
-
-        .toast-exit {
-            animation: slideOut 0.3s ease-in forwards;
-        }
-
-        @keyframes slideIn {
-            from {
-                transform: translateX(100%);
-                opacity: 0;
-            }
-
-            to {
-                transform: translateX(0);
-                opacity: 1;
-            }
-        }
-
-        @keyframes slideOut {
-            from {
-                transform: translateX(0);
-                opacity: 1;
-            }
-
-            to {
-                transform: translateX(100%);
-                opacity: 0;
-            }
-        }
-
-        /* Admin Navigation Tabs */
-        .admin-tab {
-            color: #64748b;
-            background: transparent;
-            cursor: pointer;
-            position: relative;
-            z-index: 1;
-            border: none;
-            outline: none;
-        }
-
-        .admin-tab:hover {
-            background: #f1f5f9;
-            color: #334155;
-        }
-
-        .admin-tab.active {
-            background: #3b82f6;
-            color: white;
-        }
-
-        .admin-section {
-            display: none;
-        }
-
-        .admin-section.active {
-            display: block;
+        .module-card:hover {
+            transform: translateY(-4px);
+            box-shadow: 0 20px 40px rgba(0, 0, 0, 0.1);
         }
     </style>
 </head>
 
-<body class="bg-gray-50 min-h-screen">
+<body class="bg-gradient-to-br from-slate-50 to-blue-50 min-h-screen">
 
     <!-- Gatekeeper Loading -->
     <div id="gatekeeper-loading"
@@ -142,535 +40,193 @@
         <div style="display:flex;flex-direction:column;align-items:center;gap:10px">
             <img src="../../favicon.png" alt="StudyStation" style="width:56px;height:56px;border-radius:12px">
             <div style="font-weight:700;font-size:18px">StudyStation Admin</div>
-            <div class="w-7 h-7 border-2 border-white/20 border-t-blue-400 rounded-full spinner"></div>
+            <div style="font-size:14px;opacity:0.7">Đang xác thực...</div>
         </div>
     </div>
 
     <!-- Access Denied -->
-    <div id="access-denied" class="hidden fixed inset-0 bg-gray-50 z-50 flex items-center justify-center p-4">
-        <div class="text-center">
-            <div class="w-20 h-20 bg-red-100 rounded-full flex items-center justify-center mx-auto mb-6">
+    <div id="access-denied" class="hidden min-h-screen flex items-center justify-center">
+        <div class="text-center p-8">
+            <div class="w-20 h-20 bg-red-100 rounded-full flex items-center justify-center mx-auto mb-4">
                 <svg class="w-10 h-10 text-red-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
                         d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
                 </svg>
             </div>
-            <h1 class="text-2xl font-bold text-gray-800 mb-2">Truy cập bị từ chối</h1>
-            <p class="text-gray-500 mb-6">Bạn không có quyền Admin để truy cập trang này.</p>
+            <h2 class="text-2xl font-bold text-gray-800 mb-2">Không có quyền truy cập</h2>
+            <p class="text-gray-500 mb-6">Bạn cần quyền Admin để truy cập trang này.</p>
             <a href="../index.html"
-                class="inline-flex items-center gap-2 px-6 py-3 bg-blue-600 text-white font-semibold rounded-xl hover:bg-blue-700 transition-colors">
-                <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-                        d="M10 19l-7-7m0 0l7-7m-7 7h18" />
-                </svg>
-                Về trang chủ
-            </a>
+                class="px-6 py-3 bg-blue-600 text-white font-semibold rounded-xl hover:bg-blue-700 transition-colors">Quay
+                lại</a>
         </div>
     </div>
-
-    <!-- Toast Container -->
-    <div id="toast-container" class="fixed top-4 right-4 z-50 space-y-2"></div>
 
     <!-- Main Content -->
     <div id="main-content" class="hidden">
         <!-- Header -->
-        <header class="bg-white border-b border-gray-200 sticky top-0 z-40">
-            <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+        <header class="bg-white/80 backdrop-blur-md border-b border-gray-200 sticky top-0 z-50">
+            <div class="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8">
                 <div class="flex items-center justify-between h-16">
-                    <div class="flex items-center gap-4">
+                    <div class="flex items-center gap-3">
                         <a href="../index.html"
-                            class="flex items-center gap-3 text-gray-500 hover:text-blue-600 transition-colors">
+                            class="flex items-center gap-2 text-gray-500 hover:text-blue-600 transition-colors">
                             <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
                                     d="M10 19l-7-7m0 0l7-7m-7 7h18" />
                             </svg>
                         </a>
-                        <div class="h-6 w-px bg-gray-200"></div>
                         <h1 class="text-xl font-bold text-gray-800">
-                            <span class="text-yellow-500">⚡</span> Quản lý bài thi
+                            <span class="text-yellow-500">⚡</span> Admin Panel
                         </h1>
                     </div>
                     <div class="flex items-center gap-3">
                         <span id="admin-email" class="text-sm text-gray-500 hidden sm:block"></span>
-                        <div
+                        <div id="admin-badge"
                             class="px-3 py-1 bg-yellow-100 text-yellow-700 text-xs font-bold rounded-full border border-yellow-200">
-                            ADMIN</div>
+                            ADMIN
+                        </div>
+                        <div id="super-admin-badge"
+                            class="hidden px-3 py-1 bg-red-100 text-red-700 text-xs font-bold rounded-full border border-red-200">
+                            SUPER
+                        </div>
                     </div>
                 </div>
             </div>
         </header>
 
-        <!-- Admin Navigation Tabs -->
-        <nav class="bg-white border-b border-gray-200 shadow-sm sticky top-0 z-40">
-            <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-                <div class="flex items-center gap-1 py-2 overflow-x-auto">
-                    <!-- Practice Tab -->
-                    <button data-tab="practice"
-                        class="admin-tab active flex items-center gap-2 px-4 py-2.5 text-sm font-semibold rounded-lg transition-all whitespace-nowrap">
-                        <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+        <!-- Main -->
+        <main class="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
+            <div class="text-center mb-12">
+                <h2 class="text-3xl font-bold text-gray-800 mb-3">Chào mừng đến Admin Panel</h2>
+                <p class="text-gray-500">Chọn một module để quản lý</p>
+            </div>
+
+            <!-- Module Cards -->
+            <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+                <!-- Practice Card -->
+                <a href="practice/index.html"
+                    class="module-card bg-white rounded-2xl border border-gray-200 p-6 block hover:border-blue-300">
+                    <div class="w-14 h-14 bg-blue-100 rounded-2xl flex items-center justify-center mb-4">
+                        <svg class="w-7 h-7 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
                                 d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
                         </svg>
-                        Practice
-                    </button>
+                    </div>
+                    <h3 class="text-lg font-bold text-gray-800 mb-2">Practice</h3>
+                    <p class="text-sm text-gray-500">Quản lý bài thi luyện tập</p>
+                    <div class="mt-4 flex items-center text-blue-600 text-sm font-semibold">
+                        Mở
+                        <svg class="w-4 h-4 ml-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7" />
+                        </svg>
+                    </div>
+                </a>
 
-                    <!-- E-test Tab -->
-                    <button data-tab="etest"
-                        class="admin-tab flex items-center gap-2 px-4 py-2.5 text-sm font-semibold rounded-lg transition-all whitespace-nowrap">
-                        <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <!-- E-test Card -->
+                <a href="etest/index.html"
+                    class="module-card bg-white rounded-2xl border border-gray-200 p-6 block hover:border-indigo-300">
+                    <div class="w-14 h-14 bg-indigo-100 rounded-2xl flex items-center justify-center mb-4">
+                        <svg class="w-7 h-7 text-indigo-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
                                 d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-3 7h3m-3 4h3m-6-4h.01M9 16h.01" />
                         </svg>
-                        E-test
-                    </button>
+                    </div>
+                    <h3 class="text-lg font-bold text-gray-800 mb-2">E-test</h3>
+                    <p class="text-sm text-gray-500">Quản lý bài kiểm tra chính thức</p>
+                    <div class="mt-4 flex items-center text-indigo-600 text-sm font-semibold">
+                        Mở
+                        <svg class="w-4 h-4 ml-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7" />
+                        </svg>
+                    </div>
+                </a>
 
-                    <!-- Vocab Tab -->
-                    <button data-tab="vocab"
-                        class="admin-tab flex items-center gap-2 px-4 py-2.5 text-sm font-semibold rounded-lg transition-all whitespace-nowrap">
-                        <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <!-- Vocab Card -->
+                <a href="vocab/index.html"
+                    class="module-card bg-white rounded-2xl border border-gray-200 p-6 block hover:border-emerald-300">
+                    <div class="w-14 h-14 bg-emerald-100 rounded-2xl flex items-center justify-center mb-4">
+                        <svg class="w-7 h-7 text-emerald-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
                                 d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.747 0 3.332.477 4.5 1.253v13C19.832 18.477 18.247 18 16.5 18c-1.746 0-3.332.477-4.5 1.253" />
                         </svg>
-                        Vocab
-                    </button>
+                    </div>
+                    <h3 class="text-lg font-bold text-gray-800 mb-2">Vocab</h3>
+                    <p class="text-sm text-gray-500">Quản lý bộ từ vựng</p>
+                    <div class="mt-4 flex items-center text-emerald-600 text-sm font-semibold">
+                        Mở
+                        <svg class="w-4 h-4 ml-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7" />
+                        </svg>
+                    </div>
+                </a>
 
-                    <!-- Students Tab (Super-Admin only) -->
-                    <button data-tab="students" id="tab-students"
-                        class="admin-tab flex items-center gap-2 px-4 py-2.5 text-sm font-semibold rounded-lg transition-all whitespace-nowrap"
-                        style="display: none;">
-                        <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <!-- Students Card (Super-Admin Only) -->
+                <a href="students/index.html" id="card-students"
+                    class="module-card bg-white rounded-2xl border border-gray-200 p-6 block hover:border-red-300 hidden">
+                    <div class="w-14 h-14 bg-red-100 rounded-2xl flex items-center justify-center mb-4">
+                        <svg class="w-7 h-7 text-red-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
                                 d="M12 4.354a4 4 0 110 5.292M15 21H3v-1a6 6 0 0112 0v1zm0 0h6v-1a6 6 0 00-9-5.197M13 7a4 4 0 11-8 0 4 4 0 018 0z" />
                         </svg>
-                        Quản lý học sinh
-                        <span class="px-1.5 py-0.5 bg-red-100 text-red-600 text-xs font-bold rounded">SUPER</span>
-                    </button>
-                </div>
-            </div>
-        </nav>
-
-        <!-- Main Layout -->
-        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-
-            <!-- Practice Section (Default) -->
-            <div id="section-practice" class="admin-section">
-                <div class="grid grid-cols-1 lg:grid-cols-3 gap-8">
-
-                    <!-- Left Panel: Exam List -->
-                    <div class="lg:col-span-1">
-                        <div class="bg-white rounded-2xl border border-gray-200 shadow-sm overflow-hidden">
-                            <div class="p-4 border-b border-gray-100 bg-gray-50">
-                                <div class="flex items-center justify-between mb-3">
-                                    <h2 class="font-bold text-gray-800">Danh sách bài thi</h2>
-                                    <div class="flex gap-2">
-                                        <button id="btn-new-exam"
-                                            class="px-3 py-1.5 bg-blue-600 text-white text-sm font-semibold rounded-lg hover:bg-blue-700 transition-colors flex items-center gap-1">
-                                            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-                                                    d="M12 4v16m8-8H4" />
-                                            </svg>
-                                            Thêm
-                                        </button>
-                                    </div>
-                                </div>
-                                <!-- Import/Export Row -->
-                                <div class="flex gap-2 mb-3">
-                                    <label class="flex-1 cursor-pointer">
-                                        <input type="file" id="import-file"
-                                            accept=".json,.doc,.docx,.pdf,.png,.jpg,.jpeg,.svg,.webp" class="hidden">
-                                        <div
-                                            class="w-full px-3 py-2 border border-dashed border-gray-300 rounded-lg text-sm text-gray-500 hover:border-blue-400 hover:text-blue-600 transition-colors flex items-center justify-center gap-2">
-                                            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-                                                    d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-8l-4-4m0 0L8 8m4-4v12" />
-                                            </svg>
-                                            Import (AI)
-                                        </div>
-                                    </label>
-                                </div>
-                                <!-- Subject Filter -->
-                                <select id="subject-filter"
-                                    class="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none">
-                                    <option value="">Tất cả môn học</option>
-                                </select>
-                            </div>
-
-                            <!-- Exam List -->
-                            <div id="exam-list" class="max-h-[60vh] overflow-y-auto custom-scrollbar">
-                                <div class="p-8 text-center text-gray-400">
-                                    <div
-                                        class="w-12 h-12 border-2 border-gray-200 border-t-blue-500 rounded-full spinner mx-auto mb-3">
-                                    </div>
-                                    <p>Đang tải danh sách...</p>
-                                </div>
-                            </div>
-                        </div>
                     </div>
-
-                    <!-- Right Panel: Exam Editor -->
-                    <div class="lg:col-span-2">
-                        <div id="editor-panel" class="bg-white rounded-2xl border border-gray-200 shadow-sm">
-                            <!-- Empty State -->
-                            <div id="editor-empty" class="p-12 text-center">
-                                <div
-                                    class="w-16 h-16 bg-gray-100 rounded-2xl flex items-center justify-center mx-auto mb-4">
-                                    <svg class="w-8 h-8 text-gray-400" fill="none" stroke="currentColor"
-                                        viewBox="0 0 24 24">
-                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-                                            d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
-                                    </svg>
-                                </div>
-                                <h3 class="text-lg font-bold text-gray-800 mb-2">Chọn hoặc tạo bài thi</h3>
-                                <p class="text-gray-500 text-sm mb-6">Chọn một bài thi từ danh sách, nhấn "Thêm" để tạo
-                                    mới,
-                                    hoặc Import từ file JSON/Word/PDF/Ảnh.</p>
-                                <div class="flex flex-col sm:flex-row gap-3 justify-center">
-                                    <button id="btn-new-exam-empty"
-                                        class="px-4 py-2 bg-blue-600 text-white text-sm font-semibold rounded-lg hover:bg-blue-700 transition-colors flex items-center justify-center gap-2">
-                                        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-                                                d="M12 4v16m8-8H4" />
-                                        </svg>
-                                        Tạo đề mới
-                                    </button>
-                                    <label class="cursor-pointer">
-                                        <input type="file" accept=".json,.doc,.docx,.pdf,.png,.jpg,.jpeg,.svg,.webp"
-                                            class="hidden import-file-trigger">
-                                        <div
-                                            class="px-4 py-2 border border-gray-200 text-gray-600 text-sm font-semibold rounded-lg hover:bg-gray-50 transition-colors flex items-center justify-center gap-2">
-                                            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-                                                    d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-8l-4-4m0 0L8 8m4-4v12" />
-                                            </svg>
-                                            Import (AI)
-                                        </div>
-                                    </label>
-                                </div>
-                            </div>
-
-                            <!-- Editor Form -->
-                            <div id="editor-form" class="hidden">
-                                <div class="p-4 border-b border-gray-100 bg-gray-50 flex items-center justify-between">
-                                    <h2 id="editor-title" class="font-bold text-gray-800">Tạo bài thi mới</h2>
-                                    <div class="flex gap-2">
-                                        <button id="btn-export"
-                                            class="hidden px-3 py-1.5 border border-gray-200 text-gray-600 text-sm font-semibold rounded-lg hover:bg-gray-50 transition-colors flex items-center gap-1"
-                                            title="Xuất file JSON">
-                                            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-                                                    d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4" />
-                                            </svg>
-                                            Export
-                                        </button>
-                                        <button id="btn-delete"
-                                            class="hidden px-3 py-1.5 border border-red-200 text-red-600 text-sm font-semibold rounded-lg hover:bg-red-50 transition-colors">
-                                            Xóa
-                                        </button>
-                                        <button id="btn-cancel"
-                                            class="px-3 py-1.5 border border-gray-200 text-gray-600 text-sm font-semibold rounded-lg hover:bg-gray-50 transition-colors">
-                                            Hủy
-                                        </button>
-                                        <button id="btn-save"
-                                            class="px-4 py-1.5 bg-emerald-600 text-white text-sm font-semibold rounded-lg hover:bg-emerald-700 transition-colors flex items-center gap-2">
-                                            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-                                                    d="M5 13l4 4L19 7" />
-                                            </svg>
-                                            Lưu
-                                        </button>
-                                    </div>
-                                </div>
-
-                                <div class="p-6 space-y-6 max-h-[70vh] overflow-y-auto custom-scrollbar">
-                                    <!-- Basic Info -->
-                                    <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
-                                        <div>
-                                            <label class="block text-sm font-semibold text-gray-700 mb-1">Môn học <span
-                                                    class="text-red-500">*</span></label>
-                                            <select id="exam-subject"
-                                                class="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none"
-                                                required>
-                                                <option value="">Chọn môn học</option>
-                                            </select>
-                                        </div>
-                                        <div>
-                                            <label class="block text-sm font-semibold text-gray-700 mb-1">Thời gian
-                                                (phút)
-                                                <span class="text-red-500">*</span></label>
-                                            <input type="number" id="exam-time"
-                                                class="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none"
-                                                placeholder="45" min="1" max="180" required>
-                                        </div>
-                                    </div>
-                                    <div>
-                                        <label class="block text-sm font-semibold text-gray-700 mb-1">Tiêu đề bài thi
-                                            <span class="text-red-500">*</span></label>
-                                        <input type="text" id="exam-title"
-                                            class="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none"
-                                            placeholder="Đề thi thử THPT QG 2025 - Mã 001" required>
-                                    </div>
-                                    <div>
-                                        <label class="block text-sm font-semibold text-gray-700 mb-1">Mã bài thi (ID)
-                                            <span class="text-gray-400 text-xs font-normal">(Tùy chọn - để trống sẽ tự
-                                                động
-                                                tạo)</span></label>
-                                        <input type="text" id="exam-custom-id"
-                                            class="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none font-mono"
-                                            placeholder="VD: toan-hk1-2025-001" pattern="[a-zA-Z0-9_-]*"
-                                            title="Chỉ cho phép chữ cái, số, dấu gạch ngang và dấu gạch dưới">
-                                        <p class="text-xs text-gray-400 mt-1">Chỉ dùng: a-z, A-Z, 0-9, -, _</p>
-                                    </div>
-
-                                    <!-- Raw Text Import Section -->
-                                    <details
-                                        class="border border-gray-200 rounded-xl overflow-hidden bg-gradient-to-r from-amber-50 to-orange-50">
-                                        <summary
-                                            class="px-4 py-3 cursor-pointer flex items-center justify-between border-b border-amber-100 hover:bg-amber-100/50 transition-colors">
-                                            <div class="flex items-center gap-2">
-                                                <div
-                                                    class="w-6 h-6 bg-amber-500 text-white text-xs font-bold rounded flex items-center justify-center">
-                                                    <svg class="w-4 h-4" fill="none" stroke="currentColor"
-                                                        viewBox="0 0 24 24">
-                                                        <path stroke-linecap="round" stroke-linejoin="round"
-                                                            stroke-width="2"
-                                                            d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
-                                                    </svg>
-                                                </div>
-                                                <h3 class="font-semibold text-amber-800">📋 Nhập Text thô (OCR)</h3>
-                                                <span
-                                                    class="text-xs bg-amber-100 text-amber-700 px-2 py-0.5 rounded-full">Tùy
-                                                    chọn</span>
-                                            </div>
-                                            <svg class="w-5 h-5 text-amber-600 transform transition-transform"
-                                                fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-                                                    d="M19 9l-7 7-7-7" />
-                                            </svg>
-                                        </summary>
-                                        <div class="p-4 space-y-3 bg-white">
-                                            <p class="text-xs text-gray-500">Paste văn bản đề thi vào đây để tự động
-                                                phân
-                                                tích thành các câu hỏi. Hỗ trợ: Trắc nghiệm (A.B.C.D), Đúng/Sai
-                                                (a.b.c.d),
-                                                Tự luận.</p>
-                                            <textarea id="raw-text-input"
-                                                class="w-full px-3 py-3 border border-gray-200 rounded-lg text-sm focus:ring-2 focus:ring-amber-500 focus:border-amber-500 outline-none resize-y font-mono bg-gray-50"
-                                                rows="8"
-                                                placeholder="Câu 1: Nội dung câu hỏi...&#10;A. Đáp án A&#10;B. Đáp án B&#10;C. Đáp án C&#10;D. Đáp án D&#10;Đáp án: A&#10;&#10;Câu 2: Cho các phát biểu sau:&#10;a) Mệnh đề 1 (Đúng)&#10;b) Mệnh đề 2 (Sai)&#10;..."></textarea>
-                                            <div class="flex flex-wrap gap-2">
-                                                <button type="button" id="btn-parse-raw-text"
-                                                    class="px-4 py-2 bg-amber-500 text-white text-sm font-semibold rounded-lg hover:bg-amber-600 transition-colors flex items-center gap-2">
-                                                    <svg class="w-4 h-4" fill="none" stroke="currentColor"
-                                                        viewBox="0 0 24 24">
-                                                        <path stroke-linecap="round" stroke-linejoin="round"
-                                                            stroke-width="2"
-                                                            d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
-                                                    </svg>
-                                                    Phân tích Text
-                                                </button>
-                                                <button type="button" id="btn-clear-raw-text"
-                                                    class="px-4 py-2 border border-gray-200 text-gray-600 text-sm font-semibold rounded-lg hover:bg-gray-50 transition-colors">
-                                                    Xóa
-                                                </button>
-                                            </div>
-                                            <div id="raw-text-result" class="hidden text-sm p-3 rounded-lg"></div>
-                                        </div>
-                                    </details>
-
-                                    <!-- Part 1: Multiple Choice -->
-                                    <div class="border border-gray-200 rounded-xl overflow-hidden">
-                                        <div
-                                            class="bg-blue-50 px-4 py-3 flex items-center justify-between border-b border-blue-100">
-                                            <div class="flex items-center gap-2">
-                                                <div
-                                                    class="w-6 h-6 bg-blue-600 text-white text-xs font-bold rounded flex items-center justify-center">
-                                                    1</div>
-                                                <h3 class="font-semibold text-blue-800">Phần I: Trắc nghiệm</h3>
-                                                <span id="part1-count"
-                                                    class="text-xs bg-blue-100 text-blue-700 px-2 py-0.5 rounded-full">0
-                                                    câu</span>
-                                            </div>
-                                            <button type="button" id="btn-add-part1"
-                                                class="text-sm text-blue-600 font-semibold hover:underline">+ Thêm câu
-                                                hỏi</button>
-                                        </div>
-                                        <div id="part1-questions" class="p-4 space-y-4 bg-white">
-                                            <p class="text-gray-400 text-sm text-center py-4">Chưa có câu hỏi nào</p>
-                                        </div>
-                                    </div>
-
-                                    <!-- Part 2: True/False -->
-                                    <div class="border border-gray-200 rounded-xl overflow-hidden">
-                                        <div
-                                            class="bg-indigo-50 px-4 py-3 flex items-center justify-between border-b border-indigo-100">
-                                            <div class="flex items-center gap-2">
-                                                <div
-                                                    class="w-6 h-6 bg-indigo-600 text-white text-xs font-bold rounded flex items-center justify-center">
-                                                    2</div>
-                                                <h3 class="font-semibold text-indigo-800">Phần II: Đúng/Sai</h3>
-                                                <span id="part2-count"
-                                                    class="text-xs bg-indigo-100 text-indigo-700 px-2 py-0.5 rounded-full">0
-                                                    câu</span>
-                                            </div>
-                                            <button type="button" id="btn-add-part2"
-                                                class="text-sm text-indigo-600 font-semibold hover:underline">+ Thêm câu
-                                                hỏi</button>
-                                        </div>
-                                        <div id="part2-questions" class="p-4 space-y-4 bg-white">
-                                            <p class="text-gray-400 text-sm text-center py-4">Chưa có câu hỏi nào</p>
-                                        </div>
-                                    </div>
-
-                                    <!-- Part 3: Short Answer -->
-                                    <div class="border border-gray-200 rounded-xl overflow-hidden">
-                                        <div
-                                            class="bg-emerald-50 px-4 py-3 flex items-center justify-between border-b border-emerald-100">
-                                            <div class="flex items-center gap-2">
-                                                <div
-                                                    class="w-6 h-6 bg-emerald-600 text-white text-xs font-bold rounded flex items-center justify-center">
-                                                    3</div>
-                                                <h3 class="font-semibold text-emerald-800">Phần III: Trả lời ngắn</h3>
-                                                <span id="part3-count"
-                                                    class="text-xs bg-emerald-100 text-emerald-700 px-2 py-0.5 rounded-full">0
-                                                    câu</span>
-                                            </div>
-                                            <button type="button" id="btn-add-part3"
-                                                class="text-sm text-emerald-600 font-semibold hover:underline">+ Thêm
-                                                câu
-                                                hỏi</button>
-                                        </div>
-                                        <div id="part3-questions" class="p-4 space-y-4 bg-white">
-                                            <p class="text-gray-400 text-sm text-center py-4">Chưa có câu hỏi nào</p>
-                                        </div>
-                                    </div>
-                                </div>
-                            </div>
-                        </div>
+                    <h3 class="text-lg font-bold text-gray-800 mb-2">Học sinh</h3>
+                    <p class="text-sm text-gray-500">Quản lý tài khoản người dùng</p>
+                    <div class="mt-4 flex items-center gap-2">
+                        <span class="px-2 py-0.5 bg-red-100 text-red-600 text-xs font-bold rounded">SUPER-ADMIN</span>
                     </div>
-                </div>
-            </div><!-- End grid -->
-        </div><!-- End section-practice -->
-
-        <!-- E-test Section -->
-        <div id="section-etest" class="admin-section">
-            <div class="bg-white rounded-2xl border border-gray-200 shadow-sm p-8 text-center">
-                <div class="w-16 h-16 bg-indigo-100 rounded-2xl flex items-center justify-center mx-auto mb-4">
-                    <svg class="w-8 h-8 text-indigo-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-                            d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-3 7h3m-3 4h3m-6-4h.01M9 16h.01" />
-                    </svg>
-                </div>
-                <h2 class="text-xl font-bold text-gray-800 mb-2">Quản lý E-test</h2>
-                <p class="text-gray-500 mb-4">Tạo và quản lý các bài kiểm tra chính thức</p>
-                <p class="text-sm text-indigo-600 font-medium">🚧 Đang phát triển...</p>
+                </a>
             </div>
-        </div>
+        </main>
 
-        <!-- Vocab Section -->
-        <div id="section-vocab" class="admin-section">
-            <div class="bg-white rounded-2xl border border-gray-200 shadow-sm p-8 text-center">
-                <div class="w-16 h-16 bg-emerald-100 rounded-2xl flex items-center justify-center mx-auto mb-4">
-                    <svg class="w-8 h-8 text-emerald-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-                            d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.747 0 3.332.477 4.5 1.253v13C19.832 18.477 18.247 18 16.5 18c-1.746 0-3.332.477-4.5 1.253" />
-                    </svg>
-                </div>
-                <h2 class="text-xl font-bold text-gray-800 mb-2">Quản lý Vocab</h2>
-                <p class="text-gray-500 mb-4">Tạo và quản lý các bộ từ vựng</p>
-                <p class="text-sm text-emerald-600 font-medium">🚧 Đang phát triển...</p>
-            </div>
-        </div>
-
-        <!-- Students Section (Super-Admin Only) -->
-        <div id="section-students" class="admin-section">
-            <div class="bg-white rounded-2xl border border-gray-200 shadow-sm overflow-hidden">
-                <!-- Header -->
-                <div class="p-4 border-b border-gray-100 bg-gray-50 flex items-center justify-between">
-                    <div class="flex items-center gap-3">
-                        <div class="w-10 h-10 bg-red-100 rounded-xl flex items-center justify-center">
-                            <svg class="w-5 h-5 text-red-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-                                    d="M12 4.354a4 4 0 110 5.292M15 21H3v-1a6 6 0 0112 0v1zm0 0h6v-1a6 6 0 00-9-5.197M13 7a4 4 0 11-8 0 4 4 0 018 0z" />
-                            </svg>
-                        </div>
-                        <div>
-                            <h2 class="font-bold text-gray-800">Quản lý Người dùng</h2>
-                            <p class="text-xs text-gray-500">Danh sách tài khoản được phép truy cập</p>
-                        </div>
-                    </div>
-                    <div class="flex items-center gap-2">
-                        <span id="students-count"
-                            class="px-2 py-1 bg-gray-100 text-gray-600 text-xs font-bold rounded-lg">0
-                            users</span>
-                        <button id="btn-refresh-students"
-                            class="px-3 py-1.5 bg-blue-600 text-white text-sm font-semibold rounded-lg hover:bg-blue-700 transition-colors flex items-center gap-1">
-                            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-                                    d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
-                            </svg>
-                            Refresh
-                        </button>
-                    </div>
-                </div>
-
-                <!-- Users Table -->
-                <div class="max-h-[65vh] overflow-y-auto custom-scrollbar">
-                    <table class="w-full text-sm">
-                        <thead class="bg-gray-50 sticky top-0">
-                            <tr>
-                                <th class="px-4 py-3 text-left font-semibold text-gray-600">Email</th>
-                                <th class="px-4 py-3 text-left font-semibold text-gray-600">Quyền</th>
-                                <th class="px-4 py-3 text-left font-semibold text-gray-600">Đăng nhập lần cuối</th>
-                            </tr>
-                        </thead>
-                        <tbody id="students-table-body" class="divide-y divide-gray-100">
-                            <tr>
-                                <td colspan="3" class="px-4 py-8 text-center text-gray-400">
-                                    <div class="flex flex-col items-center gap-2">
-                                        <svg class="w-8 h-8 spinner text-blue-500" fill="none" viewBox="0 0 24 24">
-                                            <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor"
-                                                stroke-width="4"></circle>
-                                            <path class="opacity-75" fill="currentColor"
-                                                d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z">
-                                            </path>
-                                        </svg>
-                                        <span>Đang tải danh sách...</span>
-                                    </div>
-                                </td>
-                            </tr>
-                        </tbody>
-                    </table>
-                </div>
-            </div>
-        </div>
-
-    </div><!-- End max-w-7xl -->
-
-    <!-- Delete Confirmation Modal -->
-    <div id="delete-modal"
-        class="hidden fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm p-4">
-        <div class="bg-white rounded-2xl p-6 max-w-sm w-full shadow-2xl">
-            <div class="w-12 h-12 bg-red-100 rounded-full flex items-center justify-center mx-auto mb-4">
-                <svg class="w-6 h-6 text-red-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-                        d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
-                </svg>
-            </div>
-            <h3 class="text-lg font-bold text-gray-800 text-center mb-2">Xóa bài thi?</h3>
-            <p class="text-gray-500 text-sm text-center mb-6">Hành động này không thể hoàn tác. Bài thi sẽ bị xóa
-                vĩnh
-                viễn khỏi hệ thống.</p>
-            <div class="flex gap-3">
-                <button id="btn-cancel-delete"
-                    class="flex-1 px-4 py-2.5 border border-gray-200 text-gray-600 font-semibold rounded-xl hover:bg-gray-50 transition-colors">Hủy</button>
-                <button id="btn-confirm-delete"
-                    class="flex-1 px-4 py-2.5 bg-red-600 text-white font-semibold rounded-xl hover:bg-red-700 transition-colors">Xóa</button>
-            </div>
-        </div>
+        <!-- Footer -->
+        <footer class="text-center py-8 text-gray-400 text-sm">
+            StudyStation Admin Panel v2.0
+        </footer>
     </div>
 
     <!-- Scripts -->
-    <script src="script.js" type="module"></script>
+    <script type="module">
+        import {
+            initGatekeeper,
+            checkIsAdmin,
+            checkIsSuperAdmin,
+            onUserChange
+        } from "../../gatekeeper.js";
+
+        // DOM refs
+        const refs = {
+            accessDenied: document.getElementById('access-denied'),
+            mainContent: document.getElementById('main-content'),
+            adminEmail: document.getElementById('admin-email'),
+            adminBadge: document.getElementById('admin-badge'),
+            superAdminBadge: document.getElementById('super-admin-badge'),
+            cardStudents: document.getElementById('card-students')
+        };
+
+        // Init
+        initGatekeeper('protected');
+
+        onUserChange(async (user) => {
+            if (!user) return;
+
+            setTimeout(() => {
+                if (!checkIsAdmin()) {
+                    refs.accessDenied.classList.remove('hidden');
+                    return;
+                }
+
+                refs.adminEmail.textContent = user.email;
+                refs.mainContent.classList.remove('hidden');
+
+                // Show super-admin features
+                if (checkIsSuperAdmin()) {
+                    refs.superAdminBadge.classList.remove('hidden');
+                    refs.cardStudents.classList.remove('hidden');
+                }
+            }, 500);
+        });
+    </script>
+
 </body>
 
 </html>
