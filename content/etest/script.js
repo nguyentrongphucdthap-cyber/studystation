@@ -321,7 +321,7 @@ const app = {
             if (firebaseExam) {
                 examData = {
                     title: firebaseExam.title,
-                    time: firebaseExam.time || 3600,
+                    time: (firebaseExam.time || 45) * 60, // Convert minutes to seconds
                     sections: (firebaseExam.sections || []).map(s => ({
                         title: s.title || 'Section',
                         type: s.type || 'multiple_choice',
