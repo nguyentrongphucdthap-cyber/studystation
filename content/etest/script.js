@@ -953,6 +953,7 @@ const app = {
 };
 
 // ============================================================================
-// DO NOT AUTO-INIT HERE
-// Initialization is handled by index.html module script after setting window.firebaseEtest
+// EXPOSE APP GLOBALLY
+// This is needed because module scripts in index.html can't access local variables
 // ============================================================================
+window.app = app;
