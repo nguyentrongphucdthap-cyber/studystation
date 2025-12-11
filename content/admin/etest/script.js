@@ -68,9 +68,24 @@ const refs = {
     btnCancelDelete: document.getElementById('btn-cancel-delete'),
     btnConfirmDelete: document.getElementById('btn-confirm-delete'),
 
+    // Text Import Modal
+    btnImportText: document.getElementById('btn-import-text'),
+    textImportModal: document.getElementById('text-import-modal'),
+    textImportInput: document.getElementById('text-import-input'),
+    textImportPreview: document.getElementById('text-import-preview'),
+    textImportPreviewContent: document.getElementById('text-import-preview-content'),
+    textImportError: document.getElementById('text-import-error'),
+    btnParseText: document.getElementById('btn-parse-text'),
+    btnCancelTextImport: document.getElementById('btn-cancel-text-import'),
+    btnConfirmTextImport: document.getElementById('btn-confirm-text-import'),
+
     // Toast
     toastContainer: document.getElementById('toast-container')
 };
+
+// Text import state
+let textImportData = null;
+
 
 // ============================================================
 // TOAST NOTIFICATIONS
@@ -669,6 +684,98 @@ function bindEvents() {
 
     // Import
     refs.importFile?.addEventListener('change', handleImport);
+
+    // Text Import
+    refs.btnImportText?.addEventListener('click', showTextImportModal);
+    refs.btnParseText?.addEventListener('click', parseTextImport);
+    refs.btnCancelTextImport?.addEventListener('click', hideTextImportModal);
+    refs.btnConfirmTextImport?.addEventListener('click', confirmTextImport);
+}
+
+// ============================================================
+// TEXT IMPORT FUNCTIONS
+// ============================================================
+
+function showTextImportModal() {
+    refs.textImportInput.value = '';
+    refs.textImportPreview.classList.add('hidden');
+    refs.textImportError.classList.add('hidden');
+    refs.btnConfirmTextImport.disabled = true;
+    textImportData = null;
+    refs.textImportModal.classList.remove('hidden');
+}
+
+function hideTextImportModal() {
+    refs.textImportModal.classList.add('hidden');
+    textImportData = null;
+}
+
+function parseTextImport() {
+    const text = refs.textImportInput.value.trim();
+    if (!text) {
+        refs.textImportError.textContent = 'Vui lòng nhập JSON';
+        refs.textImportError.classList.remove('hidden');
+        return;
+    }
+
+    refs.textImportError.classList.add('hidden');
+    refs.textImportPreview.classList.add('hidden');
+    refs.btnConfirmTextImport.disabled = true;
+
+    try {
+        const data = JSON.parse(text);
+
+        // Validate basic structure
+        if (!data.title) {
+            refs.textImportError.textContent = 'Thiếu trường "title"';
+            refs.textImportError.classList.remove('hidden');
+            return;
+        }
+
+        textImportData = data;
+
+        // Show preview
+        const sectionCount = data.sections ? data.sections.length : 0;
+        const questionCount = data.sections ? data.sections.reduce((sum, s) => sum + (s.questions?.length || 0), 0) : 0;
+
+        refs.textImportPreviewContent.innerHTML = `
+            <div class="space-y-1">
+                <p><strong>Tiêu đề:</strong> ${data.title}</p>
+                <p><strong>Loại:</strong> ${data.examType || 'Không xác định'}</p>
+                <p><strong>Thời gian:</strong> ${data.time || 0} phút</p>
+                <p><strong>Số phần:</strong> ${sectionCount}</p>
+                <p><strong>Số câu hỏi:</strong> ${questionCount}</p>
+            </div>
+        `;
+        refs.textImportPreview.classList.remove('hidden');
+        refs.btnConfirmTextImport.disabled = false;
+
+    } catch (err) {
+        refs.textImportError.textContent = 'JSON không hợp lệ: ' + err.message;
+        refs.textImportError.classList.remove('hidden');
+    }
+}
+
+async function confirmTextImport() {
+    if (!textImportData) return;
+
+    try {
+        refs.btnConfirmTextImport.disabled = true;
+        refs.btnConfirmTextImport.textContent = 'Đang import...';
+
+        const newId = await createEtestExam(textImportData);
+        showToast(`Đã import thành công E-test: ${textImportData.title}`);
+        hideTextImportModal();
+        await loadExams();
+
+    } catch (error) {
+        console.error('Error importing E-test:', error);
+        refs.textImportError.textContent = 'Lỗi import: ' + error.message;
+        refs.textImportError.classList.remove('hidden');
+    } finally {
+        refs.btnConfirmTextImport.disabled = false;
+        refs.btnConfirmTextImport.textContent = 'Import';
+    }
 }
 
 // ============================================================
