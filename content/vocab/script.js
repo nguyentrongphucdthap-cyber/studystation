@@ -396,11 +396,10 @@ function renderMusicPlaylist() {
         const btn = document.createElement('button');
         btn.type = 'button';
         const isActive = index === currentTrackIndex;
-        btn.className = `w-full flex items-center justify-between gap-3 rounded-2xl border px-3 py-2 text-left transition-all btn-press ${
-            isActive
+        btn.className = `w-full flex items-center justify-between gap-3 rounded-2xl border px-3 py-2 text-left transition-all btn-press ${isActive
                 ? 'border-indigo-400 bg-indigo-50 dark:bg-indigo-900/20 text-indigo-700 dark:text-indigo-100'
                 : 'border-slate-200 dark:border-slate-700 text-slate-600 dark:text-slate-200 hover:border-indigo-300 dark:hover:border-indigo-500 hover:bg-slate-50 dark:hover:bg-slate-800'
-        }`;
+            }`;
         const contentWrap = document.createElement('div');
         contentWrap.className = 'flex items-center gap-3 flex-1';
         const thumb = document.createElement('img');
@@ -726,7 +725,7 @@ function toggleMusicOverlay(visible) {
 function initTheme() {
     const savedTheme = localStorage.getItem('theme');
     const isDark = savedTheme === 'dark' || (!savedTheme && window.matchMedia('(prefers-color-scheme: dark)').matches);
-    
+
     if (isDark) document.documentElement.classList.add('dark');
     else document.documentElement.classList.remove('dark');
 }
@@ -872,10 +871,14 @@ function persistMatchingState() {
 
 async function loadVocabSets() {
     if (vocabLoaded) return;
-    
+
     // Show loading
     showLoading(true);
-    
+
+    let localSets = [];
+    let firebaseSets = [];
+
+    // 1. Load from local JSON files (existing logic)
     try {
         const response = await fetch(VOCAB_INDEX_URL);
         if (!response.ok) throw new Error(`HTTP ${response.status}`);
@@ -920,15 +923,92 @@ async function loadVocabSets() {
         });
 
         const categoryResults = await Promise.all(categoryPromises);
-        VOCAB_SETS = categoryResults.flat();
+        localSets = categoryResults.flat();
     } catch (error) {
-        console.error('Không thể tải dữ liệu từ vựng:', error);
-        VOCAB_SETS = [];
-    } finally {
-        vocabLoaded = true;
-        showLoading(false);
+        console.error('Không thể tải dữ liệu từ vựng local:', error);
+        localSets = [];
     }
+
+    // 2. Load from Firebase (new)
+    try {
+        if (window.firebaseVocab && typeof window.firebaseVocab.getAllVocabSets === 'function') {
+            const fbSets = await window.firebaseVocab.getAllVocabSets();
+            firebaseSets = (fbSets || []).map(transformFirebaseToDisplayFormat).filter(Boolean);
+            console.log(`[Vocab] Loaded ${firebaseSets.length} sets from Firebase`);
+        }
+    } catch (fbError) {
+        console.warn('Không thể tải từ vựng từ Firebase:', fbError);
+        firebaseSets = [];
+    }
+
+    // 3. Merge: Firebase sets take priority over local sets with same ID
+    const localIds = new Set(localSets.map(s => s.id));
+    const mergedSets = [...localSets];
+
+    for (const fbSet of firebaseSets) {
+        const existingIndex = mergedSets.findIndex(s => s.id === fbSet.id);
+        if (existingIndex >= 0) {
+            // Firebase overrides local
+            mergedSets[existingIndex] = fbSet;
+        } else {
+            // Add new Firebase set
+            mergedSets.push(fbSet);
+        }
+    }
+
+    VOCAB_SETS = mergedSets;
+    console.log(`[Vocab] Total sets loaded: ${VOCAB_SETS.length} (Local: ${localSets.length}, Firebase: ${firebaseSets.length})`);
+
+    vocabLoaded = true;
+    showLoading(false);
 }
+
+// Transform Firebase vocab set structure to display format
+function transformFirebaseToDisplayFormat(fbSet) {
+    if (!fbSet || !fbSet.id) return null;
+
+    // Map Firebase category to categoryId
+    const categoryMap = {
+        'gdpt': 'gdpt',
+        'advanced_gdpt': 'advanced_gdpt',
+        'topic': 'topic'
+    };
+
+    // Convert words from object/array to array format
+    let words = [];
+    if (fbSet.words) {
+        if (Array.isArray(fbSet.words)) {
+            words = fbSet.words;
+        } else if (typeof fbSet.words === 'object') {
+            words = Object.values(fbSet.words);
+        }
+    }
+
+    if (words.length === 0) return null;
+
+    const setId = fbSet.id;
+    const title = fbSet.name || fbSet.title || 'Untitled';
+
+    return {
+        id: setId,
+        categoryId: categoryMap[fbSet.category] || 'topic',
+        title: title,
+        description: fbSet.description || fbSet.topic || title,
+        color: fbSet.color || 'indigo',
+        source: 'firebase', // Mark as Firebase source for debugging
+        data: words.map((word, idx) => ({
+            id: word.id || idx + 1,
+            word: word.word || '',
+            type: word.type || '',
+            ipa: word.ipa || '',
+            meaning: word.meaning || '',
+            example: word.example || '',
+            topicId: fbSet.topic || setId,
+            topicTitle: title
+        }))
+    };
+}
+
 
 // Attempt to discover JSON files in a folder so new vocab sets auto-load
 async function getFilesToScan(folder) {
@@ -1065,11 +1145,11 @@ function showLoading(show) {
     }
 }
 
-function trackSessionStart() { 
-    sessionStartTime = Date.now(); 
-    userStats.sessions++; 
+function trackSessionStart() {
+    sessionStartTime = Date.now();
+    userStats.sessions++;
     sessionWrongItems = []; // Reset wrong words for this session
-    saveStats(); 
+    saveStats();
 }
 
 function trackSessionEnd() {
@@ -1082,10 +1162,10 @@ function trackSessionEnd() {
 }
 
 // Updated Logic: Only count as "Learned" if the specific set/word combo is new
-function trackWordLearned(wordId, sourceSetId = currentSet?.id) { 
+function trackWordLearned(wordId, sourceSetId = currentSet?.id) {
     if (wordId == null) return false;
     if (!Array.isArray(userStats.learnedIds)) userStats.learnedIds = [];
-    
+
     const key = buildLearnedKey(sourceSetId, wordId);
     const legacyKey = buildLegacyLearnedKey(wordId);
 
@@ -1104,10 +1184,10 @@ function trackWordLearned(wordId, sourceSetId = currentSet?.id) {
     }
 
     if (key) {
-        userStats.totalWords++; 
+        userStats.totalWords++;
         userStats.learnedIds.push(key);
         learnedWordCache.add(key);
-        saveStats(); 
+        saveStats();
         return true; // New word learned
     }
     return false; // Already known or missing key
@@ -1159,7 +1239,7 @@ function clearWeakWordEntries(entries) {
 }
 
 function resetData() {
-    if(confirm('Bạn có chắc muốn xóa toàn bộ lịch sử học tập?')) {
+    if (confirm('Bạn có chắc muốn xóa toàn bộ lịch sử học tập?')) {
         userStats = normalizeUserStats({ ...DEFAULT_USER_STATS });
         refreshLearnedWordCache();
         saveStats();
@@ -1177,7 +1257,7 @@ function showView(viewName) {
 
     const container = document.getElementById('app-container');
     const template = document.getElementById(`tpl-${viewName}`);
-    
+
     container.innerHTML = '';
     if (template) {
         container.appendChild(template.content.cloneNode(true));
@@ -1206,14 +1286,14 @@ function renderStatsView() {
     document.getElementById('stats-words').textContent = userStats.totalWords;
     document.getElementById('stats-time').textContent = userStats.totalMinutes;
     document.getElementById('stats-sessions').textContent = userStats.sessions;
-    
+
     // Calculate combined accuracy for Matching and Learn
     const matchingStats = userStats.matchingStats || { total: 0, correct: 0 };
     const learnStats = userStats.learnStats || { total: 0, correct: 0 };
     const totalAttempts = matchingStats.total + learnStats.total;
     const totalCorrect = matchingStats.correct + learnStats.correct;
     const combinedAccuracy = totalAttempts > 0 ? Math.round((totalCorrect / totalAttempts) * 100) : 0;
-    
+
     // Update accuracy display
     const accuracyEl = document.getElementById('stats-accuracy');
     if (accuracyEl) {
@@ -1498,7 +1578,7 @@ function renderLibrary() {
             renderLibrary();
         };
     }
-    
+
     container.innerHTML = '';
     let hasResults = false;
 
@@ -1551,15 +1631,15 @@ function renderLibrary() {
     }
 
     Object.keys(CATEGORIES).forEach(catKey => {
-        const sets = VOCAB_SETS.filter(s => 
-            s.categoryId === catKey && 
+        const sets = VOCAB_SETS.filter(s =>
+            s.categoryId === catKey &&
             (s.title.toLowerCase().includes(searchTerm) || s.description.toLowerCase().includes(searchTerm))
         );
-        
+
         if (sets.length > 0) {
             const section = document.createElement('div');
             section.className = 'w-full';
-            
+
             const header = document.createElement('h3');
             header.className = 'text-lg font-bold text-slate-700 dark:text-slate-200 mb-3 flex items-center gap-2';
             header.innerHTML = `<span class="w-1.5 h-6 bg-indigo-500 rounded-full"></span> ${CATEGORIES[catKey]}`;
@@ -1585,14 +1665,14 @@ function renderLibrary() {
                 }
                 card.className = cardClasses;
                 card.onclick = () => selectSet(set.id);
-                
+
                 card.innerHTML = `
                     <div>
                         <div class="flex justify-between items-start mb-2">
                             ${isComplete
-                                ? `<div class="flex items-center gap-1 text-emerald-600 dark:text-emerald-300 text-[11px] font-bold uppercase tracking-wider"><i class="ph-fill ph-check-circle"></i><span>ĐÃ HOÀN THÀNH</span></div>`
-                                : `<span class="px-2 py-0.5 rounded bg-${set.color}-50 dark:bg-${set.color}-900/30 text-${set.color}-600 dark:text-${set.color}-300 text-[10px] font-bold uppercase tracking-wider">${set.data.length} thẻ</span>`
-                            }
+                        ? `<div class="flex items-center gap-1 text-emerald-600 dark:text-emerald-300 text-[11px] font-bold uppercase tracking-wider"><i class="ph-fill ph-check-circle"></i><span>ĐÃ HOÀN THÀNH</span></div>`
+                        : `<span class="px-2 py-0.5 rounded bg-${set.color}-50 dark:bg-${set.color}-900/30 text-${set.color}-600 dark:text-${set.color}-300 text-[10px] font-bold uppercase tracking-wider">${set.data.length} thẻ</span>`
+                    }
                             <i class="ph ph-caret-right ${isComplete ? 'text-emerald-400' : 'text-slate-300 dark:text-slate-600'}"></i>
                         </div>
                         <h4 class="text-lg font-bold text-slate-800 dark:text-white mb-1 line-clamp-2">${set.title}</h4>
@@ -1735,7 +1815,7 @@ function applyCustomCount() {
 function updateSelectedCountDisplay() {
     const display = document.getElementById('selected-count-text');
     if (!display) return;
-    
+
     if (!currentSet) {
         display.textContent = 'Chưa chọn';
         return;
@@ -1761,7 +1841,7 @@ function updateWordCountButtons() {
     buttons.forEach(btn => {
         const onclick = btn.getAttribute('onclick') || '';
         let isActive = false;
-        
+
         // Check based on mode and count
         if (wordSelectionMode === 'all' && onclick.includes("'all'")) {
             isActive = true;
@@ -1770,7 +1850,7 @@ function updateWordCountButtons() {
         } else if (wordSelectionMode === 'unlearned' && onclick.includes("'unlearned'")) {
             isActive = true;
         }
-        
+
         if (isActive) {
             btn.classList.add('border-indigo-500', 'bg-indigo-100', 'dark:bg-indigo-900/30', 'text-indigo-700', 'dark:text-indigo-300');
             btn.classList.remove('border-slate-200', 'dark:border-slate-700', 'bg-slate-50', 'dark:bg-slate-800');
@@ -1835,7 +1915,7 @@ function applySmartRandom(words, targetCount) {
 
     // Select words
     const selected = [];
-    
+
     // Add from new words (random)
     if (fromNew > 0) {
         const shuffledNew = shuffleArray([...newWords]);
@@ -1893,7 +1973,7 @@ function startLearn() {
     learnIndex = 0;
     learnStats = { correct: 0, wrong: 0 };
     lastSessionConfig = { mode: 'learn', dataset: isRelearnMode ? 'weak' : 'full' };
-    
+
     // Randomize question order
     learnQuestions = currentSessionData.map(item => ({
         ...item,
@@ -1938,7 +2018,7 @@ function renderLearnQuestion() {
 
     const qTypeEl = document.getElementById('learn-q-type');
     const qTextEl = document.getElementById('learn-question');
-    
+
     if (q.isEngToViet) {
         qTypeEl.textContent = 'Thuật ngữ (Tiếng Anh)';
         qTextEl.textContent = q.word;
@@ -1955,14 +2035,14 @@ function renderLearnQuestion() {
         .filter(item => item.id !== q.id)
         .sort(() => 0.5 - Math.random())
         .slice(0, 3);
-    
+
     if (distractors.length < 3) {
-            const otherWords = VOCAB_SETS
+        const otherWords = VOCAB_SETS
             .filter(s => s.id !== currentSet.id)
             .flatMap(s => s.data)
             .sort(() => 0.5 - Math.random())
             .slice(0, 3 - distractors.length);
-            distractors = [...distractors, ...otherWords];
+        distractors = [...distractors, ...otherWords];
     }
 
     const options = [q, ...distractors].sort(() => 0.5 - Math.random());
@@ -1971,9 +2051,9 @@ function renderLearnQuestion() {
         const btn = document.createElement('button');
         // OPTIMIZED COLORS FOR LIGHT MODE: bg-white instead of slate-50, border-slate-200, shadow-sm
         btn.className = 'w-full p-4 rounded-xl text-left bg-white dark:bg-slate-800 border-2 border-slate-200 dark:border-slate-700 shadow-sm hover:border-indigo-400 dark:hover:border-cyan-800 transition-all font-medium text-slate-700 dark:text-slate-300 text-sm md:text-base btn-press relative overflow-hidden';
-        
+
         btn.textContent = q.isEngToViet ? opt.meaning : opt.word;
-        
+
         btn.onclick = () => handleLearnAnswer(opt.id, q, btn);
         optionsGrid.appendChild(btn);
     });
@@ -1986,13 +2066,13 @@ function handleLearnAnswer(selectedId, questionItem, btn) {
     const correctId = questionItem.id;
     const sourceSetId = questionItem._sourceSetId || currentSet?.id;
     const isCorrect = selectedId === correctId;
-    
+
     if (isCorrect) {
         btn.classList.add('anim-correct');
         learnStats.correct++;
         trackWordLearned(correctId, sourceSetId);
         // If correct in relearn mode, remove from weak words
-        if(isRelearnMode) clearWeakWordEntries([{ wordId: correctId, sourceSetId }]);
+        if (isRelearnMode) clearWeakWordEntries([{ wordId: correctId, sourceSetId }]);
     } else {
         btn.classList.add('anim-wrong');
         learnStats.wrong++;
@@ -2011,21 +2091,21 @@ function handleLearnAnswer(selectedId, questionItem, btn) {
 
 function finishLearn() {
     saveWeakWords(); // Save any wrong words to persistent storage
-    
+
     // Calculate accuracy
     const totalQuestions = learnQuestions.length;
     const accuracy = totalQuestions > 0 ? Math.round((learnStats.correct / totalQuestions) * 100) : 0;
     const elapsedSeconds = sessionStartTime ? Math.round((Date.now() - sessionStartTime) / 1000) : 0;
-    
+
     // Update stats
     if (!userStats.learnStats) userStats.learnStats = { total: 0, correct: 0 };
     userStats.learnStats.total += totalQuestions;
     userStats.learnStats.correct += learnStats.correct;
     saveStats();
-    
+
     showView('result');
     document.getElementById('learn-progress-bar').style.width = `100%`;
-    
+
     // Show stats with accuracy
     const statsBlock = document.getElementById('result-stats-block');
     if (statsBlock) {
@@ -2063,7 +2143,7 @@ function finishLearn() {
     let msg = `Bạn làm đúng ${learnStats.correct}/${totalQuestions} câu.`;
     if (learnStats.correct === totalQuestions) msg = "Tuyệt đối! Bạn đã nắm vững bài học.";
     else if (learnStats.correct > learnStats.wrong) msg = "Làm tốt lắm! Hãy cố gắng hơn.";
-    
+
     document.getElementById('result-message').textContent = msg;
     isRelearnMode = false;
     currentSessionData = cloneSessionDataFromSet(currentSet);
@@ -2094,34 +2174,34 @@ function startFlashcards() {
     lastSessionConfig = { mode: 'flashcard', dataset: isRelearnMode ? 'weak' : 'full' };
 
     fcIndex = 0; fcIsFlipped = false; fcStats = { known: 0, learning: 0 };
-    trackSessionStart(); 
-    showView('flashcard'); 
-    updateFlashcardUI(); 
+    trackSessionStart();
+    showView('flashcard');
+    updateFlashcardUI();
     initDragEvents();
 }
 
 function updateFlashcardUI() {
-    const data = currentSessionData[fcIndex]; 
+    const data = currentSessionData[fcIndex];
     if (!data) return;
-    
+
     const card = document.getElementById('flashcard');
-    card.style.transform = ''; 
-    card.classList.remove('rotate-y-180', 'no-transition'); 
+    card.style.transform = '';
+    card.classList.remove('rotate-y-180', 'no-transition');
     card.classList.add('card-transition');
-    
-    document.getElementById('label-left').style.opacity = '0'; 
-    document.getElementById('label-right').style.opacity = '0'; 
-    card.style.borderColor = ''; 
+
+    document.getElementById('label-left').style.opacity = '0';
+    document.getElementById('label-right').style.opacity = '0';
+    card.style.borderColor = '';
     fcIsFlipped = false;
-    
-    document.getElementById('fc-word').textContent = data.word; 
+
+    document.getElementById('fc-word').textContent = data.word;
     document.getElementById('fc-ipa').textContent = data.ipa;
-    document.getElementById('fc-type').textContent = data.type; 
+    document.getElementById('fc-type').textContent = data.type;
     document.getElementById('fc-meaning').textContent = data.meaning;
     document.getElementById('fc-example').textContent = `"${data.example}"`;
     document.getElementById('fc-progress').textContent = `${fcIndex + 1} / ${currentSessionData.length}`;
-    
-    document.getElementById('stat-known').textContent = fcStats.known; 
+
+    document.getElementById('stat-known').textContent = fcStats.known;
     document.getElementById('stat-learning').textContent = fcStats.learning;
 }
 
@@ -2186,35 +2266,35 @@ function initDragEvents() {
 function toggleFlip() { const card = document.getElementById('flashcard'); card.style.transform = `translateX(0) rotate(0deg) ${fcIsFlipped ? '' : 'rotateY(180deg)'}`; fcIsFlipped = !fcIsFlipped; }
 function triggerSwipe(dir) { const card = document.getElementById('flashcard'); card.classList.add('card-transition'); const moveX = dir === 'right' ? window.innerWidth : -window.innerWidth; const rotate = dir === 'right' ? 20 : -20; card.style.transform = `translateX(${moveX}px) rotate(${rotate}deg)`; setTimeout(() => processSwipe(dir), 300); }
 
-function processSwipe(dir) { 
-    if (!currentSet) return; 
+function processSwipe(dir) {
+    if (!currentSet) return;
     const currentCard = currentSessionData[fcIndex];
     if (!currentCard) return;
     const currentWordId = currentCard.id;
     const sourceSetId = getSourceSetIdFromItem(currentCard);
 
-    if (dir === 'right') { 
-        fcStats.known++; 
-        trackWordLearned(currentWordId, sourceSetId); 
-        if(isRelearnMode) clearWeakWordEntries([{ wordId: currentWordId, sourceSetId }]);
-    } else { 
-        fcStats.learning++; 
+    if (dir === 'right') {
+        fcStats.known++;
+        trackWordLearned(currentWordId, sourceSetId);
+        if (isRelearnMode) clearWeakWordEntries([{ wordId: currentWordId, sourceSetId }]);
+    } else {
+        fcStats.learning++;
         recordSessionWrong(currentWordId, sourceSetId);
-    } 
-    
-    fcIndex++; 
-    if (fcIndex < currentSessionData.length) setTimeout(updateFlashcardUI, 50); 
-    else finishFlashcards(); 
+    }
+
+    fcIndex++;
+    if (fcIndex < currentSessionData.length) setTimeout(updateFlashcardUI, 50);
+    else finishFlashcards();
 }
 
-function finishFlashcards() { 
+function finishFlashcards() {
     saveWeakWords();
 
-    showView('result'); 
-    document.getElementById('res-known').textContent = fcStats.known; 
-    document.getElementById('res-learning').textContent = fcStats.learning; 
-    document.getElementById('result-stats-block').style.display = 'grid'; 
-    
+    showView('result');
+    document.getElementById('res-known').textContent = fcStats.known;
+    document.getElementById('res-learning').textContent = fcStats.learning;
+    document.getElementById('result-stats-block').style.display = 'grid';
+
     const btnRelearn = document.getElementById('btn-relearn');
     const uniqueWrongCount = getUniqueSessionWrongCount();
     if (fcStats.learning > 0 || uniqueWrongCount > 0) {
@@ -2224,16 +2304,16 @@ function finishFlashcards() {
         btnRelearn.classList.add('hidden');
     }
 
-    document.getElementById('result-message').textContent = fcStats.known === currentSessionData.length ? "Tuyệt đỉnh! Đã thuộc hết." : "Cố lên! Ôn lại các từ chưa thuộc nhé."; 
-    
+    document.getElementById('result-message').textContent = fcStats.known === currentSessionData.length ? "Tuyệt đỉnh! Đã thuộc hết." : "Cố lên! Ôn lại các từ chưa thuộc nhé.";
+
     // Reset mode
     isRelearnMode = false;
     currentSessionData = cloneSessionDataFromSet(currentSet);
     updateRepeatButton();
 }
 
-function startMatching() { 
-    if (!currentSet) return; 
+function startMatching() {
+    if (!currentSet) return;
     // Use selected words if available, otherwise use all words
     currentSessionData = getSelectedWords();
     if (currentSessionData.length === 0) {
@@ -2245,10 +2325,10 @@ function startMatching() {
     }
     isRelearnMode = false;
     lastSessionConfig = { mode: 'matching', dataset: currentSet.id === 'weak-review' ? 'weak' : 'full' };
-    trackSessionStart(); 
-    showView('matching'); 
-    matchSelected = []; 
-    matchMatched = []; 
+    trackSessionStart();
+    showView('matching');
+    matchSelected = [];
+    matchMatched = [];
     matchTime = 0;
     matchCurrentBatch = 0;
     matchTotalPairs = currentSessionData.length;
@@ -2256,11 +2336,11 @@ function startMatching() {
     matchWrongAttempts = 0;
     matchBatchSizes = [];
     matchBatchProgress = [];
-    startMatchTimer(); 
-    
+    startMatchTimer();
+
     // Create all cards grouped by batch (10 pairs per batch)
     const shuffledData = shuffleArray([...currentSessionData]);
-    let cards = []; 
+    let cards = [];
     shuffledData.forEach((item, index) => {
         const batchIndex = Math.floor(index / MATCH_BATCH_PAIR_COUNT);
         matchBatchSizes[batchIndex] = (matchBatchSizes[batchIndex] || 0) + 1;
@@ -2268,9 +2348,9 @@ function startMatching() {
         const sourceSetId = getSourceSetIdFromItem(item, currentSet?.id);
         cards.push({ id: `w-${batchIndex}-${item.id}`, refId: item.id, content: item.word, batch: batchIndex, sourceSetId });
         cards.push({ id: `m-${batchIndex}-${item.id}`, refId: item.id, content: item.meaning, batch: batchIndex, sourceSetId });
-    }); 
+    });
     matchCards = cards;
-    
+
     // Display first batch (10 pairs = 20 cards)
     renderMatchingBatch();
     updateMatchProgressText();
@@ -2279,24 +2359,24 @@ function startMatching() {
 function renderMatchingBatch() {
     const grid = document.getElementById('matching-grid');
     if (!grid) return;
-    
+
     grid.innerHTML = '';
-    
+
     const batchCards = matchCards.filter(card => card.batch === matchCurrentBatch);
     if (!batchCards.length) return;
     const cardsToRender = shuffleArray([...batchCards]);
-    
+
     cardsToRender.forEach(card => {
         const isMatched = matchMatched.includes(card.id);
         const el = document.createElement('div');
-        
+
         if (isMatched) {
             el.className = 'bg-green-100 dark:bg-green-900/30 border-2 border-green-500 dark:border-green-600 text-green-700 dark:text-green-300 rounded-2xl p-2 md:p-3 flex items-center justify-center text-center h-full font-bold anim-correct text-xs md:text-sm shadow-inner';
         } else {
             el.className = 'bg-white dark:bg-dark-card border-2 border-slate-200 dark:border-slate-700 rounded-2xl p-2 md:p-3 flex items-center justify-center text-center cursor-pointer hover:border-indigo-300 dark:hover:border-indigo-600 hover:bg-slate-50 dark:hover:bg-slate-800 transition-all select-none h-full font-medium text-slate-700 dark:text-slate-200 active:scale-95 text-xs md:text-sm btn-press shadow-sm break-words';
             el.onclick = () => handleMatchClick(card, el);
         }
-        
+
         el.textContent = card.content;
         grid.appendChild(el);
     });
@@ -2344,12 +2424,12 @@ function deriveMatchBatchProgress(cards = [], matchedIds = []) {
     });
     return progress;
 }
-function handleMatchClick(card, el) { 
+function handleMatchClick(card, el) {
     if (!card) return;
-    if (matchMatched.includes(card.id) || matchSelected.some(s => s.card.id === card.id) || matchSelected.length >= 2) return; 
-    el.classList.add('border-indigo-500', 'bg-indigo-50', 'dark:bg-indigo-900/40', 'dark:border-indigo-500'); 
-    matchSelected.push({ card, el }); 
-    if (matchSelected.length === 2) setTimeout(checkMatch, 300); 
+    if (matchMatched.includes(card.id) || matchSelected.some(s => s.card.id === card.id) || matchSelected.length >= 2) return;
+    el.classList.add('border-indigo-500', 'bg-indigo-50', 'dark:bg-indigo-900/40', 'dark:border-indigo-500');
+    matchSelected.push({ card, el });
+    if (matchSelected.length === 2) setTimeout(checkMatch, 300);
 }
 
 function checkMatch() {
@@ -2364,11 +2444,11 @@ function checkMatch() {
         matchCorrectPairs++;
         const batchIndex = cardA.batch ?? matchCurrentBatch;
         matchBatchProgress[batchIndex] = (matchBatchProgress[batchIndex] || 0) + 1;
-        
+
         // Track word as learned
         trackWordLearned(cardA.refId, cardA.sourceSetId);
         updateMatchProgressText();
-        
+
         // Check if current batch is complete before moving on
         const targetPairs = matchBatchSizes[batchIndex] || 0;
         const batchCompleted = targetPairs > 0 && matchBatchProgress[batchIndex] >= targetPairs;
@@ -2376,7 +2456,7 @@ function checkMatch() {
             matchCurrentBatch++;
             setTimeout(() => renderMatchingBatch(), 500);
         }
-        
+
         // Check if all pairs are matched
         if (matchCorrectPairs === matchTotalPairs) {
             stopMatchTimer();
@@ -2397,24 +2477,24 @@ function finishMatching() {
     // Calculate accuracy
     const totalAttempts = matchCorrectPairs + matchWrongAttempts;
     const accuracy = totalAttempts > 0 ? Math.round((matchCorrectPairs / totalAttempts) * 100) : 0;
-    
+
     // Update stats
     if (!userStats.matchingStats) userStats.matchingStats = { total: 0, correct: 0 };
     userStats.matchingStats.total += totalAttempts;
     userStats.matchingStats.correct += matchCorrectPairs;
     saveStats();
-    
+
     // Show result with accuracy
     showMatchingResult(`Hoàn thành trong ${formatTime(matchTime)}!`, accuracy, matchCorrectPairs, matchTotalPairs);
 }
-function startMatchTimer() { const timerEl = document.getElementById('match-timer'); matchTimerInterval = setInterval(() => { matchTime++; if(timerEl) timerEl.textContent = formatTime(matchTime); }, 1000); }
+function startMatchTimer() { const timerEl = document.getElementById('match-timer'); matchTimerInterval = setInterval(() => { matchTime++; if (timerEl) timerEl.textContent = formatTime(matchTime); }, 1000); }
 function stopMatchTimer() { clearInterval(matchTimerInterval); }
-function formatTime(s) { return `${Math.floor(s/60).toString().padStart(2,'0')}:${(s%60).toString().padStart(2,'0')}`; }
+function formatTime(s) { return `${Math.floor(s / 60).toString().padStart(2, '0')}:${(s % 60).toString().padStart(2, '0')}`; }
 // Helper to show result from match
 function showMatchingResult(msg, accuracy, correct, total) {
     showView('result');
     document.getElementById('result-message').textContent = msg;
-    
+
     // Show accuracy stats
     const statsBlock = document.getElementById('result-stats-block');
     if (statsBlock) {
@@ -2430,7 +2510,7 @@ function showMatchingResult(msg, accuracy, correct, total) {
             </div>
         `;
     }
-    
+
     document.getElementById('btn-relearn').classList.add('hidden');
     updateRepeatButton();
 }
