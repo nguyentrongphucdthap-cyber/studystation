@@ -20,6 +20,74 @@
         body {
             font-family: 'Be Vietnam Pro', sans-serif;
         }
+
+        /* Toast styles */
+        .toast {
+            position: fixed;
+            bottom: 20px;
+            right: 20px;
+            padding: 12px 24px;
+            border-radius: 12px;
+            color: white;
+            font-weight: 500;
+            z-index: 9999;
+            animation: slideIn 0.3s ease-out;
+        }
+
+        .toast.success {
+            background: linear-gradient(135deg, #10b981 0%, #059669 100%);
+        }
+
+        .toast.error {
+            background: linear-gradient(135deg, #ef4444 0%, #dc2626 100%);
+        }
+
+        @keyframes slideIn {
+            from {
+                transform: translateX(100%);
+                opacity: 0;
+            }
+
+            to {
+                transform: translateX(0);
+                opacity: 1;
+            }
+        }
+
+        /* Loading spinner */
+        .spinner {
+            border: 3px solid #f3f3f3;
+            border-top: 3px solid #10b981;
+            border-radius: 50%;
+            width: 24px;
+            height: 24px;
+            animation: spin 1s linear infinite;
+        }
+
+        @keyframes spin {
+            0% {
+                transform: rotate(0deg);
+            }
+
+            100% {
+                transform: rotate(360deg);
+            }
+        }
+
+        /* Modal backdrop */
+        .modal-backdrop {
+            background-color: rgba(0, 0, 0, 0.5);
+            backdrop-filter: blur(4px);
+        }
+
+        /* Word row animation */
+        .word-row {
+            transition: all 0.2s ease;
+        }
+
+        .word-row:hover {
+            background-color: #f0fdf4;
+        }
     </style>
 </head>
 
@@ -56,7 +124,7 @@
     <div id="main-content" class="hidden">
         <!-- Header -->
         <header class="bg-white/80 backdrop-blur-md border-b border-gray-200 sticky top-0 z-50">
-            <div class="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8">
+            <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
                 <div class="flex items-center justify-between h-16">
                     <div class="flex items-center gap-3">
                         <a href="../index.html"
@@ -82,46 +150,838 @@
         </header>
 
         <!-- Main -->
-        <main class="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
-            <div class="bg-white rounded-2xl border border-gray-200 shadow-sm p-12 text-center">
-                <div class="w-20 h-20 bg-emerald-100 rounded-2xl flex items-center justify-center mx-auto mb-6">
-                    <svg class="w-10 h-10 text-emerald-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-                            d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.747 0 3.332.477 4.5 1.253v13C19.832 18.477 18.247 18 16.5 18c-1.746 0-3.332.477-4.5 1.253" />
-                    </svg>
+        <main class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+            <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+
+                <!-- Left Panel: Vocab Sets List -->
+                <div class="lg:col-span-1">
+                    <!-- Add New Set Button -->
+                    <button id="btn-new-set"
+                        class="w-full mb-2 px-4 py-3 bg-emerald-600 text-white font-semibold rounded-xl hover:bg-emerald-700 transition-colors flex items-center justify-center gap-2">
+                        <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4" />
+                        </svg>
+                        Tạo bộ từ mới
+                    </button>
+
+                    <!-- Import JSON Button -->
+                    <button id="btn-import-json"
+                        class="w-full mb-4 px-4 py-3 bg-blue-600 text-white font-semibold rounded-xl hover:bg-blue-700 transition-colors flex items-center justify-center gap-2">
+                        <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-8l-4-4m0 0L8 8m4-4v12" />
+                        </svg>
+                        Import từ JSON
+                    </button>
+
+                    <!-- Sets List -->
+                    <div class="bg-white rounded-2xl border border-gray-200 shadow-sm overflow-hidden">
+                        <div class="p-4 border-b border-gray-100 bg-gray-50">
+                            <h2 class="font-semibold text-gray-700">Danh sách bộ từ</h2>
+                        </div>
+                        <div id="vocab-list" class="divide-y divide-gray-100 max-h-[500px] overflow-y-auto">
+                            <!-- Loading state -->
+                            <div id="vocab-loading" class="p-8 flex justify-center">
+                                <div class="spinner"></div>
+                            </div>
+                            <!-- Empty state -->
+                            <div id="vocab-empty" class="hidden p-8 text-center text-gray-400">
+                                <svg class="w-12 h-12 mx-auto mb-3 text-gray-300" fill="none" stroke="currentColor"
+                                    viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                        d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.747 0 3.332.477 4.5 1.253v13C19.832 18.477 18.247 18 16.5 18c-1.746 0-3.332.477-4.5 1.253" />
+                                </svg>
+                                <p>Chưa có bộ từ nào</p>
+                            </div>
+                            <!-- Sets will be rendered here -->
+                        </div>
+                    </div>
                 </div>
-                <h2 class="text-2xl font-bold text-gray-800 mb-3">Quản lý Vocab</h2>
-                <p class="text-gray-500 mb-6 max-w-md mx-auto">
-                    Tạo và quản lý các bộ từ vựng. Tính năng này sẽ sử dụng Firebase collection <code
-                        class="px-2 py-0.5 bg-gray-100 rounded text-sm">vocab_sets</code>
-                </p>
-                <div class="inline-flex items-center gap-2 px-4 py-2 bg-amber-100 text-amber-700 rounded-xl">
-                    <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-                            d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
-                    </svg>
-                    <span class="font-semibold">🚧 Đang phát triển...</span>
+
+                <!-- Right Panel: Editor -->
+                <div class="lg:col-span-2">
+                    <!-- Empty State -->
+                    <div id="editor-empty"
+                        class="bg-white rounded-2xl border border-gray-200 shadow-sm p-12 text-center">
+                        <div class="w-20 h-20 bg-emerald-100 rounded-2xl flex items-center justify-center mx-auto mb-6">
+                            <svg class="w-10 h-10 text-emerald-600" fill="none" stroke="currentColor"
+                                viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                    d="M15 15l-2 5L9 9l11 4-5 2zm0 0l5 5M7.188 2.239l.777 2.897M5.136 7.965l-2.898-.777M13.95 4.05l-2.122 2.122m-5.657 5.656l-2.12 2.122" />
+                            </svg>
+                        </div>
+                        <h2 class="text-xl font-bold text-gray-800 mb-2">Chọn bộ từ để chỉnh sửa</h2>
+                        <p class="text-gray-500">Chọn một bộ từ từ danh sách bên trái hoặc tạo bộ từ mới.</p>
+                    </div>
+
+                    <!-- Editor Form -->
+                    <div id="editor-form"
+                        class="hidden bg-white rounded-2xl border border-gray-200 shadow-sm overflow-hidden">
+                        <!-- Editor Header -->
+                        <div
+                            class="p-4 border-b border-gray-100 bg-gradient-to-r from-emerald-50 to-teal-50 flex items-center justify-between">
+                            <h2 id="editor-title" class="font-bold text-gray-800 text-lg">Bộ từ mới</h2>
+                            <div class="flex items-center gap-2">
+                                <button id="btn-delete-set"
+                                    class="px-3 py-1.5 text-red-600 hover:bg-red-50 rounded-lg text-sm font-medium transition-colors flex items-center gap-1">
+                                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                            d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+                                    </svg>
+                                    Xóa
+                                </button>
+                                <button id="btn-cancel"
+                                    class="px-4 py-1.5 text-gray-600 hover:bg-gray-100 rounded-lg text-sm font-medium transition-colors">
+                                    Hủy
+                                </button>
+                                <button id="btn-save"
+                                    class="px-4 py-1.5 bg-emerald-600 text-white hover:bg-emerald-700 rounded-lg text-sm font-medium transition-colors flex items-center gap-1">
+                                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                            d="M5 13l4 4L19 7" />
+                                    </svg>
+                                    Lưu
+                                </button>
+                            </div>
+                        </div>
+
+                        <!-- Set Info -->
+                        <div class="p-4 border-b border-gray-100 space-y-4">
+                            <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+                                <div>
+                                    <label class="block text-sm font-medium text-gray-700 mb-1">Tên bộ từ *</label>
+                                    <input type="text" id="set-name" placeholder="VD: Từ vựng IELTS Band 7"
+                                        class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500">
+                                </div>
+                                <div>
+                                    <label class="block text-sm font-medium text-gray-700 mb-1">Chủ đề</label>
+                                    <input type="text" id="set-topic" placeholder="VD: Business, Science..."
+                                        class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500">
+                                </div>
+                                <div>
+                                    <label class="block text-sm font-medium text-gray-700 mb-1">Danh mục *</label>
+                                    <select id="set-category"
+                                        class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500">
+                                        <option value="gdpt">Chương trình GDPT</option>
+                                        <option value="advanced_gdpt">(Nâng cao) Chương trình GDPT</option>
+                                        <option value="topic">Từ vựng theo chủ đề</option>
+                                    </select>
+                                </div>
+                            </div>
+                            <div>
+                                <label class="block text-sm font-medium text-gray-700 mb-1">Mô tả</label>
+                                <textarea id="set-description" rows="2" placeholder="Mô tả ngắn về bộ từ..."
+                                    class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500 resize-none"></textarea>
+                            </div>
+                        </div>
+
+                        <!-- Words Section -->
+                        <div class="p-4">
+                            <div class="flex items-center justify-between mb-4">
+                                <h3 class="font-semibold text-gray-700">
+                                    Từ vựng <span id="word-count" class="text-emerald-600">(0)</span>
+                                </h3>
+                                <button id="btn-add-word"
+                                    class="px-3 py-1.5 bg-emerald-100 text-emerald-700 hover:bg-emerald-200 rounded-lg text-sm font-medium transition-colors flex items-center gap-1">
+                                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                            d="M12 4v16m8-8H4" />
+                                    </svg>
+                                    Thêm từ
+                                </button>
+                            </div>
+
+                            <!-- Words Table -->
+                            <div class="border border-gray-200 rounded-xl overflow-hidden">
+                                <table class="w-full">
+                                    <thead>
+                                        <tr
+                                            class="bg-gray-50 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider">
+                                            <th class="px-4 py-3">Từ vựng</th>
+                                            <th class="px-4 py-3">Loại từ</th>
+                                            <th class="px-4 py-3 hidden sm:table-cell">Phát âm</th>
+                                            <th class="px-4 py-3">Nghĩa</th>
+                                            <th class="px-4 py-3 w-20"></th>
+                                        </tr>
+                                    </thead>
+                                    <tbody id="words-table" class="divide-y divide-gray-100">
+                                        <!-- Words will be rendered here -->
+                                    </tbody>
+                                </table>
+                                <div id="words-empty" class="p-8 text-center text-gray-400 hidden">
+                                    <p>Chưa có từ nào. Nhấn "Thêm từ" để bắt đầu.</p>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
                 </div>
             </div>
         </main>
     </div>
 
+    <!-- Delete Confirmation Modal -->
+    <div id="delete-modal" class="fixed inset-0 z-50 hidden">
+        <div class="modal-backdrop absolute inset-0"></div>
+        <div class="absolute inset-0 flex items-center justify-center p-4">
+            <div class="bg-white rounded-2xl shadow-xl max-w-md w-full p-6 relative">
+                <div class="w-16 h-16 bg-red-100 rounded-full flex items-center justify-center mx-auto mb-4">
+                    <svg class="w-8 h-8 text-red-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                            d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+                    </svg>
+                </div>
+                <h3 class="text-xl font-bold text-center text-gray-800 mb-2">Xác nhận xóa</h3>
+                <p id="delete-message" class="text-center text-gray-500 mb-6">Bạn có chắc muốn xóa bộ từ này? Hành động
+                    này không thể hoàn tác.</p>
+                <div class="flex gap-3">
+                    <button id="btn-cancel-delete"
+                        class="flex-1 px-4 py-3 bg-gray-100 text-gray-700 font-semibold rounded-xl hover:bg-gray-200 transition-colors">
+                        Hủy
+                    </button>
+                    <button id="btn-confirm-delete"
+                        class="flex-1 px-4 py-3 bg-red-600 text-white font-semibold rounded-xl hover:bg-red-700 transition-colors">
+                        Xóa
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Import JSON Modal -->
+    <div id="import-modal" class="fixed inset-0 z-50 hidden">
+        <div class="modal-backdrop absolute inset-0" onclick="hideImportModal()"></div>
+        <div class="absolute inset-0 flex items-center justify-center p-4">
+            <div class="bg-white rounded-2xl shadow-xl max-w-2xl w-full p-6 relative max-h-[90vh] overflow-y-auto">
+                <div class="w-16 h-16 bg-blue-100 rounded-full flex items-center justify-center mx-auto mb-4">
+                    <svg class="w-8 h-8 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                            d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-8l-4-4m0 0L8 8m4-4v12" />
+                    </svg>
+                </div>
+                <h3 class="text-xl font-bold text-center text-gray-800 mb-2">Import từ JSON</h3>
+                <p class="text-center text-gray-500 mb-6">Chọn file JSON chứa bộ từ vựng để import</p>
+
+                <!-- Category Selection -->
+                <div class="mb-4">
+                    <label class="block text-sm font-medium text-gray-700 mb-2">Danh mục *</label>
+                    <select id="import-category"
+                        class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500">
+                        <option value="gdpt">Chương trình GDPT</option>
+                        <option value="advanced_gdpt">(Nâng cao) Chương trình GDPT</option>
+                        <option value="topic">Từ vựng theo chủ đề</option>
+                    </select>
+                </div>
+
+                <!-- File Input -->
+                <div class="mb-4">
+                    <label class="block text-sm font-medium text-gray-700 mb-2">Chọn file JSON</label>
+                    <input type="file" id="import-file" accept=".json"
+                        class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 file:mr-4 file:py-2 file:px-4 file:rounded-lg file:border-0 file:bg-blue-100 file:text-blue-700 hover:file:bg-blue-200">
+                </div>
+
+                <!-- Preview Area -->
+                <div id="import-preview" class="hidden mb-4">
+                    <label class="block text-sm font-medium text-gray-700 mb-2">Xem trước</label>
+                    <div class="bg-gray-50 rounded-lg p-4 border border-gray-200 max-h-48 overflow-y-auto">
+                        <div id="import-preview-content" class="text-sm text-gray-600"></div>
+                    </div>
+                </div>
+
+                <!-- Error Message -->
+                <div id="import-error"
+                    class="hidden mb-4 p-3 bg-red-50 border border-red-200 rounded-lg text-red-600 text-sm"></div>
+
+                <div class="flex gap-3">
+                    <button id="btn-cancel-import"
+                        class="flex-1 px-4 py-3 bg-gray-100 text-gray-700 font-semibold rounded-xl hover:bg-gray-200 transition-colors"
+                        onclick="hideImportModal()">
+                        Hủy
+                    </button>
+                    <button id="btn-confirm-import"
+                        class="flex-1 px-4 py-3 bg-blue-600 text-white font-semibold rounded-xl hover:bg-blue-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                        disabled>
+                        Import
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Toast Container -->
+
+    <div id="toast-container"></div>
+
     <!-- Scripts -->
     <script type="module">
-        import { initGatekeeper, checkIsAdmin, onUserChange } from "../../../gatekeeper.js";
+        import {
+            initGatekeeper,
+            checkIsAdmin,
+            onUserChange,
+            getAllVocabSets,
+            createVocabSet,
+            updateVocabSet,
+            deleteVocabSet
+        } from "../../../gatekeeper.js";
 
+        // ============================================================
+        // STATE
+        // ============================================================
+        let vocabSets = [];
+        let currentSetId = null;
+        let currentWords = [];
+        let importData = null; // Parsed JSON data for import
+
+        // ============================================================
+        // REFS
+        // ============================================================
         const refs = {
             accessDenied: document.getElementById('access-denied'),
             mainContent: document.getElementById('main-content'),
-            adminEmail: document.getElementById('admin-email')
+            adminEmail: document.getElementById('admin-email'),
+
+            // List
+            vocabList: document.getElementById('vocab-list'),
+            vocabLoading: document.getElementById('vocab-loading'),
+            vocabEmpty: document.getElementById('vocab-empty'),
+            btnNewSet: document.getElementById('btn-new-set'),
+
+            // Editor
+            editorEmpty: document.getElementById('editor-empty'),
+            editorForm: document.getElementById('editor-form'),
+            editorTitle: document.getElementById('editor-title'),
+            setName: document.getElementById('set-name'),
+            setTopic: document.getElementById('set-topic'),
+            setDescription: document.getElementById('set-description'),
+            wordCount: document.getElementById('word-count'),
+            wordsTable: document.getElementById('words-table'),
+            wordsEmpty: document.getElementById('words-empty'),
+
+            // Buttons
+            btnAddWord: document.getElementById('btn-add-word'),
+            btnDeleteSet: document.getElementById('btn-delete-set'),
+            btnCancel: document.getElementById('btn-cancel'),
+            btnSave: document.getElementById('btn-save'),
+            btnImportJson: document.getElementById('btn-import-json'),
+
+            // Category
+            setCategory: document.getElementById('set-category'),
+
+            // Delete Modal
+            deleteModal: document.getElementById('delete-modal'),
+            deleteMessage: document.getElementById('delete-message'),
+            btnCancelDelete: document.getElementById('btn-cancel-delete'),
+            btnConfirmDelete: document.getElementById('btn-confirm-delete'),
+
+            // Import Modal
+            importModal: document.getElementById('import-modal'),
+            importCategory: document.getElementById('import-category'),
+            importFile: document.getElementById('import-file'),
+            importPreview: document.getElementById('import-preview'),
+            importPreviewContent: document.getElementById('import-preview-content'),
+            importError: document.getElementById('import-error'),
+            btnConfirmImport: document.getElementById('btn-confirm-import'),
         };
 
+        // ============================================================
+        // TOAST
+        // ============================================================
+        function showToast(message, type = 'success') {
+            const container = document.getElementById('toast-container');
+            const toast = document.createElement('div');
+            toast.className = `toast ${type}`;
+            toast.textContent = message;
+            container.appendChild(toast);
+            setTimeout(() => toast.remove(), 3000);
+        }
+
+        // ============================================================
+        // LOAD VOCAB SETS
+        // ============================================================
+        async function loadVocabSets() {
+            refs.vocabLoading.classList.remove('hidden');
+            refs.vocabEmpty.classList.add('hidden');
+
+            try {
+                vocabSets = await getAllVocabSets();
+                renderVocabList();
+            } catch (error) {
+                console.error('Error loading vocab sets:', error);
+                showToast('Lỗi tải danh sách bộ từ', 'error');
+            } finally {
+                refs.vocabLoading.classList.add('hidden');
+            }
+        }
+
+        function renderVocabList() {
+            // Clear existing items (except loading and empty states)
+            const existingItems = refs.vocabList.querySelectorAll('.vocab-item');
+            existingItems.forEach(item => item.remove());
+
+            if (vocabSets.length === 0) {
+                refs.vocabEmpty.classList.remove('hidden');
+                return;
+            }
+
+            refs.vocabEmpty.classList.add('hidden');
+
+            vocabSets.forEach(set => {
+                const wordCount = set.words ? Object.keys(set.words).length : 0;
+                const item = document.createElement('div');
+                item.className = `vocab-item p-4 cursor-pointer hover:bg-emerald-50 transition-colors ${currentSetId === set.id ? 'bg-emerald-50 border-l-4 border-emerald-500' : ''}`;
+                item.innerHTML = `
+                    <div class="font-semibold text-gray-800">${set.name || 'Không tên'}</div>
+                    <div class="text-sm text-gray-500 flex items-center gap-2 mt-1">
+                        <span>${wordCount} từ</span>
+                        ${set.topic ? `<span>•</span><span>${set.topic}</span>` : ''}
+                    </div>
+                `;
+                item.addEventListener('click', () => selectSet(set.id));
+                refs.vocabList.appendChild(item);
+            });
+        }
+
+        // ============================================================
+        // SELECT SET
+        // ============================================================
+        function selectSet(setId) {
+            currentSetId = setId;
+            const set = vocabSets.find(s => s.id === setId);
+
+            if (!set) {
+                showEditor(false);
+                return;
+            }
+
+            // Populate form
+            refs.setName.value = set.name || '';
+            refs.setTopic.value = set.topic || '';
+            refs.setDescription.value = set.description || '';
+            refs.setCategory.value = set.category || 'gdpt';
+            refs.editorTitle.textContent = set.name || 'Chỉnh sửa bộ từ';
+
+
+            // Load words
+            currentWords = set.words ? Object.entries(set.words).map(([id, word]) => ({ id, ...word })) : [];
+            renderWords();
+
+            // Show editor
+            showEditor(true);
+            renderVocabList(); // Re-render to highlight selected
+        }
+
+        function showEditor(show) {
+            if (show) {
+                refs.editorEmpty.classList.add('hidden');
+                refs.editorForm.classList.remove('hidden');
+            } else {
+                refs.editorEmpty.classList.remove('hidden');
+                refs.editorForm.classList.add('hidden');
+                currentSetId = null;
+                currentWords = [];
+            }
+        }
+
+        // ============================================================
+        // RENDER WORDS
+        // ============================================================
+        function renderWords() {
+            refs.wordsTable.innerHTML = '';
+            refs.wordCount.textContent = `(${currentWords.length})`;
+
+            if (currentWords.length === 0) {
+                refs.wordsEmpty.classList.remove('hidden');
+                return;
+            }
+
+            refs.wordsEmpty.classList.add('hidden');
+
+            currentWords.forEach((word, index) => {
+                const row = document.createElement('tr');
+                row.className = 'word-row';
+                row.innerHTML = `
+                    <td class="px-4 py-3">
+                        <input type="text" value="${word.word || ''}" placeholder="Từ vựng" 
+                            data-field="word" data-index="${index}"
+                            class="w-full px-2 py-1 border border-gray-200 rounded focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500 text-sm">
+                    </td>
+                    <td class="px-4 py-3">
+                        <select data-field="type" data-index="${index}"
+                            class="w-full px-2 py-1 border border-gray-200 rounded focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500 text-sm">
+                            <option value="noun" ${word.type === 'noun' ? 'selected' : ''}>Noun</option>
+                            <option value="verb" ${word.type === 'verb' ? 'selected' : ''}>Verb</option>
+                            <option value="adj" ${word.type === 'adj' ? 'selected' : ''}>Adjective</option>
+                            <option value="adv" ${word.type === 'adv' ? 'selected' : ''}>Adverb</option>
+                            <option value="prep" ${word.type === 'prep' ? 'selected' : ''}>Preposition</option>
+                            <option value="conj" ${word.type === 'conj' ? 'selected' : ''}>Conjunction</option>
+                            <option value="phrase" ${word.type === 'phrase' ? 'selected' : ''}>Phrase</option>
+                            <option value="other" ${word.type === 'other' ? 'selected' : ''}>Other</option>
+                        </select>
+                    </td>
+                    <td class="px-4 py-3 hidden sm:table-cell">
+                        <input type="text" value="${word.ipa || ''}" placeholder="/ˈeksəmpəl/" 
+                            data-field="ipa" data-index="${index}"
+                            class="w-full px-2 py-1 border border-gray-200 rounded focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500 text-sm">
+                    </td>
+                    <td class="px-4 py-3">
+                        <input type="text" value="${word.meaning || ''}" placeholder="Nghĩa tiếng Việt" 
+                            data-field="meaning" data-index="${index}"
+                            class="w-full px-2 py-1 border border-gray-200 rounded focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500 text-sm">
+                    </td>
+                    <td class="px-4 py-3">
+                        <button data-action="delete" data-index="${index}"
+                            class="p-1.5 text-red-500 hover:bg-red-50 rounded transition-colors">
+                            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
+                            </svg>
+                        </button>
+                    </td>
+                `;
+                refs.wordsTable.appendChild(row);
+            });
+
+            // Add event listeners for inline editing
+            refs.wordsTable.querySelectorAll('input, select').forEach(el => {
+                el.addEventListener('change', handleWordChange);
+            });
+
+            refs.wordsTable.querySelectorAll('[data-action="delete"]').forEach(btn => {
+                btn.addEventListener('click', handleDeleteWord);
+            });
+        }
+
+        function handleWordChange(e) {
+            const index = parseInt(e.target.dataset.index);
+            const field = e.target.dataset.field;
+            currentWords[index][field] = e.target.value;
+        }
+
+        function handleDeleteWord(e) {
+            const index = parseInt(e.target.closest('[data-index]').dataset.index);
+            currentWords.splice(index, 1);
+            renderWords();
+        }
+
+        // ============================================================
+        // ADD WORD
+        // ============================================================
+        function addWord() {
+            currentWords.push({
+                id: Date.now().toString(),
+                word: '',
+                type: 'noun',
+                ipa: '',
+                meaning: '',
+                example: ''
+            });
+            renderWords();
+
+            // Focus on new word input
+            setTimeout(() => {
+                const lastInput = refs.wordsTable.querySelector('tr:last-child input[data-field="word"]');
+                if (lastInput) lastInput.focus();
+            }, 50);
+        }
+
+        // ============================================================
+        // SAVE SET
+        // ============================================================
+        async function saveSet() {
+            const name = refs.setName.value.trim();
+            if (!name) {
+                showToast('Vui lòng nhập tên bộ từ', 'error');
+                refs.setName.focus();
+                return;
+            }
+
+            // Build words object
+            const wordsObj = {};
+            currentWords.forEach(word => {
+                if (word.word.trim()) {
+                    wordsObj[word.id] = {
+                        word: word.word,
+                        type: word.type,
+                        ipa: word.ipa,
+                        meaning: word.meaning,
+                        example: word.example || ''
+                    };
+                }
+            });
+
+            const setData = {
+                name: name,
+                topic: refs.setTopic.value.trim(),
+                description: refs.setDescription.value.trim(),
+                category: refs.setCategory.value,
+                words: wordsObj,
+                wordCount: Object.keys(wordsObj).length,
+                updatedAt: new Date().toISOString()
+            };
+
+
+            try {
+                if (currentSetId) {
+                    // Update existing
+                    await updateVocabSet(currentSetId, setData);
+                    showToast('Đã cập nhật bộ từ');
+                } else {
+                    // Create new
+                    setData.createdAt = new Date().toISOString();
+                    const newId = await createVocabSet(setData);
+                    currentSetId = newId;
+                    showToast('Đã tạo bộ từ mới');
+                }
+
+                await loadVocabSets();
+                selectSet(currentSetId);
+            } catch (error) {
+                console.error('Error saving vocab set:', error);
+                showToast('Lỗi lưu bộ từ: ' + error.message, 'error');
+            }
+        }
+
+        // ============================================================
+        // DELETE SET
+        // ============================================================
+        function showDeleteModal() {
+            if (!currentSetId) return;
+            const set = vocabSets.find(s => s.id === currentSetId);
+            refs.deleteMessage.textContent = `Bạn có chắc muốn xóa bộ từ "${set?.name || 'này'}"? Hành động này không thể hoàn tác.`;
+            refs.deleteModal.classList.remove('hidden');
+        }
+
+        function hideDeleteModal() {
+            refs.deleteModal.classList.add('hidden');
+        }
+
+        async function confirmDelete() {
+            if (!currentSetId) return;
+
+            try {
+                await deleteVocabSet(currentSetId);
+                showToast('Đã xóa bộ từ');
+                hideDeleteModal();
+                showEditor(false);
+                await loadVocabSets();
+            } catch (error) {
+                console.error('Error deleting vocab set:', error);
+                showToast('Lỗi xóa bộ từ: ' + error.message, 'error');
+            }
+        }
+
+        // ============================================================
+        // NEW SET
+        // ============================================================
+        function createNewSet() {
+            currentSetId = null;
+            currentWords = [];
+            refs.setName.value = '';
+            refs.setTopic.value = '';
+            refs.setDescription.value = '';
+            refs.setCategory.value = 'gdpt'; // Default category
+            refs.editorTitle.textContent = 'Bộ từ mới';
+            renderWords();
+            showEditor(true);
+            renderVocabList();
+            refs.setName.focus();
+        }
+
+
+        // ============================================================
+        // CANCEL
+        // ============================================================
+        function cancelEdit() {
+            if (currentSetId) {
+                selectSet(currentSetId); // Reload original data
+            } else {
+                showEditor(false);
+                renderVocabList();
+            }
+        }
+
+        // ============================================================
+        // IMPORT JSON FUNCTIONS
+        // ============================================================
+        function showImportModal() {
+            // Reset modal state
+            refs.importFile.value = '';
+            refs.importPreview.classList.add('hidden');
+            refs.importError.classList.add('hidden');
+            refs.btnConfirmImport.disabled = true;
+            importData = null;
+
+            refs.importModal.classList.remove('hidden');
+        }
+
+        function hideImportModal() {
+            refs.importModal.classList.add('hidden');
+            importData = null;
+        }
+
+        function handleFileSelect(event) {
+            const file = event.target.files[0];
+            if (!file) return;
+
+            refs.importError.classList.add('hidden');
+            refs.importPreview.classList.add('hidden');
+            refs.btnConfirmImport.disabled = true;
+
+            const reader = new FileReader();
+            reader.onload = (e) => {
+                try {
+                    const data = JSON.parse(e.target.result);
+                    const validation = validateVocabJSON(data);
+
+                    if (!validation.valid) {
+                        refs.importError.textContent = validation.error;
+                        refs.importError.classList.remove('hidden');
+                        return;
+                    }
+
+                    importData = data;
+
+                    // Show preview
+                    const wordCount = data.words ? (Array.isArray(data.words) ? data.words.length : Object.keys(data.words).length) : 0;
+                    refs.importPreviewContent.innerHTML = `
+                        <div class="space-y-2">
+                            <p><strong>Tên:</strong> ${data.name || data.title || 'Không có tên'}</p>
+                            <p><strong>Chủ đề:</strong> ${data.topicId || data.topic || 'Không có'}</p>
+                            <p><strong>Số từ:</strong> ${wordCount} từ</p>
+                            ${data.words && wordCount > 0 ? `
+                                <p class="text-gray-500"><strong>Từ mẫu:</strong></p>
+                                <ul class="list-disc list-inside text-gray-500 ml-2">
+                                    ${(Array.isArray(data.words) ? data.words.slice(0, 3) : Object.values(data.words).slice(0, 3))
+                                .map(w => `<li>${w.word} - ${w.meaning}</li>`).join('')}
+                                    ${wordCount > 3 ? `<li>... và ${wordCount - 3} từ khác</li>` : ''}
+                                </ul>
+                            ` : ''}
+                        </div>
+                    `;
+                    refs.importPreview.classList.remove('hidden');
+                    refs.btnConfirmImport.disabled = false;
+
+                } catch (err) {
+                    refs.importError.textContent = 'File JSON không hợp lệ: ' + err.message;
+                    refs.importError.classList.remove('hidden');
+                }
+            };
+            reader.onerror = () => {
+                refs.importError.textContent = 'Không thể đọc file';
+                refs.importError.classList.remove('hidden');
+            };
+            reader.readAsText(file);
+        }
+
+        function validateVocabJSON(data) {
+            if (!data || typeof data !== 'object') {
+                return { valid: false, error: 'Dữ liệu JSON không hợp lệ' };
+            }
+
+            if (!data.name && !data.title) {
+                return { valid: false, error: 'Thiếu trường "name" hoặc "title"' };
+            }
+
+            if (!data.words) {
+                return { valid: false, error: 'Thiếu trường "words"' };
+            }
+
+            const words = Array.isArray(data.words) ? data.words : Object.values(data.words);
+            if (words.length === 0) {
+                return { valid: false, error: 'Danh sách từ vựng trống' };
+            }
+
+            // Check first word structure
+            const firstWord = words[0];
+            if (!firstWord.word) {
+                return { valid: false, error: 'Từ vựng thiếu trường "word"' };
+            }
+
+            return { valid: true };
+        }
+
+        async function confirmImport() {
+            if (!importData) return;
+
+            const category = refs.importCategory.value;
+
+            // Convert words array to object if needed
+            let wordsObj = {};
+            const wordsSource = Array.isArray(importData.words) ? importData.words : Object.values(importData.words);
+
+            wordsSource.forEach((word, index) => {
+                const id = word.id || (index + 1);
+                wordsObj[id] = {
+                    word: word.word,
+                    type: word.type || '',
+                    ipa: word.ipa || '',
+                    meaning: word.meaning || '',
+                    example: word.example || ''
+                };
+            });
+
+            const setData = {
+                name: importData.name || importData.title,
+                topic: importData.topicId || importData.topic || '',
+                description: importData.description || '',
+                category: category,
+                color: importData.color || 'emerald',
+                words: wordsObj,
+                wordCount: Object.keys(wordsObj).length,
+                createdAt: new Date().toISOString(),
+                updatedAt: new Date().toISOString()
+            };
+
+            try {
+                refs.btnConfirmImport.disabled = true;
+                refs.btnConfirmImport.textContent = 'Đang import...';
+
+                const newId = await createVocabSet(setData);
+                showToast(`Đã import thành công ${setData.wordCount} từ vựng`);
+                hideImportModal();
+                await loadVocabSets();
+                selectSet(newId);
+
+            } catch (error) {
+                console.error('Error importing vocab set:', error);
+                refs.importError.textContent = 'Lỗi import: ' + error.message;
+                refs.importError.classList.remove('hidden');
+            } finally {
+                refs.btnConfirmImport.disabled = false;
+                refs.btnConfirmImport.textContent = 'Import';
+            }
+        }
+
+        // ============================================================
+        // BIND EVENTS
+
+        // ============================================================
+        function bindEvents() {
+            refs.btnNewSet.addEventListener('click', createNewSet);
+            refs.btnAddWord.addEventListener('click', addWord);
+            refs.btnSave.addEventListener('click', saveSet);
+            refs.btnCancel.addEventListener('click', cancelEdit);
+            refs.btnDeleteSet.addEventListener('click', showDeleteModal);
+            refs.btnCancelDelete.addEventListener('click', hideDeleteModal);
+            refs.btnConfirmDelete.addEventListener('click', confirmDelete);
+
+            // Import modal events
+            refs.btnImportJson.addEventListener('click', showImportModal);
+            refs.importFile.addEventListener('change', handleFileSelect);
+            refs.btnConfirmImport.addEventListener('click', confirmImport);
+
+            // Close modals on backdrop click
+            refs.deleteModal.querySelector('.modal-backdrop').addEventListener('click', hideDeleteModal);
+        }
+
+
+        // ============================================================
+        // INIT
+        // ============================================================
         initGatekeeper('protected');
 
         onUserChange(async (user) => {
             if (!user) return;
 
-            setTimeout(() => {
+            setTimeout(async () => {
                 if (!checkIsAdmin()) {
                     refs.accessDenied.classList.remove('hidden');
                     return;
@@ -129,6 +989,10 @@
 
                 refs.adminEmail.textContent = user.email;
                 refs.mainContent.classList.remove('hidden');
+
+                // Load data
+                bindEvents();
+                await loadVocabSets();
             }, 500);
         });
     </script>
