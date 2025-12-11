@@ -1119,7 +1119,13 @@
                 await loadVocabSets();
             }, 500);
         });
+
+        // Expose functions for onclick handlers
+        window.setImportMode = setImportMode;
+        window.parseTextInput = parseTextInput;
+        window.hideImportModal = hideImportModal;
     </script>
+
 
 </body>
 
