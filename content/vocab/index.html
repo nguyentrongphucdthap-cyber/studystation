@@ -1,20 +1,24 @@
 <!DOCTYPE html>
 <html lang="vi" class="transition-colors duration-300">
+
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+    <meta name="viewport"
+        content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
     <title>StudyStation Vocab</title>
-    <meta name="ga-measurement-id" content="G-59HQ3N4CG8">
+    <meta name="ga-measurement-id" content="G-4FGSW7XDZ9">
     <link rel="icon" type="image/png" href="../../favicon.png">
-    
+
     <!-- Google Fonts: Be Vietnam Pro -->
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Be+Vietnam+Pro:ital,wght@0,300;0,400;0,500;0,600;0,700;1,400&display=swap" rel="stylesheet">
-    
+    <link
+        href="https://fonts.googleapis.com/css2?family=Be+Vietnam+Pro:ital,wght@0,300;0,400;0,500;0,600;0,700;1,400&display=swap"
+        rel="stylesheet">
+
     <!-- Custom CSS -->
     <link rel="stylesheet" href="style.css">
-    
+
     <!-- Tailwind CSS with Dark Mode Config -->
     <script src="https://cdn.tailwindcss.com"></script>
     <script>
@@ -41,16 +45,31 @@
             }
         }
     </script>
-    
+
     <!-- Phosphor Icons -->
     <script src="https://unpkg.com/@phosphor-icons/web"></script>
     <style>
-        @keyframes gkSpin { to { transform: rotate(360deg); } }
-        .gk-spinner { width: 28px; height: 28px; border: 3px solid rgba(255,255,255,0.25); border-top-color: #60a5fa; border-radius: 9999px; animation: gkSpin 1s linear infinite; }
+        @keyframes gkSpin {
+            to {
+                transform: rotate(360deg);
+            }
+        }
+
+        .gk-spinner {
+            width: 28px;
+            height: 28px;
+            border: 3px solid rgba(255, 255, 255, 0.25);
+            border-top-color: #60a5fa;
+            border-radius: 9999px;
+            animation: gkSpin 1s linear infinite;
+        }
     </style>
 </head>
-<body class="text-slate-800 bg-slate-50 h-screen flex flex-col select-none dark:bg-dark-bg dark:text-dark-text transition-colors duration-300">
-    <div id="gatekeeper-loading" style="position:fixed;top:0;left:0;width:100%;height:100%;background:#0f172a;display:none;justify-content:center;align-items:center;color:#ffffff;z-index:9999">
+
+<body
+    class="text-slate-800 bg-slate-50 h-screen flex flex-col select-none dark:bg-dark-bg dark:text-dark-text transition-colors duration-300">
+    <div id="gatekeeper-loading"
+        style="position:fixed;top:0;left:0;width:100%;height:100%;background:#0f172a;display:none;justify-content:center;align-items:center;color:#ffffff;z-index:9999">
         <div style="display:flex;flex-direction:column;align-items:center;gap:10px">
             <img src="../../favicon.png" alt="StudyStation" style="width:56px;height:56px;border-radius:12px">
             <div style="font-weight:700;font-size:18px">StudyStation</div>
@@ -59,47 +78,64 @@
     </div>
 
     <!-- Header -->
-    <header class="fixed top-0 w-full bg-white/95 dark:bg-dark-card/95 backdrop-blur-md border-b border-slate-200 dark:border-slate-700 z-50 h-16 flex items-center justify-between px-4 md:px-8 shadow-sm transition-colors duration-300 safe-top">
+    <header
+        class="fixed top-0 w-full bg-white/95 dark:bg-dark-card/95 backdrop-blur-md border-b border-slate-200 dark:border-slate-700 z-50 h-16 flex items-center justify-between px-4 md:px-8 shadow-sm transition-colors duration-300 safe-top">
         <div class="flex items-center gap-3 cursor-pointer group btn-press" onclick="showView('home')">
-            <div class="w-8 h-8 bg-indigo-600 rounded-lg flex items-center justify-center text-white text-lg font-bold shadow-md transition-transform group-hover:rotate-12">
+            <div
+                class="w-8 h-8 bg-indigo-600 rounded-lg flex items-center justify-center text-white text-lg font-bold shadow-md transition-transform group-hover:rotate-12">
                 S
             </div>
             <h1 class="text-lg font-bold tracking-tight text-slate-800 dark:text-white">StudyStation</h1>
         </div>
-        
+
         <nav class="hidden md:flex gap-6">
-            <button onclick="showView('home')" class="text-sm font-medium text-slate-500 dark:text-slate-400 hover:text-indigo-600 dark:hover:text-indigo-400 transition-colors">Thư viện</button>
-            <button onclick="showView('stats')" class="text-sm font-medium text-slate-500 dark:text-slate-400 hover:text-indigo-600 dark:hover:text-indigo-400 transition-colors">Thống kê</button>
+            <button onclick="showView('home')"
+                class="text-sm font-medium text-slate-500 dark:text-slate-400 hover:text-indigo-600 dark:hover:text-indigo-400 transition-colors">Thư
+                viện</button>
+            <button onclick="showView('stats')"
+                class="text-sm font-medium text-slate-500 dark:text-slate-400 hover:text-indigo-600 dark:hover:text-indigo-400 transition-colors">Thống
+                kê</button>
         </nav>
 
         <div class="flex items-center gap-2">
-            <button onclick="showView('stats')" class="md:hidden p-2 text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-700 rounded-full transition-colors btn-press" aria-label="Thống kê học tập">
+            <button onclick="showView('stats')"
+                class="md:hidden p-2 text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-700 rounded-full transition-colors btn-press"
+                aria-label="Thống kê học tập">
                 <i class="ph ph-chart-bar text-2xl"></i>
             </button>
-            <button id="music-toggle-btn" onclick="toggleMusicPanel()" class="p-2 text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-700 rounded-full transition-colors btn-press" aria-label="Âm nhạc học tập" aria-pressed="false">
+            <button id="music-toggle-btn" onclick="toggleMusicPanel()"
+                class="p-2 text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-700 rounded-full transition-colors btn-press"
+                aria-label="Âm nhạc học tập" aria-pressed="false">
                 <i class="ph ph-music-notes-simple text-2xl"></i>
             </button>
-            <button onclick="showView('settings')" class="p-2 text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-700 rounded-full transition-colors btn-press" aria-label="Cài đặt">
+            <button onclick="showView('settings')"
+                class="p-2 text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-700 rounded-full transition-colors btn-press"
+                aria-label="Cài đặt">
                 <i class="ph ph-gear text-2xl"></i>
             </button>
         </div>
     </header>
 
     <!-- Main Content Area -->
-    <main id="app-container" class="flex-1 flex flex-col items-center justify-center pt-20 pb-6 px-4 w-full max-w-5xl mx-auto overflow-hidden">
+    <main id="app-container"
+        class="flex-1 flex flex-col items-center justify-center pt-20 pb-6 px-4 w-full max-w-5xl mx-auto overflow-hidden">
         <!-- Views will be injected here via JavaScript -->
     </main>
 
     <!-- Loading Overlay -->
-    <div id="loading-overlay" class="fixed inset-0 bg-white/90 dark:bg-dark-bg/90 backdrop-blur-sm z-50 flex items-center justify-center" style="display: none;">
+    <div id="loading-overlay"
+        class="fixed inset-0 bg-white/90 dark:bg-dark-bg/90 backdrop-blur-sm z-50 flex items-center justify-center"
+        style="display: none;">
         <div class="text-center">
-            <div class="w-16 h-16 border-4 border-indigo-200 dark:border-indigo-800 border-t-indigo-600 dark:border-t-indigo-400 rounded-full animate-spin mx-auto mb-4"></div>
+            <div
+                class="w-16 h-16 border-4 border-indigo-200 dark:border-indigo-800 border-t-indigo-600 dark:border-t-indigo-400 rounded-full animate-spin mx-auto mb-4">
+            </div>
             <p class="text-slate-700 dark:text-slate-300 font-medium">Đang tải từ vựng...</p>
         </div>
     </div>
 
     <!-- TEMPLATES -->
-    
+
     <!-- 1. Home View -->
     <template id="tpl-home">
         <div class="w-full h-full flex flex-col view-enter overflow-y-auto no-scrollbar pb-20">
@@ -108,13 +144,15 @@
                 <div class="flex flex-col md:flex-row gap-3">
                     <div class="relative group flex-1">
                         <div class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-                            <i class="ph ph-magnifying-glass text-slate-400 text-xl group-focus-within:text-indigo-500 transition-colors"></i>
+                            <i
+                                class="ph ph-magnifying-glass text-slate-400 text-xl group-focus-within:text-indigo-500 transition-colors"></i>
                         </div>
-                        <input type="text" id="search-input" oninput="handleSearch(this.value)" 
-                               class="block w-full pl-10 pr-3 py-3 border border-slate-200 dark:border-slate-700 rounded-2xl leading-5 bg-white dark:bg-dark-card text-slate-900 dark:text-white placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm transition-all shadow-sm" 
-                               placeholder="Tìm kiếm chủ đề, từ vựng...">
+                        <input type="text" id="search-input" oninput="handleSearch(this.value)"
+                            class="block w-full pl-10 pr-3 py-3 border border-slate-200 dark:border-slate-700 rounded-2xl leading-5 bg-white dark:bg-dark-card text-slate-900 dark:text-white placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm transition-all shadow-sm"
+                            placeholder="Tìm kiếm chủ đề, từ vựng...">
                     </div>
-                    <select id="progress-filter" class="w-full md:w-64 px-3 py-3 rounded-2xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-dark-card text-sm font-medium text-slate-600 dark:text-slate-200 focus:outline-none focus:ring-2 focus:ring-indigo-500 shadow-sm">
+                    <select id="progress-filter"
+                        class="w-full md:w-64 px-3 py-3 rounded-2xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-dark-card text-sm font-medium text-slate-600 dark:text-slate-200 focus:outline-none focus:ring-2 focus:ring-indigo-500 shadow-sm">
                         <option value="all">Tất cả chủ đề</option>
                         <option value="incomplete">Chưa hoàn thành</option>
                         <option value="completed">Đã hoàn thành</option>
@@ -128,13 +166,14 @@
                 <h2 class="text-2xl font-bold text-slate-800 dark:text-white">Thư viện</h2>
                 <p class="text-slate-500 dark:text-slate-400 text-sm">Khám phá các bộ từ vựng mới nhất</p>
             </div>
-            
+
             <div id="library-container" class="space-y-8 w-full px-2">
                 <!-- Sections Injected Here -->
             </div>
-            
+
             <!-- Empty State for Search -->
-            <div id="search-empty" class="hidden flex-col items-center justify-center py-10 text-center opacity-0 transition-opacity duration-300">
+            <div id="search-empty"
+                class="hidden flex-col items-center justify-center py-10 text-center opacity-0 transition-opacity duration-300">
                 <i class="ph ph-magnifying-glass text-6xl text-slate-200 dark:text-slate-700 mb-4"></i>
                 <p class="text-slate-500 dark:text-slate-400">Không tìm thấy kết quả phù hợp.</p>
             </div>
@@ -143,74 +182,94 @@
 
     <!-- 2. Set Detail View -->
     <template id="tpl-set-detail">
-        <div class="w-full max-w-md md:max-w-2xl text-center space-y-6 md:space-y-8 view-enter overflow-y-auto no-scrollbar pb-10">
+        <div
+            class="w-full max-w-md md:max-w-2xl text-center space-y-6 md:space-y-8 view-enter overflow-y-auto no-scrollbar pb-10">
             <!-- Back Button -->
             <div class="w-full flex justify-start mb-2">
-                 <button onclick="showView('home')" class="flex items-center gap-2 text-slate-500 dark:text-slate-400 hover:text-indigo-600 dark:hover:text-indigo-400 transition-colors btn-press px-3 py-2 bg-white dark:bg-slate-800 rounded-xl shadow-sm border border-slate-100 dark:border-slate-700">
+                <button onclick="showView('home')"
+                    class="flex items-center gap-2 text-slate-500 dark:text-slate-400 hover:text-indigo-600 dark:hover:text-indigo-400 transition-colors btn-press px-3 py-2 bg-white dark:bg-slate-800 rounded-xl shadow-sm border border-slate-100 dark:border-slate-700">
                     <i class="ph ph-arrow-left text-lg"></i> <span class="text-sm font-bold">Thư viện</span>
                 </button>
             </div>
 
             <div class="space-y-3 pt-2">
-                <span id="detail-count" class="inline-block px-3 py-1 rounded-full bg-indigo-50 dark:bg-indigo-900/30 text-indigo-600 dark:text-indigo-300 text-xs font-semibold tracking-wider uppercase">... thuật ngữ</span>
-                <h2 id="detail-title" class="text-2xl md:text-4xl font-bold text-slate-800 dark:text-white tracking-tight leading-tight">Set Title</h2>
+                <span id="detail-count"
+                    class="inline-block px-3 py-1 rounded-full bg-indigo-50 dark:bg-indigo-900/30 text-indigo-600 dark:text-indigo-300 text-xs font-semibold tracking-wider uppercase">...
+                    thuật ngữ</span>
+                <h2 id="detail-title"
+                    class="text-2xl md:text-4xl font-bold text-slate-800 dark:text-white tracking-tight leading-tight">
+                    Set Title</h2>
                 <p id="detail-desc" class="text-slate-500 dark:text-slate-400 text-base">Description</p>
-                <div id="detail-complete-badge" class="hidden inline-flex items-center gap-2 px-3 py-1 rounded-full bg-emerald-100 dark:bg-emerald-900/30 text-emerald-700 dark:text-emerald-300 text-sm font-semibold">
+                <div id="detail-complete-badge"
+                    class="hidden inline-flex items-center gap-2 px-3 py-1 rounded-full bg-emerald-100 dark:bg-emerald-900/30 text-emerald-700 dark:text-emerald-300 text-sm font-semibold">
                     <i class="ph-fill ph-check-circle"></i>
                     <span>Đã hoàn thành</span>
                 </div>
                 <div id="detail-progress-wrapper" class="space-y-2">
-                    <p id="detail-progress" class="text-sm font-semibold text-indigo-600 dark:text-indigo-300">Tiến độ: 0%</p>
+                    <p id="detail-progress" class="text-sm font-semibold text-indigo-600 dark:text-indigo-300">Tiến độ:
+                        0%</p>
                     <div class="w-full h-2 bg-slate-100 dark:bg-slate-800 rounded-full overflow-hidden">
-                        <div id="detail-progress-bar" class="h-full bg-indigo-500 dark:bg-indigo-400 rounded-full transition-all duration-300" style="width: 0%"></div>
+                        <div id="detail-progress-bar"
+                            class="h-full bg-indigo-500 dark:bg-indigo-400 rounded-full transition-all duration-300"
+                            style="width: 0%"></div>
                     </div>
                 </div>
             </div>
 
             <!-- Weak Words Section (Hidden by default) -->
             <div id="relearn-section" class="hidden w-full animate-pulse">
-                 <div onclick="startRelearn()" class="group relative bg-orange-50 dark:bg-orange-900/20 p-4 rounded-2xl border border-orange-200 dark:border-orange-800 hover:border-orange-300 transition-all cursor-pointer flex items-center justify-between btn-press">
+                <div onclick="startRelearn()"
+                    class="group relative bg-orange-50 dark:bg-orange-900/20 p-4 rounded-2xl border border-orange-200 dark:border-orange-800 hover:border-orange-300 transition-all cursor-pointer flex items-center justify-between btn-press">
                     <div class="flex items-center gap-4">
-                        <div class="w-10 h-10 bg-orange-100 dark:bg-orange-800 text-orange-600 dark:text-orange-200 rounded-full flex items-center justify-center">
+                        <div
+                            class="w-10 h-10 bg-orange-100 dark:bg-orange-800 text-orange-600 dark:text-orange-200 rounded-full flex items-center justify-center">
                             <i class="ph-fill ph-warning-circle text-xl"></i>
                         </div>
                         <div class="text-left">
                             <h3 class="font-bold text-orange-800 dark:text-orange-200">Cần ôn tập</h3>
-                            <p class="text-xs text-orange-600 dark:text-orange-400"><span id="relearn-count">0</span> từ chưa thuộc</p>
+                            <p class="text-xs text-orange-600 dark:text-orange-400"><span id="relearn-count">0</span> từ
+                                chưa thuộc</p>
                         </div>
                     </div>
-                    <div class="text-orange-600 dark:text-orange-400 font-bold text-sm bg-white dark:bg-slate-900 px-3 py-1.5 rounded-lg shadow-sm">
+                    <div
+                        class="text-orange-600 dark:text-orange-400 font-bold text-sm bg-white dark:bg-slate-900 px-3 py-1.5 rounded-lg shadow-sm">
                         Học ngay
                     </div>
                 </div>
             </div>
 
             <!-- Word Count Selection -->
-            <div class="w-full bg-white dark:bg-dark-card p-5 rounded-2xl shadow-sm border border-slate-100 dark:border-slate-700">
+            <div
+                class="w-full bg-white dark:bg-dark-card p-5 rounded-2xl shadow-sm border border-slate-100 dark:border-slate-700">
                 <h3 class="text-lg font-bold text-slate-800 dark:text-white mb-4 flex items-center gap-2">
                     <i class="ph ph-list-numbers text-indigo-600 dark:text-indigo-400"></i>
                     Chọn số lượng từ
                 </h3>
-                
+
                 <!-- Quick Selection Buttons -->
                 <div class="grid grid-cols-2 md:grid-cols-4 gap-2 mb-4">
-                    <button onclick="setWordSelection('all', null)" class="word-count-btn px-4 py-2 rounded-xl border-2 border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800 text-slate-700 dark:text-slate-300 font-medium hover:border-indigo-400 dark:hover:border-indigo-600 hover:bg-indigo-50 dark:hover:bg-indigo-900/20 transition-all btn-press">
+                    <button onclick="setWordSelection('all', null)"
+                        class="word-count-btn px-4 py-2 rounded-xl border-2 border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800 text-slate-700 dark:text-slate-300 font-medium hover:border-indigo-400 dark:hover:border-indigo-600 hover:bg-indigo-50 dark:hover:bg-indigo-900/20 transition-all btn-press">
                         Tất cả
                     </button>
-                    <button onclick="setWordSelection('random', 25)" class="word-count-btn px-4 py-2 rounded-xl border-2 border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800 text-slate-700 dark:text-slate-300 font-medium hover:border-indigo-400 dark:hover:border-indigo-600 hover:bg-indigo-50 dark:hover:bg-indigo-900/20 transition-all btn-press">
+                    <button onclick="setWordSelection('random', 25)"
+                        class="word-count-btn px-4 py-2 rounded-xl border-2 border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800 text-slate-700 dark:text-slate-300 font-medium hover:border-indigo-400 dark:hover:border-indigo-600 hover:bg-indigo-50 dark:hover:bg-indigo-900/20 transition-all btn-press">
                         25 từ
                     </button>
-                    <button onclick="setWordSelection('random', 50)" class="word-count-btn px-4 py-2 rounded-xl border-2 border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800 text-slate-700 dark:text-slate-300 font-medium hover:border-indigo-400 dark:hover:border-indigo-600 hover:bg-indigo-50 dark:hover:bg-indigo-900/20 transition-all btn-press">
+                    <button onclick="setWordSelection('random', 50)"
+                        class="word-count-btn px-4 py-2 rounded-xl border-2 border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800 text-slate-700 dark:text-slate-300 font-medium hover:border-indigo-400 dark:hover:border-indigo-600 hover:bg-indigo-50 dark:hover:bg-indigo-900/20 transition-all btn-press">
                         50 từ
                     </button>
-                    <button onclick="setWordSelection('unlearned', null)" class="word-count-btn px-4 py-2 rounded-xl border-2 border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800 text-slate-700 dark:text-slate-300 font-medium hover:border-indigo-400 dark:hover:border-indigo-600 hover:bg-indigo-50 dark:hover:bg-indigo-900/20 transition-all btn-press">
+                    <button onclick="setWordSelection('unlearned', null)"
+                        class="word-count-btn px-4 py-2 rounded-xl border-2 border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800 text-slate-700 dark:text-slate-300 font-medium hover:border-indigo-400 dark:hover:border-indigo-600 hover:bg-indigo-50 dark:hover:bg-indigo-900/20 transition-all btn-press">
                         Chưa học
                     </button>
                 </div>
 
                 <!-- Custom Input -->
                 <div class="mb-4">
-                    <button onclick="showCustomCountInput()" class="w-full word-count-btn px-4 py-2 rounded-xl border-2 border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800 text-slate-700 dark:text-slate-300 font-medium hover:border-indigo-400 dark:hover:border-indigo-600 hover:bg-indigo-50 dark:hover:bg-indigo-900/20 transition-all btn-press">
+                    <button onclick="showCustomCountInput()"
+                        class="w-full word-count-btn px-4 py-2 rounded-xl border-2 border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800 text-slate-700 dark:text-slate-300 font-medium hover:border-indigo-400 dark:hover:border-indigo-600 hover:bg-indigo-50 dark:hover:bg-indigo-900/20 transition-all btn-press">
                         Tùy chỉnh số lượng
                     </button>
                 </div>
@@ -218,8 +277,10 @@
                 <!-- Custom Input (Hidden by default) -->
                 <div id="custom-count-input" class="hidden">
                     <div class="flex gap-2">
-                        <input type="number" id="custom-word-count" min="1" placeholder="Nhập số từ" class="flex-1 px-4 py-2 rounded-xl border-2 border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 text-slate-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500">
-                        <button onclick="applyCustomCount()" class="px-4 py-2 bg-indigo-600 hover:bg-indigo-700 text-white font-medium rounded-xl transition-all btn-press">
+                        <input type="number" id="custom-word-count" min="1" placeholder="Nhập số từ"
+                            class="flex-1 px-4 py-2 rounded-xl border-2 border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 text-slate-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500">
+                        <button onclick="applyCustomCount()"
+                            class="px-4 py-2 bg-indigo-600 hover:bg-indigo-700 text-white font-medium rounded-xl transition-all btn-press">
                             Áp dụng
                         </button>
                     </div>
@@ -233,26 +294,31 @@
 
             <div class="grid grid-cols-1 md:grid-cols-2 gap-4 w-full">
                 <!-- Flashcards (Primary) -->
-                <div onclick="startFlashcards()" class="col-span-1 md:col-span-2 group relative bg-white dark:bg-dark-card p-6 md:p-8 rounded-3xl shadow-sm border border-slate-100 dark:border-slate-700 hover:shadow-xl hover:border-indigo-100 dark:hover:border-indigo-800 transition-all cursor-pointer text-left overflow-hidden btn-press">
+                <div onclick="startFlashcards()"
+                    class="col-span-1 md:col-span-2 group relative bg-white dark:bg-dark-card p-6 md:p-8 rounded-3xl shadow-sm border border-slate-100 dark:border-slate-700 hover:shadow-xl hover:border-indigo-100 dark:hover:border-indigo-800 transition-all cursor-pointer text-left overflow-hidden btn-press">
                     <div class="absolute top-0 right-0 p-6 opacity-10 group-hover:opacity-20 transition-opacity">
                         <i class="ph ph-cards text-7xl md:text-8xl text-indigo-600 dark:text-indigo-400"></i>
                     </div>
                     <div class="relative z-10 flex flex-col h-full">
-                        <div class="w-12 h-12 bg-indigo-100 dark:bg-indigo-900/50 text-indigo-600 dark:text-indigo-300 rounded-2xl flex items-center justify-center mb-4 text-2xl group-hover:scale-110 transition-transform">
+                        <div
+                            class="w-12 h-12 bg-indigo-100 dark:bg-indigo-900/50 text-indigo-600 dark:text-indigo-300 rounded-2xl flex items-center justify-center mb-4 text-2xl group-hover:scale-110 transition-transform">
                             <i class="ph ph-cards"></i>
                         </div>
                         <h3 class="text-xl font-bold text-slate-800 dark:text-white mb-1">Flashcards</h3>
                         <p class="text-slate-500 dark:text-slate-400 text-sm">Vuốt trái/phải để ghi nhớ từ vựng.</p>
-                        <div class="mt-auto pt-4 flex items-center text-indigo-600 dark:text-indigo-400 font-bold text-sm">
+                        <div
+                            class="mt-auto pt-4 flex items-center text-indigo-600 dark:text-indigo-400 font-bold text-sm">
                             Bắt đầu học <i class="ph ph-arrow-right ml-2"></i>
                         </div>
                     </div>
                 </div>
 
                 <!-- Learn Mode -->
-                <div onclick="startLearn()" class="group relative bg-white dark:bg-dark-card p-6 rounded-3xl shadow-sm border border-slate-100 dark:border-slate-700 hover:shadow-xl hover:border-cyan-100 dark:hover:border-cyan-800 transition-all cursor-pointer text-left overflow-hidden btn-press">
+                <div onclick="startLearn()"
+                    class="group relative bg-white dark:bg-dark-card p-6 rounded-3xl shadow-sm border border-slate-100 dark:border-slate-700 hover:shadow-xl hover:border-cyan-100 dark:hover:border-cyan-800 transition-all cursor-pointer text-left overflow-hidden btn-press">
                     <div class="relative z-10 flex flex-col h-full">
-                        <div class="w-10 h-10 bg-cyan-100 dark:bg-cyan-900/50 text-cyan-600 dark:text-cyan-300 rounded-xl flex items-center justify-center mb-3 text-xl group-hover:scale-110 transition-transform">
+                        <div
+                            class="w-10 h-10 bg-cyan-100 dark:bg-cyan-900/50 text-cyan-600 dark:text-cyan-300 rounded-xl flex items-center justify-center mb-3 text-xl group-hover:scale-110 transition-transform">
                             <i class="ph ph-student"></i>
                         </div>
                         <h3 class="text-lg font-bold text-slate-800 dark:text-white mb-1">Learn</h3>
@@ -261,9 +327,11 @@
                 </div>
 
                 <!-- Matching -->
-                <div onclick="startMatching()" class="group relative bg-white dark:bg-dark-card p-6 rounded-3xl shadow-sm border border-slate-100 dark:border-slate-700 hover:shadow-xl hover:border-pink-100 dark:hover:border-pink-900 transition-all cursor-pointer text-left overflow-hidden btn-press">
+                <div onclick="startMatching()"
+                    class="group relative bg-white dark:bg-dark-card p-6 rounded-3xl shadow-sm border border-slate-100 dark:border-slate-700 hover:shadow-xl hover:border-pink-100 dark:hover:border-pink-900 transition-all cursor-pointer text-left overflow-hidden btn-press">
                     <div class="relative z-10 flex flex-col h-full">
-                        <div class="w-10 h-10 bg-pink-100 dark:bg-pink-900/50 text-pink-600 dark:text-pink-300 rounded-xl flex items-center justify-center mb-3 text-xl group-hover:scale-110 transition-transform">
+                        <div
+                            class="w-10 h-10 bg-pink-100 dark:bg-pink-900/50 text-pink-600 dark:text-pink-300 rounded-xl flex items-center justify-center mb-3 text-xl group-hover:scale-110 transition-transform">
                             <i class="ph ph-puzzle-piece"></i>
                         </div>
                         <h3 class="text-lg font-bold text-slate-800 dark:text-white mb-1">Matching</h3>
@@ -279,22 +347,30 @@
         <div class="w-full h-full flex flex-col items-center py-2 view-enter relative max-w-xl mx-auto">
             <!-- Header -->
             <div class="w-full flex items-center justify-between mb-6">
-                <button onclick="showView('set-detail')" class="p-2 -ml-2 text-slate-400 hover:text-slate-700 dark:hover:text-slate-200 transition-colors btn-press rounded-full">
+                <button onclick="showView('set-detail')"
+                    class="p-2 -ml-2 text-slate-400 hover:text-slate-700 dark:hover:text-slate-200 transition-colors btn-press rounded-full">
                     <i class="ph ph-x text-2xl"></i>
                 </button>
                 <div class="flex-1 mx-4">
                     <div class="h-2 w-full bg-slate-100 dark:bg-slate-700 rounded-full overflow-hidden">
-                        <div id="learn-progress-bar" class="h-full bg-cyan-500 rounded-full transition-all duration-300 ease-out" style="width: 0%"></div>
+                        <div id="learn-progress-bar"
+                            class="h-full bg-cyan-500 rounded-full transition-all duration-300 ease-out"
+                            style="width: 0%"></div>
                     </div>
                 </div>
-                <div id="learn-counter" class="text-sm font-bold text-slate-500 dark:text-slate-400 w-12 text-right">0/0</div>
+                <div id="learn-counter" class="text-sm font-bold text-slate-500 dark:text-slate-400 w-12 text-right">0/0
+                </div>
             </div>
 
             <!-- Question Card -->
             <div class="w-full flex-1 flex flex-col justify-center min-h-[200px] mb-8">
-                <div class="bg-white dark:bg-dark-card p-8 rounded-3xl shadow-sm border border-slate-100 dark:border-slate-700 text-center flex flex-col items-center justify-center h-64">
-                    <span id="learn-q-type" class="text-xs font-bold text-slate-400 uppercase tracking-widest mb-4">Định nghĩa</span>
-                    <h2 id="learn-question" class="text-3xl md:text-4xl font-bold text-slate-800 dark:text-white break-words max-w-full">...</h2>
+                <div
+                    class="bg-white dark:bg-dark-card p-8 rounded-3xl shadow-sm border border-slate-100 dark:border-slate-700 text-center flex flex-col items-center justify-center h-64">
+                    <span id="learn-q-type" class="text-xs font-bold text-slate-400 uppercase tracking-widest mb-4">Định
+                        nghĩa</span>
+                    <h2 id="learn-question"
+                        class="text-3xl md:text-4xl font-bold text-slate-800 dark:text-white break-words max-w-full">...
+                    </h2>
                 </div>
             </div>
 
@@ -309,7 +385,8 @@
     <template id="tpl-flashcard">
         <div class="w-full h-full flex flex-col items-center justify-between py-2 view-enter relative">
             <div class="w-full max-w-md flex items-center justify-between mb-2">
-                <button onclick="showView('set-detail')" class="p-3 text-slate-400 hover:text-slate-700 dark:hover:text-slate-200 transition-colors btn-press rounded-full">
+                <button onclick="showView('set-detail')"
+                    class="p-3 text-slate-400 hover:text-slate-700 dark:hover:text-slate-200 transition-colors btn-press rounded-full">
                     <i class="ph ph-arrow-left text-2xl"></i>
                 </button>
                 <div class="flex flex-col items-center">
@@ -320,45 +397,67 @@
             </div>
 
             <div class="w-full max-w-md grid grid-cols-2 gap-3 px-2 mb-4">
-                <div class="bg-orange-50 dark:bg-orange-900/20 text-orange-600 dark:text-orange-400 px-3 py-2 rounded-xl flex items-center justify-center gap-2 font-bold shadow-sm border border-orange-100 dark:border-orange-900/30">
+                <div
+                    class="bg-orange-50 dark:bg-orange-900/20 text-orange-600 dark:text-orange-400 px-3 py-2 rounded-xl flex items-center justify-center gap-2 font-bold shadow-sm border border-orange-100 dark:border-orange-900/30">
                     <i class="ph-fill ph-x-circle text-xl"></i>
                     <span id="stat-learning" class="text-lg">0</span>
                 </div>
-                <div class="bg-green-50 dark:bg-green-900/20 text-green-600 dark:text-green-400 px-3 py-2 rounded-xl flex items-center justify-center gap-2 font-bold shadow-sm border border-green-100 dark:border-green-900/30">
+                <div
+                    class="bg-green-50 dark:bg-green-900/20 text-green-600 dark:text-green-400 px-3 py-2 rounded-xl flex items-center justify-center gap-2 font-bold shadow-sm border border-green-100 dark:border-green-900/30">
                     <span id="stat-known" class="text-lg">0</span>
                     <i class="ph-fill ph-check-circle text-xl"></i>
                 </div>
             </div>
 
-            <div class="relative w-full max-w-xs md:max-w-sm flex-1 flex items-center justify-center perspective-1000 my-2 z-10" id="card-wrapper">
-                <div id="label-left" class="absolute top-10 right-10 z-20 opacity-0 pointer-events-none transform rotate-12 transition-opacity duration-200">
-                    <div class="border-4 border-orange-500 text-orange-500 rounded-xl px-4 py-2 font-bold text-2xl uppercase tracking-widest bg-white/80 dark:bg-slate-900/80 backdrop-blur-sm shadow-xl">Học lại</div>
+            <div class="relative w-full max-w-xs md:max-w-sm flex-1 flex items-center justify-center perspective-1000 my-2 z-10"
+                id="card-wrapper">
+                <div id="label-left"
+                    class="absolute top-10 right-10 z-20 opacity-0 pointer-events-none transform rotate-12 transition-opacity duration-200">
+                    <div
+                        class="border-4 border-orange-500 text-orange-500 rounded-xl px-4 py-2 font-bold text-2xl uppercase tracking-widest bg-white/80 dark:bg-slate-900/80 backdrop-blur-sm shadow-xl">
+                        Học lại</div>
                 </div>
-                <div id="label-right" class="absolute top-10 left-10 z-20 opacity-0 pointer-events-none transform -rotate-12 transition-opacity duration-200">
-                    <div class="border-4 border-green-500 text-green-500 rounded-xl px-4 py-2 font-bold text-2xl uppercase tracking-widest bg-white/80 dark:bg-slate-900/80 backdrop-blur-sm shadow-xl">Đã thuộc</div>
+                <div id="label-right"
+                    class="absolute top-10 left-10 z-20 opacity-0 pointer-events-none transform -rotate-12 transition-opacity duration-200">
+                    <div
+                        class="border-4 border-green-500 text-green-500 rounded-xl px-4 py-2 font-bold text-2xl uppercase tracking-widest bg-white/80 dark:bg-slate-900/80 backdrop-blur-sm shadow-xl">
+                        Đã thuộc</div>
                 </div>
-                <div id="flashcard" class="relative w-full aspect-[3/4.5] md:aspect-[3/4] preserve-3d cursor-grab active:cursor-grabbing shadow-2xl rounded-3xl bg-white dark:bg-dark-card card-transition border border-transparent dark:border-slate-700">
+                <div id="flashcard"
+                    class="relative w-full aspect-[3/4.5] md:aspect-[3/4] preserve-3d cursor-grab active:cursor-grabbing shadow-2xl rounded-3xl bg-white dark:bg-dark-card card-transition border border-transparent dark:border-slate-700">
                     <!-- Front -->
-                    <div class="absolute w-full h-full backface-hidden bg-white dark:bg-dark-card rounded-3xl border border-slate-100 dark:border-slate-700 flex flex-col items-center justify-center p-6 md:p-8 text-center select-none shadow-sm">
-                        <span id="fc-type" class="absolute top-6 right-6 text-xs font-bold text-slate-400 dark:text-slate-500 bg-slate-50 dark:bg-slate-800 px-2 py-1 rounded-md uppercase"></span>
-                        <h2 id="fc-word" class="text-3xl md:text-4xl font-bold text-slate-800 dark:text-white mb-3 pointer-events-none break-words max-w-full"></h2>
+                    <div
+                        class="absolute w-full h-full backface-hidden bg-white dark:bg-dark-card rounded-3xl border border-slate-100 dark:border-slate-700 flex flex-col items-center justify-center p-6 md:p-8 text-center select-none shadow-sm">
+                        <span id="fc-type"
+                            class="absolute top-6 right-6 text-xs font-bold text-slate-400 dark:text-slate-500 bg-slate-50 dark:bg-slate-800 px-2 py-1 rounded-md uppercase"></span>
+                        <h2 id="fc-word"
+                            class="text-3xl md:text-4xl font-bold text-slate-800 dark:text-white mb-3 pointer-events-none break-words max-w-full">
+                        </h2>
                         <p id="fc-ipa" class="text-slate-400 font-mono text-sm pointer-events-none mb-10"></p>
-                        <div class="absolute bottom-8 text-slate-300 dark:text-slate-600 text-xs uppercase tracking-widest font-semibold flex flex-col items-center gap-2 pointer-events-none animate-bounce">
+                        <div
+                            class="absolute bottom-8 text-slate-300 dark:text-slate-600 text-xs uppercase tracking-widest font-semibold flex flex-col items-center gap-2 pointer-events-none animate-bounce">
                             <i class="ph ph-hand-tap text-xl"></i> <span>Chạm để lật</span>
                         </div>
                     </div>
                     <!-- Back -->
-                    <div class="absolute w-full h-full backface-hidden bg-indigo-600 dark:bg-indigo-700 rounded-3xl rotate-y-180 flex flex-col items-center justify-center p-6 md:p-8 text-center text-white select-none shadow-inner border border-indigo-500 dark:border-indigo-600">
-                        <h3 id="fc-meaning" class="text-xl md:text-2xl font-bold mb-4 pointer-events-none break-words max-w-full"></h3>
+                    <div
+                        class="absolute w-full h-full backface-hidden bg-indigo-600 dark:bg-indigo-700 rounded-3xl rotate-y-180 flex flex-col items-center justify-center p-6 md:p-8 text-center text-white select-none shadow-inner border border-indigo-500 dark:border-indigo-600">
+                        <h3 id="fc-meaning"
+                            class="text-xl md:text-2xl font-bold mb-4 pointer-events-none break-words max-w-full"></h3>
                         <div class="w-12 h-1 bg-white/20 rounded-full mb-6"></div>
-                        <p id="fc-example" class="text-indigo-100 italic leading-relaxed text-base md:text-lg pointer-events-none"></p>
+                        <p id="fc-example"
+                            class="text-indigo-100 italic leading-relaxed text-base md:text-lg pointer-events-none"></p>
                     </div>
                 </div>
             </div>
 
             <div class="flex items-center justify-center gap-8 w-full max-w-xs mt-2 pb-2">
-                <button onclick="triggerSwipe('left')" class="w-16 h-16 rounded-full bg-white dark:bg-dark-card border border-slate-200 dark:border-slate-700 text-orange-500 shadow-lg flex items-center justify-center hover:bg-orange-50 dark:hover:bg-orange-900/20 hover:border-orange-200 dark:hover:border-orange-800 active:scale-95 btn-press transition-colors"><i class="ph ph-x text-3xl"></i></button>
-                <button onclick="triggerSwipe('right')" class="w-16 h-16 rounded-full bg-white dark:bg-dark-card border border-slate-200 dark:border-slate-700 text-green-500 shadow-lg flex items-center justify-center hover:bg-green-50 dark:hover:bg-green-900/20 hover:border-green-200 dark:hover:border-green-800 active:scale-95 btn-press transition-colors"><i class="ph ph-check text-3xl"></i></button>
+                <button onclick="triggerSwipe('left')"
+                    class="w-16 h-16 rounded-full bg-white dark:bg-dark-card border border-slate-200 dark:border-slate-700 text-orange-500 shadow-lg flex items-center justify-center hover:bg-orange-50 dark:hover:bg-orange-900/20 hover:border-orange-200 dark:hover:border-orange-800 active:scale-95 btn-press transition-colors"><i
+                        class="ph ph-x text-3xl"></i></button>
+                <button onclick="triggerSwipe('right')"
+                    class="w-16 h-16 rounded-full bg-white dark:bg-dark-card border border-slate-200 dark:border-slate-700 text-green-500 shadow-lg flex items-center justify-center hover:bg-green-50 dark:hover:bg-green-900/20 hover:border-green-200 dark:hover:border-green-800 active:scale-95 btn-press transition-colors"><i
+                        class="ph ph-check text-3xl"></i></button>
             </div>
         </div>
     </template>
@@ -367,22 +466,26 @@
     <template id="tpl-matching">
         <div class="w-full flex flex-col h-full view-enter">
             <div class="flex items-center justify-between mb-4">
-                 <button onclick="showView('set-detail')" class="flex items-center gap-2 text-slate-500 dark:text-slate-400 hover:text-indigo-600 dark:hover:text-indigo-400 transition-colors btn-press px-2 py-1 rounded-lg">
+                <button onclick="showView('set-detail')"
+                    class="flex items-center gap-2 text-slate-500 dark:text-slate-400 hover:text-indigo-600 dark:hover:text-indigo-400 transition-colors btn-press px-2 py-1 rounded-lg">
                     <i class="ph ph-arrow-left text-xl"></i> <span class="text-sm font-bold">Thoát</span>
                 </button>
                 <div class="flex items-center gap-3">
-                    <div class="flex items-center gap-2 text-slate-600 dark:text-slate-300 bg-slate-50 dark:bg-slate-800 px-3 py-1 rounded-full border border-slate-200 dark:border-slate-700">
+                    <div
+                        class="flex items-center gap-2 text-slate-600 dark:text-slate-300 bg-slate-50 dark:bg-slate-800 px-3 py-1 rounded-full border border-slate-200 dark:border-slate-700">
                         <i class="ph ph-list-checks"></i>
                         <span id="match-progress" class="font-bold text-sm">0/0</span>
                     </div>
-                    <div class="flex items-center gap-2 text-indigo-600 dark:text-indigo-300 bg-indigo-50 dark:bg-indigo-900/30 px-3 py-1 rounded-full border border-indigo-100 dark:border-indigo-800">
+                    <div
+                        class="flex items-center gap-2 text-indigo-600 dark:text-indigo-300 bg-indigo-50 dark:bg-indigo-900/30 px-3 py-1 rounded-full border border-indigo-100 dark:border-indigo-800">
                         <i class="ph ph-clock"></i>
                         <span id="match-timer" class="font-mono font-bold">00:00</span>
                     </div>
                 </div>
             </div>
-            
-            <div id="matching-grid" class="flex-1 grid grid-cols-2 md:grid-cols-4 gap-2 md:gap-4 auto-rows-fr pb-4 overflow-y-auto">
+
+            <div id="matching-grid"
+                class="flex-1 grid grid-cols-2 md:grid-cols-4 gap-2 md:gap-4 auto-rows-fr pb-4 overflow-y-auto">
                 <!-- Cards injected here -->
             </div>
         </div>
@@ -391,34 +494,45 @@
     <!-- 6. Result View -->
     <template id="tpl-result">
         <div class="w-full h-full flex flex-col items-center justify-center px-4">
-            <div class="bg-white dark:bg-dark-card p-8 md:p-10 rounded-3xl shadow-xl border border-slate-100 dark:border-slate-700 text-center max-w-sm w-full mx-auto view-enter">
-                <div class="w-20 h-20 bg-green-100 dark:bg-green-900/30 text-green-600 dark:text-green-400 rounded-full flex items-center justify-center mx-auto mb-6 shadow-inner animate-[pulse_2s_infinite]">
+            <div
+                class="bg-white dark:bg-dark-card p-8 md:p-10 rounded-3xl shadow-xl border border-slate-100 dark:border-slate-700 text-center max-w-sm w-full mx-auto view-enter">
+                <div
+                    class="w-20 h-20 bg-green-100 dark:bg-green-900/30 text-green-600 dark:text-green-400 rounded-full flex items-center justify-center mx-auto mb-6 shadow-inner animate-[pulse_2s_infinite]">
                     <i class="ph-fill ph-trophy text-4xl"></i>
                 </div>
                 <h2 class="text-2xl font-bold text-slate-800 dark:text-white mb-2">Hoàn thành!</h2>
-                <p id="result-message" class="text-slate-500 dark:text-slate-400 mb-8">Bạn đã ôn tập hết bộ từ vựng này.</p>
-                
+                <p id="result-message" class="text-slate-500 dark:text-slate-400 mb-8">Bạn đã ôn tập hết bộ từ vựng này.
+                </p>
+
                 <div class="grid grid-cols-2 gap-4 mb-6" id="result-stats-block">
-                     <div class="bg-green-50 dark:bg-green-900/20 p-3 rounded-2xl border border-green-100 dark:border-green-900/30">
+                    <div
+                        class="bg-green-50 dark:bg-green-900/20 p-3 rounded-2xl border border-green-100 dark:border-green-900/30">
                         <div class="text-2xl font-bold text-green-600 dark:text-green-400" id="res-known">0</div>
-                        <div class="text-[10px] text-green-800 dark:text-green-300 uppercase font-bold tracking-wider">Đã thuộc</div>
-                     </div>
-                     <div class="bg-orange-50 dark:bg-orange-900/20 p-3 rounded-2xl border border-orange-100 dark:border-orange-900/30">
+                        <div class="text-[10px] text-green-800 dark:text-green-300 uppercase font-bold tracking-wider">
+                            Đã thuộc</div>
+                    </div>
+                    <div
+                        class="bg-orange-50 dark:bg-orange-900/20 p-3 rounded-2xl border border-orange-100 dark:border-orange-900/30">
                         <div class="text-2xl font-bold text-orange-600 dark:text-orange-400" id="res-learning">0</div>
-                        <div class="text-[10px] text-orange-800 dark:text-orange-300 uppercase font-bold tracking-wider">Cần ôn</div>
-                     </div>
+                        <div
+                            class="text-[10px] text-orange-800 dark:text-orange-300 uppercase font-bold tracking-wider">
+                            Cần ôn</div>
+                    </div>
                 </div>
 
                 <div class="flex flex-col gap-3">
-                    <button id="btn-relearn" onclick="startRelearnFromResults()" class="hidden w-full py-3 bg-orange-100 hover:bg-orange-200 text-orange-600 dark:bg-orange-900/30 dark:hover:bg-orange-900/50 dark:text-orange-300 font-bold rounded-xl active:scale-95 transition-all border border-orange-200 dark:border-orange-800">
+                    <button id="btn-relearn" onclick="startRelearnFromResults()"
+                        class="hidden w-full py-3 bg-orange-100 hover:bg-orange-200 text-orange-600 dark:bg-orange-900/30 dark:hover:bg-orange-900/50 dark:text-orange-300 font-bold rounded-xl active:scale-95 transition-all border border-orange-200 dark:border-orange-800">
                         Học lại các từ chưa thuộc
                     </button>
 
-                    <button id="btn-repeat-session" onclick="repeatLastSession()" class="hidden w-full py-3 bg-slate-100 hover:bg-slate-200 text-slate-700 dark:bg-slate-800 dark:hover:bg-slate-700 dark:text-slate-200 font-bold rounded-xl active:scale-95 transition-all border border-slate-200 dark:border-slate-600">
+                    <button id="btn-repeat-session" onclick="repeatLastSession()"
+                        class="hidden w-full py-3 bg-slate-100 hover:bg-slate-200 text-slate-700 dark:bg-slate-800 dark:hover:bg-slate-700 dark:text-slate-200 font-bold rounded-xl active:scale-95 transition-all border border-slate-200 dark:border-slate-600">
                         Học lại phương pháp này
                     </button>
-                    
-                    <button onclick="showView('set-detail')" class="w-full py-3.5 bg-indigo-600 hover:bg-indigo-700 text-white font-bold rounded-xl active:scale-95 transition-all shadow-lg shadow-indigo-200 dark:shadow-none">
+
+                    <button onclick="showView('set-detail')"
+                        class="w-full py-3.5 bg-indigo-600 hover:bg-indigo-700 text-white font-bold rounded-xl active:scale-95 transition-all shadow-lg shadow-indigo-200 dark:shadow-none">
                         Về bộ từ vựng
                     </button>
                 </div>
@@ -430,16 +544,20 @@
     <template id="tpl-settings">
         <div class="w-full max-w-md mx-auto view-enter">
             <div class="flex items-center gap-4 mb-8">
-                <button onclick="showView('home')" class="p-2 -ml-2 text-slate-400 hover:text-slate-700 dark:hover:text-white transition-colors">
+                <button onclick="showView('home')"
+                    class="p-2 -ml-2 text-slate-400 hover:text-slate-700 dark:hover:text-white transition-colors">
                     <i class="ph ph-arrow-left text-xl"></i>
                 </button>
                 <h2 class="text-2xl font-bold text-slate-800 dark:text-white">Cài đặt</h2>
             </div>
-            
-            <div class="bg-white dark:bg-dark-card rounded-2xl shadow-sm border border-slate-100 dark:border-slate-700 overflow-hidden">
-                <div class="p-5 md:p-6 border-b border-slate-100 dark:border-slate-700 flex items-center justify-between">
+
+            <div
+                class="bg-white dark:bg-dark-card rounded-2xl shadow-sm border border-slate-100 dark:border-slate-700 overflow-hidden">
+                <div
+                    class="p-5 md:p-6 border-b border-slate-100 dark:border-slate-700 flex items-center justify-between">
                     <div class="flex items-center gap-3">
-                        <div class="w-10 h-10 rounded-full bg-indigo-50 dark:bg-indigo-900/30 flex items-center justify-center text-indigo-600 dark:text-indigo-400">
+                        <div
+                            class="w-10 h-10 rounded-full bg-indigo-50 dark:bg-indigo-900/30 flex items-center justify-center text-indigo-600 dark:text-indigo-400">
                             <i class="ph-fill ph-moon text-xl"></i>
                         </div>
                         <div>
@@ -447,15 +565,19 @@
                             <div class="text-xs text-slate-500 dark:text-slate-400">Giao diện dịu mắt hơn</div>
                         </div>
                     </div>
-                    <div class="relative inline-block w-12 h-6 align-middle select-none transition duration-200 ease-in">
-                        <input type="checkbox" name="toggle" id="dark-mode-toggle" class="toggle-checkbox absolute block w-6 h-6 rounded-full bg-white border-4 border-slate-300 appearance-none cursor-pointer transition-all duration-300 ease-in-out left-0 z-10"/>
-                        <label for="dark-mode-toggle" class="toggle-label block overflow-hidden h-6 rounded-full bg-slate-200 cursor-pointer transition-colors duration-300 ease-in-out"></label>
+                    <div
+                        class="relative inline-block w-12 h-6 align-middle select-none transition duration-200 ease-in">
+                        <input type="checkbox" name="toggle" id="dark-mode-toggle"
+                            class="toggle-checkbox absolute block w-6 h-6 rounded-full bg-white border-4 border-slate-300 appearance-none cursor-pointer transition-all duration-300 ease-in-out left-0 z-10" />
+                        <label for="dark-mode-toggle"
+                            class="toggle-label block overflow-hidden h-6 rounded-full bg-slate-200 cursor-pointer transition-colors duration-300 ease-in-out"></label>
                     </div>
                 </div>
-                
+
                 <div class="p-5 md:p-6 flex items-center justify-between">
                     <div class="flex items-center gap-3">
-                        <div class="w-10 h-10 rounded-full bg-red-50 dark:bg-red-900/30 flex items-center justify-center text-red-600 dark:text-red-400">
+                        <div
+                            class="w-10 h-10 rounded-full bg-red-50 dark:bg-red-900/30 flex items-center justify-center text-red-600 dark:text-red-400">
                             <i class="ph-fill ph-trash text-xl"></i>
                         </div>
                         <div>
@@ -463,18 +585,22 @@
                             <div class="text-xs text-slate-500 dark:text-slate-400">Đặt lại tiến độ học tập</div>
                         </div>
                     </div>
-                    <button onclick="resetData()" class="px-4 py-2 text-sm font-bold text-red-600 dark:text-red-400 bg-red-50 dark:bg-red-900/20 rounded-lg hover:bg-red-100 dark:hover:bg-red-900/40 transition-colors">
+                    <button onclick="resetData()"
+                        class="px-4 py-2 text-sm font-bold text-red-600 dark:text-red-400 bg-red-50 dark:bg-red-900/20 rounded-lg hover:bg-red-100 dark:hover:bg-red-900/40 transition-colors">
                         Xóa
                     </button>
                 </div>
             </div>
-            
-            <div class="mt-6 bg-slate-50 dark:bg-slate-800/40 border border-slate-100 dark:border-slate-700 rounded-2xl p-4 flex items-center gap-3">
-                <div class="w-12 h-12 rounded-2xl bg-indigo-100 dark:bg-indigo-900/40 text-indigo-600 dark:text-indigo-300 flex items-center justify-center shadow-sm">
+
+            <div
+                class="mt-6 bg-slate-50 dark:bg-slate-800/40 border border-slate-100 dark:border-slate-700 rounded-2xl p-4 flex items-center gap-3">
+                <div
+                    class="w-12 h-12 rounded-2xl bg-indigo-100 dark:bg-indigo-900/40 text-indigo-600 dark:text-indigo-300 flex items-center justify-center shadow-sm">
                     <i class="ph-fill ph-user text-xl"></i>
                 </div>
                 <div>
-                    <p class="text-[11px] uppercase tracking-widest font-semibold text-slate-400 dark:text-slate-500">Developed by</p>
+                    <p class="text-[11px] uppercase tracking-widest font-semibold text-slate-400 dark:text-slate-500">
+                        Developed by</p>
                     <p class="text-base font-bold text-slate-700 dark:text-white">Trọng Phúc &amp; Phương Kiều</p>
                 </div>
             </div>
@@ -489,86 +615,114 @@
     <template id="tpl-stats">
         <div class="w-full max-w-md mx-auto view-enter">
             <div class="flex items-center gap-4 mb-8">
-                <button onclick="showView('home')" class="p-2 -ml-2 text-slate-400 hover:text-slate-700 dark:hover:text-white transition-colors">
+                <button onclick="showView('home')"
+                    class="p-2 -ml-2 text-slate-400 hover:text-slate-700 dark:hover:text-white transition-colors">
                     <i class="ph ph-arrow-left text-xl"></i>
                 </button>
                 <h2 class="text-2xl font-bold text-slate-800 dark:text-white">Thống kê học tập</h2>
             </div>
-            
+
             <div class="grid grid-cols-2 gap-4 mb-6">
-                <div class="bg-white dark:bg-dark-card p-5 rounded-2xl shadow-sm border border-slate-100 dark:border-slate-700">
+                <div
+                    class="bg-white dark:bg-dark-card p-5 rounded-2xl shadow-sm border border-slate-100 dark:border-slate-700">
                     <div class="text-indigo-500 mb-2"><i class="ph-fill ph-book-open text-2xl"></i></div>
                     <div class="text-3xl font-bold text-slate-800 dark:text-white" id="stats-words">0</div>
-                    <div class="text-xs text-slate-500 dark:text-slate-400 font-medium uppercase tracking-wide mt-1">Từ đã học</div>
+                    <div class="text-xs text-slate-500 dark:text-slate-400 font-medium uppercase tracking-wide mt-1">Từ
+                        đã học</div>
                 </div>
-                <div class="bg-white dark:bg-dark-card p-5 rounded-2xl shadow-sm border border-slate-100 dark:border-slate-700">
+                <div
+                    class="bg-white dark:bg-dark-card p-5 rounded-2xl shadow-sm border border-slate-100 dark:border-slate-700">
                     <div class="text-pink-500 mb-2"><i class="ph-fill ph-clock text-2xl"></i></div>
                     <div class="text-3xl font-bold text-slate-800 dark:text-white" id="stats-time">0</div>
-                    <div class="text-xs text-slate-500 dark:text-slate-400 font-medium uppercase tracking-wide mt-1">Phút đã học</div>
+                    <div class="text-xs text-slate-500 dark:text-slate-400 font-medium uppercase tracking-wide mt-1">
+                        Phút đã học</div>
                 </div>
-                <div class="bg-white dark:bg-dark-card p-5 rounded-2xl shadow-sm border border-slate-100 dark:border-slate-700 col-span-2">
+                <div
+                    class="bg-white dark:bg-dark-card p-5 rounded-2xl shadow-sm border border-slate-100 dark:border-slate-700 col-span-2">
                     <div class="text-cyan-500 mb-2"><i class="ph-fill ph-target text-2xl"></i></div>
                     <div class="text-3xl font-bold text-slate-800 dark:text-white" id="stats-accuracy">0%</div>
-                    <div class="text-xs text-slate-500 dark:text-slate-400 font-medium uppercase tracking-wide mt-1">Tỉ lệ chính xác (Matching + Learn)</div>
+                    <div class="text-xs text-slate-500 dark:text-slate-400 font-medium uppercase tracking-wide mt-1">Tỉ
+                        lệ chính xác (Matching + Learn)</div>
                 </div>
             </div>
-            
-             <div class="bg-white dark:bg-dark-card p-6 rounded-2xl shadow-sm border border-slate-100 dark:border-slate-700 flex items-center justify-center mb-6">
+
+            <div
+                class="bg-white dark:bg-dark-card p-6 rounded-2xl shadow-sm border border-slate-100 dark:border-slate-700 flex items-center justify-center mb-6">
                 <div class="flex-1">
                     <div class="text-3xl font-bold text-slate-800 dark:text-white" id="stats-sessions">0</div>
-                    <div class="text-xs text-slate-500 dark:text-slate-400 font-medium uppercase tracking-wide mt-1">Số phiên học</div>
+                    <div class="text-xs text-slate-500 dark:text-slate-400 font-medium uppercase tracking-wide mt-1">Số
+                        phiên học</div>
                 </div>
-                <div class="w-12 h-12 bg-green-50 dark:bg-green-900/30 rounded-full flex items-center justify-center text-green-600 dark:text-green-400">
+                <div
+                    class="w-12 h-12 bg-green-50 dark:bg-green-900/30 rounded-full flex items-center justify-center text-green-600 dark:text-green-400">
                     <i class="ph-fill ph-student text-2xl"></i>
                 </div>
             </div>
-            
+
             <div class="p-6 bg-indigo-600 rounded-3xl text-white relative overflow-hidden">
                 <div class="relative z-10">
                     <h3 class="text-lg font-bold mb-2">Tiếp tục cố gắng!</h3>
                     <p class="text-indigo-100 text-sm">Việc học ngôn ngữ đòi hỏi sự kiên trì hàng ngày.</p>
                 </div>
-                <i class="ph ph-trend-up absolute -bottom-4 -right-4 text-9xl text-indigo-500 opacity-50 transform rotate-12"></i>
+                <i
+                    class="ph ph-trend-up absolute -bottom-4 -right-4 text-9xl text-indigo-500 opacity-50 transform rotate-12"></i>
             </div>
         </div>
     </template>
-    
+
     <!-- Music Player Floating Panel -->
     <div id="music-overlay" class="hidden fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-30"></div>
-    <div id="music-panel" class="hidden fixed inset-x-3 top-1/2 -translate-y-1/2 w-full max-w-md mx-auto bg-white dark:bg-dark-card border border-slate-200 dark:border-slate-700 rounded-3xl shadow-2xl shadow-indigo-200/40 dark:shadow-none z-40 p-3 md:p-6 space-y-4 overflow-y-auto overflow-x-hidden max-h-[50vh] music-scroll">
+    <div id="music-panel"
+        class="hidden fixed inset-x-3 top-1/2 -translate-y-1/2 w-full max-w-md mx-auto bg-white dark:bg-dark-card border border-slate-200 dark:border-slate-700 rounded-3xl shadow-2xl shadow-indigo-200/40 dark:shadow-none z-40 p-3 md:p-6 space-y-4 overflow-y-auto overflow-x-hidden max-h-[50vh] music-scroll">
         <div class="flex items-start justify-between gap-3">
             <div>
-                <p class="text-xs font-bold uppercase tracking-widest text-slate-400 dark:text-slate-500">Âm nhạc học tập</p>
+                <p class="text-xs font-bold uppercase tracking-widest text-slate-400 dark:text-slate-500">Âm nhạc học
+                    tập</p>
                 <p class="text-sm text-slate-500 dark:text-slate-400">Nhạc nền YouTube nhẹ nhàng cho lúc học.</p>
             </div>
             <div class="flex items-center gap-1">
-                <button type="button" id="music-compact-btn" class="p-2 rounded-full text-slate-400 hover:text-indigo-600 dark:hover:text-indigo-300 hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors" aria-label="Thu nhỏ giao diện âm nhạc">
+                <button type="button" id="music-compact-btn"
+                    class="p-2 rounded-full text-slate-400 hover:text-indigo-600 dark:hover:text-indigo-300 hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors"
+                    aria-label="Thu nhỏ giao diện âm nhạc">
                     <i class="ph ph-minimize text-lg"></i>
                 </button>
-                <button type="button" onclick="toggleMusicPanel(false)" class="p-2 rounded-full text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors" aria-label="Ẩn bảng âm nhạc">
+                <button type="button" onclick="toggleMusicPanel(false)"
+                    class="p-2 rounded-full text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors"
+                    aria-label="Ẩn bảng âm nhạc">
                     <i class="ph ph-x text-lg"></i>
                 </button>
             </div>
         </div>
 
-        <div id="music-mini-controls" class="rounded-2xl border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-900/40 p-3 flex flex-col gap-3 shadow-sm">
+        <div id="music-mini-controls"
+            class="rounded-2xl border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-900/40 p-3 flex flex-col gap-3 shadow-sm">
             <div class="flex items-center gap-3">
                 <div class="flex-1">
-                    <p class="text-[10px] font-semibold uppercase tracking-widest text-slate-400 dark:text-slate-500">Mini player</p>
-                    <p id="music-mini-title" class="text-sm font-bold text-slate-800 dark:text-white truncate">Chưa chọn bài hát</p>
+                    <p class="text-[10px] font-semibold uppercase tracking-widest text-slate-400 dark:text-slate-500">
+                        Mini player</p>
+                    <p id="music-mini-title" class="text-sm font-bold text-slate-800 dark:text-white truncate">Chưa chọn
+                        bài hát</p>
                 </div>
-                <button type="button" id="music-mini-expand" class="p-2 rounded-xl border border-slate-200 dark:border-slate-700 text-slate-500 hover:border-indigo-300 hover:text-indigo-600 dark:hover:border-indigo-500 dark:hover:text-indigo-300 transition-colors" aria-label="Mở rộng bảng âm nhạc">
+                <button type="button" id="music-mini-expand"
+                    class="p-2 rounded-xl border border-slate-200 dark:border-slate-700 text-slate-500 hover:border-indigo-300 hover:text-indigo-600 dark:hover:border-indigo-500 dark:hover:text-indigo-300 transition-colors"
+                    aria-label="Mở rộng bảng âm nhạc">
                     <i class="ph ph-arrows-in text-lg"></i>
                 </button>
             </div>
             <div class="flex items-center gap-2 justify-between">
-                <button type="button" id="music-mini-prev" class="flex-1 px-3 py-2 rounded-2xl bg-white dark:bg-dark-card border border-slate-200 dark:border-slate-700 text-slate-500 hover:text-indigo-600 hover:border-indigo-200 dark:hover:text-indigo-300 dark:hover:border-indigo-500 transition-colors" aria-label="Bài trước (mini)">
+                <button type="button" id="music-mini-prev"
+                    class="flex-1 px-3 py-2 rounded-2xl bg-white dark:bg-dark-card border border-slate-200 dark:border-slate-700 text-slate-500 hover:text-indigo-600 hover:border-indigo-200 dark:hover:text-indigo-300 dark:hover:border-indigo-500 transition-colors"
+                    aria-label="Bài trước (mini)">
                     <i class="ph ph-skip-back text-lg"></i>
                 </button>
-                <button type="button" id="music-mini-play" class="w-12 h-12 rounded-full bg-indigo-600 hover:bg-indigo-700 text-white flex items-center justify-center shadow-lg transition-all" aria-label="Phát nhạc (mini)">
+                <button type="button" id="music-mini-play"
+                    class="w-12 h-12 rounded-full bg-indigo-600 hover:bg-indigo-700 text-white flex items-center justify-center shadow-lg transition-all"
+                    aria-label="Phát nhạc (mini)">
                     <i class="ph ph-play text-xl"></i>
                 </button>
-                <button type="button" id="music-mini-next" class="flex-1 px-3 py-2 rounded-2xl bg-white dark:bg-dark-card border border-slate-200 dark:border-slate-700 text-slate-500 hover:text-indigo-600 hover:border-indigo-200 dark:hover:text-indigo-300 dark:hover:border-indigo-500 transition-colors" aria-label="Bài tiếp theo (mini)">
+                <button type="button" id="music-mini-next"
+                    class="flex-1 px-3 py-2 rounded-2xl bg-white dark:bg-dark-card border border-slate-200 dark:border-slate-700 text-slate-500 hover:text-indigo-600 hover:border-indigo-200 dark:hover:text-indigo-300 dark:hover:border-indigo-500 transition-colors"
+                    aria-label="Bài tiếp theo (mini)">
                     <i class="ph ph-skip-forward text-lg"></i>
                 </button>
             </div>
@@ -576,71 +730,102 @@
 
         <div id="music-full-sections" class="space-y-4">
             <form id="music-add-form" class="space-y-2">
-                <label for="music-url-input" class="text-xs font-semibold uppercase tracking-widest text-slate-400 dark:text-slate-500">Thêm link YouTube của bạn</label>
+                <label for="music-url-input"
+                    class="text-xs font-semibold uppercase tracking-widest text-slate-400 dark:text-slate-500">Thêm link
+                    YouTube của bạn</label>
                 <div class="flex flex-col sm:flex-row gap-2">
-                    <input id="music-url-input" type="text" placeholder="https://www.youtube.com/watch?v=..." class="flex-1 px-4 py-3 rounded-2xl border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800 text-sm text-slate-700 dark:text-slate-100 focus:outline-none focus:ring-2 focus:ring-indigo-500" autocomplete="off" inputmode="url">
-                    <button type="submit" class="px-4 py-3 rounded-2xl bg-indigo-600 hover:bg-indigo-700 text-white text-sm font-semibold transition-colors btn-press">Thêm</button>
+                    <input id="music-url-input" type="text" placeholder="https://www.youtube.com/watch?v=..."
+                        class="flex-1 px-4 py-3 rounded-2xl border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800 text-sm text-slate-700 dark:text-slate-100 focus:outline-none focus:ring-2 focus:ring-indigo-500"
+                        autocomplete="off" inputmode="url">
+                    <button type="submit"
+                        class="px-4 py-3 rounded-2xl bg-indigo-600 hover:bg-indigo-700 text-white text-sm font-semibold transition-colors btn-press">Thêm</button>
                 </div>
                 <p id="music-feedback" class="text-xs text-slate-500 dark:text-slate-400 min-h-[1.5rem]"></p>
             </form>
 
             <div class="space-y-3">
                 <div>
-                    <h3 class="text-sm font-semibold text-slate-700 dark:text-slate-200 uppercase tracking-wide">Album nhạc</h3>
+                    <h3 class="text-sm font-semibold text-slate-700 dark:text-slate-200 uppercase tracking-wide">Album
+                        nhạc</h3>
                     <p class="text-xs text-slate-400 dark:text-slate-500">Preset + playlist riêng của bạn</p>
                 </div>
-                <div id="music-track-list" class="space-y-2 max-h-64 md:max-h-56 overflow-y-auto overflow-x-hidden pr-1 music-scroll">
+                <div id="music-track-list"
+                    class="space-y-2 max-h-64 md:max-h-56 overflow-y-auto overflow-x-hidden pr-1 music-scroll">
                     <!-- Tracks injected via JS -->
                 </div>
             </div>
-            
-            <div class="rounded-2xl border border-slate-100 dark:border-slate-700 bg-slate-50 dark:bg-slate-900/50 p-4 space-y-4">
+
+            <div
+                class="rounded-2xl border border-slate-100 dark:border-slate-700 bg-slate-50 dark:bg-slate-900/50 p-4 space-y-4">
                 <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-1">
                     <div>
-                        <p class="text-xs uppercase tracking-widest text-slate-400 dark:text-slate-500 font-semibold">Đang phát</p>
-                        <p id="music-current-title" class="text-lg font-bold text-slate-800 dark:text-white mt-1 truncate">Chưa chọn bài hát</p>
+                        <p class="text-xs uppercase tracking-widest text-slate-400 dark:text-slate-500 font-semibold">
+                            Đang phát</p>
+                        <p id="music-current-title"
+                            class="text-lg font-bold text-slate-800 dark:text-white mt-1 truncate">Chưa chọn bài hát</p>
                     </div>
                     <div class="flex items-center gap-2">
-                        <button type="button" id="music-open-youtube" class="mt-2 sm:mt-0 px-3 py-2 rounded-xl text-xs font-semibold border border-slate-200 dark:border-slate-700 text-slate-600 dark:text-slate-200 hover:border-indigo-300 hover:text-indigo-600 dark:hover:text-indigo-300 transition-colors hidden">
+                        <button type="button" id="music-open-youtube"
+                            class="mt-2 sm:mt-0 px-3 py-2 rounded-xl text-xs font-semibold border border-slate-200 dark:border-slate-700 text-slate-600 dark:text-slate-200 hover:border-indigo-300 hover:text-indigo-600 dark:hover:text-indigo-300 transition-colors hidden">
                             Mở trên YouTube
                         </button>
                     </div>
                 </div>
                 <div class="flex flex-wrap items-center justify-center gap-3">
-                    <button type="button" id="music-prev-btn" class="flex-1 min-w-[80px] w-14 h-14 rounded-2xl bg-white dark:bg-dark-card border border-slate-200 dark:border-slate-700 text-slate-500 hover:text-indigo-600 hover:border-indigo-200 dark:hover:text-indigo-300 dark:hover:border-indigo-500 transition-all btn-press" aria-label="Bài trước">
+                    <button type="button" id="music-prev-btn"
+                        class="flex-1 min-w-[80px] w-14 h-14 rounded-2xl bg-white dark:bg-dark-card border border-slate-200 dark:border-slate-700 text-slate-500 hover:text-indigo-600 hover:border-indigo-200 dark:hover:text-indigo-300 dark:hover:border-indigo-500 transition-all btn-press"
+                        aria-label="Bài trước">
                         <i class="ph ph-skip-back text-xl"></i>
                     </button>
-                    <button type="button" id="music-play-btn" class="w-16 h-16 rounded-full bg-indigo-600 hover:bg-indigo-700 text-white shadow-lg transition-all btn-press flex items-center justify-center" aria-label="Phát nhạc">
+                    <button type="button" id="music-play-btn"
+                        class="w-16 h-16 rounded-full bg-indigo-600 hover:bg-indigo-700 text-white shadow-lg transition-all btn-press flex items-center justify-center"
+                        aria-label="Phát nhạc">
                         <i class="ph ph-play text-3xl"></i>
                     </button>
-                    <button type="button" id="music-next-btn" class="flex-1 min-w-[80px] w-14 h-14 rounded-2xl bg-white dark:bg-dark-card border border-slate-200 dark:border-slate-700 text-slate-500 hover:text-indigo-600 hover:border-indigo-200 dark:hover:text-indigo-300 dark:hover:border-indigo-500 transition-all btn-press" aria-label="Bài tiếp theo">
+                    <button type="button" id="music-next-btn"
+                        class="flex-1 min-w-[80px] w-14 h-14 rounded-2xl bg-white dark:bg-dark-card border border-slate-200 dark:border-slate-700 text-slate-500 hover:text-indigo-600 hover:border-indigo-200 dark:hover:text-indigo-300 dark:hover:border-indigo-500 transition-all btn-press"
+                        aria-label="Bài tiếp theo">
                         <i class="ph ph-skip-forward text-xl"></i>
                     </button>
                 </div>
                 <div class="flex items-center gap-3">
                     <i class="ph ph-speaker-simple-low text-slate-400 dark:text-slate-500"></i>
-                    <input id="music-volume" type="range" min="0" max="100" value="60" class="flex-1 accent-indigo-600 cursor-pointer touch-manipulation">
-                    <span id="music-volume-value" class="text-xs font-semibold text-slate-600 dark:text-slate-300 w-12 text-right">60%</span>
+                    <input id="music-volume" type="range" min="0" max="100" value="60"
+                        class="flex-1 accent-indigo-600 cursor-pointer touch-manipulation">
+                    <span id="music-volume-value"
+                        class="text-xs font-semibold text-slate-600 dark:text-slate-300 w-12 text-right">60%</span>
                 </div>
             </div>
 
-            <div id="music-artwork-wrapper" class="rounded-2xl border border-slate-100 dark:border-slate-700 bg-white/70 dark:bg-slate-900/50 p-4 space-y-3 hidden">
+            <div id="music-artwork-wrapper"
+                class="rounded-2xl border border-slate-100 dark:border-slate-700 bg-white/70 dark:bg-slate-900/50 p-4 space-y-3 hidden">
                 <div class="flex items-center justify-between">
-                    <p class="text-xs uppercase tracking-widest text-slate-400 dark:text-slate-500 font-semibold">Hình ảnh bài hát</p>
-                    <button type="button" id="music-artwork-toggle" class="px-3 py-1 text-xs font-semibold rounded-xl border border-slate-200 dark:border-slate-700 text-slate-500 dark:text-slate-300 hover:border-indigo-300 hover:text-indigo-600 dark:hover:text-indigo-300 transition-colors">Ẩn ảnh</button>
+                    <p class="text-xs uppercase tracking-widest text-slate-400 dark:text-slate-500 font-semibold">Hình
+                        ảnh bài hát</p>
+                    <button type="button" id="music-artwork-toggle"
+                        class="px-3 py-1 text-xs font-semibold rounded-xl border border-slate-200 dark:border-slate-700 text-slate-500 dark:text-slate-300 hover:border-indigo-300 hover:text-indigo-600 dark:hover:text-indigo-300 transition-colors">Ẩn
+                        ảnh</button>
                 </div>
-                <img id="music-artwork" src="" alt="Artwork bài hát" class="w-full aspect-video rounded-2xl object-cover border border-slate-100 dark:border-slate-800 shadow-sm">
+                <img id="music-artwork" src="" alt="Artwork bài hát"
+                    class="w-full aspect-video rounded-2xl object-cover border border-slate-100 dark:border-slate-800 shadow-sm">
             </div>
         </div>
-        <p class="text-xs text-center text-slate-400 dark:text-slate-500 pb-2">Nhạc phát ngầm qua YouTube, có thể thu gọn bất kỳ lúc nào.</p>
+        <p class="text-xs text-center text-slate-400 dark:text-slate-500 pb-2">Nhạc phát ngầm qua YouTube, có thể thu
+            gọn bất kỳ lúc nào.</p>
     </div>
     <div id="music-player-host" class="hidden"></div>
 
     <!-- App Logic -->
-    <script src="script.js"></script>
     <script type="module">
-        import { initGatekeeper } from "../../gatekeeper.js";
+        import { initGatekeeper, getAllVocabSets } from "../../gatekeeper.js";
         initGatekeeper('protected');
+
+        // Expose Firebase vocab functions for script.js (non-module)
+        window.firebaseVocab = {
+            getAllVocabSets
+        };
     </script>
+    <script src="script.js"></script>
 </body>
+
 </html>
