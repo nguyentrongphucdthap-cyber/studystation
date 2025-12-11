@@ -141,7 +141,8 @@
             <span class="font-medium flex items-center gap-3 text-slate-700 dark:text-slate-200">
                 <div
                     class="w-8 h-8 rounded-lg bg-slate-100 dark:bg-slate-700 flex items-center justify-center text-slate-500 dark:text-slate-400 group-hover:bg-blue-100 dark:group-hover:bg-blue-900 transition-colors">
-                    <i class="ph-fill ph-moon"></i></div>
+                    <i class="ph-fill ph-moon"></i>
+                </div>
                 Chế độ tối
             </span>
             <div class="w-12 h-6 rounded-full bg-slate-200 dark:bg-blue-600 relative transition-colors duration-300">
@@ -157,7 +158,8 @@
                 <span class="font-medium flex items-center gap-3 text-slate-700 dark:text-slate-200">
                     <div
                         class="w-8 h-8 rounded-lg bg-slate-100 dark:bg-slate-700 flex items-center justify-center text-slate-500 dark:text-slate-400">
-                        <i class="ph-fill ph-text-t"></i></div>
+                        <i class="ph-fill ph-text-t"></i>
+                    </div>
                     Cỡ chữ
                 </span>
                 <span id="font-size-val"
@@ -175,7 +177,8 @@
                 <span class="font-medium flex items-center gap-3 text-slate-700 dark:text-slate-200">
                     <div
                         class="w-8 h-8 rounded-lg bg-slate-100 dark:bg-slate-700 flex items-center justify-center text-slate-500 dark:text-slate-400">
-                        <i class="ph-fill ph-rows"></i></div>
+                        <i class="ph-fill ph-rows"></i>
+                    </div>
                     Giãn dòng
                 </span>
                 <span id="line-height-val"
@@ -184,7 +187,8 @@
             <input type="range" min="1.0" max="3.0" step="0.1" value="1.6" oninput="app.setLineHeight(this.value)"
                 class="w-full h-2 bg-slate-200 dark:bg-slate-700 rounded-lg appearance-none cursor-pointer accent-blue-600">
             <div class="flex justify-between text-xs text-slate-400 mt-2 font-medium">
-                <span>Khít</span><span>Thoáng</span></div>
+                <span>Khít</span><span>Thoáng</span>
+            </div>
         </div>
     </div>
 
@@ -236,7 +240,8 @@
                 class="bg-slate-50 dark:bg-slate-900/50 p-6 text-center border-b border-slate-100 dark:border-slate-700">
                 <div
                     class="w-16 h-16 bg-blue-100 dark:bg-blue-900/30 text-blue-600 dark:text-blue-400 rounded-full flex items-center justify-center mx-auto mb-4 animate-[bounce_1s_infinite]">
-                    <i class="ph-fill ph-paper-plane-right text-3xl ml-1"></i></div>
+                    <i class="ph-fill ph-paper-plane-right text-3xl ml-1"></i>
+                </div>
                 <h3 class="text-xl font-bold text-slate-900 dark:text-white mb-2">Nộp bài thi?</h3>
                 <p class="text-slate-500 dark:text-slate-400 text-sm">Bạn đã hoàn thành <span id="modal-answered-count"
                         class="font-bold text-blue-600">0</span>/<span id="modal-total-count">0</span> câu hỏi.</p>
@@ -296,7 +301,8 @@
                         </div>
                         <div
                             class="w-12 h-12 bg-blue-50 dark:bg-blue-900/30 rounded-xl flex items-center justify-center text-blue-600 mb-4 group-hover:scale-110 group-hover:rotate-3 transition-all duration-300 relative z-10 shadow-inner">
-                            <i class="ph-fill ph-exam text-2xl"></i></div>
+                            <i class="ph-fill ph-exam text-2xl"></i>
+                        </div>
                         <h3 class="text-xl font-bold mb-2 text-slate-900 dark:text-white relative z-10">THPT QG</h3>
                         <p
                             class="text-slate-500 dark:text-slate-400 text-xs lg:text-sm mb-4 leading-relaxed relative z-10">
@@ -313,7 +319,8 @@
                         </div>
                         <div
                             class="w-12 h-12 bg-purple-50 dark:bg-purple-900/30 rounded-xl flex items-center justify-center text-purple-600 mb-4 group-hover:scale-110 group-hover:-rotate-3 transition-all duration-300 relative z-10 shadow-inner">
-                            <i class="ph-fill ph-brain text-2xl"></i></div>
+                            <i class="ph-fill ph-brain text-2xl"></i>
+                        </div>
                         <h3 class="text-xl font-bold mb-2 text-slate-900 dark:text-white relative z-10">ĐGNL</h3>
                         <p
                             class="text-slate-500 dark:text-slate-400 text-xs lg:text-sm mb-4 leading-relaxed relative z-10">
@@ -330,7 +337,8 @@
                         </div>
                         <div
                             class="w-12 h-12 bg-emerald-50 dark:bg-emerald-900/30 rounded-xl flex items-center justify-center text-emerald-600 mb-4 group-hover:scale-110 group-hover:rotate-3 transition-all duration-300 relative z-10 shadow-inner">
-                            <i class="ph-fill ph-lightning text-2xl"></i></div>
+                            <i class="ph-fill ph-lightning text-2xl"></i>
+                        </div>
                         <h3 class="text-xl font-bold mb-2 text-slate-900 dark:text-white relative z-10">Mini Test</h3>
                         <p
                             class="text-slate-500 dark:text-slate-400 text-xs lg:text-sm mb-4 leading-relaxed relative z-10">
@@ -339,14 +347,15 @@
                             class="text-[10px] lg:text-xs font-bold bg-emerald-50 dark:bg-emerald-900/40 px-2 lg:px-3 py-1 rounded-lg text-emerald-600 dark:text-emerald-400 relative z-10">Nhanh</span>
                     </div>
 
-                    <div onclick="app.showExamList('topic_1')"
+                    <div onclick="app.showExamList('topic')"
                         class="bg-white dark:bg-slate-800 p-6 rounded-2xl border border-slate-100 dark:border-slate-700/50 hover:border-orange-400 dark:hover:border-orange-500 cursor-pointer transition-all duration-300 shadow-sm hover:shadow-2xl group relative overflow-hidden">
                         <div
                             class="absolute top-0 right-0 w-24 h-24 bg-orange-50 dark:bg-orange-900/20 rounded-bl-[80px] -mr-6 -mt-6 transition-transform group-hover:scale-110">
                         </div>
                         <div
                             class="w-12 h-12 bg-orange-50 dark:bg-orange-900/30 rounded-xl flex items-center justify-center text-orange-600 mb-4 group-hover:scale-110 group-hover:-rotate-3 transition-all duration-300 relative z-10 shadow-inner">
-                            <i class="ph-fill ph-book-bookmark text-2xl"></i></div>
+                            <i class="ph-fill ph-book-bookmark text-2xl"></i>
+                        </div>
                         <h3 class="text-xl font-bold mb-2 text-slate-900 dark:text-white relative z-10">Chủ đề 1</h3>
                         <p
                             class="text-slate-500 dark:text-slate-400 text-xs lg:text-sm mb-4 leading-relaxed relative z-10">
@@ -365,7 +374,8 @@
             <div class="max-w-2xl mx-auto px-4 py-10 lg:py-16 text-center animate-slide-up">
                 <div
                     class="w-28 h-28 bg-green-100 dark:bg-green-900/30 text-green-600 dark:text-green-400 rounded-full flex items-center justify-center mx-auto mb-8 shadow-lg shadow-green-500/20 animate-[pop_0.5s_ease-out]">
-                    <i class="ph-fill ph-check-circle text-5xl"></i></div>
+                    <i class="ph-fill ph-check-circle text-5xl"></i>
+                </div>
                 <h2 class="text-4xl font-bold text-slate-900 dark:text-white mb-3">Hoàn thành bài thi!</h2>
                 <p class="text-slate-500 dark:text-slate-400 mb-10 text-lg">Bạn đã nộp bài thành công. Dưới đây là kết
                     quả chi tiết.</p>
@@ -416,10 +426,16 @@
         // Initialize Gatekeeper
         initGatekeeper('protected');
 
-        // Initialize App after a short delay for Firebase
+        // Initialize App after Firebase SDK is ready
+        // Using 1000ms to ensure auth state is resolved
         setTimeout(() => {
-            if (window.app) window.app.init();
-        }, 500);
+            if (window.app) {
+                console.log('[E-test Module] Calling app.init()...');
+                window.app.init();
+            } else {
+                console.error('[E-test Module] window.app not found!');
+            }
+        }, 1000);
     </script>
     <style>
         @keyframes gkSpin {
