@@ -6,10 +6,11 @@
 // --- TEXT TOOLS MODULE ---
 // Handles text highlighting and note-taking functionality
 const textTools = {
-    menu: document.getElementById('text-selection-menu'),
-    actionMenu: document.getElementById('highlight-action-menu'),
-    noteEditor: document.getElementById('note-editor'),
-    noteInput: document.getElementById('note-input'),
+    // Use getters to avoid null pointer errors when script loads before DOM
+    get menu() { return document.getElementById('text-selection-menu'); },
+    get actionMenu() { return document.getElementById('highlight-action-menu'); },
+    get noteEditor() { return document.getElementById('note-editor'); },
+    get noteInput() { return document.getElementById('note-input'); },
     currentSelection: null,
     tempRange: null,
     activeHighlightSpan: null,
@@ -17,7 +18,9 @@ const textTools = {
     init() {
         document.addEventListener('mouseup', (e) => this.handleSelection(e));
         document.addEventListener('mousedown', (e) => {
-            if (!this.menu.contains(e.target) && !this.actionMenu.contains(e.target) && !this.noteEditor.contains(e.target)) {
+            if (this.menu && !this.menu.contains(e.target) &&
+                this.actionMenu && !this.actionMenu.contains(e.target) &&
+                this.noteEditor && !this.noteEditor.contains(e.target)) {
                 this.hideMenu();
                 this.hideActionMenu();
             }
@@ -25,7 +28,7 @@ const textTools = {
     },
 
     handleSelection(e) {
-        if (this.menu.contains(e.target) || this.actionMenu.contains(e.target)) return;
+        if ((this.menu && this.menu.contains(e.target)) || (this.actionMenu && this.actionMenu.contains(e.target))) return;
         const passageContainer = document.querySelector('.passage-content');
         if (!passageContainer) return;
 
@@ -35,13 +38,14 @@ const textTools = {
             const rect = range.getBoundingClientRect();
             this.currentSelection = range;
             this.showMenu(rect.left + rect.width / 2, rect.top - 10);
-        } else if (!this.noteEditor.contains(e.target)) {
+        } else if (this.noteEditor && !this.noteEditor.contains(e.target)) {
             this.hideMenu();
         }
     },
 
     showMenu(x, y) {
         this.hideActionMenu();
+        if (!this.menu) return;
         this.menu.style.left = `${x}px`;
         this.menu.style.top = `${y - 50}px`;
         this.menu.classList.remove('hidden');
@@ -49,6 +53,7 @@ const textTools = {
     },
 
     hideMenu() {
+        if (!this.menu) return;
         this.menu.classList.add('hidden');
         this.menu.classList.remove('animate-pop');
     },
@@ -56,6 +61,7 @@ const textTools = {
     showActionMenu(x, y, span) {
         this.hideMenu();
         this.activeHighlightSpan = span;
+        if (!this.actionMenu) return;
         this.actionMenu.style.left = `${x}px`;
         this.actionMenu.style.top = `${y - 45}px`;
         this.actionMenu.classList.remove('hidden');
@@ -63,6 +69,7 @@ const textTools = {
     },
 
     hideActionMenu() {
+        if (!this.actionMenu) return;
         this.actionMenu.classList.add('hidden');
         this.activeHighlightSpan = null;
     },
