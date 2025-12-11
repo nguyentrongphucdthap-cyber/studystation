@@ -816,16 +816,30 @@
     <div id="music-player-host" class="hidden"></div>
 
     <!-- App Logic -->
+    <script src="script.js"></script>
     <script type="module">
         import { initGatekeeper, getAllVocabSets } from "../../gatekeeper.js";
-        initGatekeeper('protected');
 
         // Expose Firebase vocab functions for script.js (non-module)
         window.firebaseVocab = {
             getAllVocabSets
         };
+
+        // Initialize Gatekeeper
+        initGatekeeper('protected');
+
+        // Initialize App after Firebase SDK is ready
+        // Using 1000ms to ensure auth state is resolved
+        setTimeout(() => {
+            if (window.initVocabApp) {
+                console.log('[Vocab Module] Calling initVocabApp()...');
+                window.initVocabApp();
+            } else {
+                console.error('[Vocab Module] window.initVocabApp not found!');
+            }
+        }, 1000);
     </script>
-    <script src="script.js"></script>
 </body>
+
 
 </html>
