@@ -397,8 +397,8 @@ function renderMusicPlaylist() {
         btn.type = 'button';
         const isActive = index === currentTrackIndex;
         btn.className = `w-full flex items-center justify-between gap-3 rounded-2xl border px-3 py-2 text-left transition-all btn-press ${isActive
-                ? 'border-indigo-400 bg-indigo-50 dark:bg-indigo-900/20 text-indigo-700 dark:text-indigo-100'
-                : 'border-slate-200 dark:border-slate-700 text-slate-600 dark:text-slate-200 hover:border-indigo-300 dark:hover:border-indigo-500 hover:bg-slate-50 dark:hover:bg-slate-800'
+            ? 'border-indigo-400 bg-indigo-50 dark:bg-indigo-900/20 text-indigo-700 dark:text-indigo-100'
+            : 'border-slate-200 dark:border-slate-700 text-slate-600 dark:text-slate-200 hover:border-indigo-300 dark:hover:border-indigo-500 hover:bg-slate-50 dark:hover:bg-slate-800'
             }`;
         const contentWrap = document.createElement('div');
         contentWrap.className = 'flex items-center gap-3 flex-1';
@@ -2523,4 +2523,5 @@ async function initApp() {
     showView('home');
 }
 
-initApp();
+// Expose initApp for module script to call after Firebase is ready
+window.initVocabApp = initApp;
