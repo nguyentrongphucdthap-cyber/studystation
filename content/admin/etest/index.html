@@ -208,10 +208,15 @@
                                             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
                                                 d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-8l-4-4m0 0L8 8m4-4v12" />
                                         </svg>
-                                        Import JSON
+                                        📁 Import File
                                     </div>
                                 </label>
+                                <button id="btn-import-text"
+                                    class="flex-1 px-3 py-2 border border-dashed border-purple-300 rounded-lg text-sm text-purple-500 hover:border-purple-400 hover:text-purple-600 transition-colors flex items-center justify-center gap-2">
+                                    📝 Import Text
+                                </button>
                             </div>
+
                             <!-- Info -->
                             <a href="README.md" target="_blank"
                                 class="flex items-center gap-2 text-sm text-purple-600 hover:text-purple-700">
@@ -401,7 +406,57 @@
         </div>
     </div>
 
+    <!-- Text Import Modal -->
+    <div id="text-import-modal"
+        class="hidden fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm p-4">
+        <div class="bg-white rounded-2xl p-6 max-w-2xl w-full shadow-2xl max-h-[90vh] overflow-y-auto">
+            <div class="w-12 h-12 bg-purple-100 rounded-full flex items-center justify-center mx-auto mb-4">
+                <svg class="w-6 h-6 text-purple-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                        d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+                </svg>
+            </div>
+            <h3 class="text-lg font-bold text-gray-800 text-center mb-2">Import từ Text JSON</h3>
+            <p class="text-gray-500 text-sm text-center mb-6">Dán JSON E-test vào đây để import</p>
+
+            <div class="mb-4">
+                <label class="block text-sm font-semibold text-gray-700 mb-2">Dán JSON vào đây</label>
+                <textarea id="text-import-input" rows="10" placeholder='{"title": "E-test...", "sections": [...]}'
+                    class="w-full px-4 py-3 border border-gray-200 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-purple-500 font-mono text-sm resize-none"></textarea>
+            </div>
+
+            <!-- Preview Area -->
+            <div id="text-import-preview" class="hidden mb-4">
+                <label class="block text-sm font-semibold text-gray-700 mb-2">Xem trước</label>
+                <div class="bg-gray-50 rounded-lg p-4 border border-gray-200 max-h-32 overflow-y-auto">
+                    <div id="text-import-preview-content" class="text-sm text-gray-600"></div>
+                </div>
+            </div>
+
+            <!-- Error Message -->
+            <div id="text-import-error"
+                class="hidden mb-4 p-3 bg-red-50 border border-red-200 rounded-lg text-red-600 text-sm"></div>
+
+            <div class="flex gap-3">
+                <button id="btn-parse-text"
+                    class="px-4 py-2.5 bg-gray-100 text-gray-700 font-semibold rounded-xl hover:bg-gray-200 transition-colors">
+                    Phân tích JSON
+                </button>
+                <button id="btn-cancel-text-import"
+                    class="flex-1 px-4 py-2.5 border border-gray-200 text-gray-600 font-semibold rounded-xl hover:bg-gray-50 transition-colors">
+                    Hủy
+                </button>
+                <button id="btn-confirm-text-import"
+                    class="flex-1 px-4 py-2.5 bg-purple-600 text-white font-semibold rounded-xl hover:bg-purple-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                    disabled>
+                    Import
+                </button>
+            </div>
+        </div>
+    </div>
+
     <!-- Scripts -->
+
     <script src="script.js" type="module"></script>
 </body>
 
