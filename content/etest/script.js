@@ -946,6 +946,6 @@ const app = {
 };
 
 // ============================================================================
-// INITIALIZE APP
+// DO NOT AUTO-INIT HERE
+// Initialization is handled by index.html module script after setting window.firebaseEtest
 // ============================================================================
-app.init();
