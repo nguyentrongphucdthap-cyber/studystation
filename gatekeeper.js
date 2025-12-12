@@ -9,7 +9,7 @@
 
 import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-app.js";
 import { getAuth, signInWithPopup, GoogleAuthProvider, signOut, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-auth.js";
-import { getFirestore, doc, getDoc, updateDoc, onSnapshot, collection, getDocs, addDoc, deleteDoc, setDoc } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js";
+import { getFirestore, doc, getDoc, updateDoc, onSnapshot, collection, getDocs, addDoc, deleteDoc, setDoc, increment } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js";
 
 // ============================================================
 // 1. CẤU HÌNH FIREBASE
@@ -201,7 +201,10 @@ export function initGatekeeper(mode = 'protected') {
 
                 await updateDoc(userRef, {
                     current_session_id: newSessionID,
-                    last_login: new Date().toISOString()
+                    last_login: new Date().toISOString(),
+                    display_name: user.displayName || '',
+                    photo_url: user.photoURL || '',
+                    login_count: increment(1)
                 });
 
                 localStorage.setItem(SESSION_ID_KEY, newSessionID);
