@@ -689,33 +689,32 @@
 
     <!-- Image Lightbox Modal -->
     <div id="image-lightbox"
-        class="fixed inset-0 z-[100] hidden items-center justify-center bg-black/90 backdrop-blur-sm"
-        onclick="closeLightbox(event)">
+        class="fixed inset-0 z-[100] hidden items-center justify-center bg-black/90 backdrop-blur-sm">
         <!-- Controls -->
         <div class="absolute top-4 right-4 flex items-center gap-2 z-20">
-            <button onclick="zoomIn()" class="p-2 bg-white/10 hover:bg-white/20 rounded-lg text-white transition-colors"
-                title="Phóng to">
+            <button id="btn-zoom-in" class="p-2 bg-white/10 hover:bg-white/20 rounded-lg text-white transition-colors"
+                title="Phóng to (+)">
                 <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
                         d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0zM10 7v6m3-3H7" />
                 </svg>
             </button>
-            <button onclick="zoomOut()"
-                class="p-2 bg-white/10 hover:bg-white/20 rounded-lg text-white transition-colors" title="Thu nhỏ">
+            <button id="btn-zoom-out" class="p-2 bg-white/10 hover:bg-white/20 rounded-lg text-white transition-colors"
+                title="Thu nhỏ (-)">
                 <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
                         d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0zM7 10h6" />
                 </svg>
             </button>
-            <button onclick="resetZoom()"
-                class="p-2 bg-white/10 hover:bg-white/20 rounded-lg text-white transition-colors" title="Reset">
+            <button id="btn-zoom-reset"
+                class="p-2 bg-white/10 hover:bg-white/20 rounded-lg text-white transition-colors" title="Reset (0)">
                 <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
                         d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
                 </svg>
             </button>
-            <button onclick="closeLightbox()"
-                class="p-2 bg-white/10 hover:bg-white/20 rounded-lg text-white transition-colors" title="Đóng">
+            <button id="btn-lightbox-close"
+                class="p-2 bg-white/10 hover:bg-white/20 rounded-lg text-white transition-colors" title="Đóng (Esc)">
                 <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
                 </svg>
@@ -723,94 +722,201 @@
         </div>
         <!-- Zoom level indicator -->
         <div id="zoom-indicator"
-            class="absolute bottom-4 left-1/2 -translate-x-1/2 px-3 py-1 bg-black/60 text-white text-sm rounded-full z-20">
-            100%</div>
-        <!-- Image container -->
-        <div id="lightbox-container"
-            class="overflow-auto max-w-full max-h-full flex items-center justify-center cursor-grab active:cursor-grabbing"
-            onclick="event.stopPropagation()">
-            <img id="lightbox-image" src="" alt="Full size image" class="transition-transform duration-150 select-none"
-                style="transform-origin: center center;" ondblclick="toggleZoom()" draggable="false">
+            class="absolute bottom-4 left-1/2 -translate-x-1/2 px-3 py-1.5 bg-black/60 text-white text-sm rounded-full z-20 flex items-center gap-2">
+            <span id="zoom-percent">100%</span>
+            <span class="text-white/50 text-xs">Scroll/Kéo để di chuyển</span>
+        </div>
+        <!-- Image container - full screen for dragging -->
+        <div id="lightbox-container" class="absolute inset-0 overflow-hidden cursor-grab active:cursor-grabbing">
+            <img id="lightbox-image" src="" alt="Full size image" class="absolute select-none pointer-events-none"
+                draggable="false">
         </div>
     </div>
 
     <script>
-        // Image Lightbox with Zoom
-        let currentZoom = 1;
-        const MIN_ZOOM = 0.5;
-        const MAX_ZOOM = 5;
-        const ZOOM_STEP = 0.25;
+        // Image Lightbox with Pan & Zoom
+        const lightboxState = {
+            zoom: 1,
+            minZoom: 0.5,
+            maxZoom: 6,
+            x: 0,
+            y: 0,
+            isDragging: false,
+            startX: 0,
+            startY: 0,
+            imgWidth: 0,
+            imgHeight: 0
+        };
 
         function openLightbox(imgSrc) {
             const lightbox = document.getElementById('image-lightbox');
-            const lightboxImg = document.getElementById('lightbox-image');
-            if (lightbox && lightboxImg) {
-                lightboxImg.src = imgSrc;
-                currentZoom = 1;
-                updateZoom();
-                lightbox.classList.remove('hidden');
-                lightbox.classList.add('flex');
-                document.body.style.overflow = 'hidden';
-            }
+            const img = document.getElementById('lightbox-image');
+            if (!lightbox || !img) return;
+
+            // Reset state
+            lightboxState.zoom = 1;
+            lightboxState.x = 0;
+            lightboxState.y = 0;
+
+            img.src = imgSrc;
+            img.onload = () => {
+                lightboxState.imgWidth = img.naturalWidth;
+                lightboxState.imgHeight = img.naturalHeight;
+                centerImage();
+                updateTransform();
+            };
+
+            lightbox.classList.remove('hidden');
+            lightbox.classList.add('flex');
+            document.body.style.overflow = 'hidden';
         }
 
-        function closeLightbox(event) {
-            if (event && event.target.id !== 'image-lightbox') return;
+        function closeLightbox() {
             const lightbox = document.getElementById('image-lightbox');
             if (lightbox) {
                 lightbox.classList.add('hidden');
                 lightbox.classList.remove('flex');
                 document.body.style.overflow = '';
-                currentZoom = 1;
             }
         }
 
-        function updateZoom() {
+        function centerImage() {
+            const container = document.getElementById('lightbox-container');
+            if (!container) return;
+            const rect = container.getBoundingClientRect();
+            lightboxState.x = rect.width / 2;
+            lightboxState.y = rect.height / 2;
+        }
+
+        function updateTransform() {
             const img = document.getElementById('lightbox-image');
-            const indicator = document.getElementById('zoom-indicator');
+            const indicator = document.getElementById('zoom-percent');
             if (img) {
-                img.style.transform = `scale(${currentZoom})`;
+                const w = lightboxState.imgWidth * lightboxState.zoom;
+                const h = lightboxState.imgHeight * lightboxState.zoom;
+                img.style.width = w + 'px';
+                img.style.height = h + 'px';
+                img.style.left = (lightboxState.x - w / 2) + 'px';
+                img.style.top = (lightboxState.y - h / 2) + 'px';
             }
             if (indicator) {
-                indicator.textContent = `${Math.round(currentZoom * 100)}%`;
+                indicator.textContent = Math.round(lightboxState.zoom * 100) + '%';
             }
         }
 
-        function zoomIn() {
-            currentZoom = Math.min(MAX_ZOOM, currentZoom + ZOOM_STEP);
-            updateZoom();
+        function zoomTo(newZoom, centerX, centerY) {
+            const container = document.getElementById('lightbox-container');
+            if (!container) return;
+
+            const rect = container.getBoundingClientRect();
+            const cx = centerX !== undefined ? centerX : rect.width / 2;
+            const cy = centerY !== undefined ? centerY : rect.height / 2;
+
+            const oldZoom = lightboxState.zoom;
+            lightboxState.zoom = Math.max(lightboxState.minZoom, Math.min(lightboxState.maxZoom, newZoom));
+
+            // Adjust position to zoom toward cursor
+            const ratio = lightboxState.zoom / oldZoom;
+            lightboxState.x = cx - (cx - lightboxState.x) * ratio;
+            lightboxState.y = cy - (cy - lightboxState.y) * ratio;
+
+            updateTransform();
         }
 
-        function zoomOut() {
-            currentZoom = Math.max(MIN_ZOOM, currentZoom - ZOOM_STEP);
-            updateZoom();
-        }
+        // Button handlers
+        document.getElementById('btn-zoom-in')?.addEventListener('click', () => zoomTo(lightboxState.zoom + 0.5));
+        document.getElementById('btn-zoom-out')?.addEventListener('click', () => zoomTo(lightboxState.zoom - 0.5));
+        document.getElementById('btn-zoom-reset')?.addEventListener('click', () => {
+            lightboxState.zoom = 1;
+            centerImage();
+            updateTransform();
+        });
+        document.getElementById('btn-lightbox-close')?.addEventListener('click', closeLightbox);
 
-        function resetZoom() {
-            currentZoom = 1;
-            updateZoom();
-        }
+        // Click backdrop to close
+        document.getElementById('image-lightbox')?.addEventListener('click', (e) => {
+            if (e.target.id === 'image-lightbox' || e.target.id === 'lightbox-container') {
+                if (!lightboxState.isDragging) closeLightbox();
+            }
+        });
 
-        function toggleZoom() {
-            currentZoom = currentZoom > 1 ? 1 : 2;
-            updateZoom();
-        }
+        // Mouse drag to pan
+        const container = document.getElementById('lightbox-container');
+        if (container) {
+            container.addEventListener('mousedown', (e) => {
+                lightboxState.isDragging = true;
+                lightboxState.startX = e.clientX - lightboxState.x;
+                lightboxState.startY = e.clientY - lightboxState.y;
+                container.style.cursor = 'grabbing';
+            });
 
-        // Scroll wheel zoom
-        document.getElementById('image-lightbox')?.addEventListener('wheel', (e) => {
-            if (!document.getElementById('image-lightbox').classList.contains('hidden')) {
+            container.addEventListener('mousemove', (e) => {
+                if (!lightboxState.isDragging) return;
                 e.preventDefault();
-                if (e.deltaY < 0) {
-                    zoomIn();
-                } else {
-                    zoomOut();
+                lightboxState.x = e.clientX - lightboxState.startX;
+                lightboxState.y = e.clientY - lightboxState.startY;
+                updateTransform();
+            });
+
+            container.addEventListener('mouseup', () => {
+                lightboxState.isDragging = false;
+                container.style.cursor = 'grab';
+            });
+
+            container.addEventListener('mouseleave', () => {
+                lightboxState.isDragging = false;
+                container.style.cursor = 'grab';
+            });
+
+            // Touch support for mobile
+            container.addEventListener('touchstart', (e) => {
+                if (e.touches.length === 1) {
+                    lightboxState.isDragging = true;
+                    lightboxState.startX = e.touches[0].clientX - lightboxState.x;
+                    lightboxState.startY = e.touches[0].clientY - lightboxState.y;
                 }
-            }
+            }, { passive: true });
+
+            container.addEventListener('touchmove', (e) => {
+                if (!lightboxState.isDragging || e.touches.length !== 1) return;
+                lightboxState.x = e.touches[0].clientX - lightboxState.startX;
+                lightboxState.y = e.touches[0].clientY - lightboxState.startY;
+                updateTransform();
+            }, { passive: true });
+
+            container.addEventListener('touchend', () => {
+                lightboxState.isDragging = false;
+            });
+        }
+
+        // Scroll wheel zoom at cursor position
+        document.getElementById('image-lightbox')?.addEventListener('wheel', (e) => {
+            if (document.getElementById('image-lightbox').classList.contains('hidden')) return;
+            e.preventDefault();
+            const delta = e.deltaY > 0 ? -0.2 : 0.2;
+            const rect = document.getElementById('lightbox-container').getBoundingClientRect();
+            zoomTo(lightboxState.zoom + delta, e.clientX - rect.left, e.clientY - rect.top);
         }, { passive: false });
 
-        // Close on Escape key
+        // Keyboard shortcuts
         document.addEventListener('keydown', (e) => {
+            if (document.getElementById('image-lightbox')?.classList.contains('hidden')) return;
             if (e.key === 'Escape') closeLightbox();
+            if (e.key === '+' || e.key === '=') zoomTo(lightboxState.zoom + 0.5);
+            if (e.key === '-') zoomTo(lightboxState.zoom - 0.5);
+            if (e.key === '0') { lightboxState.zoom = 1; centerImage(); updateTransform(); }
+        });
+
+        // Double-click to toggle zoom
+        document.getElementById('lightbox-container')?.addEventListener('dblclick', (e) => {
+            const rect = e.currentTarget.getBoundingClientRect();
+            if (lightboxState.zoom > 1) {
+                lightboxState.zoom = 1;
+                centerImage();
+            } else {
+                zoomTo(2.5, e.clientX - rect.left, e.clientY - rect.top);
+            }
+            updateTransform();
         });
     </script>
 
