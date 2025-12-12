@@ -656,18 +656,27 @@
                 accAvatarBtn.addEventListener('click', (e) => {
                     e.stopPropagation();
 
-                    if (window.innerWidth < 768) { accMobileSheet.classList.remove('hidden'); } else {
-                        const
-                        isExpanded = accAvatarBtn.getAttribute('aria-expanded') === 'true'; accAvatarBtn.setAttribute('aria-expanded',
-                            !isExpanded); if (isExpanded) { closeDropdown(); } else { openDropdown(); }
+                    if (window.innerWidth < 768) {
+                        accMobileSheet.classList.remove('hidden');
+                    } else {
+                        const isExpanded = accAvatarBtn.getAttribute('aria-expanded') === 'true';
+                        accAvatarBtn.setAttribute('aria-expanded', !isExpanded);
+                        if (isExpanded) {
+                            closeDropdown();
+                        } else {
+                            openDropdown();
+                        }
                     }
                 });
-            } function openDropdown() {
-                if
-                    (!accDropdown) return; accDropdown.classList.remove('hidden'); requestAnimationFrame(() => {
-                        accDropdown.classList.add('dropdown-enter-active');
-                        accDropdown.classList.remove('dropdown-enter');
-                    });
+            }
+
+            function openDropdown() {
+                if (!accDropdown) return;
+                accDropdown.classList.remove('hidden');
+                requestAnimationFrame(() => {
+                    accDropdown.classList.add('dropdown-enter-active');
+                    accDropdown.classList.remove('dropdown-enter');
+                });
             }
 
             function closeDropdown() {
@@ -737,12 +746,9 @@
                     notificationListContainer.innerHTML = '';
                     notifications.forEach(notif => {
                         const item = document.createElement('div');
-                        item.className = "bg-white p-5 rounded-xl border border-gray-100 shadow-sm hover:shadow-md transition-shadow
-        relative overflow - hidden";
+                        item.className = "bg-white p-5 rounded-xl border border-gray-100 shadow-sm hover:shadow-md transition-shadow relative overflow-hidden";
                         const newBadge = notif.isNew ?
-                            `<div
-            class="absolute top-0 right-0 bg-red-500 text-white text-[10px] font-bold px-2 py-1 rounded-bl-lg uppercase tracking-wider">
-            Mới</div>` : '';
+                            `<div class="absolute top-0 right-0 bg-red-500 text-white text-[10px] font-bold px-2 py-1 rounded-bl-lg uppercase tracking-wider">Mới</div>` : '';
                         item.innerHTML = `
         ${newBadge}
         <div class="flex items-center gap-2 mb-2">
@@ -884,8 +890,7 @@
                 results.slice(0, maxResults).forEach((item, index) => {
                     const resultBtn = document.createElement('button');
                     resultBtn.type = 'button';
-                    resultBtn.className = 'w-full text-left px-3 py-2 bg-gray-50 hover:bg-gray-100 border border-gray-200 rounded-md
-                    transition - colors duration - 150';
+                    resultBtn.className = 'w-full text-left px-3 py-2 bg-gray-50 hover:bg-gray-100 border border-gray-200 rounded-md transition-colors duration-150';
                     const preview = item.text.length > 120 ? item.text.slice(0, 117) + '...' : item.text;
                     const hostPage = item.el.closest('.page-content');
                     let pageLabel = '';
