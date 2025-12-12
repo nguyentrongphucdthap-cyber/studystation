@@ -713,36 +713,34 @@ const app = {
         }
         sub.exams.forEach((exam, index) => {
             const el = document.createElement('div');
-            el.className = 'bg-white dark:bg-slate-800 p-6 rounded-2xl border border-slate-200 dark:border-slate-700 shadow-sm hover:border-blue-300 dark:hover:border-blue-500 hover:shadow-md transition-all cursor-pointer flex justify-between items-center group';
+            el.className = 'exam-card bg-white dark:bg-slate-800 p-4 md:p-6 rounded-2xl border border-slate-200 dark:border-slate-700 shadow-sm hover:border-blue-300 dark:hover:border-blue-500 hover:shadow-md transition-all cursor-pointer group';
             el.onclick = () => this.startExam(subId, exam.id);
 
             const badgeCode = exam.examCode
-                ? `<span class="text-xs font-mono font-semibold text-slate-500 dark:text-slate-400 bg-slate-100 dark:bg-slate-700 px-2 py-1 rounded ml-2 border border-slate-200 dark:border-slate-600">ID: ${exam.examCode}</span>`
+                ? `<div class="text-[10px] md:text-xs font-mono font-medium text-slate-400 dark:text-slate-500 truncate">ID: ${exam.examCode}</div>`
                 : '';
 
             const createdDate = exam.createdAt
-                ? `<span class="text-xs text-slate-400 dark:text-slate-500 ml-auto flex items-center"><svg class="w-3 h-3 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"/></svg>${new Date(exam.createdAt).toLocaleDateString('vi-VN')}</span>`
+                ? `<span class="text-[10px] md:text-xs text-slate-400 dark:text-slate-500 flex items-center"><svg class="w-3 h-3 mr-1 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"/></svg>${new Date(exam.createdAt).toLocaleDateString('vi-VN')}</span>`
                 : '';
 
             el.innerHTML = `
-                <div class="flex items-start gap-4 flex-1">
-                    <div class="shrink-0 w-10 h-10 rounded-full bg-blue-50 dark:bg-blue-900/30 text-blue-600 dark:text-blue-400 flex items-center justify-center font-bold text-sm mt-1">${(index + 1).toString().padStart(2, '0')}</div>
-                    <div class="flex-1 min-w-0">
-                        <div class="flex flex-wrap items-center gap-2 mb-1">
-                            <h4 class="font-bold text-lg text-slate-800 dark:text-white group-hover:text-blue-600 dark:group-hover:text-blue-400 transition-colors truncate">${exam.title}</h4>
-                            ${badgeCode}
-                        </div>
-                        <div class="flex items-center gap-4 mt-2">
-                            <span class="text-xs font-semibold text-slate-500 dark:text-slate-400 bg-slate-100 dark:bg-slate-700 px-2 py-1 rounded flex items-center">
-                                <svg class="w-3 h-3 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>
+                <div class="flex items-start gap-3 md:gap-4">
+                    <div class="shrink-0 w-9 h-9 md:w-10 md:h-10 rounded-full bg-blue-50 dark:bg-blue-900/30 text-blue-600 dark:text-blue-400 flex items-center justify-center font-bold text-xs md:text-sm">${(index + 1).toString().padStart(2, '0')}</div>
+                    <div class="flex-1 min-w-0 overflow-hidden">
+                        <h4 class="font-bold text-base md:text-lg text-slate-800 dark:text-white group-hover:text-blue-600 dark:group-hover:text-blue-400 transition-colors leading-snug mb-1">${exam.title}</h4>
+                        ${badgeCode}
+                        <div class="flex flex-wrap items-center gap-2 md:gap-4 mt-2">
+                            <span class="text-[10px] md:text-xs font-semibold text-slate-500 dark:text-slate-400 bg-slate-100 dark:bg-slate-700 px-2 py-1 rounded flex items-center">
+                                <svg class="w-3 h-3 mr-1 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>
                                 ${exam.time} phút
                             </span>
                             ${createdDate}
                         </div>
                     </div>
-                </div>
-                <div class="ml-4 opacity-0 group-hover:opacity-100 transition-opacity">
-                     <svg class="w-6 h-6 text-blue-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"/></svg>
+                    <div class="shrink-0 hidden md:block opacity-0 group-hover:opacity-100 transition-opacity">
+                         <svg class="w-5 h-5 text-blue-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"/></svg>
+                    </div>
                 </div>
             `;
             grid.appendChild(el);
@@ -854,13 +852,15 @@ const app = {
                             </div>
                         </label>`).join('')}</div>`;
             } else if (type === 2) {
-                content += `<div class="space-y-3 md:space-y-4">
+                content += `<div class="space-y-3">
                     ${q.subQuestions.map(sub => `
-                        <div class="flex items-center justify-between p-3 md:p-4 rounded-2xl bg-slate-50/80 dark:bg-slate-700/30 border border-slate-100 dark:border-slate-700 transition-colors sub-question-row" data-sub="${sub.id}">
-                            <div class="flex-1 pr-4 text-slate-700 dark:text-slate-300 font-question dynamic-text"><span class="font-bold mr-2 text-indigo-600 dark:text-indigo-400 font-sans">${sub.id})</span> ${sub.text}</div>
-                            <div class="flex bg-white dark:bg-slate-800 rounded-lg p-1 border border-slate-200 dark:border-slate-600 shadow-sm shrink-0 h-fit self-center">
-                                <button onclick="app.handleTFAnswer(${q.id}, '${sub.id}', true, this)" class="tf-btn w-14 md:w-16 py-1.5 md:py-2 text-xs md:text-sm font-bold rounded-md text-slate-500 dark:text-slate-400 hover:bg-slate-50 dark:hover:bg-slate-700" ${this.isReviewMode ? 'disabled' : ''}>ĐÚNG</button>
-                                <button onclick="app.handleTFAnswer(${q.id}, '${sub.id}', false, this)" class="tf-btn w-14 md:w-16 py-1.5 md:py-2 text-xs md:text-sm font-bold rounded-md text-slate-500 dark:text-slate-400 hover:bg-slate-50 dark:hover:bg-slate-700" ${this.isReviewMode ? 'disabled' : ''}>SAI</button>
+                        <div class="sub-question-row p-3 md:p-4 rounded-2xl bg-slate-50/80 dark:bg-slate-700/30 border border-slate-100 dark:border-slate-700" data-sub="${sub.id}">
+                            <div class="text-slate-700 dark:text-slate-300 font-question dynamic-text mb-3"><span class="font-bold mr-2 text-indigo-600 dark:text-indigo-400 font-sans">${sub.id})</span>${sub.text}</div>
+                            <div class="flex justify-end">
+                                <div class="inline-flex bg-white dark:bg-slate-800 rounded-lg p-1 border border-slate-200 dark:border-slate-600 shadow-sm">
+                                    <button onclick="app.handleTFAnswer(${q.id}, '${sub.id}', true, this)" class="tf-btn px-4 py-2 text-sm font-bold rounded-md text-slate-500 dark:text-slate-400 hover:bg-slate-50 dark:hover:bg-slate-700 transition-colors" ${this.isReviewMode ? 'disabled' : ''}>ĐÚNG</button>
+                                    <button onclick="app.handleTFAnswer(${q.id}, '${sub.id}', false, this)" class="tf-btn px-4 py-2 text-sm font-bold rounded-md text-slate-500 dark:text-slate-400 hover:bg-slate-50 dark:hover:bg-slate-700 transition-colors" ${this.isReviewMode ? 'disabled' : ''}>SAI</button>
+                                </div>
                             </div>
                         </div>`).join('')}</div>`;
             } else if (type === 3) {
