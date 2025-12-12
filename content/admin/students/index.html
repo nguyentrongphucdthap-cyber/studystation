@@ -206,7 +206,7 @@
                         <thead class="bg-gray-50 sticky top-0">
                             <tr>
                                 <th class="px-4 py-3 text-left font-semibold text-gray-600">Người dùng</th>
-                                <th class="px-4 py-3 text-left font-semibold text-gray-600">Quyền</th>
+                                <th id="th-role" class="px-4 py-3 text-left font-semibold text-gray-600">Quyền</th>
                                 <th class="px-4 py-3 text-left font-semibold text-gray-600">Đăng nhập</th>
                                 <th class="px-4 py-3 text-center font-semibold text-gray-600">Số lần</th>
                                 <th class="px-4 py-3 text-right font-semibold text-gray-600">Hành động</th>
@@ -226,6 +226,49 @@
                                         <span>Đang tải danh sách...</span>
                                     </div>
                                 </td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+
+            <!-- Audit Log Section -->
+            <div class="bg-white rounded-2xl border border-gray-200 shadow-sm overflow-hidden mt-6">
+                <div class="p-4 border-b border-gray-100 bg-amber-50 flex items-center justify-between">
+                    <div class="flex items-center gap-3">
+                        <div class="w-10 h-10 bg-amber-100 rounded-xl flex items-center justify-center">
+                            <svg class="w-5 h-5 text-amber-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                    d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+                            </svg>
+                        </div>
+                        <div>
+                            <h2 class="font-bold text-gray-800">Lịch sử Whitelist</h2>
+                            <p class="text-xs text-gray-500">Log thêm/xóa người dùng</p>
+                        </div>
+                    </div>
+                    <button id="btn-refresh-logs"
+                        class="px-3 py-1.5 bg-amber-600 text-white text-sm font-semibold rounded-lg hover:bg-amber-700 transition-colors flex items-center gap-1">
+                        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
+                        </svg>
+                        Làm mới
+                    </button>
+                </div>
+                <div class="max-h-[300px] overflow-y-auto">
+                    <table class="w-full text-sm">
+                        <thead class="bg-gray-50 sticky top-0">
+                            <tr>
+                                <th class="px-4 py-2 text-left font-semibold text-gray-600">Thời gian</th>
+                                <th class="px-4 py-2 text-left font-semibold text-gray-600">Hành động</th>
+                                <th class="px-4 py-2 text-left font-semibold text-gray-600">Email</th>
+                                <th class="px-4 py-2 text-left font-semibold text-gray-600">Người thực hiện</th>
+                            </tr>
+                        </thead>
+                        <tbody id="logs-table-body" class="divide-y divide-gray-100">
+                            <tr>
+                                <td colspan="4" class="px-4 py-6 text-center text-gray-400 text-sm">Đang tải...</td>
                             </tr>
                         </tbody>
                     </table>
@@ -285,11 +328,16 @@
             newUserEmail: document.getElementById('new-user-email'),
             newUserRole: document.getElementById('new-user-role'),
             roleSelectWrapper: document.getElementById('role-select-wrapper'),
+            // Role header for conditional hiding
+            thRole: document.getElementById('th-role'),
             // Delete Modal
             deleteModal: document.getElementById('delete-modal'),
             deleteUserEmail: document.getElementById('delete-user-email'),
             btnCancelDelete: document.getElementById('btn-cancel-delete'),
-            btnConfirmDelete: document.getElementById('btn-confirm-delete')
+            btnConfirmDelete: document.getElementById('btn-confirm-delete'),
+            // Audit Logs
+            logsTableBody: document.getElementById('logs-table-body'),
+            btnRefreshLogs: document.getElementById('btn-refresh-logs')
         };
 
         // Toast notification
@@ -390,6 +438,15 @@
                     const displayName = user.display_name || '';
                     const loginCount = user.login_count || 0;
 
+                    // Role column - only show for Super-Admin
+                    const roleColumn = isSuperAdmin
+                        ? `<td class="px-4 py-3">
+                            <select class="role-select px-2 py-1 border border-gray-200 rounded-lg text-sm focus:ring-2 focus:ring-blue-500 outline-none" data-email="${user.email || user.id}">
+                                ${getRoleOptions(user.role)}
+                            </select>
+                           </td>`
+                        : '';
+
                     return `
                     <tr class="hover:bg-gray-50 transition-colors" data-email="${user.email || user.id}">
                         <td class="px-4 py-3">
@@ -401,11 +458,7 @@
                                 </div>
                             </div>
                         </td>
-                        <td class="px-4 py-3">
-                            <select class="role-select px-2 py-1 border border-gray-200 rounded-lg text-sm focus:ring-2 focus:ring-blue-500 outline-none" data-email="${user.email || user.id}">
-                                ${getRoleOptions(user.role)}
-                            </select>
-                        </td>
+                        ${roleColumn}
                         <td class="px-4 py-3 text-gray-500 text-xs">
                             ${formatVietnamTime(user.last_login)}
                         </td>
@@ -456,6 +509,39 @@
             }
         }
 
+        // Load audit logs
+        async function loadLogs() {
+            if (!refs.logsTableBody) return;
+
+            refs.logsTableBody.innerHTML = `<tr><td colspan="4" class="px-4 py-6 text-center text-gray-400 text-sm">Đang tải...</td></tr>`;
+
+            try {
+                const logs = await getWhitelistLogs(50);
+
+                if (logs.length === 0) {
+                    refs.logsTableBody.innerHTML = `<tr><td colspan="4" class="px-4 py-6 text-center text-gray-400 text-sm">Chưa có log nào</td></tr>`;
+                    return;
+                }
+
+                refs.logsTableBody.innerHTML = logs.map(log => {
+                    const actionBadge = log.action === 'add'
+                        ? '<span class="px-2 py-0.5 bg-emerald-100 text-emerald-700 text-xs font-bold rounded">THÊM</span>'
+                        : '<span class="px-2 py-0.5 bg-red-100 text-red-700 text-xs font-bold rounded">XÓA</span>';
+
+                    return `
+                    <tr class="hover:bg-gray-50">
+                        <td class="px-4 py-2 text-gray-500 text-xs">${formatVietnamTime(log.timestamp)}</td>
+                        <td class="px-4 py-2">${actionBadge}</td>
+                        <td class="px-4 py-2 font-medium text-gray-800">${log.target_email}</td>
+                        <td class="px-4 py-2 text-gray-500 text-sm">${log.performed_by}</td>
+                    </tr>
+                `}).join('');
+            } catch (error) {
+                console.error('Load logs failed:', error);
+                refs.logsTableBody.innerHTML = `<tr><td colspan="4" class="px-4 py-6 text-center text-red-500 text-sm">Lỗi: ${error.message}</td></tr>`;
+            }
+        }
+
         // Add new user
         async function handleAddUser(e) {
             e.preventDefault();
@@ -470,10 +556,11 @@
 
             try {
                 await addAllowedUser(email, role);
-                showToast(`Đã thêm ${email} với quyền ${role}`);
+                showToast(`Đã thêm ${email}`);
                 refs.newUserEmail.value = '';
                 refs.newUserRole.value = 'user';
                 loadStudents();
+                loadLogs(); // Refresh logs after add
             } catch (error) {
                 showToast('Lỗi: ' + error.message, 'error');
             }
@@ -490,6 +577,7 @@
                 showToast(`Đã xóa ${currentDeleteEmail}`);
                 currentDeleteEmail = null;
                 loadStudents();
+                loadLogs(); // Refresh logs after delete
             } catch (error) {
                 showToast('Lỗi: ' + error.message, 'error');
             }
@@ -511,16 +599,18 @@
                 // Check if Super-Admin for role-based UI
                 isSuperAdmin = checkIsSuperAdmin();
 
-                // Hide role selector for regular Admin
-                if (!isSuperAdmin && refs.roleSelectWrapper) {
-                    refs.roleSelectWrapper.classList.add('hidden');
+                // Hide role selector and column header for regular Admin
+                if (!isSuperAdmin) {
+                    if (refs.roleSelectWrapper) refs.roleSelectWrapper.classList.add('hidden');
+                    if (refs.thRole) refs.thRole.classList.add('hidden');
                 }
 
                 refs.adminEmail.textContent = user.email;
                 refs.mainContent.classList.remove('hidden');
 
-                // Load students
+                // Load data
                 loadStudents();
+                loadLogs();
 
                 // Bind events
                 refs.btnRefresh.addEventListener('click', loadStudents);
@@ -530,6 +620,7 @@
                     currentDeleteEmail = null;
                 });
                 refs.btnConfirmDelete.addEventListener('click', handleDeleteUser);
+                if (refs.btnRefreshLogs) refs.btnRefreshLogs.addEventListener('click', loadLogs);
             }, 500);
         });
     </script>
