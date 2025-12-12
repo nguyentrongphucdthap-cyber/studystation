@@ -687,6 +687,49 @@
         </div>
     </template>
 
+    <!-- Image Lightbox Modal -->
+    <div id="image-lightbox"
+        class="fixed inset-0 z-[100] hidden items-center justify-center bg-black/90 backdrop-blur-sm p-4"
+        onclick="closeLightbox(event)">
+        <button onclick="closeLightbox()"
+            class="absolute top-4 right-4 p-2 text-white/70 hover:text-white transition-colors z-10">
+            <svg class="w-8 h-8" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
+            </svg>
+        </button>
+        <img id="lightbox-image" src="" alt="Full size image"
+            class="max-w-[95vw] max-h-[90vh] object-contain rounded-lg shadow-2xl" onclick="event.stopPropagation()">
+    </div>
+
+    <script>
+        // Image Lightbox Functions
+        function openLightbox(imgSrc) {
+            const lightbox = document.getElementById('image-lightbox');
+            const lightboxImg = document.getElementById('lightbox-image');
+            if (lightbox && lightboxImg) {
+                lightboxImg.src = imgSrc;
+                lightbox.classList.remove('hidden');
+                lightbox.classList.add('flex');
+                document.body.style.overflow = 'hidden';
+            }
+        }
+
+        function closeLightbox(event) {
+            if (event && event.target.id !== 'image-lightbox') return;
+            const lightbox = document.getElementById('image-lightbox');
+            if (lightbox) {
+                lightbox.classList.add('hidden');
+                lightbox.classList.remove('flex');
+                document.body.style.overflow = '';
+            }
+        }
+
+        // Close on Escape key
+        document.addEventListener('keydown', (e) => {
+            if (e.key === 'Escape') closeLightbox();
+        });
+    </script>
+
     <!-- Main Logic -->
     <script src="https://www.youtube.com/iframe_api"></script>
     <script src="script.js"></script>
