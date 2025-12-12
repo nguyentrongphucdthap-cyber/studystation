@@ -180,7 +180,7 @@
                     </div>
                 </a>
 
-                <!-- Students Card (Super-Admin Only) -->
+                <!-- Students Card (Admin + Super-Admin) -->
                 <a href="students/index.html" id="card-students"
                     class="module-card bg-white rounded-2xl border border-gray-200 p-6 block hover:border-red-300 hidden">
                     <div class="w-14 h-14 bg-red-100 rounded-2xl flex items-center justify-center mb-4">
@@ -189,10 +189,13 @@
                                 d="M12 4.354a4 4 0 110 5.292M15 21H3v-1a6 6 0 0112 0v1zm0 0h6v-1a6 6 0 00-9-5.197M13 7a4 4 0 11-8 0 4 4 0 018 0z" />
                         </svg>
                     </div>
-                    <h3 class="text-lg font-bold text-gray-800 mb-2">Học sinh</h3>
+                    <h3 class="text-lg font-bold text-gray-800 mb-2">Người dùng</h3>
                     <p class="text-sm text-gray-500">Quản lý tài khoản người dùng</p>
-                    <div class="mt-4 flex items-center gap-2">
-                        <span class="px-2 py-0.5 bg-red-100 text-red-600 text-xs font-bold rounded">SUPER-ADMIN</span>
+                    <div class="mt-4 flex items-center text-red-600 text-sm font-semibold">
+                        Mở
+                        <svg class="w-4 h-4 ml-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7" />
+                        </svg>
                     </div>
                 </a>
             </div>
@@ -241,8 +244,10 @@
                 // Show super-admin features
                 if (checkIsSuperAdmin()) {
                     refs.superAdminBadge.classList.remove('hidden');
-                    refs.cardStudents.classList.remove('hidden');
                 }
+
+                // Show students card for all admins
+                refs.cardStudents.classList.remove('hidden');
             }, 500);
         });
     </script>
