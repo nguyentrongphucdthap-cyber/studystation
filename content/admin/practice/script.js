@@ -18,6 +18,57 @@ import {
 } from "../../../gatekeeper.js";
 
 // ============================================================
+// IMGBB API CONFIGURATION
+// ============================================================
+
+const IMGBB_API_KEY = '999dc07ec98454c5d4c95740354153fc'; // Replace with your ImgBB API key
+
+/**
+ * Upload image to ImgBB and return the URL
+ * @param {File} file - Image file to upload
+ * @returns {Promise<string>} - URL of uploaded image
+ */
+async function uploadImageToImgBB(file) {
+    return new Promise((resolve, reject) => {
+        const reader = new FileReader();
+
+        reader.onload = async function (e) {
+            try {
+                // Get base64 data (remove data:image/xxx;base64, prefix)
+                const base64Data = e.target.result.split(',')[1];
+
+                const formData = new FormData();
+                formData.append('key', IMGBB_API_KEY);
+                formData.append('image', base64Data);
+                formData.append('name', file.name.replace(/\.[^/.]+$/, '')); // Remove extension
+
+                const response = await fetch('https://api.imgbb.com/1/upload', {
+                    method: 'POST',
+                    body: formData
+                });
+
+                if (!response.ok) {
+                    throw new Error(`HTTP error! status: ${response.status}`);
+                }
+
+                const data = await response.json();
+
+                if (data.success) {
+                    resolve(data.data.display_url);
+                } else {
+                    reject(new Error(data.error?.message || 'Upload failed'));
+                }
+            } catch (error) {
+                reject(error);
+            }
+        };
+
+        reader.onerror = () => reject(new Error('Failed to read file'));
+        reader.readAsDataURL(file);
+    });
+}
+
+// ============================================================
 // STATE
 // ============================================================
 
@@ -690,11 +741,22 @@ function createPart1QuestionHTML(q, idx) {
                     <textarea class="q-text w-full px-4 py-3 border border-gray-200 rounded-xl text-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none resize-none bg-gray-50 focus:bg-white transition-colors" rows="2" placeholder="Nhập nội dung câu hỏi...">${q.text || ''}</textarea>
                 </div>
                 <div>
-                    <label class="text-xs font-semibold text-gray-600 mb-2 block">🖼️ Hình ảnh (URL)</label>
+                    <label class="text-xs font-semibold text-gray-600 mb-2 block">🖼️ Hình ảnh</label>
                     <div class="flex gap-2">
-                        <input type="text" class="q-image flex-1 px-4 py-2 border border-gray-200 rounded-xl text-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none bg-gray-50 focus:bg-white transition-colors" placeholder="https://example.com/image.png" value="${imageUrl}">
+                        <input type="text" class="q-image flex-1 px-4 py-2 border border-gray-200 rounded-xl text-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none bg-gray-50 focus:bg-white transition-colors" placeholder="URL hình ảnh hoặc upload..." value="${imageUrl}">
+                        <input type="file" class="q-image-file hidden" accept="image/*">
+                        <button type="button" class="btn-upload-image px-3 py-2 bg-purple-600 text-white text-sm font-semibold rounded-xl hover:bg-purple-700 transition-colors flex items-center gap-1.5">
+                            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-8l-4-4m0 0L8 8m4-4v12"/></svg>
+                            Upload
+                        </button>
                     </div>
-                    ${imageUrl ? `<img src="${imageUrl}" class="mt-2 max-h-32 rounded-lg border border-gray-200" onerror="this.style.display='none'">` : ''}
+                    <div class="q-image-preview mt-2 ${imageUrl ? '' : 'hidden'}">
+                        ${imageUrl ? `<img src="${imageUrl}" class="max-h-32 rounded-lg border border-gray-200" onerror="this.parentElement.classList.add('hidden')">` : ''}
+                    </div>
+                    <div class="q-image-loading hidden mt-2 flex items-center gap-2 text-purple-600 text-sm">
+                        <div class="w-4 h-4 border-2 border-purple-200 border-t-purple-600 rounded-full spinner"></div>
+                        Đang upload...
+                    </div>
                 </div>
                 <div>
                     <label class="text-xs font-semibold text-gray-600 mb-2 block">🎯 Các đáp án <span class="text-blue-500">(Click để chọn đáp án đúng)</span></label>
@@ -739,9 +801,22 @@ function createPart2QuestionHTML(q, idx) {
                     <textarea class="q-text w-full px-3 py-2 border border-gray-200 rounded-lg text-sm focus:ring-2 focus:ring-indigo-500 outline-none resize-none" rows="2" placeholder="Mô tả hoặc đề dẫn...">${q.text || ''}</textarea>
                 </div>
                 <div>
-                    <label class="text-xs font-semibold text-gray-500 mb-1 block">🖼️ Hình ảnh (URL)</label>
-                    <input type="text" class="q-image w-full px-3 py-2 border border-gray-200 rounded-lg text-sm focus:ring-2 focus:ring-indigo-500 outline-none" placeholder="https://example.com/image.png" value="${imageUrl}">
-                    ${imageUrl ? `<img src="${imageUrl}" class="mt-2 max-h-32 rounded-lg border border-gray-200" onerror="this.style.display='none'">` : ''}
+                    <label class="text-xs font-semibold text-gray-500 mb-1 block">🖼️ Hình ảnh</label>
+                    <div class="flex gap-2">
+                        <input type="text" class="q-image flex-1 px-3 py-2 border border-gray-200 rounded-lg text-sm focus:ring-2 focus:ring-indigo-500 outline-none" placeholder="URL hình ảnh hoặc upload..." value="${imageUrl}">
+                        <input type="file" class="q-image-file hidden" accept="image/*">
+                        <button type="button" class="btn-upload-image px-3 py-2 bg-purple-600 text-white text-sm font-semibold rounded-lg hover:bg-purple-700 transition-colors flex items-center gap-1.5">
+                            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-8l-4-4m0 0L8 8m4-4v12"/></svg>
+                            Upload
+                        </button>
+                    </div>
+                    <div class="q-image-preview mt-2 ${imageUrl ? '' : 'hidden'}">
+                        ${imageUrl ? `<img src="${imageUrl}" class="max-h-32 rounded-lg border border-gray-200" onerror="this.parentElement.classList.add('hidden')">` : ''}
+                    </div>
+                    <div class="q-image-loading hidden mt-2 flex items-center gap-2 text-purple-600 text-sm">
+                        <div class="w-4 h-4 border-2 border-purple-200 border-t-purple-600 rounded-full spinner"></div>
+                        Đang upload...
+                    </div>
                 </div>
                 <div class="space-y-2">
                     ${subQuestions.map((sub, i) => `
@@ -776,9 +851,23 @@ function createPart3QuestionHTML(q, idx) {
                     <textarea class="q-text w-full px-3 py-2 border border-gray-200 rounded-lg text-sm focus:ring-2 focus:ring-emerald-500 outline-none resize-none" rows="2" placeholder="Nhập nội dung câu hỏi...">${q.text || ''}</textarea>
                 </div>
                 <div>
-                    <label class="text-xs font-semibold text-gray-500 mb-1 block">🖼️ Hình ảnh (URL)</label>
-                    <input type="text" class="q-image w-full px-3 py-2 border border-gray-200 rounded-lg text-sm focus:ring-2 focus:ring-emerald-500 outline-none" placeholder="https://example.com/image.png" value="${imageUrl}">
-                    ${imageUrl ? `<img src="${imageUrl}" class="mt-2 max-h-32 rounded-lg border border-gray-200" onerror="this.style.display='none'">` : ''}
+                    <label class="text-xs font-semibold text-gray-500 mb-1 block">🖼️ Hình ảnh</label>
+                    <div class="flex gap-2">
+                        <input type="text" class="q-image flex-1 px-3 py-2 border border-gray-200 rounded-lg text-sm focus:ring-2 focus:ring-emerald-500 outline-none" placeholder="URL hình ảnh hoặc upload..." value="${imageUrl}">
+                        <input type="file" class="q-image-file hidden" accept="image/*">
+                        <button type="button" class="btn-upload-image px-3 py-2 bg-purple-600 text-white text-sm font-semibold rounded-lg hover:bg-purple-700 transition-colors flex items-center gap-1.5">
+                            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-8l-4-4m0 0L8 8m4-4v12"/></svg>
+                            Upload
+                        </button>
+                    </div>
+                    <div class="q-image-preview mt-2 ${imageUrl ? '' : 'hidden'}">
+                        ${imageUrl ? `<img src="${imageUrl}" class="max-h-32 rounded-lg border border-gray-200" onerror="this.parentElement.classList.add('hidden')">` : ''}
+                    </div>
+                    <div class="q-image-loading hidden mt-2 flex items-center gap-2 text-purple-600 text-sm">
+                        <div class="w-4 h-4 border-2 border-purple-200 border-t-purple-600 rounded-full spinner"></div>
+                        Đang upload...
+                    </div>
+                </div>
                 </div>
                 <div>
                     <label class="text-xs font-semibold text-gray-500 mb-1 block">Đáp án đúng</label>
@@ -836,6 +925,84 @@ function bindQuestionEvents(part) {
             });
         });
     }
+
+    // Image upload handlers for all parts
+    container.querySelectorAll('.btn-upload-image').forEach(btn => {
+        btn.addEventListener('click', () => {
+            const block = btn.closest('.question-block');
+            const fileInput = block.querySelector('.q-image-file');
+            fileInput.click();
+        });
+    });
+
+    container.querySelectorAll('.q-image-file').forEach(input => {
+        input.addEventListener('change', async (e) => {
+            const file = e.target.files[0];
+            if (!file) return;
+
+            // Validate file type
+            if (!file.type.startsWith('image/')) {
+                showToast('Vui lòng chọn file hình ảnh', 'error');
+                return;
+            }
+
+            // Validate file size (max 32MB for ImgBB)
+            if (file.size > 32 * 1024 * 1024) {
+                showToast('File quá lớn (tối đa 32MB)', 'error');
+                return;
+            }
+
+            const block = input.closest('.question-block');
+            const urlInput = block.querySelector('.q-image');
+            const previewContainer = block.querySelector('.q-image-preview');
+            const loadingContainer = block.querySelector('.q-image-loading');
+            const uploadBtn = block.querySelector('.btn-upload-image');
+
+            // Show loading state
+            loadingContainer.classList.remove('hidden');
+            uploadBtn.disabled = true;
+            uploadBtn.classList.add('opacity-50', 'cursor-not-allowed');
+
+            try {
+                const imageUrl = await uploadImageToImgBB(file);
+
+                // Update URL input
+                urlInput.value = imageUrl;
+
+                // Update preview
+                previewContainer.innerHTML = `<img src="${imageUrl}" class="max-h-32 rounded-lg border border-gray-200">`;
+                previewContainer.classList.remove('hidden');
+
+                showToast('Upload thành công!');
+            } catch (error) {
+                console.error('Upload failed:', error);
+                showToast('Upload thất bại: ' + error.message, 'error');
+            } finally {
+                // Hide loading state
+                loadingContainer.classList.add('hidden');
+                uploadBtn.disabled = false;
+                uploadBtn.classList.remove('opacity-50', 'cursor-not-allowed');
+                input.value = ''; // Reset file input
+            }
+        });
+    });
+
+    // Update preview when URL is manually entered
+    container.querySelectorAll('.q-image').forEach(input => {
+        input.addEventListener('change', (e) => {
+            const block = input.closest('.question-block');
+            const previewContainer = block.querySelector('.q-image-preview');
+            const url = e.target.value.trim();
+
+            if (url) {
+                previewContainer.innerHTML = `<img src="${url}" class="max-h-32 rounded-lg border border-gray-200" onerror="this.parentElement.classList.add('hidden')">`;
+                previewContainer.classList.remove('hidden');
+            } else {
+                previewContainer.classList.add('hidden');
+                previewContainer.innerHTML = '';
+            }
+        });
+    });
 }
 
 function addQuestion(part) {
