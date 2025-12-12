@@ -30,6 +30,39 @@
         .spinner {
             animation: spin 1s linear infinite;
         }
+
+        /* Toast animations */
+        .toast-enter {
+            animation: slideIn 0.3s ease-out forwards;
+        }
+
+        .toast-exit {
+            animation: slideOut 0.3s ease-in forwards;
+        }
+
+        @keyframes slideIn {
+            from {
+                transform: translateX(100%);
+                opacity: 0;
+            }
+
+            to {
+                transform: translateX(0);
+                opacity: 1;
+            }
+        }
+
+        @keyframes slideOut {
+            from {
+                transform: translateX(0);
+                opacity: 1;
+            }
+
+            to {
+                transform: translateX(100%);
+                opacity: 0;
+            }
+        }
     </style>
 </head>
 
@@ -44,6 +77,9 @@
             <div style="font-size:14px;opacity:0.7">Đang xác thực...</div>
         </div>
     </div>
+
+    <!-- Toast Container -->
+    <div id="toast-container" class="fixed top-4 right-4 z-50 space-y-2"></div>
 
     <!-- Access Denied -->
     <div id="access-denied" class="hidden min-h-screen flex items-center justify-center">
@@ -77,7 +113,7 @@
                             </svg>
                         </a>
                         <h1 class="text-xl font-bold text-gray-800">
-                            <span class="text-red-500">👥</span> Quản lý Học sinh
+                            <span class="text-red-500">👥</span> Quản lý Người dùng
                         </h1>
                     </div>
                     <div class="flex items-center gap-3">
@@ -93,6 +129,48 @@
 
         <!-- Main -->
         <main class="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+            <!-- Add User Form -->
+            <div class="bg-white rounded-2xl border border-gray-200 shadow-sm overflow-hidden mb-6">
+                <div class="p-4 border-b border-gray-100 bg-emerald-50">
+                    <h3 class="font-bold text-gray-800 flex items-center gap-2">
+                        <svg class="w-5 h-5 text-emerald-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                d="M18 9v3m0 0v3m0-3h3m-3 0h-3m-2-5a4 4 0 11-8 0 4 4 0 018 0zM3 20a6 6 0 0112 0v1H3v-1z" />
+                        </svg>
+                        Thêm Người dùng mới
+                    </h3>
+                </div>
+                <div class="p-4">
+                    <form id="add-user-form" class="flex flex-wrap gap-3 items-end">
+                        <div class="flex-1 min-w-[200px]">
+                            <label class="block text-sm font-semibold text-gray-700 mb-1">Email <span
+                                    class="text-red-500">*</span></label>
+                            <input type="email" id="new-user-email"
+                                class="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500 outline-none"
+                                placeholder="user@example.com" required>
+                        </div>
+                        <div class="w-40">
+                            <label class="block text-sm font-semibold text-gray-700 mb-1">Quyền</label>
+                            <select id="new-user-role"
+                                class="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500 outline-none">
+                                <option value="user">User</option>
+                                <option value="admin">Admin</option>
+                                <option value="super-admin">Super Admin</option>
+                            </select>
+                        </div>
+                        <button type="submit" id="btn-add-user"
+                            class="px-4 py-2 bg-emerald-600 text-white text-sm font-semibold rounded-lg hover:bg-emerald-700 transition-colors flex items-center gap-2">
+                            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                    d="M12 4v16m8-8H4" />
+                            </svg>
+                            Thêm
+                        </button>
+                    </form>
+                </div>
+            </div>
+
+            <!-- Users Table -->
             <div class="bg-white rounded-2xl border border-gray-200 shadow-sm overflow-hidden">
                 <!-- Header -->
                 <div class="p-4 border-b border-gray-100 bg-gray-50 flex items-center justify-between">
@@ -123,18 +201,20 @@
                 </div>
 
                 <!-- Users Table -->
-                <div class="max-h-[70vh] overflow-y-auto">
+                <div class="max-h-[60vh] overflow-y-auto">
                     <table class="w-full text-sm">
                         <thead class="bg-gray-50 sticky top-0">
                             <tr>
-                                <th class="px-4 py-3 text-left font-semibold text-gray-600">Email</th>
+                                <th class="px-4 py-3 text-left font-semibold text-gray-600">Người dùng</th>
                                 <th class="px-4 py-3 text-left font-semibold text-gray-600">Quyền</th>
-                                <th class="px-4 py-3 text-left font-semibold text-gray-600">Đăng nhập lần cuối</th>
+                                <th class="px-4 py-3 text-left font-semibold text-gray-600">Đăng nhập</th>
+                                <th class="px-4 py-3 text-center font-semibold text-gray-600">Số lần</th>
+                                <th class="px-4 py-3 text-right font-semibold text-gray-600">Hành động</th>
                             </tr>
                         </thead>
                         <tbody id="students-table-body" class="divide-y divide-gray-100">
                             <tr>
-                                <td colspan="3" class="px-4 py-8 text-center text-gray-400">
+                                <td colspan="5" class="px-4 py-8 text-center text-gray-400">
                                     <div class="flex flex-col items-center gap-2">
                                         <svg class="w-8 h-8 spinner text-blue-500" fill="none" viewBox="0 0 24 24">
                                             <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor"
@@ -154,14 +234,41 @@
         </main>
     </div>
 
+    <!-- Delete Confirmation Modal -->
+    <div id="delete-modal"
+        class="hidden fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm p-4">
+        <div class="bg-white rounded-2xl p-6 max-w-sm w-full shadow-2xl">
+            <div class="w-12 h-12 bg-red-100 rounded-full flex items-center justify-center mx-auto mb-4">
+                <svg class="w-6 h-6 text-red-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                        d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+                </svg>
+            </div>
+            <h3 class="text-lg font-bold text-gray-800 text-center mb-2">Xóa người dùng?</h3>
+            <p id="delete-user-email" class="text-gray-500 text-sm text-center mb-6">Người dùng này sẽ bị xóa khỏi hệ
+                thống.</p>
+            <div class="flex gap-3">
+                <button id="btn-cancel-delete"
+                    class="flex-1 px-4 py-2.5 border border-gray-200 text-gray-600 font-semibold rounded-xl hover:bg-gray-50 transition-colors">Hủy</button>
+                <button id="btn-confirm-delete"
+                    class="flex-1 px-4 py-2.5 bg-red-600 text-white font-semibold rounded-xl hover:bg-red-700 transition-colors">Xóa</button>
+            </div>
+        </div>
+    </div>
+
     <!-- Scripts -->
     <script type="module">
         import {
             initGatekeeper,
             checkIsSuperAdmin,
             onUserChange,
-            getAllAllowedUsers
+            getAllAllowedUsers,
+            addAllowedUser,
+            updateUserRole,
+            deleteAllowedUser
         } from "../../../gatekeeper.js";
+
+        let currentDeleteEmail = null;
 
         const refs = {
             accessDenied: document.getElementById('access-denied'),
@@ -169,8 +276,42 @@
             adminEmail: document.getElementById('admin-email'),
             studentsTableBody: document.getElementById('students-table-body'),
             studentsCount: document.getElementById('students-count'),
-            btnRefresh: document.getElementById('btn-refresh')
+            btnRefresh: document.getElementById('btn-refresh'),
+            toastContainer: document.getElementById('toast-container'),
+            // Add User Form
+            addUserForm: document.getElementById('add-user-form'),
+            newUserEmail: document.getElementById('new-user-email'),
+            newUserRole: document.getElementById('new-user-role'),
+            // Delete Modal
+            deleteModal: document.getElementById('delete-modal'),
+            deleteUserEmail: document.getElementById('delete-user-email'),
+            btnCancelDelete: document.getElementById('btn-cancel-delete'),
+            btnConfirmDelete: document.getElementById('btn-confirm-delete')
         };
+
+        // Toast notification
+        function showToast(message, type = 'success') {
+            const toast = document.createElement('div');
+            const bgColor = type === 'success' ? 'bg-emerald-600' : type === 'error' ? 'bg-red-600' : 'bg-blue-600';
+            toast.className = `${bgColor} text-white px-4 py-3 rounded-xl shadow-lg flex items-center gap-3 toast-enter max-w-sm`;
+            toast.innerHTML = `
+                <svg class="w-5 h-5 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    ${type === 'success'
+                    ? '<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"/>'
+                    : type === 'error'
+                        ? '<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/>'
+                        : '<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/>'}
+                </svg>
+                <span class="font-medium text-sm">${message}</span>
+            `;
+            refs.toastContainer.appendChild(toast);
+
+            setTimeout(() => {
+                toast.classList.remove('toast-enter');
+                toast.classList.add('toast-exit');
+                setTimeout(() => toast.remove(), 300);
+            }, 3000);
+        }
 
         // Format datetime to Vietnam timezone (UTC+7)
         function formatVietnamTime(isoString) {
@@ -183,31 +324,28 @@
                     month: '2-digit',
                     year: 'numeric',
                     hour: '2-digit',
-                    minute: '2-digit',
-                    second: '2-digit'
+                    minute: '2-digit'
                 });
             } catch {
                 return isoString;
             }
         }
 
-        // Get role badge HTML
-        function getRoleBadge(role) {
-            const roleLower = (role || 'user').toLowerCase();
-            if (roleLower.includes('super-admin')) {
-                return '<span class="px-2 py-1 bg-red-100 text-red-700 text-xs font-bold rounded-full">Super Admin</span>';
-            } else if (roleLower.includes('admin')) {
-                return '<span class="px-2 py-1 bg-yellow-100 text-yellow-700 text-xs font-bold rounded-full">Admin</span>';
-            } else {
-                return '<span class="px-2 py-1 bg-gray-100 text-gray-600 text-xs font-bold rounded-full">User</span>';
-            }
+        // Get role options HTML
+        function getRoleOptions(currentRole) {
+            const roles = ['user', 'admin', 'super-admin'];
+            return roles.map(role => {
+                const selected = (currentRole || 'user').toLowerCase() === role ? 'selected' : '';
+                const label = role === 'super-admin' ? 'Super Admin' : role === 'admin' ? 'Admin' : 'User';
+                return `<option value="${role}" ${selected}>${label}</option>`;
+            }).join('');
         }
 
         // Load and render students list
         async function loadStudents() {
             refs.studentsTableBody.innerHTML = `
                 <tr>
-                    <td colspan="3" class="px-4 py-8 text-center text-gray-400">
+                    <td colspan="5" class="px-4 py-8 text-center text-gray-400">
                         <div class="flex flex-col items-center gap-2">
                             <svg class="w-8 h-8 spinner text-blue-500" fill="none" viewBox="0 0 24 24">
                                 <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
@@ -234,7 +372,7 @@
                 if (users.length === 0) {
                     refs.studentsTableBody.innerHTML = `
                         <tr>
-                            <td colspan="3" class="px-4 py-8 text-center text-gray-400">
+                            <td colspan="5" class="px-4 py-8 text-center text-gray-400">
                                 Chưa có người dùng nào
                             </td>
                         </tr>
@@ -242,34 +380,115 @@
                     return;
                 }
 
-                refs.studentsTableBody.innerHTML = users.map(user => `
-                    <tr class="hover:bg-gray-50 transition-colors">
+                refs.studentsTableBody.innerHTML = users.map(user => {
+                    const avatarHtml = user.photo_url
+                        ? `<img src="${user.photo_url}" class="w-8 h-8 rounded-full object-cover" alt="" onerror="this.style.display='none';this.nextElementSibling.style.display='flex';"><div class="w-8 h-8 bg-blue-100 rounded-full items-center justify-center text-blue-600 font-bold text-sm hidden">${(user.email || 'U')[0].toUpperCase()}</div>`
+                        : `<div class="w-8 h-8 bg-blue-100 rounded-full flex items-center justify-center text-blue-600 font-bold text-sm">${(user.email || 'U')[0].toUpperCase()}</div>`;
+                    const displayName = user.display_name || '';
+                    const loginCount = user.login_count || 0;
+
+                    return `
+                    <tr class="hover:bg-gray-50 transition-colors" data-email="${user.email || user.id}">
                         <td class="px-4 py-3">
-                            <div class="flex items-center gap-2">
-                                <div class="w-8 h-8 bg-blue-100 rounded-full flex items-center justify-center text-blue-600 font-bold text-sm">
-                                    ${(user.email || 'U')[0].toUpperCase()}
+                            <div class="flex items-center gap-3">
+                                ${avatarHtml}
+                                <div class="min-w-0">
+                                    ${displayName ? `<div class="font-medium text-gray-800 truncate">${displayName}</div>` : ''}
+                                    <div class="text-xs text-gray-500 truncate">${user.email || user.id}</div>
                                 </div>
-                                <span class="font-medium text-gray-800">${user.email || user.id}</span>
                             </div>
                         </td>
                         <td class="px-4 py-3">
-                            ${getRoleBadge(user.role)}
+                            <select class="role-select px-2 py-1 border border-gray-200 rounded-lg text-sm focus:ring-2 focus:ring-blue-500 outline-none" data-email="${user.email || user.id}">
+                                ${getRoleOptions(user.role)}
+                            </select>
                         </td>
-                        <td class="px-4 py-3 text-gray-500">
+                        <td class="px-4 py-3 text-gray-500 text-xs">
                             ${formatVietnamTime(user.last_login)}
                         </td>
+                        <td class="px-4 py-3 text-center">
+                            <span class="inline-flex items-center justify-center min-w-[2rem] px-2 py-1 bg-indigo-100 text-indigo-700 text-xs font-bold rounded-full">${loginCount}</span>
+                        </td>
+                        <td class="px-4 py-3 text-right">
+                            <button class="btn-delete-user px-3 py-1 border border-red-200 text-red-600 text-sm font-semibold rounded-lg hover:bg-red-50 transition-colors" data-email="${user.email || user.id}">
+                                Xóa
+                            </button>
+                        </td>
                     </tr>
-                `).join('');
+                `}).join('');
+
+                // Bind role change events
+                refs.studentsTableBody.querySelectorAll('.role-select').forEach(select => {
+                    select.addEventListener('change', async (e) => {
+                        const email = e.target.dataset.email;
+                        const newRole = e.target.value;
+                        try {
+                            await updateUserRole(email, newRole);
+                            showToast(`Đã cập nhật quyền cho ${email}`);
+                        } catch (error) {
+                            showToast('Lỗi: ' + error.message, 'error');
+                            loadStudents(); // Reload to reset
+                        }
+                    });
+                });
+
+                // Bind delete events
+                refs.studentsTableBody.querySelectorAll('.btn-delete-user').forEach(btn => {
+                    btn.addEventListener('click', (e) => {
+                        currentDeleteEmail = e.target.dataset.email;
+                        refs.deleteUserEmail.textContent = `Xóa "${currentDeleteEmail}" khỏi hệ thống?`;
+                        refs.deleteModal.classList.remove('hidden');
+                    });
+                });
 
             } catch (error) {
                 console.error('Load students failed:', error);
                 refs.studentsTableBody.innerHTML = `
                     <tr>
-                        <td colspan="3" class="px-4 py-8 text-center text-red-500">
+                        <td colspan="4" class="px-4 py-8 text-center text-red-500">
                             Lỗi: ${error.message}
                         </td>
                     </tr>
                 `;
+            }
+        }
+
+        // Add new user
+        async function handleAddUser(e) {
+            e.preventDefault();
+
+            const email = refs.newUserEmail.value.trim();
+            const role = refs.newUserRole.value;
+
+            if (!email) {
+                showToast('Vui lòng nhập email', 'error');
+                return;
+            }
+
+            try {
+                await addAllowedUser(email, role);
+                showToast(`Đã thêm ${email} với quyền ${role}`);
+                refs.newUserEmail.value = '';
+                refs.newUserRole.value = 'user';
+                loadStudents();
+            } catch (error) {
+                showToast('Lỗi: ' + error.message, 'error');
+            }
+        }
+
+        // Delete user
+        async function handleDeleteUser() {
+            if (!currentDeleteEmail) return;
+
+            refs.deleteModal.classList.add('hidden');
+
+            try {
+                await deleteAllowedUser(currentDeleteEmail);
+                showToast(`Đã xóa ${currentDeleteEmail}`);
+                currentDeleteEmail = null;
+                loadStudents();
+            } catch (error) {
+                showToast('Lỗi: ' + error.message, 'error');
             }
         }
 
@@ -292,8 +511,14 @@
                 // Load students
                 loadStudents();
 
-                // Bind refresh
+                // Bind events
                 refs.btnRefresh.addEventListener('click', loadStudents);
+                refs.addUserForm.addEventListener('submit', handleAddUser);
+                refs.btnCancelDelete.addEventListener('click', () => {
+                    refs.deleteModal.classList.add('hidden');
+                    currentDeleteEmail = null;
+                });
+                refs.btnConfirmDelete.addEventListener('click', handleDeleteUser);
             }, 500);
         });
     </script>
