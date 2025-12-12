@@ -256,19 +256,21 @@
         </div>
     </div>
 
-    <!-- Scripts -->
     <script type="module">
         import {
             initGatekeeper,
+            checkIsAdmin,
             checkIsSuperAdmin,
             onUserChange,
             getAllAllowedUsers,
             addAllowedUser,
             updateUserRole,
-            deleteAllowedUser
+            deleteAllowedUser,
+            getWhitelistLogs
         } from "../../../gatekeeper.js";
 
         let currentDeleteEmail = null;
+        let isSuperAdmin = false;
 
         const refs = {
             accessDenied: document.getElementById('access-denied'),
@@ -282,6 +284,7 @@
             addUserForm: document.getElementById('add-user-form'),
             newUserEmail: document.getElementById('new-user-email'),
             newUserRole: document.getElementById('new-user-role'),
+            roleSelectWrapper: document.getElementById('role-select-wrapper'),
             // Delete Modal
             deleteModal: document.getElementById('delete-modal'),
             deleteUserEmail: document.getElementById('delete-user-email'),
@@ -499,10 +502,18 @@
             if (!user) return;
 
             setTimeout(() => {
-                // Check SUPER-ADMIN access (not just admin)
-                if (!checkIsSuperAdmin()) {
+                // Check ADMIN access (not just super-admin)
+                if (!checkIsAdmin()) {
                     refs.accessDenied.classList.remove('hidden');
                     return;
+                }
+
+                // Check if Super-Admin for role-based UI
+                isSuperAdmin = checkIsSuperAdmin();
+
+                // Hide role selector for regular Admin
+                if (!isSuperAdmin && refs.roleSelectWrapper) {
+                    refs.roleSelectWrapper.classList.add('hidden');
                 }
 
                 refs.adminEmail.textContent = user.email;
