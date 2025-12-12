@@ -233,12 +233,12 @@ html.dark input[type=range]::-webkit-slider-runnable-track {
     box-sizing: border-box;
 }
 
-/* Ensure text wraps properly */
+/* Ensure text wraps properly without breaking formulas */
 .dynamic-text,
 .font-question {
-    word-wrap: break-word;
+    word-break: normal;
     overflow-wrap: break-word;
-    hyphens: auto;
+    hyphens: none;
 }
 
 /* Mobile-specific rules */
@@ -300,7 +300,15 @@ html.dark input[type=range]::-webkit-slider-runnable-track {
 
     .option-label span.dynamic-text {
         font-size: 14px !important;
-        word-break: break-word;
+        word-break: normal;
+        overflow-wrap: anywhere;
+        white-space: normal;
+    }
+
+    /* Prevent MathJax from breaking inline */
+    mjx-container {
+        display: inline !important;
+        white-space: nowrap;
     }
 
     /* True/False buttons - better sizing */
