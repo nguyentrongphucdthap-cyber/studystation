@@ -835,7 +835,7 @@ const app = {
                     <div class="shrink-0 w-10 h-10 bg-blue-100 dark:bg-blue-900/30 text-blue-700 dark:text-blue-400 rounded-xl flex items-center justify-center font-bold shadow-sm">${displayId}</div>
                     <div class="flex-1">
                         <span class="pt-1.5 leading-relaxed font-question dynamic-text">${q.text}</span>
-                        ${q.image ? `<img src="${q.image}" class="mt-3 max-w-full md:max-w-md rounded-xl border border-slate-200 dark:border-slate-600 shadow-sm" alt="Question image" onerror="this.style.display='none'">` : ''}
+                        ${q.image ? `<img src="${q.image}" class="mt-3 max-w-full md:max-w-md rounded-xl border border-slate-200 dark:border-slate-600 shadow-sm cursor-pointer hover:opacity-90 hover:shadow-lg transition-all" alt="Question image" title="Nhấn để xem ảnh lớn" onclick="openLightbox('${q.image}')" onerror="this.style.display='none'">` : ''}
                     </div>
                 </div>`;
 
