@@ -924,20 +924,19 @@ const app = {
 
         const parent = btnEl.parentElement;
         parent.querySelectorAll('.tf-btn').forEach(b => {
-            b.classList.remove('active-tf', 'bg-blue-600', 'text-white');
+            b.classList.remove('active-tf', 'bg-blue-600', 'bg-emerald-600', 'bg-red-500', 'text-white');
             b.classList.add('text-slate-500', 'dark:text-slate-400');
         });
-        if (btnEl.classList.contains('active-tf')) {
-            // Already active? usually logic is simple toggle, here we set
-        }
-        btnEl.classList.remove('text-slate-500', 'dark:text-slate-400');
-        btnEl.classList.add('active-tf', 'bg-blue-600', 'text-white');
 
-        const ansCount = Object.keys(this.answers[key].sub).length;
-        // In this logic, update palette if at least one is answered? or all?
-        // Original logic checked against qData req.
-        // Let's rely on simple check for now or restore the full check.
-        // To query full check we need qData.
+        btnEl.classList.remove('text-slate-500', 'dark:text-slate-400');
+        btnEl.classList.add('active-tf', 'text-white');
+
+        // ĐÚNG = green/blue, SAI = red
+        if (isTrue) {
+            btnEl.classList.add('bg-blue-600');
+        } else {
+            btnEl.classList.add('bg-red-500');
+        }
 
         const qData = this.currentExam.data.part2.find(q => q.id === qId);
         const req = qData ? qData.subQuestions.map(s => s.id) : [];
