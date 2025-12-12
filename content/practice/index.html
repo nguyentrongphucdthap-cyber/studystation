@@ -689,25 +689,65 @@
 
     <!-- Image Lightbox Modal -->
     <div id="image-lightbox"
-        class="fixed inset-0 z-[100] hidden items-center justify-center bg-black/90 backdrop-blur-sm p-4"
+        class="fixed inset-0 z-[100] hidden items-center justify-center bg-black/90 backdrop-blur-sm"
         onclick="closeLightbox(event)">
-        <button onclick="closeLightbox()"
-            class="absolute top-4 right-4 p-2 text-white/70 hover:text-white transition-colors z-10">
-            <svg class="w-8 h-8" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
-            </svg>
-        </button>
-        <img id="lightbox-image" src="" alt="Full size image"
-            class="max-w-[95vw] max-h-[90vh] object-contain rounded-lg shadow-2xl" onclick="event.stopPropagation()">
+        <!-- Controls -->
+        <div class="absolute top-4 right-4 flex items-center gap-2 z-20">
+            <button onclick="zoomIn()" class="p-2 bg-white/10 hover:bg-white/20 rounded-lg text-white transition-colors"
+                title="Phóng to">
+                <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                        d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0zM10 7v6m3-3H7" />
+                </svg>
+            </button>
+            <button onclick="zoomOut()"
+                class="p-2 bg-white/10 hover:bg-white/20 rounded-lg text-white transition-colors" title="Thu nhỏ">
+                <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                        d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0zM7 10h6" />
+                </svg>
+            </button>
+            <button onclick="resetZoom()"
+                class="p-2 bg-white/10 hover:bg-white/20 rounded-lg text-white transition-colors" title="Reset">
+                <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                        d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
+                </svg>
+            </button>
+            <button onclick="closeLightbox()"
+                class="p-2 bg-white/10 hover:bg-white/20 rounded-lg text-white transition-colors" title="Đóng">
+                <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
+                </svg>
+            </button>
+        </div>
+        <!-- Zoom level indicator -->
+        <div id="zoom-indicator"
+            class="absolute bottom-4 left-1/2 -translate-x-1/2 px-3 py-1 bg-black/60 text-white text-sm rounded-full z-20">
+            100%</div>
+        <!-- Image container -->
+        <div id="lightbox-container"
+            class="overflow-auto max-w-full max-h-full flex items-center justify-center cursor-grab active:cursor-grabbing"
+            onclick="event.stopPropagation()">
+            <img id="lightbox-image" src="" alt="Full size image" class="transition-transform duration-150 select-none"
+                style="transform-origin: center center;" ondblclick="toggleZoom()" draggable="false">
+        </div>
     </div>
 
     <script>
-        // Image Lightbox Functions
+        // Image Lightbox with Zoom
+        let currentZoom = 1;
+        const MIN_ZOOM = 0.5;
+        const MAX_ZOOM = 5;
+        const ZOOM_STEP = 0.25;
+
         function openLightbox(imgSrc) {
             const lightbox = document.getElementById('image-lightbox');
             const lightboxImg = document.getElementById('lightbox-image');
             if (lightbox && lightboxImg) {
                 lightboxImg.src = imgSrc;
+                currentZoom = 1;
+                updateZoom();
                 lightbox.classList.remove('hidden');
                 lightbox.classList.add('flex');
                 document.body.style.overflow = 'hidden';
@@ -721,8 +761,52 @@
                 lightbox.classList.add('hidden');
                 lightbox.classList.remove('flex');
                 document.body.style.overflow = '';
+                currentZoom = 1;
             }
         }
+
+        function updateZoom() {
+            const img = document.getElementById('lightbox-image');
+            const indicator = document.getElementById('zoom-indicator');
+            if (img) {
+                img.style.transform = `scale(${currentZoom})`;
+            }
+            if (indicator) {
+                indicator.textContent = `${Math.round(currentZoom * 100)}%`;
+            }
+        }
+
+        function zoomIn() {
+            currentZoom = Math.min(MAX_ZOOM, currentZoom + ZOOM_STEP);
+            updateZoom();
+        }
+
+        function zoomOut() {
+            currentZoom = Math.max(MIN_ZOOM, currentZoom - ZOOM_STEP);
+            updateZoom();
+        }
+
+        function resetZoom() {
+            currentZoom = 1;
+            updateZoom();
+        }
+
+        function toggleZoom() {
+            currentZoom = currentZoom > 1 ? 1 : 2;
+            updateZoom();
+        }
+
+        // Scroll wheel zoom
+        document.getElementById('image-lightbox')?.addEventListener('wheel', (e) => {
+            if (!document.getElementById('image-lightbox').classList.contains('hidden')) {
+                e.preventDefault();
+                if (e.deltaY < 0) {
+                    zoomIn();
+                } else {
+                    zoomOut();
+                }
+            }
+        }, { passive: false });
 
         // Close on Escape key
         document.addEventListener('keydown', (e) => {
