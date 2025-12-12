@@ -848,7 +848,7 @@ const app = {
                                 <div class="option-dot-outer w-6 h-6 rounded-full border-2 border-slate-300 dark:border-slate-500 mr-3 flex items-center justify-center shrink-0">
                                     <div class="option-dot-inner w-2.5 h-2.5 bg-white rounded-full"></div>
                                 </div>
-                                <span class="font-medium text-slate-600 dark:text-slate-300 group-hover:text-slate-800 dark:group-hover:text-white font-question dynamic-text text-left break-words w-full">${opt}</span>
+                                <span class="font-medium text-slate-600 dark:text-slate-300 group-hover:text-slate-800 dark:group-hover:text-white font-question dynamic-text text-left">${opt}</span>
                             </div>
                         </label>`).join('')}</div>`;
             } else if (type === 2) {
