@@ -257,6 +257,16 @@ html.dark input[type=range]::-webkit-slider-runnable-track {
         overflow: hidden;
     }
 
+    /* Exam list cards */
+    .exam-card {
+        padding: 0.875rem !important;
+    }
+
+    .exam-card h4 {
+        font-size: 0.9375rem;
+        line-height: 1.4;
+    }
+
     /* Question text container */
     .question-card .flex-1 {
         min-width: 0;
@@ -293,30 +303,21 @@ html.dark input[type=range]::-webkit-slider-runnable-track {
         word-break: break-word;
     }
 
-    /* True/False buttons - larger touch targets */
+    /* True/False buttons - better sizing */
     .tf-btn {
-        min-width: 3.5rem !important;
-        min-height: 36px;
-        font-size: 0.7rem !important;
-        padding: 0.5rem 0.25rem !important;
+        min-height: 40px;
+        font-size: 0.8rem !important;
+        padding: 0.5rem 1rem !important;
     }
 
-    /* Sub-question rows - stack vertically on very small screens */
+    /* Sub-question rows - already stacked in HTML, just ensure proper spacing */
     .sub-question-row {
-        flex-direction: column;
-        align-items: flex-start !important;
-        gap: 0.75rem;
-        padding: 0.75rem !important;
+        padding: 0.875rem !important;
     }
 
-    .sub-question-row>div:first-child {
-        width: 100%;
-        padding-right: 0 !important;
-    }
-
-    .sub-question-row>div:last-child {
-        width: 100%;
-        justify-content: flex-end;
+    .sub-question-row .dynamic-text {
+        font-size: 14px;
+        line-height: 1.5;
     }
 
     /* Short answer input */
