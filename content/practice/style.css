@@ -3,22 +3,41 @@ body {
     color: #0f172a;
     -webkit-font-smoothing: antialiased;
     transition: background-color 0.3s, color 0.3s;
-    overflow-x: hidden; 
+    overflow-x: hidden;
 }
 
 html.dark body {
-    background-color: #0f172a; 
-    color: #f1f5f9; 
+    background-color: #0f172a;
+    color: #f1f5f9;
 }
 
 /* --- Scrollbar --- */
-.custom-scrollbar::-webkit-scrollbar { width: 6px; height: 6px; }
-.custom-scrollbar::-webkit-scrollbar-track { background: transparent; }
-.custom-scrollbar::-webkit-scrollbar-thumb { background-color: #cbd5e1; border-radius: 10px; }
-html.dark .custom-scrollbar::-webkit-scrollbar-thumb { background-color: #334155; }
+.custom-scrollbar::-webkit-scrollbar {
+    width: 6px;
+    height: 6px;
+}
 
-.no-scrollbar::-webkit-scrollbar { display: none; }
-.no-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
+.custom-scrollbar::-webkit-scrollbar-track {
+    background: transparent;
+}
+
+.custom-scrollbar::-webkit-scrollbar-thumb {
+    background-color: #cbd5e1;
+    border-radius: 10px;
+}
+
+html.dark .custom-scrollbar::-webkit-scrollbar-thumb {
+    background-color: #334155;
+}
+
+.no-scrollbar::-webkit-scrollbar {
+    display: none;
+}
+
+.no-scrollbar {
+    -ms-overflow-style: none;
+    scrollbar-width: none;
+}
 
 .glass-header {
     background: rgba(255, 255, 255, 0.85);
@@ -27,63 +46,384 @@ html.dark .custom-scrollbar::-webkit-scrollbar-thumb { background-color: #334155
     border-bottom: 1px solid rgba(226, 232, 240, 0.6);
     transition: background-color 0.3s, border-color 0.3s;
 }
+
 html.dark .glass-header {
     background: rgba(15, 23, 42, 0.85);
     border-bottom: 1px solid rgba(51, 65, 85, 0.6);
 }
 
-.card-hover { transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1); }
-.card-hover:hover { transform: translateY(-4px); box-shadow: 0 12px 24px -4px rgba(0, 0, 0, 0.08); }
-html.dark .card-hover:hover { box-shadow: 0 12px 24px -4px rgba(0, 0, 0, 0.3); }
+.card-hover {
+    transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.card-hover:hover {
+    transform: translateY(-4px);
+    box-shadow: 0 12px 24px -4px rgba(0, 0, 0, 0.08);
+}
+
+html.dark .card-hover:hover {
+    box-shadow: 0 12px 24px -4px rgba(0, 0, 0, 0.3);
+}
 
 /* --- Radio Button --- */
-.option-radio:checked + div {
-    border-color: #2563eb; background-color: #eff6ff; box-shadow: 0 0 0 1px #2563eb;
+.option-radio:checked+div {
+    border-color: #2563eb;
+    background-color: #eff6ff;
+    box-shadow: 0 0 0 1px #2563eb;
 }
-html.dark .option-radio:checked + div {
-    background-color: rgba(59, 130, 246, 0.1); border-color: #3b82f6; box-shadow: 0 0 0 1px #3b82f6;
+
+html.dark .option-radio:checked+div {
+    background-color: rgba(59, 130, 246, 0.1);
+    border-color: #3b82f6;
+    box-shadow: 0 0 0 1px #3b82f6;
 }
-.option-dot-inner { transform: scale(0); transition: transform 0.2s cubic-bezier(0.4, 0, 0.2, 1); }
-.option-radio:checked + div .option-dot-inner { transform: scale(1); }
-.option-radio:checked + div .option-dot-outer { border-color: #2563eb; background-color: #2563eb; }
-html.dark .option-radio:checked + div .option-dot-outer { border-color: #3b82f6; background-color: #3b82f6; }
+
+.option-dot-inner {
+    transform: scale(0);
+    transition: transform 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.option-radio:checked+div .option-dot-inner {
+    transform: scale(1);
+}
+
+.option-radio:checked+div .option-dot-outer {
+    border-color: #2563eb;
+    background-color: #2563eb;
+}
+
+html.dark .option-radio:checked+div .option-dot-outer {
+    border-color: #3b82f6;
+    background-color: #3b82f6;
+}
 
 /* --- Palette Items --- */
-.question-nav-item { transition: all 0.2s; }
+.question-nav-item {
+    transition: all 0.2s;
+}
+
 .question-nav-item.answered {
-    background-color: #2563eb !important; 
-    color: white !important; 
-    border-color: transparent !important; 
+    background-color: #2563eb !important;
+    color: white !important;
+    border-color: transparent !important;
     box-shadow: 0 2px 4px rgba(37, 99, 235, 0.2);
 }
-.question-nav-item:hover:not(.answered) { background-color: #f1f5f9; transform: scale(1.05); }
-html.dark .question-nav-item:hover:not(.answered) { background-color: #334155; }
+
+.question-nav-item:hover:not(.answered) {
+    background-color: #f1f5f9;
+    transform: scale(1.05);
+}
+
+html.dark .question-nav-item:hover:not(.answered) {
+    background-color: #334155;
+}
 
 /* --- Buttons --- */
-.tf-btn { transition: all 0.2s ease; }
-.tf-btn.selected-true { background-color: #2563eb; color: white; border-color: #2563eb; }
-.tf-btn.selected-false { background-color: #ef4444; color: white; border-color: #ef4444; }
+.tf-btn {
+    transition: all 0.2s ease;
+}
+
+.tf-btn.selected-true {
+    background-color: #2563eb;
+    color: white;
+    border-color: #2563eb;
+}
+
+.tf-btn.selected-false {
+    background-color: #ef4444;
+    color: white;
+    border-color: #ef4444;
+}
 
 /* --- Review Mode --- */
-.review-correct { background-color: #d1fae5 !important; border-color: #10b981 !important; color: #065f46 !important; }
-html.dark .review-correct { background-color: rgba(16, 185, 129, 0.2) !important; border-color: #10b981 !important; color: #d1fae5 !important; }
-.review-wrong { background-color: #fee2e2 !important; border-color: #ef4444 !important; color: #991b1b !important; }
-html.dark .review-wrong { background-color: rgba(239, 68, 68, 0.2) !important; border-color: #ef4444 !important; color: #fee2e2 !important; }
+.review-correct {
+    background-color: #d1fae5 !important;
+    border-color: #10b981 !important;
+    color: #065f46 !important;
+}
+
+html.dark .review-correct {
+    background-color: rgba(16, 185, 129, 0.2) !important;
+    border-color: #10b981 !important;
+    color: #d1fae5 !important;
+}
+
+.review-wrong {
+    background-color: #fee2e2 !important;
+    border-color: #ef4444 !important;
+    color: #991b1b !important;
+}
+
+html.dark .review-wrong {
+    background-color: rgba(239, 68, 68, 0.2) !important;
+    border-color: #ef4444 !important;
+    color: #fee2e2 !important;
+}
 
 @keyframes fadeInUp {
-    from { opacity: 0; transform: translateY(20px); }
-    to { opacity: 1; transform: translateY(0); }
+    from {
+        opacity: 0;
+        transform: translateY(20px);
+    }
+
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
 }
-.animate-enter { animation: fadeInUp 0.4s cubic-bezier(0.16, 1, 0.3, 1) forwards; }
+
+.animate-enter {
+    animation: fadeInUp 0.4s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+}
 
 /* Toggle Switch */
-.toggle-checkbox:checked { right: 0; border-color: #2563eb; }
-.toggle-checkbox:checked + .toggle-label { background-color: #2563eb; }
+.toggle-checkbox:checked {
+    right: 0;
+    border-color: #2563eb;
+}
 
-:root { --question-font-size: 16px; }
-.dynamic-text { font-size: var(--question-font-size); line-height: 1.6; }
+.toggle-checkbox:checked+.toggle-label {
+    background-color: #2563eb;
+}
 
-input[type=range] { -webkit-appearance: none; background: transparent; }
-input[type=range]::-webkit-slider-thumb { -webkit-appearance: none; height: 20px; width: 20px; border-radius: 50%; background: #2563eb; cursor: pointer; margin-top: -8px; box-shadow: 0 2px 6px rgba(37, 99, 235, 0.4); }
-input[type=range]::-webkit-slider-runnable-track { width: 100%; height: 4px; cursor: pointer; background: #e2e8f0; border-radius: 2px; }
-html.dark input[type=range]::-webkit-slider-runnable-track { background: #334155; }
+:root {
+    --question-font-size: 16px;
+}
+
+.dynamic-text {
+    font-size: var(--question-font-size);
+    line-height: 1.6;
+}
+
+input[type=range] {
+    -webkit-appearance: none;
+    appearance: none;
+    background: transparent;
+}
+
+input[type=range]::-webkit-slider-thumb {
+    -webkit-appearance: none;
+    height: 20px;
+    width: 20px;
+    border-radius: 50%;
+    background: #2563eb;
+    cursor: pointer;
+    margin-top: -8px;
+    box-shadow: 0 2px 6px rgba(37, 99, 235, 0.4);
+}
+
+input[type=range]::-webkit-slider-runnable-track {
+    width: 100%;
+    height: 4px;
+    cursor: pointer;
+    background: #e2e8f0;
+    border-radius: 2px;
+}
+
+html.dark input[type=range]::-webkit-slider-runnable-track {
+    background: #334155;
+}
+
+/* ============================================================
+   MOBILE RESPONSIVE OPTIMIZATION
+   ============================================================ */
+
+/* Prevent horizontal overflow on all containers */
+* {
+    box-sizing: border-box;
+}
+
+/* Ensure text wraps properly */
+.dynamic-text,
+.font-question {
+    word-wrap: break-word;
+    overflow-wrap: break-word;
+    hyphens: auto;
+}
+
+/* Mobile-specific rules */
+@media screen and (max-width: 768px) {
+
+    /* Base font adjustments */
+    body {
+        font-size: 14px;
+    }
+
+    /* Question cards - prevent content overflow */
+    .question-card {
+        padding: 1rem !important;
+        margin-left: 0.25rem;
+        margin-right: 0.25rem;
+        overflow: hidden;
+    }
+
+    /* Question text container */
+    .question-card .flex-1 {
+        min-width: 0;
+        overflow: hidden;
+    }
+
+    /* Question number badge - smaller on mobile */
+    .question-card>div>div>.w-10 {
+        width: 2rem !important;
+        height: 2rem !important;
+        min-width: 2rem;
+        font-size: 0.75rem;
+    }
+
+    /* Question text - proper wrapping */
+    .question-card .dynamic-text {
+        font-size: var(--question-font-size, 15px);
+        line-height: 1.5;
+        word-break: break-word;
+    }
+
+    /* Option labels - better mobile touch targets */
+    .option-label {
+        min-height: 44px;
+    }
+
+    .option-label>input+div {
+        padding: 0.75rem !important;
+        min-height: 48px;
+    }
+
+    .option-label span.dynamic-text {
+        font-size: 14px !important;
+        word-break: break-word;
+    }
+
+    /* True/False buttons - larger touch targets */
+    .tf-btn {
+        min-width: 3.5rem !important;
+        min-height: 36px;
+        font-size: 0.7rem !important;
+        padding: 0.5rem 0.25rem !important;
+    }
+
+    /* Sub-question rows - stack vertically on very small screens */
+    .sub-question-row {
+        flex-direction: column;
+        align-items: flex-start !important;
+        gap: 0.75rem;
+        padding: 0.75rem !important;
+    }
+
+    .sub-question-row>div:first-child {
+        width: 100%;
+        padding-right: 0 !important;
+    }
+
+    .sub-question-row>div:last-child {
+        width: 100%;
+        justify-content: flex-end;
+    }
+
+    /* Short answer input */
+    #questions-container input[type="text"] {
+        width: 100% !important;
+        font-size: 16px !important;
+        /* Prevent zoom on iOS */
+        padding: 0.75rem !important;
+    }
+
+    /* Question images */
+    .question-card img {
+        max-width: 100%;
+        height: auto;
+        border-radius: 0.5rem;
+    }
+
+    /* Bottom navigation - more padding to avoid gesture conflicts */
+    #mobile-footer {
+        padding: 0.75rem 0.75rem calc(0.75rem + env(safe-area-inset-bottom, 0px)) !important;
+    }
+
+    /* More space at the bottom for mobile footer */
+    #questions-container>div>div {
+        padding-bottom: 6rem !important;
+    }
+
+    /* Mobile palette modal improvements */
+    #mobile-palette>div {
+        max-height: 75vh;
+        padding-bottom: calc(1rem + env(safe-area-inset-bottom, 0px));
+    }
+
+    #mobile-palette-grid {
+        gap: 0.5rem;
+    }
+
+    #mobile-palette-grid button {
+        min-height: 40px;
+        font-size: 0.875rem;
+    }
+
+    /* Header adjustments */
+    .glass-header {
+        padding-left: 0.75rem !important;
+        padding-right: 0.75rem !important;
+    }
+
+    /* Timer on mobile */
+    #exam-timer {
+        font-size: 0.875rem !important;
+        padding: 0.375rem 0.5rem !important;
+    }
+
+    /* Part headers */
+    #part-1-container h3,
+    #part-2-container h3,
+    #part-3-container h3 {
+        font-size: 0.875rem !important;
+    }
+
+    /* Review controls - horizontal scroll on mobile */
+    #review-controls {
+        overflow-x: auto;
+        -webkit-overflow-scrolling: touch;
+    }
+
+    #review-controls>div:first-child {
+        flex-shrink: 0;
+    }
+
+    /* Result page adjustments */
+    #score-display {
+        font-size: 2.5rem !important;
+    }
+
+    /* Make MathJax formulas scrollable on overflow */
+    mjx-container {
+        overflow-x: auto;
+        max-width: 100%;
+        display: block;
+    }
+}
+
+/* Very small screens (iPhone SE, etc) */
+@media screen and (max-width: 375px) {
+    .question-card {
+        padding: 0.75rem !important;
+    }
+
+    .tf-btn {
+        min-width: 3rem !important;
+        font-size: 0.65rem !important;
+    }
+
+    .sub-question-row .dynamic-text {
+        font-size: 13px !important;
+    }
+
+    #exam-timer {
+        font-size: 0.75rem !important;
+    }
+}
+
+/* Fix for iOS safe area */
+@supports (padding-bottom: env(safe-area-inset-bottom)) {
+    #mobile-footer {
+        padding-bottom: calc(0.75rem + env(safe-area-inset-bottom)) !important;
+    }
+}
