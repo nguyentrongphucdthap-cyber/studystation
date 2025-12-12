@@ -578,16 +578,41 @@ export async function deleteVocabSet(vocabId) {
 }
 
 // ============================================================
-// 9. ALLOWED USERS CRUD (Super-Admin Only)
+// 9. ALLOWED USERS CRUD (Admin + Super-Admin)
 // ============================================================
 
 /**
- * Lấy tất cả allowed_users (Super-Admin only)
+ * Helper: Get current user email from Firebase Auth
+ */
+function getCurrentUserEmail() {
+    return auth.currentUser?.email || 'unknown';
+}
+
+/**
+ * Helper: Log whitelist action to Firestore
+ */
+async function logWhitelistAction(action, targetEmail, targetRole) {
+    try {
+        const logsCol = collection(db, 'whitelist_logs');
+        await addDoc(logsCol, {
+            action: action,
+            target_email: targetEmail,
+            target_role: targetRole || 'user',
+            performed_by: getCurrentUserEmail(),
+            timestamp: new Date().toISOString()
+        });
+    } catch (error) {
+        console.error('Failed to log whitelist action:', error);
+    }
+}
+
+/**
+ * Lấy tất cả allowed_users (Admin hoặc Super-Admin)
  * Document ID = email, có field role (ví dụ: "user", "admin", "super-admin")
  */
 export async function getAllAllowedUsers() {
-    if (!checkIsSuperAdmin()) {
-        throw new Error('Không có quyền truy cập. Chỉ Super-Admin mới có thể xem danh sách người dùng.');
+    if (!checkIsAdmin()) {
+        throw new Error('Không có quyền truy cập. Cần quyền Admin để xem danh sách người dùng.');
     }
     const usersCol = collection(db, 'allowed_users');
     const snapshot = await getDocs(usersCol);
@@ -595,23 +620,36 @@ export async function getAllAllowedUsers() {
 }
 
 /**
- * Thêm user mới vào allowed_users (Super-Admin only)
+ * Thêm user mới vào allowed_users (Admin hoặc Super-Admin)
+ * - Admin chỉ được thêm với role = 'user'
+ * - Super-Admin được thêm với bất kỳ role nào
  * @param {string} email - Email của user (sẽ dùng làm document ID)
  * @param {string} role - Role của user (ví dụ: "user", "admin", "super-admin")
  */
 export async function addAllowedUser(email, role = 'user') {
-    if (!checkIsSuperAdmin()) {
-        throw new Error('Không có quyền. Chỉ Super-Admin mới có thể thêm người dùng.');
+    if (!checkIsAdmin()) {
+        throw new Error('Không có quyền. Cần quyền Admin để thêm người dùng.');
     }
+
+    // Admin (không phải Super-Admin) chỉ được thêm user với role = 'user'
+    if (!checkIsSuperAdmin() && role !== 'user') {
+        role = 'user'; // Force role = user cho Admin
+    }
+
     if (!email || !email.includes('@')) {
         throw new Error('Email không hợp lệ.');
     }
+
     const userRef = doc(db, 'allowed_users', email);
     await setDoc(userRef, {
         role: role,
         createdAt: new Date().toISOString(),
         updatedAt: new Date().toISOString()
     });
+
+    // Log action
+    await logWhitelistAction('add', email, role);
+
     return email;
 }
 
@@ -648,13 +686,44 @@ export async function updateUserRole(email, newRole) {
 }
 
 /**
- * Xóa user khỏi allowed_users (Super-Admin only)
+ * Xóa user khỏi allowed_users (Admin hoặc Super-Admin)
  * @param {string} email - Email của user cần xóa
  */
 export async function deleteAllowedUser(email) {
-    if (!checkIsSuperAdmin()) {
-        throw new Error('Không có quyền. Chỉ Super-Admin mới có thể xóa người dùng.');
+    if (!checkIsAdmin()) {
+        throw new Error('Không có quyền. Cần quyền Admin để xóa người dùng.');
     }
+
+    // Get user role before delete (for logging)
+    let targetRole = 'user';
+    try {
+        const userRef = doc(db, 'allowed_users', email);
+        const userDoc = await getDoc(userRef);
+        if (userDoc.exists()) {
+            targetRole = userDoc.data().role || 'user';
+        }
+    } catch (e) { /* ignore */ }
+
     const userRef = doc(db, 'allowed_users', email);
     await deleteDoc(userRef);
+
+    // Log action
+    await logWhitelistAction('delete', email, targetRole);
+}
+
+/**
+ * Lấy lịch sử whitelist logs (Admin hoặc Super-Admin)
+ * @param {number} limit - Số lượng logs tối đa (mặc định 50)
+ */
+export async function getWhitelistLogs(limit = 50) {
+    if (!checkIsAdmin()) {
+        throw new Error('Không có quyền truy cập logs.');
+    }
+    const logsCol = collection(db, 'whitelist_logs');
+    const snapshot = await getDocs(logsCol);
+
+    // Sort by timestamp descending and limit
+    const logs = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+    logs.sort((a, b) => new Date(b.timestamp) - new Date(a.timestamp));
+    return logs.slice(0, limit);
 }
