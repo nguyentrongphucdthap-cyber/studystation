@@ -727,3 +727,67 @@ export async function getWhitelistLogs(limit = 50) {
     logs.sort((a, b) => new Date(b.timestamp) - new Date(a.timestamp));
     return logs.slice(0, limit);
 }
+
+// ============================================================
+// 10. NOTIFICATIONS CRUD
+// ============================================================
+
+/**
+ * Lấy tất cả thông báo (Public - không cần quyền đặc biệt)
+ * Sắp xếp theo createdAt mới nhất
+ */
+export async function getAllNotifications() {
+    const notifCol = collection(db, 'notifications');
+    const snapshot = await getDocs(notifCol);
+    const notifications = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+    // Sort by createdAt descending
+    notifications.sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt));
+    return notifications;
+}
+
+/**
+ * Tạo thông báo mới (Admin only)
+ * @param {object} data - { title, content, author, isNew }
+ */
+export async function createNotification(data) {
+    if (!checkIsAdmin()) {
+        throw new Error('Không có quyền. Cần quyền Admin để tạo thông báo.');
+    }
+    const notifCol = collection(db, 'notifications');
+    const docRef = await addDoc(notifCol, {
+        title: data.title || '',
+        content: data.content || '',
+        author: data.author || '',
+        isNew: data.isNew !== undefined ? data.isNew : true,
+        createdAt: new Date().toISOString()
+    });
+    return docRef.id;
+}
+
+/**
+ * Cập nhật thông báo (Admin only)
+ * @param {string} notifId - ID của thông báo
+ * @param {object} data - Dữ liệu cần cập nhật
+ */
+export async function updateNotification(notifId, data) {
+    if (!checkIsAdmin()) {
+        throw new Error('Không có quyền. Cần quyền Admin để cập nhật thông báo.');
+    }
+    const notifRef = doc(db, 'notifications', notifId);
+    await setDoc(notifRef, {
+        ...data,
+        updatedAt: new Date().toISOString()
+    }, { merge: true });
+}
+
+/**
+ * Xóa thông báo (Admin only)
+ * @param {string} notifId - ID của thông báo cần xóa
+ */
+export async function deleteNotification(notifId) {
+    if (!checkIsAdmin()) {
+        throw new Error('Không có quyền. Cần quyền Admin để xóa thông báo.');
+    }
+    const notifRef = doc(db, 'notifications', notifId);
+    await deleteDoc(notifRef);
+}
