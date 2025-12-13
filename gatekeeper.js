@@ -516,6 +516,7 @@ export async function updateEtestExam(examId, examData) {
 
 /**
  * Xóa E-test exam
+ * Note: Firebase deleteDoc doesn't throw on permission denied, so we verify after
  */
 export async function deleteEtestExam(examId) {
     console.log('[deleteEtestExam] Deleting exam:', examId);
@@ -524,8 +525,21 @@ export async function deleteEtestExam(examId) {
     }
 
     const examRef = doc(db, 'etest_exams', examId);
+
+    // Execute delete
     await deleteDoc(examRef);
-    console.log('[deleteEtestExam] Delete completed for:', examId);
+
+    // Wait a moment for Firestore to sync
+    await new Promise(resolve => setTimeout(resolve, 500));
+
+    // Verify the document was actually deleted
+    const checkDoc = await getDoc(examRef);
+    if (checkDoc.exists()) {
+        console.error('[deleteEtestExam] Document still exists after delete - permission denied by Firestore rules');
+        throw new Error('Không có quyền xóa. Hãy kiểm tra Firestore Security Rules.');
+    }
+
+    console.log('[deleteEtestExam] Verified deleted:', examId);
 }
 
 // ============================================================
