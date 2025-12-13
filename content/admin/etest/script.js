@@ -435,9 +435,25 @@ function renderQuestions(section) {
 }
 
 function getOptionText(options, letter) {
-    if (!options) return '';
+    if (!options || !Array.isArray(options)) return '';
+
+    // First try to find option with prefix like "A." or "A "
     const opt = options.find(o => o.startsWith(letter + '.') || o.startsWith(letter + ' '));
-    return opt ? opt.substring(2).trim() : '';
+    if (opt) {
+        return opt.substring(2).trim();
+    }
+
+    // Fallback: if no prefix found, use array index
+    const letterIndex = ['A', 'B', 'C', 'D'].indexOf(letter);
+    if (letterIndex >= 0 && letterIndex < options.length) {
+        const rawOpt = options[letterIndex];
+        // Check if it has prefix, if yes remove it, if not return as is
+        if (rawOpt.match(/^[A-D][.\s]/)) {
+            return rawOpt.substring(2).trim();
+        }
+        return rawOpt;
+    }
+    return '';
 }
 
 function escapeHtml(str) {
@@ -767,6 +783,7 @@ async function confirmTextImport() {
         showToast(`Đã import thành công E-test: ${textImportData.title}`);
         hideTextImportModal();
         await loadExams();
+        showEditor(newId);
 
     } catch (error) {
         console.error('Error importing E-test:', error);
