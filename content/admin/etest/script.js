@@ -237,8 +237,29 @@ function showEditor(examId = null) {
         refs.examCustomId.value = exam.id || '';
         refs.examCustomId.disabled = true;
 
-        // Load sections
-        state.sections = exam.sections ? JSON.parse(JSON.stringify(exam.sections)) : [];
+        // Load sections with answer normalization
+        state.sections = exam.sections ? JSON.parse(JSON.stringify(exam.sections)).map(section => {
+            // Generate section ID if missing
+            if (!section.id) {
+                section.id = 'sec_' + Date.now() + '_' + Math.random().toString(36).substr(2, 5);
+            }
+
+            // Normalize questions
+            if (section.questions) {
+                section.questions = section.questions.map(q => {
+                    // Normalize answer: handle correctAnswer alias and prefix (e.g., "A." -> "A")
+                    let answer = q.ans || q.correctAnswer || q.answer || '';
+                    if (typeof answer === 'string') {
+                        answer = answer.trim().toUpperCase().replace(/[.\s]/g, '').charAt(0);
+                        if (['A', 'B', 'C', 'D'].includes(answer)) {
+                            q.ans = answer;
+                        }
+                    }
+                    return q;
+                });
+            }
+            return section;
+        }) : [];
 
         refs.btnDelete.classList.remove('hidden');
         refs.btnExport.classList.remove('hidden');
@@ -598,6 +619,11 @@ async function saveExam() {
 // ============================================================
 
 function showDeleteModal() {
+    console.log('[Delete Modal] Opening modal, currentExamId:', state.currentExamId);
+    if (!refs.deleteModal) {
+        console.error('[Delete Modal] Modal element not found!');
+        return;
+    }
     refs.deleteModal.classList.remove('hidden');
 }
 
@@ -606,16 +632,24 @@ function hideDeleteModal() {
 }
 
 async function confirmDelete() {
-    if (!state.currentExamId) return;
+    console.log('[Delete] Starting delete, currentExamId:', state.currentExamId);
+
+    if (!state.currentExamId) {
+        console.error('[Delete] No exam selected!');
+        showToast('Không có bài thi nào được chọn', 'error');
+        return;
+    }
 
     try {
+        console.log('[Delete] Calling deleteEtestExam...');
         await deleteEtestExam(state.currentExamId);
+        console.log('[Delete] Successfully deleted');
         showToast('Đã xóa E-test');
         hideDeleteModal();
         hideEditor();
         await loadExams();
     } catch (error) {
-        console.error('Delete error:', error);
+        console.error('[Delete] Error:', error);
         showToast('Lỗi khi xóa: ' + error.message, 'error');
     }
 }
