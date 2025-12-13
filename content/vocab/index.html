@@ -670,117 +670,108 @@
         </div>
     </template>
 
-    <!-- Music Player Floating Panel -->
-    <div id="music-overlay" class="hidden fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-30"></div>
-    <div id="music-panel"
-        class="hidden fixed inset-0 md:inset-auto md:inset-x-3 md:top-1/2 md:-translate-y-1/2 w-full md:max-w-md md:mx-auto bg-white dark:bg-dark-card md:border md:border-slate-200 md:dark:border-slate-700 md:rounded-3xl shadow-2xl shadow-indigo-200/40 dark:shadow-none z-40 flex flex-col overflow-hidden">
+    <!-- Music Player - Bottom Sheet Design -->
+    <div id="music-overlay" class="hidden fixed inset-0 bg-black/50 z-40" onclick="toggleMusicPanel(false)"></div>
 
-        <!-- Header - Always visible -->
-        <div
-            class="flex-shrink-0 flex items-center justify-between p-4 border-b border-slate-100 dark:border-slate-700 bg-gradient-to-r from-indigo-50 to-purple-50 dark:from-slate-800 dark:to-slate-800">
-            <div class="flex items-center gap-3">
-                <div class="w-10 h-10 bg-indigo-600 rounded-xl flex items-center justify-center text-white shadow-lg">
-                    <i class="ph-fill ph-music-notes text-xl"></i>
-                </div>
-                <div>
-                    <p class="text-sm font-bold text-slate-800 dark:text-white">Âm nhạc học tập</p>
-                    <p class="text-xs text-slate-500 dark:text-slate-400">Nhạc nền YouTube</p>
-                </div>
-            </div>
+    <div id="music-panel"
+        class="hidden fixed bottom-0 left-0 right-0 md:bottom-auto md:left-1/2 md:top-1/2 md:-translate-x-1/2 md:-translate-y-1/2 md:w-full md:max-w-sm bg-white dark:bg-slate-900 rounded-t-3xl md:rounded-3xl shadow-2xl z-50 max-h-[85vh] md:max-h-[80vh] flex flex-col safe-bottom">
+
+        <!-- Drag Handle (mobile indicator) -->
+        <div class="flex justify-center pt-3 pb-1 md:hidden">
+            <div class="w-10 h-1 bg-slate-300 dark:bg-slate-600 rounded-full"></div>
+        </div>
+
+        <!-- Header with Close -->
+        <div class="flex items-center justify-between px-5 py-3">
+            <h2 class="text-lg font-bold text-slate-800 dark:text-white">🎵 Nhạc học tập</h2>
             <button type="button" onclick="toggleMusicPanel(false)"
-                class="w-10 h-10 rounded-xl bg-white dark:bg-slate-700 border border-slate-200 dark:border-slate-600 text-slate-500 hover:text-slate-700 dark:hover:text-white flex items-center justify-center transition-colors"
+                class="w-8 h-8 rounded-full bg-slate-100 dark:bg-slate-800 text-slate-500 dark:text-slate-400 flex items-center justify-center"
                 aria-label="Đóng">
-                <i class="ph ph-x text-xl"></i>
+                <i class="ph ph-x text-lg"></i>
             </button>
         </div>
 
-        <!-- Now Playing - Main Controls -->
-        <div class="flex-shrink-0 p-4 bg-slate-50 dark:bg-slate-900/50 border-b border-slate-100 dark:border-slate-700">
+        <!-- Now Playing Info -->
+        <div class="px-5 pb-2">
             <p id="music-current-title"
-                class="text-lg font-bold text-slate-800 dark:text-white text-center mb-4 truncate px-4">
-                Chưa chọn bài hát
+                class="text-center text-sm font-medium text-slate-600 dark:text-slate-300 truncate">
+                Chưa chọn bài
             </p>
+        </div>
 
-            <!-- Large Control Buttons -->
-            <div class="flex items-center justify-center gap-4 mb-4">
+        <!-- Main Controls - Large and Easy to Tap -->
+        <div class="px-5 py-4 bg-slate-50 dark:bg-slate-800/50">
+            <div class="flex items-center justify-center gap-6">
                 <button type="button" id="music-prev-btn"
-                    class="w-14 h-14 rounded-full bg-white dark:bg-dark-card border-2 border-slate-200 dark:border-slate-600 text-slate-600 dark:text-slate-300 hover:border-indigo-400 hover:text-indigo-600 dark:hover:text-indigo-300 transition-all active:scale-95 flex items-center justify-center shadow-sm"
-                    aria-label="Bài trước">
-                    <i class="ph-fill ph-skip-back text-2xl"></i>
+                    class="w-12 h-12 rounded-full bg-white dark:bg-slate-700 border border-slate-200 dark:border-slate-600 text-slate-600 dark:text-slate-300 flex items-center justify-center shadow-md active:scale-90 transition-transform"
+                    aria-label="Trước">
+                    <i class="ph-fill ph-skip-back text-xl"></i>
                 </button>
                 <button type="button" id="music-play-btn"
-                    class="w-20 h-20 rounded-full bg-indigo-600 hover:bg-indigo-700 text-white shadow-xl shadow-indigo-200 dark:shadow-none transition-all active:scale-95 flex items-center justify-center"
-                    aria-label="Phát nhạc">
-                    <i class="ph-fill ph-play text-4xl"></i>
+                    class="w-16 h-16 rounded-full bg-indigo-600 text-white flex items-center justify-center shadow-lg shadow-indigo-300 dark:shadow-none active:scale-90 transition-transform"
+                    aria-label="Phát/Dừng">
+                    <i class="ph-fill ph-play text-3xl"></i>
                 </button>
                 <button type="button" id="music-next-btn"
-                    class="w-14 h-14 rounded-full bg-white dark:bg-dark-card border-2 border-slate-200 dark:border-slate-600 text-slate-600 dark:text-slate-300 hover:border-indigo-400 hover:text-indigo-600 dark:hover:text-indigo-300 transition-all active:scale-95 flex items-center justify-center shadow-sm"
-                    aria-label="Bài tiếp">
-                    <i class="ph-fill ph-skip-forward text-2xl"></i>
+                    class="w-12 h-12 rounded-full bg-white dark:bg-slate-700 border border-slate-200 dark:border-slate-600 text-slate-600 dark:text-slate-300 flex items-center justify-center shadow-md active:scale-90 transition-transform"
+                    aria-label="Tiếp">
+                    <i class="ph-fill ph-skip-forward text-xl"></i>
                 </button>
             </div>
 
-            <!-- Volume Control -->
-            <div class="flex items-center gap-3 px-2">
-                <i class="ph-fill ph-speaker-simple-low text-lg text-slate-400"></i>
+            <!-- Volume -->
+            <div class="flex items-center gap-3 mt-4 px-2">
+                <i class="ph-fill ph-speaker-low text-slate-400 text-lg"></i>
                 <input id="music-volume" type="range" min="0" max="100" value="60"
-                    class="flex-1 h-2 accent-indigo-600 cursor-pointer touch-manipulation">
+                    class="flex-1 h-1.5 rounded-full accent-indigo-600 cursor-pointer">
                 <span id="music-volume-value"
-                    class="text-sm font-bold text-slate-600 dark:text-slate-300 w-10 text-right">60%</span>
+                    class="text-xs font-medium text-slate-500 dark:text-slate-400 w-8 text-right">60%</span>
             </div>
         </div>
 
-        <!-- Scrollable Content -->
-        <div class="flex-1 overflow-y-auto p-4 space-y-4">
-            <!-- Add Custom Track -->
-            <div class="bg-white dark:bg-slate-800 rounded-2xl border border-slate-200 dark:border-slate-700 p-4">
-                <p class="text-xs font-bold uppercase tracking-wider text-slate-400 dark:text-slate-500 mb-3">
-                    Thêm nhạc của bạn
-                </p>
-                <form id="music-add-form" class="space-y-3">
-                    <input id="music-url-input" type="text" placeholder="Dán link YouTube..."
-                        class="w-full px-4 py-3 rounded-xl border border-slate-200 dark:border-slate-600 bg-slate-50 dark:bg-slate-900 text-sm text-slate-700 dark:text-slate-100 focus:outline-none focus:ring-2 focus:ring-indigo-500"
-                        autocomplete="off" inputmode="url">
-                    <button type="submit"
-                        class="w-full py-3 rounded-xl bg-indigo-600 hover:bg-indigo-700 text-white font-bold transition-colors active:scale-98">
-                        <i class="ph ph-plus-circle mr-2"></i> Thêm vào danh sách
-                    </button>
-                    <p id="music-feedback" class="text-xs text-slate-500 dark:text-slate-400 text-center min-h-[1rem]">
-                    </p>
-                </form>
-            </div>
+        <!-- Scrollable Content: Playlist + Add -->
+        <div class="flex-1 overflow-y-auto px-5 py-4 space-y-4">
 
-            <!-- Playlist -->
-            <div class="bg-white dark:bg-slate-800 rounded-2xl border border-slate-200 dark:border-slate-700 p-4">
-                <div class="flex items-center justify-between mb-3">
-                    <p class="text-xs font-bold uppercase tracking-wider text-slate-400 dark:text-slate-500">
-                        Danh sách phát
-                    </p>
-                    <span class="text-xs text-slate-400 dark:text-slate-500" id="music-track-count"></span>
-                </div>
-                <div id="music-track-list" class="space-y-2 max-h-60 overflow-y-auto music-scroll">
+            <!-- Playlist Section -->
+            <div>
+                <p class="text-xs font-bold uppercase text-slate-400 mb-2">Danh sách phát</p>
+                <div id="music-track-list" class="space-y-1.5 max-h-40 overflow-y-auto">
                     <!-- Tracks injected via JS -->
                 </div>
             </div>
+
+            <!-- Add Track Section -->
+            <div class="pt-2 border-t border-slate-100 dark:border-slate-800">
+                <p class="text-xs font-bold uppercase text-slate-400 mb-2">Thêm nhạc YouTube</p>
+                <form id="music-add-form" class="flex gap-2">
+                    <input id="music-url-input" type="text" placeholder="Dán link..."
+                        class="flex-1 px-3 py-2.5 rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500"
+                        autocomplete="off" inputmode="url">
+                    <button type="submit"
+                        class="px-4 py-2.5 rounded-xl bg-indigo-600 text-white text-sm font-semibold active:scale-95 transition-transform">
+                        <i class="ph ph-plus"></i>
+                    </button>
+                </form>
+                <p id="music-feedback" class="text-xs text-slate-500 mt-1 min-h-[1rem]"></p>
+            </div>
         </div>
 
-        <!-- Mini Controls Hidden (for compact mode toggle) -->
-        <div id="music-mini-controls" class="hidden">
-            <p id="music-mini-title" class="hidden"></p>
-            <button type="button" id="music-mini-expand" class="hidden"></button>
-            <button type="button" id="music-mini-prev" class="hidden"></button>
-            <button type="button" id="music-mini-play" class="hidden"></button>
-            <button type="button" id="music-mini-next" class="hidden"></button>
+        <!-- Hidden elements for JS compatibility -->
+        <div class="hidden">
+            <div id="music-mini-controls">
+                <p id="music-mini-title"></p>
+                <button type="button" id="music-mini-expand"></button>
+                <button type="button" id="music-mini-prev"></button>
+                <button type="button" id="music-mini-play"></button>
+                <button type="button" id="music-mini-next"></button>
+            </div>
+            <div id="music-artwork-wrapper">
+                <button type="button" id="music-artwork-toggle"></button>
+                <img id="music-artwork" src="" alt="">
+            </div>
+            <button type="button" id="music-compact-btn"></button>
+            <span id="music-track-count"></span>
         </div>
-
-        <!-- Artwork wrapper (hidden by default) -->
-        <div id="music-artwork-wrapper" class="hidden">
-            <button type="button" id="music-artwork-toggle" class="hidden"></button>
-            <img id="music-artwork" src="" alt="" class="hidden">
-        </div>
-
-        <!-- Compact mode button (hidden) -->
-        <button type="button" id="music-compact-btn" class="hidden"></button>
     </div>
     <div id="music-player-host" class="hidden"></div>
 
