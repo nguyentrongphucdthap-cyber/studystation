@@ -2073,20 +2073,55 @@ function handleLearnAnswer(selectedId, questionItem, btn) {
         trackWordLearned(correctId, sourceSetId);
         // If correct in relearn mode, remove from weak words
         if (isRelearnMode) clearWeakWordEntries([{ wordId: correctId, sourceSetId }]);
+
+        // Auto advance after correct answer
+        setTimeout(() => {
+            learnIndex++;
+            if (learnIndex < learnQuestions.length) {
+                renderLearnQuestion();
+            } else {
+                finishLearn();
+            }
+        }, 800);
     } else {
         btn.classList.add('anim-wrong');
         learnStats.wrong++;
         recordSessionWrong(correctId, sourceSetId);
-    }
 
-    setTimeout(() => {
-        learnIndex++;
-        if (learnIndex < learnQuestions.length) {
-            renderLearnQuestion();
-        } else {
-            finishLearn();
-        }
-    }, 1000);
+        // Highlight correct answer in green
+        const optionsGrid = document.getElementById('learn-options');
+        const allButtons = optionsGrid.querySelectorAll('button');
+        allButtons.forEach(optBtn => {
+            // Find the correct answer button by matching content
+            const correctWord = questionItem.isEngToViet ? questionItem.meaning : questionItem.word;
+            if (optBtn.textContent === correctWord) {
+                optBtn.classList.remove('border-slate-200', 'dark:border-slate-700', 'bg-white', 'dark:bg-slate-800');
+                optBtn.classList.add('border-green-500', 'bg-green-50', 'dark:bg-green-900/40', 'text-green-700', 'dark:text-green-300', 'font-bold');
+            }
+            // Disable all buttons
+            optBtn.disabled = true;
+            optBtn.classList.add('cursor-not-allowed', 'opacity-80');
+        });
+
+        // Add Continue button
+        const continueBtn = document.createElement('button');
+        continueBtn.className = 'mt-4 w-full py-3 px-6 bg-indigo-600 hover:bg-indigo-700 text-white font-bold rounded-xl transition-all shadow-lg flex items-center justify-center gap-2';
+        continueBtn.innerHTML = `
+            <span>Tiếp tục</span>
+            <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"/>
+            </svg>
+        `;
+        continueBtn.onclick = () => {
+            learnIndex++;
+            if (learnIndex < learnQuestions.length) {
+                renderLearnQuestion();
+            } else {
+                finishLearn();
+            }
+        };
+        optionsGrid.appendChild(continueBtn);
+    }
 }
 
 function finishLearn() {
