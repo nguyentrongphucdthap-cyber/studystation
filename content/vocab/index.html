@@ -673,147 +673,117 @@
     <!-- Music Player Floating Panel -->
     <div id="music-overlay" class="hidden fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-30"></div>
     <div id="music-panel"
-        class="hidden fixed inset-x-3 top-1/2 -translate-y-1/2 w-full max-w-md mx-auto bg-white dark:bg-dark-card border border-slate-200 dark:border-slate-700 rounded-3xl shadow-2xl shadow-indigo-200/40 dark:shadow-none z-40 p-3 md:p-6 space-y-4 overflow-y-auto overflow-x-hidden max-h-[50vh] music-scroll">
-        <div class="flex items-start justify-between gap-3">
-            <div>
-                <p class="text-xs font-bold uppercase tracking-widest text-slate-400 dark:text-slate-500">Âm nhạc học
-                    tập</p>
-                <p class="text-sm text-slate-500 dark:text-slate-400">Nhạc nền YouTube nhẹ nhàng cho lúc học.</p>
-            </div>
-            <div class="flex items-center gap-1">
-                <button type="button" id="music-compact-btn"
-                    class="p-2 rounded-full text-slate-400 hover:text-indigo-600 dark:hover:text-indigo-300 hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors"
-                    aria-label="Thu nhỏ giao diện âm nhạc">
-                    <i class="ph ph-minimize text-lg"></i>
-                </button>
-                <button type="button" onclick="toggleMusicPanel(false)"
-                    class="p-2 rounded-full text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors"
-                    aria-label="Ẩn bảng âm nhạc">
-                    <i class="ph ph-x text-lg"></i>
-                </button>
-            </div>
-        </div>
+        class="hidden fixed inset-0 md:inset-auto md:inset-x-3 md:top-1/2 md:-translate-y-1/2 w-full md:max-w-md md:mx-auto bg-white dark:bg-dark-card md:border md:border-slate-200 md:dark:border-slate-700 md:rounded-3xl shadow-2xl shadow-indigo-200/40 dark:shadow-none z-40 flex flex-col overflow-hidden">
 
-        <div id="music-mini-controls"
-            class="rounded-2xl border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-900/40 p-3 flex flex-col gap-3 shadow-sm">
+        <!-- Header - Always visible -->
+        <div
+            class="flex-shrink-0 flex items-center justify-between p-4 border-b border-slate-100 dark:border-slate-700 bg-gradient-to-r from-indigo-50 to-purple-50 dark:from-slate-800 dark:to-slate-800">
             <div class="flex items-center gap-3">
-                <div class="flex-1">
-                    <p class="text-[10px] font-semibold uppercase tracking-widest text-slate-400 dark:text-slate-500">
-                        Mini player</p>
-                    <p id="music-mini-title" class="text-sm font-bold text-slate-800 dark:text-white truncate">Chưa chọn
-                        bài hát</p>
+                <div class="w-10 h-10 bg-indigo-600 rounded-xl flex items-center justify-center text-white shadow-lg">
+                    <i class="ph-fill ph-music-notes text-xl"></i>
                 </div>
-                <button type="button" id="music-mini-expand"
-                    class="p-2 rounded-xl border border-slate-200 dark:border-slate-700 text-slate-500 hover:border-indigo-300 hover:text-indigo-600 dark:hover:border-indigo-500 dark:hover:text-indigo-300 transition-colors"
-                    aria-label="Mở rộng bảng âm nhạc">
-                    <i class="ph ph-arrows-in text-lg"></i>
+                <div>
+                    <p class="text-sm font-bold text-slate-800 dark:text-white">Âm nhạc học tập</p>
+                    <p class="text-xs text-slate-500 dark:text-slate-400">Nhạc nền YouTube</p>
+                </div>
+            </div>
+            <button type="button" onclick="toggleMusicPanel(false)"
+                class="w-10 h-10 rounded-xl bg-white dark:bg-slate-700 border border-slate-200 dark:border-slate-600 text-slate-500 hover:text-slate-700 dark:hover:text-white flex items-center justify-center transition-colors"
+                aria-label="Đóng">
+                <i class="ph ph-x text-xl"></i>
+            </button>
+        </div>
+
+        <!-- Now Playing - Main Controls -->
+        <div class="flex-shrink-0 p-4 bg-slate-50 dark:bg-slate-900/50 border-b border-slate-100 dark:border-slate-700">
+            <p id="music-current-title"
+                class="text-lg font-bold text-slate-800 dark:text-white text-center mb-4 truncate px-4">
+                Chưa chọn bài hát
+            </p>
+
+            <!-- Large Control Buttons -->
+            <div class="flex items-center justify-center gap-4 mb-4">
+                <button type="button" id="music-prev-btn"
+                    class="w-14 h-14 rounded-full bg-white dark:bg-dark-card border-2 border-slate-200 dark:border-slate-600 text-slate-600 dark:text-slate-300 hover:border-indigo-400 hover:text-indigo-600 dark:hover:text-indigo-300 transition-all active:scale-95 flex items-center justify-center shadow-sm"
+                    aria-label="Bài trước">
+                    <i class="ph-fill ph-skip-back text-2xl"></i>
+                </button>
+                <button type="button" id="music-play-btn"
+                    class="w-20 h-20 rounded-full bg-indigo-600 hover:bg-indigo-700 text-white shadow-xl shadow-indigo-200 dark:shadow-none transition-all active:scale-95 flex items-center justify-center"
+                    aria-label="Phát nhạc">
+                    <i class="ph-fill ph-play text-4xl"></i>
+                </button>
+                <button type="button" id="music-next-btn"
+                    class="w-14 h-14 rounded-full bg-white dark:bg-dark-card border-2 border-slate-200 dark:border-slate-600 text-slate-600 dark:text-slate-300 hover:border-indigo-400 hover:text-indigo-600 dark:hover:text-indigo-300 transition-all active:scale-95 flex items-center justify-center shadow-sm"
+                    aria-label="Bài tiếp">
+                    <i class="ph-fill ph-skip-forward text-2xl"></i>
                 </button>
             </div>
-            <div class="flex items-center gap-2 justify-between">
-                <button type="button" id="music-mini-prev"
-                    class="flex-1 px-3 py-2 rounded-2xl bg-white dark:bg-dark-card border border-slate-200 dark:border-slate-700 text-slate-500 hover:text-indigo-600 hover:border-indigo-200 dark:hover:text-indigo-300 dark:hover:border-indigo-500 transition-colors"
-                    aria-label="Bài trước (mini)">
-                    <i class="ph ph-skip-back text-lg"></i>
-                </button>
-                <button type="button" id="music-mini-play"
-                    class="w-12 h-12 rounded-full bg-indigo-600 hover:bg-indigo-700 text-white flex items-center justify-center shadow-lg transition-all"
-                    aria-label="Phát nhạc (mini)">
-                    <i class="ph ph-play text-xl"></i>
-                </button>
-                <button type="button" id="music-mini-next"
-                    class="flex-1 px-3 py-2 rounded-2xl bg-white dark:bg-dark-card border border-slate-200 dark:border-slate-700 text-slate-500 hover:text-indigo-600 hover:border-indigo-200 dark:hover:text-indigo-300 dark:hover:border-indigo-500 transition-colors"
-                    aria-label="Bài tiếp theo (mini)">
-                    <i class="ph ph-skip-forward text-lg"></i>
-                </button>
+
+            <!-- Volume Control -->
+            <div class="flex items-center gap-3 px-2">
+                <i class="ph-fill ph-speaker-simple-low text-lg text-slate-400"></i>
+                <input id="music-volume" type="range" min="0" max="100" value="60"
+                    class="flex-1 h-2 accent-indigo-600 cursor-pointer touch-manipulation">
+                <span id="music-volume-value"
+                    class="text-sm font-bold text-slate-600 dark:text-slate-300 w-10 text-right">60%</span>
             </div>
         </div>
 
-        <div id="music-full-sections" class="space-y-4">
-            <form id="music-add-form" class="space-y-2">
-                <label for="music-url-input"
-                    class="text-xs font-semibold uppercase tracking-widest text-slate-400 dark:text-slate-500">Thêm link
-                    YouTube của bạn</label>
-                <div class="flex flex-col sm:flex-row gap-2">
-                    <input id="music-url-input" type="text" placeholder="https://www.youtube.com/watch?v=..."
-                        class="flex-1 px-4 py-3 rounded-2xl border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800 text-sm text-slate-700 dark:text-slate-100 focus:outline-none focus:ring-2 focus:ring-indigo-500"
+        <!-- Scrollable Content -->
+        <div class="flex-1 overflow-y-auto p-4 space-y-4">
+            <!-- Add Custom Track -->
+            <div class="bg-white dark:bg-slate-800 rounded-2xl border border-slate-200 dark:border-slate-700 p-4">
+                <p class="text-xs font-bold uppercase tracking-wider text-slate-400 dark:text-slate-500 mb-3">
+                    Thêm nhạc của bạn
+                </p>
+                <form id="music-add-form" class="space-y-3">
+                    <input id="music-url-input" type="text" placeholder="Dán link YouTube..."
+                        class="w-full px-4 py-3 rounded-xl border border-slate-200 dark:border-slate-600 bg-slate-50 dark:bg-slate-900 text-sm text-slate-700 dark:text-slate-100 focus:outline-none focus:ring-2 focus:ring-indigo-500"
                         autocomplete="off" inputmode="url">
                     <button type="submit"
-                        class="px-4 py-3 rounded-2xl bg-indigo-600 hover:bg-indigo-700 text-white text-sm font-semibold transition-colors btn-press">Thêm</button>
-                </div>
-                <p id="music-feedback" class="text-xs text-slate-500 dark:text-slate-400 min-h-[1.5rem]"></p>
-            </form>
+                        class="w-full py-3 rounded-xl bg-indigo-600 hover:bg-indigo-700 text-white font-bold transition-colors active:scale-98">
+                        <i class="ph ph-plus-circle mr-2"></i> Thêm vào danh sách
+                    </button>
+                    <p id="music-feedback" class="text-xs text-slate-500 dark:text-slate-400 text-center min-h-[1rem]">
+                    </p>
+                </form>
+            </div>
 
-            <div class="space-y-3">
-                <div>
-                    <h3 class="text-sm font-semibold text-slate-700 dark:text-slate-200 uppercase tracking-wide">Album
-                        nhạc</h3>
-                    <p class="text-xs text-slate-400 dark:text-slate-500">Preset + playlist riêng của bạn</p>
+            <!-- Playlist -->
+            <div class="bg-white dark:bg-slate-800 rounded-2xl border border-slate-200 dark:border-slate-700 p-4">
+                <div class="flex items-center justify-between mb-3">
+                    <p class="text-xs font-bold uppercase tracking-wider text-slate-400 dark:text-slate-500">
+                        Danh sách phát
+                    </p>
+                    <span class="text-xs text-slate-400 dark:text-slate-500" id="music-track-count"></span>
                 </div>
-                <div id="music-track-list"
-                    class="space-y-2 max-h-64 md:max-h-56 overflow-y-auto overflow-x-hidden pr-1 music-scroll">
+                <div id="music-track-list" class="space-y-2 max-h-60 overflow-y-auto music-scroll">
                     <!-- Tracks injected via JS -->
                 </div>
             </div>
-
-            <div
-                class="rounded-2xl border border-slate-100 dark:border-slate-700 bg-slate-50 dark:bg-slate-900/50 p-4 space-y-4">
-                <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-1">
-                    <div>
-                        <p class="text-xs uppercase tracking-widest text-slate-400 dark:text-slate-500 font-semibold">
-                            Đang phát</p>
-                        <p id="music-current-title"
-                            class="text-lg font-bold text-slate-800 dark:text-white mt-1 truncate">Chưa chọn bài hát</p>
-                    </div>
-                    <div class="flex items-center gap-2">
-                        <button type="button" id="music-open-youtube"
-                            class="mt-2 sm:mt-0 px-3 py-2 rounded-xl text-xs font-semibold border border-slate-200 dark:border-slate-700 text-slate-600 dark:text-slate-200 hover:border-indigo-300 hover:text-indigo-600 dark:hover:text-indigo-300 transition-colors hidden">
-                            Mở trên YouTube
-                        </button>
-                    </div>
-                </div>
-                <div class="flex flex-wrap items-center justify-center gap-3">
-                    <button type="button" id="music-prev-btn"
-                        class="flex-1 min-w-[80px] w-14 h-14 rounded-2xl bg-white dark:bg-dark-card border border-slate-200 dark:border-slate-700 text-slate-500 hover:text-indigo-600 hover:border-indigo-200 dark:hover:text-indigo-300 dark:hover:border-indigo-500 transition-all btn-press"
-                        aria-label="Bài trước">
-                        <i class="ph ph-skip-back text-xl"></i>
-                    </button>
-                    <button type="button" id="music-play-btn"
-                        class="w-16 h-16 rounded-full bg-indigo-600 hover:bg-indigo-700 text-white shadow-lg transition-all btn-press flex items-center justify-center"
-                        aria-label="Phát nhạc">
-                        <i class="ph ph-play text-3xl"></i>
-                    </button>
-                    <button type="button" id="music-next-btn"
-                        class="flex-1 min-w-[80px] w-14 h-14 rounded-2xl bg-white dark:bg-dark-card border border-slate-200 dark:border-slate-700 text-slate-500 hover:text-indigo-600 hover:border-indigo-200 dark:hover:text-indigo-300 dark:hover:border-indigo-500 transition-all btn-press"
-                        aria-label="Bài tiếp theo">
-                        <i class="ph ph-skip-forward text-xl"></i>
-                    </button>
-                </div>
-                <div class="flex items-center gap-3">
-                    <i class="ph ph-speaker-simple-low text-slate-400 dark:text-slate-500"></i>
-                    <input id="music-volume" type="range" min="0" max="100" value="60"
-                        class="flex-1 accent-indigo-600 cursor-pointer touch-manipulation">
-                    <span id="music-volume-value"
-                        class="text-xs font-semibold text-slate-600 dark:text-slate-300 w-12 text-right">60%</span>
-                </div>
-            </div>
-
-            <div id="music-artwork-wrapper"
-                class="rounded-2xl border border-slate-100 dark:border-slate-700 bg-white/70 dark:bg-slate-900/50 p-4 space-y-3 hidden">
-                <div class="flex items-center justify-between">
-                    <p class="text-xs uppercase tracking-widest text-slate-400 dark:text-slate-500 font-semibold">Hình
-                        ảnh bài hát</p>
-                    <button type="button" id="music-artwork-toggle"
-                        class="px-3 py-1 text-xs font-semibold rounded-xl border border-slate-200 dark:border-slate-700 text-slate-500 dark:text-slate-300 hover:border-indigo-300 hover:text-indigo-600 dark:hover:text-indigo-300 transition-colors">Ẩn
-                        ảnh</button>
-                </div>
-                <img id="music-artwork" src="" alt="Artwork bài hát"
-                    class="w-full aspect-video rounded-2xl object-cover border border-slate-100 dark:border-slate-800 shadow-sm">
-            </div>
         </div>
-        <p class="text-xs text-center text-slate-400 dark:text-slate-500 pb-2">Nhạc phát ngầm qua YouTube, có thể thu
-            gọn bất kỳ lúc nào.</p>
+
+        <!-- Mini Controls Hidden (for compact mode toggle) -->
+        <div id="music-mini-controls" class="hidden">
+            <p id="music-mini-title" class="hidden"></p>
+            <button type="button" id="music-mini-expand" class="hidden"></button>
+            <button type="button" id="music-mini-prev" class="hidden"></button>
+            <button type="button" id="music-mini-play" class="hidden"></button>
+            <button type="button" id="music-mini-next" class="hidden"></button>
+        </div>
+
+        <!-- Artwork wrapper (hidden by default) -->
+        <div id="music-artwork-wrapper" class="hidden">
+            <button type="button" id="music-artwork-toggle" class="hidden"></button>
+            <img id="music-artwork" src="" alt="" class="hidden">
+        </div>
+
+        <!-- Compact mode button (hidden) -->
+        <button type="button" id="music-compact-btn" class="hidden"></button>
     </div>
     <div id="music-player-host" class="hidden"></div>
+
 
     <!-- App Logic -->
     <script src="script.js"></script>
