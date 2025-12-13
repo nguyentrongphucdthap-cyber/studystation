@@ -518,8 +518,32 @@ export async function updateEtestExam(examId, examData) {
  * Xóa E-test exam
  */
 export async function deleteEtestExam(examId) {
+    console.log('[deleteEtestExam] Attempting to delete exam with ID:', examId);
+    if (!examId) {
+        console.error('[deleteEtestExam] examId is empty or undefined!');
+        throw new Error('examId không hợp lệ');
+    }
+
     const examRef = doc(db, 'etest_exams', examId);
+
+    // Check if document exists first
+    const docSnap = await getDoc(examRef);
+    if (!docSnap.exists()) {
+        console.warn('[deleteEtestExam] Document does not exist:', examId);
+        throw new Error(`Bài thi "${examId}" không tồn tại`);
+    }
+
+    console.log('[deleteEtestExam] Document exists, calling deleteDoc...');
     await deleteDoc(examRef);
+
+    // Verify deletion
+    const verifySnap = await getDoc(examRef);
+    if (verifySnap.exists()) {
+        console.error('[deleteEtestExam] Document still exists after delete! Check Firestore rules.');
+        throw new Error('Xóa thất bại - Kiểm tra quyền Firestore');
+    }
+
+    console.log('[deleteEtestExam] Successfully deleted:', examId);
 }
 
 // ============================================================
