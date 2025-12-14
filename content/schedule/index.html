@@ -1,0 +1,916 @@
+<!DOCTYPE html>
+<html lang="vi">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Thời Khoá Biểu | StudyStation</title>
+    <link rel="icon" type="image/png" href="../../favicon.png">
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- Added html2canvas for image export -->
+    <script src="https://html2canvas.hertzen.com/dist/html2canvas.min.js"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <style>
+        body {
+            font-family: 'Inter', sans-serif;
+            background-color: #f8fafc;
+            color: #1e293b;
+        }
+
+        .glass-panel {
+            background: rgba(255, 255, 255, 0.95);
+            backdrop-filter: blur(10px);
+            border: 1px solid rgba(226, 232, 240, 0.8);
+        }
+
+        .animate-fade-in {
+            animation: fadeIn 0.4s cubic-bezier(0.16, 1, 0.3, 1);
+        }
+
+        @keyframes fadeIn {
+            from {
+                opacity: 0;
+                transform: translateY(10px);
+            }
+
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        .active-tab {
+            background-color: #0f172a;
+            color: white;
+            box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
+        }
+
+        .inactive-tab {
+            color: #64748b;
+            background-color: transparent;
+        }
+
+        .inactive-tab:hover {
+            background-color: #e2e8f0;
+            color: #0f172a;
+        }
+
+        .status-teaching {
+            background-color: #ecfccb;
+            color: #3f6212;
+            border: 1px solid #d9f99d;
+        }
+
+        .status-break {
+            background-color: #fff7ed;
+            color: #9a3412;
+            border: 1px solid #fed7aa;
+        }
+
+        .status-free {
+            background-color: #f1f5f9;
+            color: #475569;
+            border: 1px solid #e2e8f0;
+        }
+
+        .subject-cell {
+            transition: all 0.2s ease;
+            position: relative;
+        }
+
+        .subject-cell:hover {
+            transform: translateY(-1px);
+            box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
+            z-index: 10;
+        }
+
+        .session-divider {
+            background: linear-gradient(to right, #f1f5f9, #e2e8f0, #f1f5f9);
+        }
+
+        /* Empty cell hover effect */
+        .empty-cell-hover:hover {
+            background-color: #f8fafc;
+            cursor: pointer;
+            position: relative;
+        }
+
+        .empty-cell-hover:hover::after {
+            content: '+';
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            color: #cbd5e1;
+            font-size: 1.5rem;
+            font-weight: bold;
+        }
+
+        /* Modal */
+        .modal {
+            transition: opacity 0.25s ease;
+        }
+
+        body.modal-active {
+            overflow-x: hidden;
+            overflow-y: visible !important;
+        }
+
+        /* Delete button on hover */
+        .delete-btn {
+            opacity: 0;
+            transition: opacity 0.2s;
+        }
+
+        .subject-cell:hover .delete-btn {
+            opacity: 1;
+        }
+
+        /* Row delete button */
+        .row-delete-btn {
+            opacity: 0;
+            transition: opacity 0.2s;
+            cursor: pointer;
+        }
+
+        tr:hover .row-delete-btn {
+            opacity: 1;
+        }
+
+        /* Gatekeeper Loading */
+        #gatekeeper-loading {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: #0f172a;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            z-index: 9999;
+            color: white;
+            font-family: 'Inter', sans-serif;
+            transition: opacity 0.5s ease;
+        }
+
+        .gk-spinner {
+            width: 40px;
+            height: 40px;
+            border: 4px solid rgba(255, 255, 255, 0.1);
+            border-top-color: #3b82f6;
+            border-radius: 50%;
+            animation: spin 1s linear infinite;
+            margin-top: 16px;
+        }
+
+        @keyframes spin {
+            100% {
+                transform: rotate(360deg);
+            }
+        }
+    </style>
+</head>
+
+<body class="antialiased min-h-screen flex flex-col bg-slate-50">
+
+    <!-- Gatekeeper Loading Overlay -->
+    <div id="gatekeeper-loading">
+        <img src="../../favicon.png" alt="StudyStation" style="width:56px;height:56px;border-radius:12px;">
+        <h3 class="text-xl font-bold mt-3">StudyStation</h3>
+        <p class="text-sm text-slate-400 mt-1">Đang xác thực...</p>
+        <div class="gk-spinner"></div>
+    </div>
+
+    <!-- Navbar -->
+    <nav class="sticky top-0 z-40 glass-panel border-b border-slate-200/80">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+            <div class="flex justify-between h-16 items-center">
+                <div class="flex items-center gap-3">
+                    <!-- Back to Home Button -->
+                    <a href="../index.html"
+                        class="flex items-center justify-center w-10 h-10 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-500 hover:text-slate-700 transition-colors"
+                        title="Quay lại trang chủ">
+                        <i class="fa-solid fa-arrow-left"></i>
+                    </a>
+                    <div
+                        class="w-10 h-10 bg-gradient-to-br from-indigo-600 to-blue-500 rounded-xl flex items-center justify-center text-white shadow-lg shadow-blue-500/20">
+                        <i class="fa-solid fa-calendar-days text-lg"></i>
+                    </div>
+                    <div>
+                        <h1 class="font-bold text-lg tracking-tight text-slate-800 leading-tight">Thời Khoá Biểu</h1>
+                        <p class="text-[10px] text-slate-400 font-medium uppercase tracking-wider">StudyStation</p>
+                    </div>
+                </div>
+                <div
+                    class="flex items-center gap-3 bg-white px-4 py-1.5 rounded-full border border-slate-200 shadow-sm">
+                    <div class="w-2 h-2 rounded-full bg-green-500 animate-pulse"></div>
+                    <span class="text-sm font-semibold text-slate-600 tabular-nums" id="clock-display">--:--</span>
+                </div>
+            </div>
+        </div>
+    </nav>
+
+    <!-- Main Content -->
+    <main class="flex-grow max-w-7xl w-full mx-auto px-4 sm:px-6 lg:px-8 py-8">
+
+        <!-- Tabs -->
+        <div class="flex justify-center mb-10">
+            <div class="bg-white p-1.5 rounded-2xl inline-flex shadow-sm border border-slate-200">
+                <button onclick="switchTab('student')" id="tab-student"
+                    class="flex items-center gap-2 px-6 py-2.5 rounded-xl text-sm font-medium transition-all duration-200 active-tab">
+                    <i class="fa-solid fa-graduation-cap"></i>
+                    Học Sinh
+                </button>
+                <button onclick="switchTab('teacher')" id="tab-teacher"
+                    class="flex items-center gap-2 px-6 py-2.5 rounded-xl text-sm font-medium transition-all duration-200 inactive-tab">
+                    <i class="fa-solid fa-chalkboard-user"></i>
+                    Giáo Viên
+                </button>
+            </div>
+        </div>
+
+        <!-- Student View -->
+        <div id="view-student" class="animate-fade-in">
+            <div class="mb-8 text-center max-w-3xl mx-auto">
+                <h2 class="text-2xl font-bold text-slate-900 mb-2">Thời Khoá Biểu Lớp Học</h2>
+                <div class="flex justify-center items-center gap-2 mb-6">
+                    <div class="relative max-w-xs group w-56">
+                        <div class="absolute inset-y-0 left-0 flex items-center pl-3 pointer-events-none">
+                            <i
+                                class="fa-solid fa-users-rectangle text-slate-400 group-focus-within:text-indigo-500 transition-colors"></i>
+                        </div>
+                        <select id="class-select" onchange="renderClassSchedule()"
+                            class="w-full pl-10 pr-10 appearance-none bg-white border border-slate-200 text-slate-900 text-sm rounded-xl focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 block p-3 shadow-sm cursor-pointer transition-all hover:border-indigo-300">
+                            <!-- Options populated by JS -->
+                        </select>
+                        <div
+                            class="pointer-events-none absolute inset-y-0 right-0 flex items-center px-3 text-slate-500">
+                            <i class="fa-solid fa-chevron-down text-xs"></i>
+                        </div>
+                    </div>
+
+                    <div class="flex bg-white rounded-xl border border-slate-200 shadow-sm p-1">
+                        <button onclick="openModal()"
+                            class="px-4 py-2 text-slate-600 hover:bg-indigo-50 hover:text-indigo-600 rounded-lg text-sm font-medium transition-colors flex items-center gap-2"
+                            title="Thêm hoạt động">
+                            <i class="fa-solid fa-plus"></i> <span class="hidden sm:inline">Thêm</span>
+                        </button>
+                        <div class="w-px bg-slate-200 mx-1 my-1"></div>
+                        <button onclick="resetHiddenRows()"
+                            class="px-4 py-2 text-slate-600 hover:bg-orange-50 hover:text-orange-600 rounded-lg text-sm font-medium transition-colors flex items-center gap-2"
+                            title="Khôi phục hàng đã xóa">
+                            <i class="fa-solid fa-rotate-right"></i> <span class="hidden sm:inline">Khôi phục</span>
+                        </button>
+                        <div class="w-px bg-slate-200 mx-1 my-1"></div>
+                        <button onclick="downloadSchedule()"
+                            class="px-4 py-2 text-slate-600 hover:bg-emerald-50 hover:text-emerald-600 rounded-lg text-sm font-medium transition-colors flex items-center gap-2"
+                            title="Tải ảnh">
+                            <i class="fa-solid fa-download"></i> <span class="hidden sm:inline">Tải ảnh</span>
+                        </button>
+                    </div>
+                </div>
+            </div>
+
+            <div id="student-schedule-container"
+                class="hidden bg-white rounded-2xl shadow-sm border border-slate-200 overflow-hidden p-1">
+                <div class="overflow-x-auto">
+                    <table class="w-full text-sm text-left border-collapse bg-white" id="capture-table">
+                        <thead class="text-xs text-slate-500 uppercase bg-slate-50/50 border-b border-slate-200">
+                            <tr>
+                                <th class="px-6 py-4 font-semibold tracking-wider w-32">Thời gian</th>
+                                <th class="px-4 py-4 font-semibold text-center text-slate-400 w-1/6">Thứ 2</th>
+                                <th class="px-4 py-4 font-semibold text-center text-slate-400 w-1/6">Thứ 3</th>
+                                <th class="px-4 py-4 font-semibold text-center text-slate-400 w-1/6">Thứ 4</th>
+                                <th class="px-4 py-4 font-semibold text-center text-slate-400 w-1/6">Thứ 5</th>
+                                <th class="px-4 py-4 font-semibold text-center text-slate-400 w-1/6">Thứ 6</th>
+                                <th class="px-4 py-4 font-semibold text-center text-slate-400 w-1/6">Thứ 7</th>
+                            </tr>
+                        </thead>
+                        <tbody id="class-schedule-body" class="divide-y divide-slate-100">
+                            <!-- Rows populated by JS -->
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+            <div id="student-placeholder"
+                class="text-center py-16 bg-white rounded-2xl border border-dashed border-slate-300">
+                <div
+                    class="w-16 h-16 bg-slate-50 rounded-full flex items-center justify-center mx-auto mb-4 text-slate-300">
+                    <i class="fa-regular fa-calendar-plus text-2xl"></i>
+                </div>
+                <p class="text-slate-500">Vui lòng chọn một lớp để hiển thị thời khóa biểu</p>
+            </div>
+        </div>
+
+        <!-- Teacher View (Kept same logic) -->
+        <div id="view-teacher" class="hidden animate-fade-in">
+            <div class="grid grid-cols-1 lg:grid-cols-12 gap-8">
+                <div class="lg:col-span-4">
+                    <div class="bg-white rounded-2xl shadow-sm border border-slate-200 p-6 sticky top-24">
+                        <div class="mb-6">
+                            <label class="block mb-2 text-xs font-bold uppercase text-slate-400 tracking-wider">Tra cứu
+                                giáo viên</label>
+                            <div class="relative group">
+                                <div class="absolute inset-y-0 left-0 flex items-center pl-3 pointer-events-none">
+                                    <i
+                                        class="fa-solid fa-magnifying-glass text-slate-400 group-focus-within:text-indigo-500 transition-colors"></i>
+                                </div>
+                                <select id="teacher-select" onchange="renderTeacherProfile()"
+                                    class="w-full pl-10 appearance-none bg-slate-50 border border-slate-200 text-slate-900 text-sm rounded-xl focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 block p-3 shadow-sm transition-all hover:bg-white">
+                                    <!-- Options populated by JS -->
+                                </select>
+                                <div
+                                    class="pointer-events-none absolute inset-y-0 right-0 flex items-center px-3 text-slate-500">
+                                    <i class="fa-solid fa-chevron-down text-xs"></i>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div id="teacher-profile-card" class="hidden animate-fade-in">
+                            <div
+                                class="flex items-center gap-4 mb-6 p-4 bg-gradient-to-r from-slate-50 to-white rounded-2xl border border-slate-100">
+                                <div id="t-avatar"
+                                    class="w-16 h-16 rounded-2xl flex items-center justify-center text-3xl shadow-sm border border-white bg-white">
+                                </div>
+                                <div>
+                                    <h3 id="t-name" class="text-lg font-bold text-slate-900 leading-tight"></h3>
+                                    <div class="flex items-center gap-2 mt-1">
+                                        <span id="t-subject-badge"
+                                            class="text-[11px] px-2 py-0.5 rounded-md font-bold uppercase tracking-wide border"></span>
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="space-y-3">
+                                <div class="p-4 bg-white rounded-xl border border-slate-100 shadow-sm">
+                                    <div class="flex items-center justify-between mb-2">
+                                        <div class="text-xs text-slate-400 uppercase font-bold tracking-wider">Trạng
+                                            thái</div>
+                                        <div id="t-status"></div>
+                                    </div>
+                                    <div id="t-current-detail" class="text-sm text-slate-600 font-medium"></div>
+                                </div>
+                                <div class="p-4 bg-indigo-50/50 rounded-xl border border-indigo-100">
+                                    <div class="flex items-center gap-2 mb-2">
+                                        <i class="fa-regular fa-clock text-indigo-500"></i>
+                                        <span class="text-xs text-indigo-800 uppercase font-bold">Tiết tiếp theo</span>
+                                    </div>
+                                    <div id="t-next" class="font-bold text-slate-900 text-lg"></div>
+                                    <div id="t-next-time" class="text-xs text-slate-500 mt-1 font-medium"></div>
+                                </div>
+                            </div>
+                        </div>
+                        <div id="teacher-placeholder" class="text-center py-12 text-slate-400">
+                            <div
+                                class="w-20 h-20 bg-slate-100 rounded-full flex items-center justify-center mx-auto mb-4 text-slate-300">
+                                <i class="fa-solid fa-user-tie text-3xl"></i>
+                            </div>
+                            <p>Chọn giáo viên để xem hồ sơ</p>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="lg:col-span-8">
+                    <div id="teacher-schedule-container"
+                        class="hidden bg-white rounded-2xl shadow-sm border border-slate-200 overflow-hidden h-full flex flex-col">
+                        <div class="p-5 border-b border-slate-100 flex justify-between items-center bg-white">
+                            <h3 class="font-bold text-lg text-slate-800">Lịch Giảng Dạy</h3>
+                            <span
+                                class="text-[10px] font-bold bg-slate-100 text-slate-500 px-2 py-1 rounded border border-slate-200 uppercase tracking-wide">HK
+                                I</span>
+                        </div>
+                        <div class="overflow-x-auto flex-grow">
+                            <table class="w-full text-sm text-left">
+                                <thead
+                                    class="text-xs text-slate-500 uppercase bg-slate-50/80 border-b border-slate-200">
+                                    <tr>
+                                        <th class="px-4 py-3 font-medium w-20 text-center">Tiết</th>
+                                        <th class="px-2 py-3 font-medium text-center w-1/6">Thứ 2</th>
+                                        <th class="px-2 py-3 font-medium text-center w-1/6">Thứ 3</th>
+                                        <th class="px-2 py-3 font-medium text-center w-1/6">Thứ 4</th>
+                                        <th class="px-2 py-3 font-medium text-center w-1/6">Thứ 5</th>
+                                        <th class="px-2 py-3 font-medium text-center w-1/6">Thứ 6</th>
+                                        <th class="px-2 py-3 font-medium text-center w-1/6">Thứ 7</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="teacher-schedule-body" class="divide-y divide-slate-100"></tbody>
+                            </table>
+                        </div>
+                    </div>
+                    <div id="teacher-schedule-placeholder"
+                        class="flex h-full items-center justify-center text-slate-400 border-2 border-dashed border-slate-200 rounded-2xl min-h-[400px] bg-slate-50/50">
+                        <div class="text-center">
+                            <i class="fa-regular fa-calendar-xmark text-3xl mb-2 opacity-30"></i>
+                            <p class="text-sm">Lịch dạy sẽ hiển thị tại đây</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </main>
+
+    <!-- Modal Add Event -->
+    <div id="add-event-modal"
+        class="modal opacity-0 pointer-events-none fixed w-full h-full top-0 left-0 flex items-center justify-center z-50">
+        <div class="modal-overlay absolute w-full h-full bg-slate-900 opacity-50"></div>
+        <div
+            class="modal-container bg-white w-11/12 md:max-w-md mx-auto rounded-2xl shadow-2xl z-50 overflow-y-auto transform transition-all scale-95">
+            <div class="px-6 py-4 border-b border-slate-100 flex justify-between items-center">
+                <h3 class="font-bold text-lg text-slate-800">Thêm Hoạt Động Mới</h3>
+                <button onclick="closeModal()" class="text-slate-400 hover:text-slate-600"><i
+                        class="fa-solid fa-xmark text-xl"></i></button>
+            </div>
+            <div class="p-6 space-y-4">
+                <!-- Input Form -->
+                <div>
+                    <label class="block text-xs font-bold text-slate-500 uppercase mb-1">Tên hoạt động</label>
+                    <input type="text" id="evt-title"
+                        class="w-full px-3 py-2 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500"
+                        placeholder="VD: Học thêm Toán, Gym, Đá bóng...">
+                </div>
+                <div class="grid grid-cols-2 gap-4">
+                    <div>
+                        <label class="block text-xs font-bold text-slate-500 uppercase mb-1">Thứ</label>
+                        <select id="evt-day"
+                            class="w-full px-3 py-2 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500">
+                            <option value="2">Thứ 2</option>
+                            <option value="3">Thứ 3</option>
+                            <option value="4">Thứ 4</option>
+                            <option value="5">Thứ 5</option>
+                            <option value="6">Thứ 6</option>
+                            <option value="7">Thứ 7</option>
+                        </select>
+                    </div>
+                    <div>
+                        <label class="block text-xs font-bold text-slate-500 uppercase mb-1">Loại</label>
+                        <select id="evt-type"
+                            class="w-full px-3 py-2 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500">
+                            <option value="study">Học tập</option>
+                            <option value="sport">Thể thao</option>
+                            <option value="relax">Giải trí</option>
+                        </select>
+                    </div>
+                </div>
+                <div class="grid grid-cols-2 gap-4">
+                    <div>
+                        <label class="block text-xs font-bold text-slate-500 uppercase mb-1">Bắt đầu</label>
+                        <input type="time" id="evt-start"
+                            class="w-full px-3 py-2 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500">
+                    </div>
+                    <div>
+                        <label class="block text-xs font-bold text-slate-500 uppercase mb-1">Thời lượng (phút)</label>
+                        <input type="number" id="evt-duration" value="45" step="15"
+                            class="w-full px-3 py-2 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500">
+                    </div>
+                </div>
+                <p id="modal-error" class="text-red-500 text-xs italic hidden"></p>
+            </div>
+            <div class="px-6 py-4 bg-slate-50 rounded-b-2xl flex justify-end gap-3">
+                <button onclick="closeModal()"
+                    class="px-4 py-2 text-slate-500 hover:bg-slate-100 rounded-lg text-sm font-medium transition-colors">Hủy</button>
+                <button onclick="saveUserEvent()"
+                    class="px-4 py-2 bg-indigo-600 text-white rounded-lg text-sm font-medium hover:bg-indigo-700 transition-colors shadow-sm">Lưu
+                    Hoạt Động</button>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // --- 1. CONFIGURATION & DATA ---
+        const timeConfig = {
+            morningStart: { h: 7, m: 0 },
+            afternoonStart: { h: 13, m: 0 },
+            duration: 45,
+            shortBreak: 5,
+            longBreak: 15
+        };
+
+        const classes = ["10A1", "10A2", "10A3", "11B1", "11B2", "11B3", "12C1", "12C2", "12C3"];
+        const teachers = [
+            { id: "T01", name: "Nguyễn Văn An", subject: "Toán", homeroom: "12C1", color: "blue", icon: "fa-calculator" },
+            { id: "T02", name: "Trần Thị Bích", subject: "Văn", homeroom: "10A1", color: "orange", icon: "fa-feather-pointed" },
+            { id: "T03", name: "Lê Hoàng Cường", subject: "Anh", homeroom: "11B2", color: "violet", icon: "fa-language" },
+            { id: "T04", name: "Phạm Minh Đức", subject: "Lý", homeroom: "12C3", color: "indigo", icon: "fa-atom" },
+            { id: "T05", name: "Hoàng Thu Em", subject: "Hóa", homeroom: null, color: "teal", icon: "fa-flask" },
+            { id: "T06", name: "Vũ Văn Phong", subject: "Sinh", homeroom: "10A2", color: "emerald", icon: "fa-dna" },
+            { id: "T07", name: "Đặng Thị Gấm", subject: "Sử", homeroom: null, color: "amber", icon: "fa-landmark" },
+            { id: "T08", name: "Bùi Văn Hùng", subject: "Địa", homeroom: null, color: "cyan", icon: "fa-earth-americas" },
+            { id: "T09", name: "Ngô Thị Mai", subject: "GDCD", homeroom: "11B1", color: "rose", icon: "fa-scale-balanced" },
+            { id: "T10", name: "Đinh Văn Lâm", subject: "Tin", homeroom: null, color: "sky", icon: "fa-computer" }
+        ];
+
+        function getColorClasses(color) {
+            return {
+                bg: `bg-${color}-50`, border: `border-${color}-200`, text: `text-${color}-700`,
+                iconText: `text-${color}-600`, badgeBg: `bg-${color}-100`, badgeText: `text-${color}-800`
+            };
+        }
+
+        // Data Storage
+        let userEvents = JSON.parse(localStorage.getItem('smartSchedule_userEvents')) || [];
+        let hiddenRows = JSON.parse(localStorage.getItem('smartSchedule_hiddenRows')) || []; // Array of period IDs
+
+        const scheduleData = {};
+
+        function initMockData() {
+            classes.forEach(cls => {
+                scheduleData[cls] = {};
+                for (let day = 2; day <= 7; day++) {
+                    scheduleData[cls][day] = [];
+                    const isMorning = cls.startsWith("10") || cls.startsWith("12");
+                    const startPeriod = isMorning ? 1 : 6;
+                    for (let p = 1; p <= 10; p++) {
+                        if (p >= startPeriod && p < startPeriod + 5 && Math.random() > 0.1) {
+                            scheduleData[cls][day][p] = teachers[Math.floor(Math.random() * teachers.length)].id;
+                        }
+                    }
+                }
+            });
+        }
+
+        // --- 2. TIME LOGIC ---
+        function formatTime(h, m) { return `${h.toString().padStart(2, '0')}:${m.toString().padStart(2, '0')}`; }
+        function getCurrentTimeVal() { const now = new Date(); return now.getHours() * 60 + now.getMinutes(); }
+        function getDayOfWeek() { const day = new Date().getDay(); return day === 0 ? 8 : day + 1; }
+
+        function generateStandardSlots() {
+            let slots = [];
+            let h, m;
+            // Morning
+            h = timeConfig.morningStart.h; m = timeConfig.morningStart.m;
+            for (let i = 1; i <= 5; i++) {
+                let endM = m + timeConfig.duration; let endH = h + Math.floor(endM / 60); endM %= 60;
+                slots.push({ period: i, displayPeriod: i, session: 'morning', start: formatTime(h, m), end: formatTime(endH, endM), startVal: h * 60 + m, endVal: endH * 60 + endM, type: 'standard' });
+                h = endH; m = endM;
+                m += (i === 2) ? timeConfig.longBreak : (i === 5 ? 0 : timeConfig.shortBreak); h += Math.floor(m / 60); m %= 60;
+            }
+            // Afternoon
+            h = timeConfig.afternoonStart.h; m = timeConfig.afternoonStart.m;
+            for (let i = 6; i <= 10; i++) {
+                let endM = m + timeConfig.duration; let endH = h + Math.floor(endM / 60); endM %= 60;
+                slots.push({ period: i, displayPeriod: i - 5, session: 'afternoon', start: formatTime(h, m), end: formatTime(endH, endM), startVal: h * 60 + m, endVal: endH * 60 + endM, type: 'standard' });
+                h = endH; m = endM;
+                m += (i === 7) ? timeConfig.longBreak : (i === 10 ? 0 : timeConfig.shortBreak); h += Math.floor(m / 60); m %= 60;
+            }
+            return slots;
+        }
+
+        let timeSlots = generateStandardSlots();
+
+        // --- 3. DYNAMIC RENDER LOGIC ---
+
+        function getMergedSlotsForClass(classId) {
+            let combinedSlots = [...timeSlots];
+            const classUserEvents = userEvents.filter(e => e.classId === classId);
+
+            classUserEvents.forEach(evt => {
+                const evtStartVal = evt.startH * 60 + evt.startM;
+                const evtEndVal = evtStartVal + parseInt(evt.duration);
+                const endH = Math.floor(evtEndVal / 60);
+                const endM = evtEndVal % 60;
+                const existingSlot = combinedSlots.find(s => Math.abs(s.startVal - evtStartVal) < 5);
+
+                if (!existingSlot) {
+                    let session = 'evening';
+                    let displayPeriod = 'TC';
+                    if (evtStartVal < 12 * 60) session = 'morning';
+                    else if (evtStartVal < 18 * 60) session = 'afternoon';
+
+                    const existingCustomRow = combinedSlots.find(s => Math.abs(s.startVal - evtStartVal) < 5 && s.type === 'custom');
+                    if (!existingCustomRow) {
+                        combinedSlots.push({
+                            period: 99 + evt.id, // unique dummy
+                            displayPeriod: 'Ext',
+                            session: session,
+                            start: formatTime(evt.startH, evt.startM),
+                            end: formatTime(endH, endM),
+                            startVal: evtStartVal,
+                            endVal: evtEndVal,
+                            type: 'custom'
+                        });
+                    }
+                }
+            });
+            return combinedSlots.sort((a, b) => a.startVal - b.startVal);
+        }
+
+        function renderClassSchedule() {
+            const classId = document.getElementById('class-select').value;
+            if (!classId) return;
+
+            document.getElementById('student-placeholder').classList.add('hidden');
+            document.getElementById('student-schedule-container').classList.remove('hidden');
+            const tbody = document.getElementById('class-schedule-body');
+            tbody.innerHTML = '';
+
+            const mergedSlots = getMergedSlotsForClass(classId);
+            let currentSession = '';
+
+            mergedSlots.forEach((slot, index) => {
+                // Check if hidden
+                if (hiddenRows.includes(slot.period)) return;
+
+                // Check if Row is completely empty
+                let isRowEmpty = true;
+                for (let day = 2; day <= 7; day++) {
+                    if (slot.type === 'standard' && scheduleData[classId][day][slot.period]) { isRowEmpty = false; break; }
+                    const userEvent = userEvents.find(e => e.classId === classId && e.day == day && Math.abs((e.startH * 60 + e.startM) - slot.startVal) < 5);
+                    if (userEvent) { isRowEmpty = false; break; }
+                }
+
+                // Session Divider
+                if (slot.session !== currentSession) {
+                    let sessionName = slot.session === 'morning' ? 'Buổi Sáng' : (slot.session === 'afternoon' ? 'Buổi Chiều' : 'Buổi Tối');
+                    const sepRow = document.createElement('tr');
+                    sepRow.className = "session-divider";
+                    sepRow.innerHTML = `<td colspan="7" class="px-6 py-2 text-xs font-bold text-slate-500 uppercase tracking-widest border-y border-slate-200 text-center"><i class="fa-regular fa-clock mr-2"></i> ${sessionName}</td>`;
+                    tbody.appendChild(sepRow);
+                    currentSession = slot.session;
+                }
+
+                const row = document.createElement('tr');
+                row.className = "border-b border-slate-50 last:border-0 group"; // Added group for hover
+
+                let pLabel = slot.displayPeriod;
+                if (slot.type === 'custom') {
+                    if (slot.session === 'afternoon' && slot.startVal > (17 * 60)) pLabel = '6+';
+                    else pLabel = '+';
+                }
+
+                // Time Column with Delete Option
+                let timeColContent = `
+                    <div class="flex items-center gap-3 relative">
+                        <div class="w-8 h-8 rounded-lg ${slot.type === 'custom' ? 'bg-indigo-100 text-indigo-600' : 'bg-slate-100 text-slate-500'} flex items-center justify-center font-bold text-sm border border-slate-200 shadow-sm">${pLabel}</div>
+                        <div>
+                            <div class="text-xs font-semibold text-slate-400 uppercase tracking-wide">Thời gian</div>
+                            <div class="text-sm font-medium text-slate-700">${slot.start} - ${slot.end}</div>
+                        </div>
+                        ${isRowEmpty ? `<button onclick="hideRow(${slot.period})" class="row-delete-btn absolute right-0 top-1/2 -translate-y-1/2 text-slate-300 hover:text-red-500 p-2" title="Xóa hàng trống này"><i class="fa-regular fa-trash-can"></i></button>` : ''}
+                    </div>
+                `;
+
+                row.innerHTML = `<td class="px-6 py-3 whitespace-nowrap bg-white">${timeColContent}</td>`;
+
+                for (let day = 2; day <= 7; day++) {
+                    let cellContent = '';
+                    let isOccupied = false;
+
+                    if (slot.type === 'standard' && scheduleData[classId][day][slot.period]) {
+                        const teacherId = scheduleData[classId][day][slot.period];
+                        const teacher = teachers.find(t => t.id === teacherId);
+                        const colors = getColorClasses(teacher.color);
+                        isOccupied = true;
+                        cellContent = `
+                            <div class="subject-cell w-full h-full min-h-[60px] p-2 rounded-xl ${colors.bg} border ${colors.border} flex flex-col justify-center items-center gap-1 cursor-default">
+                                <div class="flex items-center gap-1.5">
+                                    <i class="fa-solid ${teacher.icon} text-[10px] ${colors.iconText} opacity-70"></i>
+                                    <span class="font-bold text-sm ${colors.text}">${teacher.subject}</span>
+                                </div>
+                                <div class="text-[11px] ${colors.iconText} truncate max-w-[80px] opacity-90 font-medium">${teacher.name}</div>
+                            </div>`;
+                    }
+
+                    const userEvent = userEvents.find(e => e.classId === classId && e.day == day && Math.abs((e.startH * 60 + e.startM) - slot.startVal) < 5);
+                    if (userEvent) {
+                        isOccupied = true;
+                        let color = 'slate';
+                        let icon = 'fa-user';
+                        if (userEvent.type === 'sport') { color = 'red'; icon = 'fa-dumbbell'; }
+                        if (userEvent.type === 'study') { color = 'blue'; icon = 'fa-book-open'; }
+                        if (userEvent.type === 'relax') { color = 'purple'; icon = 'fa-music'; }
+                        const colors = getColorClasses(color);
+                        cellContent = `
+                            <div class="subject-cell w-full h-full min-h-[60px] p-2 rounded-xl ${colors.bg} border ${colors.border} flex flex-col justify-center items-center gap-1 cursor-pointer group relative">
+                                <button onclick="deleteUserEvent(${userEvent.id}, event)" class="delete-btn absolute -top-2 -right-2 bg-white text-red-500 rounded-full w-5 h-5 flex items-center justify-center shadow-sm border border-slate-200 z-20"><i class="fa-solid fa-xmark text-xs"></i></button>
+                                <div class="flex items-center gap-1.5">
+                                    <i class="fa-solid ${icon} text-[10px] ${colors.iconText} opacity-70"></i>
+                                    <span class="font-bold text-sm ${colors.text}">${userEvent.title}</span>
+                                </div>
+                                <div class="text-[11px] ${colors.iconText} opacity-90 font-medium">Cá nhân</div>
+                            </div>`;
+                    }
+
+                    if (!isOccupied) {
+                        cellContent = `<div onclick="openModalForSlot(${day}, '${slot.start}')" class="empty-cell-hover w-full h-full min-h-[60px] rounded-xl border border-dashed border-slate-200 bg-slate-50/30 transition-colors"></div>`;
+                    }
+                    row.innerHTML += `<td class="px-2 py-2 text-center h-full align-middle">${cellContent}</td>`;
+                }
+                tbody.appendChild(row);
+
+                if (slot.type === 'standard' && (slot.period === 2 || slot.period === 7)) {
+                    tbody.innerHTML += `<tr><td colspan="7" class="px-6 py-1"><div class="w-full bg-yellow-50 rounded-lg py-1.5 flex items-center justify-center gap-2 text-xs font-bold text-yellow-700 uppercase tracking-widest border border-yellow-100 border-dashed"><i class="fa-solid fa-mug-hot"></i> Giờ ra chơi (15 phút)</div></td></tr>`;
+                }
+            });
+        }
+
+        // --- FEATURES LOGIC ---
+
+        function hideRow(periodId) {
+            if (!hiddenRows.includes(periodId)) {
+                hiddenRows.push(periodId);
+                localStorage.setItem('smartSchedule_hiddenRows', JSON.stringify(hiddenRows));
+                renderClassSchedule();
+            }
+        }
+
+        function resetHiddenRows() {
+            hiddenRows = [];
+            localStorage.setItem('smartSchedule_hiddenRows', JSON.stringify(hiddenRows));
+            renderClassSchedule();
+        }
+
+        function downloadSchedule() {
+            const element = document.getElementById('student-schedule-container');
+            const btn = event.currentTarget;
+            const originalText = btn.innerHTML;
+            btn.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> Xử lý...';
+
+            html2canvas(element, {
+                scale: 2, // Higher resolution
+                backgroundColor: "#ffffff",
+                useCORS: true
+            }).then(canvas => {
+                const link = document.createElement('a');
+                link.download = 'ThoiKhoaBieu_SmartSchedule.png';
+                link.href = canvas.toDataURL('image/png');
+                link.click();
+                btn.innerHTML = originalText;
+            }).catch(err => {
+                console.error(err);
+                alert("Có lỗi khi tải ảnh. Vui lòng thử lại.");
+                btn.innerHTML = originalText;
+            });
+        }
+
+        // --- MODAL & USER EVENT LOGIC (Existing) ---
+
+        function openModal() {
+            const classId = document.getElementById('class-select').value;
+            if (!classId) { alert("Vui lòng chọn lớp trước!"); return; }
+            document.getElementById('add-event-modal').classList.remove('opacity-0', 'pointer-events-none');
+            document.getElementById('add-event-modal').querySelector('.modal-container').classList.remove('scale-95');
+            document.querySelector('body').classList.add('modal-active');
+            document.getElementById('modal-error').classList.add('hidden');
+            document.getElementById('evt-title').value = '';
+        }
+
+        function openModalForSlot(day, startTime) {
+            openModal();
+            document.getElementById('evt-day').value = day;
+            document.getElementById('evt-start').value = startTime;
+        }
+
+        function closeModal() {
+            document.getElementById('add-event-modal').classList.add('opacity-0', 'pointer-events-none');
+            document.getElementById('add-event-modal').querySelector('.modal-container').classList.add('scale-95');
+            document.querySelector('body').classList.remove('modal-active');
+        }
+
+        function saveUserEvent() {
+            const classId = document.getElementById('class-select').value;
+            const title = document.getElementById('evt-title').value;
+            const day = parseInt(document.getElementById('evt-day').value);
+            const type = document.getElementById('evt-type').value;
+            const startStr = document.getElementById('evt-start').value;
+            const duration = parseInt(document.getElementById('evt-duration').value);
+            const errorMsg = document.getElementById('modal-error');
+
+            if (!title || !startStr) {
+                errorMsg.textContent = "Vui lòng nhập tên hoạt động và giờ bắt đầu.";
+                errorMsg.classList.remove('hidden');
+                return;
+            }
+
+            const [h, m] = startStr.split(':').map(Number);
+            const newStartVal = h * 60 + m;
+            const newEndVal = newStartVal + duration;
+
+            for (const slot of timeSlots) {
+                if (scheduleData[classId][day][slot.period]) {
+                    if (newStartVal < slot.endVal && newEndVal > slot.startVal) {
+                        errorMsg.textContent = `Trùng lịch với giờ học chính khoá (${slot.start} - ${slot.end}).`;
+                        errorMsg.classList.remove('hidden');
+                        return;
+                    }
+                }
+            }
+
+            const conflict = userEvents.find(e =>
+                e.classId === classId && e.day === day &&
+                (newStartVal < (e.startH * 60 + e.startM + parseInt(e.duration)) && newEndVal > (e.startH * 60 + e.startM))
+            );
+
+            if (conflict) {
+                errorMsg.textContent = `Trùng lịch với hoạt động "${conflict.title}".`;
+                errorMsg.classList.remove('hidden');
+                return;
+            }
+
+            const newEvent = { id: Date.now(), classId, day, title, type, startH: h, startM: m, duration };
+            userEvents.push(newEvent);
+            localStorage.setItem('smartSchedule_userEvents', JSON.stringify(userEvents));
+            closeModal();
+            renderClassSchedule();
+        }
+
+        function deleteUserEvent(id, event) {
+            event.stopPropagation();
+            if (confirm("Bạn có chắc muốn xoá lịch này?")) {
+                userEvents = userEvents.filter(e => e.id !== id);
+                localStorage.setItem('smartSchedule_userEvents', JSON.stringify(userEvents));
+                renderClassSchedule();
+            }
+        }
+
+        // --- Helper logic ---
+        function populateSelects() {
+            const classSelect = document.getElementById('class-select');
+            const teacherSelect = document.getElementById('teacher-select');
+            classSelect.innerHTML = '<option value="" disabled selected>Chọn lớp học...</option>';
+            teacherSelect.innerHTML = '<option value="" disabled selected>Tìm giáo viên...</option>';
+            classes.forEach(c => { const opt = document.createElement('option'); opt.value = c; opt.textContent = `Lớp ${c}`; classSelect.appendChild(opt); });
+            teachers.forEach(t => { const opt = document.createElement('option'); opt.value = t.id; opt.textContent = `${t.name} - ${t.subject}`; teacherSelect.appendChild(opt); });
+        }
+
+        function switchTab(tab) {
+            const sBtn = document.getElementById('tab-student'); const tBtn = document.getElementById('tab-teacher');
+            const sView = document.getElementById('view-student'); const tView = document.getElementById('view-teacher');
+            if (tab === 'student') { sBtn.className = sBtn.className.replace('inactive-tab', 'active-tab'); tBtn.className = tBtn.className.replace('active-tab', 'inactive-tab'); sView.classList.remove('hidden'); tView.classList.add('hidden'); }
+            else { tBtn.className = tBtn.className.replace('inactive-tab', 'active-tab'); sBtn.className = sBtn.className.replace('active-tab', 'inactive-tab'); tView.classList.remove('hidden'); sView.classList.add('hidden'); }
+        }
+
+        function renderTeacherProfile() {
+            const teacherId = document.getElementById('teacher-select').value;
+            if (!teacherId) return;
+            document.getElementById('teacher-placeholder').classList.add('hidden');
+            document.getElementById('teacher-profile-card').classList.remove('hidden');
+            document.getElementById('teacher-schedule-placeholder').classList.add('hidden');
+            document.getElementById('teacher-schedule-container').classList.remove('hidden');
+
+            const teacher = teachers.find(t => t.id === teacherId);
+            const colors = getColorClasses(teacher.color);
+
+            const avatarEl = document.getElementById('t-avatar');
+            avatarEl.innerHTML = `<i class="fa-solid ${teacher.icon} ${colors.iconText}"></i>`;
+            avatarEl.className = `w-16 h-16 rounded-2xl flex items-center justify-center text-3xl shadow-sm border ${colors.border} ${colors.bg}`;
+
+            document.getElementById('t-name').textContent = teacher.name;
+            const badge = document.getElementById('t-subject-badge');
+            badge.textContent = teacher.subject;
+            badge.className = `text-[11px] px-2 py-0.5 rounded-md font-bold uppercase tracking-wide border ${colors.badgeBg} ${colors.badgeText} ${colors.border}`;
+
+            updateTeacherStatus(teacherId);
+            const tbody = document.getElementById('teacher-schedule-body');
+            tbody.innerHTML = '';
+            let currentSession = 'morning';
+
+            timeSlots.forEach(slot => {
+                if (slot.session !== currentSession) { tbody.innerHTML += `<tr><td colspan="8" class="py-1 bg-slate-100 border-y border-slate-200"></td></tr>`; currentSession = slot.session; }
+                const row = document.createElement('tr');
+                row.className = "border-b border-slate-50 hover:bg-slate-50/50 transition-colors";
+                row.innerHTML = `<td class="px-4 py-3 text-center"><span class="font-bold text-slate-400 text-sm">T${slot.displayPeriod}</span></td>`;
+                for (let day = 2; day <= 7; day++) {
+                    let teachingClass = null;
+                    for (const [cls, days] of Object.entries(scheduleData)) { if (days[day][slot.period] === teacherId) { teachingClass = cls; break; } }
+                    if (teachingClass) { row.innerHTML += `<td class="px-1 py-2"><div class="py-2 px-1 rounded-lg text-center ${colors.bg} border ${colors.border} shadow-sm"><span class="font-bold text-sm ${colors.text}">${teachingClass}</span></div></td>`; }
+                    else { row.innerHTML += `<td class="px-1 py-2 text-center"></td>`; }
+                }
+                tbody.appendChild(row);
+            });
+        }
+
+        function updateTeacherStatus(teacherId) {
+            const now = new Date(); const currentVal = now.getHours() * 60 + now.getMinutes(); const currentDay = now.getDay() === 0 ? 8 : now.getDay() + 1;
+            let statusText = "Ngoài giờ"; let statusClass = "status-free";
+            let teachingClass = null;
+            let currentSlot = timeSlots.find(s => currentVal >= s.startVal && currentVal <= s.endVal);
+
+            if (currentSlot && currentDay >= 2 && currentDay <= 7) {
+                for (const [cls, days] of Object.entries(scheduleData)) { if (days[currentDay][currentSlot.period] === teacherId) { teachingClass = cls; break; } }
+            }
+            if (teachingClass) { statusText = "Đang dạy"; statusClass = "status-teaching"; document.getElementById('t-current-detail').textContent = `Lớp ${teachingClass}`; }
+            else { document.getElementById('t-current-detail').textContent = "Không có tiết"; }
+            const statusDiv = document.getElementById('t-status');
+            statusDiv.innerHTML = `<span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-bold uppercase tracking-wide ${statusClass}">${statusText}</span>`;
+        }
+
+        setInterval(() => { const now = new Date(); document.getElementById('clock-display').textContent = now.toLocaleTimeString('vi-VN', { hour: '2-digit', minute: '2-digit' }); }, 1000);
+
+        initMockData();
+        populateSelects();
+        document.getElementById('clock-display').textContent = new Date().toLocaleTimeString('vi-VN', { hour: '2-digit', minute: '2-digit' });
+
+    </script>
+
+    <!-- Gatekeeper Protection Script -->
+    <script type="module">
+        import { initGatekeeper } from "../../gatekeeper.js";
+
+        // Kích hoạt chế độ bảo vệ trang
+        initGatekeeper('protected');
+    </script>
+</body>
+
+</html>
