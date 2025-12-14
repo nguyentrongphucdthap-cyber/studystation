@@ -285,18 +285,18 @@
         const CLASSES = ["10A1", "10A2", "10A3", "11B1", "11B2", "11B3", "12C1", "12C2", "12C3"];
 
         const SUBJECTS = [
-            { id: "toan", name: "Toán", color: "blue", icon: "fa-calculator" },
-            { id: "van", name: "Ngữ Văn", color: "orange", icon: "fa-feather-pointed" },
-            { id: "anh", name: "Tiếng Anh", color: "violet", icon: "fa-language" },
-            { id: "ly", name: "Vật Lí", color: "indigo", icon: "fa-atom" },
-            { id: "hoa", name: "Hoá Học", color: "teal", icon: "fa-flask" },
-            { id: "sinh", name: "Sinh Học", color: "emerald", icon: "fa-dna" },
-            { id: "su", name: "Lịch Sử", color: "amber", icon: "fa-landmark" },
-            { id: "dia", name: "Địa Lí", color: "cyan", icon: "fa-earth-americas" },
-            { id: "gdcd", name: "GDCD", color: "rose", icon: "fa-scale-balanced" },
-            { id: "tin", name: "Tin Học", color: "sky", icon: "fa-computer" },
-            { id: "td", name: "Thể Dục", color: "red", icon: "fa-dumbbell" },
-            { id: "cn", name: "Công Nghệ", color: "yellow", icon: "fa-screwdriver-wrench" }
+            { id: "toan", name: "Toán", bgClass: "bg-blue-50", borderClass: "border-blue-200", textClass: "text-blue-700", iconClass: "text-blue-600", icon: "fa-calculator" },
+            { id: "van", name: "Ngữ Văn", bgClass: "bg-orange-50", borderClass: "border-orange-200", textClass: "text-orange-700", iconClass: "text-orange-600", icon: "fa-feather-pointed" },
+            { id: "anh", name: "Tiếng Anh", bgClass: "bg-violet-50", borderClass: "border-violet-200", textClass: "text-violet-700", iconClass: "text-violet-600", icon: "fa-language" },
+            { id: "ly", name: "Vật Lí", bgClass: "bg-indigo-50", borderClass: "border-indigo-200", textClass: "text-indigo-700", iconClass: "text-indigo-600", icon: "fa-atom" },
+            { id: "hoa", name: "Hoá Học", bgClass: "bg-teal-50", borderClass: "border-teal-200", textClass: "text-teal-700", iconClass: "text-teal-600", icon: "fa-flask" },
+            { id: "sinh", name: "Sinh Học", bgClass: "bg-emerald-50", borderClass: "border-emerald-200", textClass: "text-emerald-700", iconClass: "text-emerald-600", icon: "fa-dna" },
+            { id: "su", name: "Lịch Sử", bgClass: "bg-amber-50", borderClass: "border-amber-200", textClass: "text-amber-700", iconClass: "text-amber-600", icon: "fa-landmark" },
+            { id: "dia", name: "Địa Lí", bgClass: "bg-cyan-50", borderClass: "border-cyan-200", textClass: "text-cyan-700", iconClass: "text-cyan-600", icon: "fa-earth-americas" },
+            { id: "gdcd", name: "GDCD", bgClass: "bg-rose-50", borderClass: "border-rose-200", textClass: "text-rose-700", iconClass: "text-rose-600", icon: "fa-scale-balanced" },
+            { id: "tin", name: "Tin Học", bgClass: "bg-sky-50", borderClass: "border-sky-200", textClass: "text-sky-700", iconClass: "text-sky-600", icon: "fa-computer" },
+            { id: "td", name: "Thể Dục", bgClass: "bg-red-50", borderClass: "border-red-200", textClass: "text-red-700", iconClass: "text-red-600", icon: "fa-dumbbell" },
+            { id: "cn", name: "Công Nghệ", bgClass: "bg-yellow-50", borderClass: "border-yellow-200", textClass: "text-yellow-700", iconClass: "text-yellow-600", icon: "fa-screwdriver-wrench" }
         ];
 
         const PERIODS = [
@@ -416,11 +416,11 @@
 
         function renderSubjectPalette() {
             refs.subjectPalette.innerHTML = SUBJECTS.map(s => `
-                <div class="subject-badge p-3 rounded-xl border-2 border-${s.color}-200 bg-${s.color}-50 cursor-pointer hover:shadow-md transition-all"
+                <div class="subject-badge p-3 rounded-xl border-2 ${s.borderClass} ${s.bgClass} cursor-pointer hover:shadow-md transition-all"
                      draggable="true" data-subject="${s.id}">
                     <div class="flex items-center gap-2">
-                        <i class="fa-solid ${s.icon} text-${s.color}-600"></i>
-                        <span class="font-semibold text-${s.color}-700 text-sm">${s.name}</span>
+                        <i class="fa-solid ${s.icon} ${s.iconClass}"></i>
+                        <span class="font-semibold ${s.textClass} text-sm">${s.name}</span>
                     </div>
                 </div>
             `).join('');
@@ -428,10 +428,10 @@
             // Also render modal list
             refs.modalSubjectList.innerHTML = SUBJECTS.map(s => `
                 <button onclick="selectSubject('${s.id}')"
-                    class="p-3 rounded-xl border-2 border-${s.color}-200 bg-${s.color}-50 hover:shadow-md transition-all text-left">
+                    class="p-3 rounded-xl border-2 ${s.borderClass} ${s.bgClass} hover:shadow-md transition-all text-left">
                     <div class="flex items-center gap-2">
-                        <i class="fa-solid ${s.icon} text-${s.color}-600"></i>
-                        <span class="font-semibold text-${s.color}-700 text-sm">${s.name}</span>
+                        <i class="fa-solid ${s.icon} ${s.iconClass}"></i>
+                        <span class="font-semibold ${s.textClass} text-sm">${s.name}</span>
                     </div>
                 </button>
             `).join('');
@@ -470,11 +470,11 @@
                     if (subject) {
                         html += `
                             <td class="px-2 py-2">
-                                <div class="schedule-cell p-2 rounded-xl bg-${subject.color}-50 border border-${subject.color}-200 cursor-pointer"
+                                <div class="schedule-cell p-2 rounded-xl ${subject.bgClass} border ${subject.borderClass} cursor-pointer"
                                      onclick="openSubjectModal(${day}, ${period.id})">
                                     <div class="flex flex-col items-center gap-1">
-                                        <i class="fa-solid ${subject.icon} text-${subject.color}-600"></i>
-                                        <span class="font-semibold text-${subject.color}-700 text-xs">${subject.name}</span>
+                                        <i class="fa-solid ${subject.icon} ${subject.iconClass}"></i>
+                                        <span class="font-semibold ${subject.textClass} text-xs">${subject.name}</span>
                                     </div>
                                 </div>
                             </td>
