@@ -935,16 +935,23 @@
             const column = document.querySelector(`.day-column[data-day="${event.day}"]`);
             if (!column) return;
 
-            const startMinutes = event.startHour * 60 + event.startMinute;
+            if (event.startHour === undefined || event.startMinute === undefined || event.duration === undefined) return;
+
+            const startMinutes = parseInt(event.startHour) * 60 + parseInt(event.startMinute);
             const calendarStartMinutes = settings.startHour * 60;
             const topOffset = ((startMinutes - calendarStartMinutes) / 60) * HOUR_HEIGHT;
-            const height = (event.duration / 60) * HOUR_HEIGHT;
+            const height = (parseInt(event.duration) / 60) * HOUR_HEIGHT;
 
             // Don't render if outside visible range
             if (topOffset < 0 || topOffset >= (settings.endHour - settings.startHour) * HOUR_HEIGHT) return;
 
+            // Safe time formatting
+            const sh = (event.startHour || 0).toString().padStart(2, '0');
+            const sm = (event.startMinute || 0).toString().padStart(2, '0');
             const endTime = new Date(2000, 0, 1, event.startHour, event.startMinute + event.duration);
-            const timeStr = `${event.startHour.toString().padStart(2, '0')}:${event.startMinute.toString().padStart(2, '0')} - ${endTime.getHours().toString().padStart(2, '0')}:${endTime.getMinutes().toString().padStart(2, '0')}`;
+            const eh = endTime.getHours().toString().padStart(2, '0');
+            const em = endTime.getMinutes().toString().padStart(2, '0');
+            const timeStr = `${sh}:${sm} - ${eh}:${em}`;
 
             const typeConfig = EVENT_TYPES[event.type] || { icon: '📅' };
 
