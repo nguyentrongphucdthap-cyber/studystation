@@ -7,6 +7,7 @@
     <title>Lịch Cá Nhân | StudyStation</title>
     <link rel="icon" type="image/png" href="../../favicon.png">
     <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://html2canvas.hertzen.com/dist/html2canvas.min.js"></script>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
 
@@ -219,6 +220,11 @@
                             <i class="fa-solid fa-plus text-xs"></i>
                             <span class="hidden sm:inline">Thêm</span>
                         </button>
+                        <button onclick="downloadCalendar()"
+                            class="px-3 py-1.5 bg-amber-500 text-white rounded-lg text-sm font-medium hover:bg-amber-600 transition-colors flex items-center gap-1.5"
+                            title="Tải xuống hình ảnh">
+                            <i class="fa-solid fa-download text-xs"></i>
+                        </button>
                         <button onclick="openSettingsModal()"
                             class="px-3 py-1.5 bg-gray-100 text-gray-600 rounded-lg text-sm font-medium hover:bg-gray-200 transition-colors">
                             <i class="fa-solid fa-gear"></i>
@@ -403,15 +409,21 @@
                     <span id="detail-type" class="text-gray-700"></span>
                 </div>
             </div>
-            <div class="px-6 py-4 bg-gray-50 flex justify-end gap-3">
+            <div class="px-6 py-4 bg-gray-50 flex justify-between">
                 <button onclick="deleteCurrentEvent()"
                     class="px-4 py-2 text-red-600 hover:bg-red-50 rounded-lg text-sm font-medium transition-colors">
                     <i class="fa-solid fa-trash-can mr-1"></i> Xoá
                 </button>
-                <button onclick="closeEventDetailModal()"
-                    class="px-4 py-2 bg-gray-200 text-gray-700 rounded-lg text-sm font-medium hover:bg-gray-300 transition-colors">
-                    Đóng
-                </button>
+                <div class="flex gap-2">
+                    <button onclick="editCurrentEvent()"
+                        class="px-4 py-2 bg-indigo-600 text-white rounded-lg text-sm font-medium hover:bg-indigo-700 transition-colors">
+                        <i class="fa-solid fa-pen mr-1"></i> Sửa
+                    </button>
+                    <button onclick="closeEventDetailModal()"
+                        class="px-4 py-2 bg-gray-200 text-gray-700 rounded-lg text-sm font-medium hover:bg-gray-300 transition-colors">
+                        Đóng
+                    </button>
+                </div>
             </div>
         </div>
     </div>
@@ -463,10 +475,69 @@
         </div>
     </div>
 
+    <!-- Import TKB Modal -->
+    <div id="import-modal" class="fixed inset-0 z-50 hidden items-center justify-center p-4">
+        <div class="modal-overlay absolute inset-0" onclick="closeImportModal()"></div>
+        <div class="relative bg-white rounded-2xl shadow-2xl w-full max-w-md z-10 overflow-hidden">
+            <div class="px-6 py-4 border-b border-gray-100 flex justify-between items-center">
+                <h3 class="font-bold text-lg text-gray-800">Import Thời Khoá Biểu</h3>
+                <button onclick="closeImportModal()" class="text-gray-400 hover:text-gray-600">
+                    <i class="fa-solid fa-xmark text-xl"></i>
+                </button>
+            </div>
+            <div class="p-6 space-y-4">
+                <p class="text-sm text-gray-500">Chọn lớp để import thời khoá biểu từ hệ thống. Các tiết học sẽ được
+                    thêm vào lịch của bạn.</p>
+                <div>
+                    <label class="block text-xs font-bold text-gray-500 uppercase mb-1">Chọn lớp</label>
+                    <select id="import-class"
+                        class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-emerald-500">
+                        <option value="" disabled selected>-- Chọn lớp --</option>
+                        <option value="10A1">Lớp 10A1</option>
+                        <option value="10A2">Lớp 10A2</option>
+                        <option value="10A3">Lớp 10A3</option>
+                        <option value="11B1">Lớp 11B1</option>
+                        <option value="11B2">Lớp 11B2</option>
+                        <option value="11B3">Lớp 11B3</option>
+                        <option value="12C1">Lớp 12C1</option>
+                        <option value="12C2">Lớp 12C2</option>
+                        <option value="12C3">Lớp 12C3</option>
+                    </select>
+                </div>
+                <div class="bg-amber-50 border border-amber-200 rounded-lg p-3">
+                    <p class="text-xs text-amber-700">
+                        <i class="fa-solid fa-triangle-exclamation mr-1"></i>
+                        Các tiết học trùng với lịch hiện tại sẽ bị bỏ qua.
+                    </p>
+                </div>
+                <p id="import-error" class="text-red-500 text-xs italic hidden"></p>
+                <p id="import-success" class="text-green-600 text-xs font-medium hidden"></p>
+            </div>
+            <div class="px-6 py-4 bg-gray-50 flex justify-end gap-3">
+                <button onclick="closeImportModal()"
+                    class="px-4 py-2 text-gray-500 hover:bg-gray-100 rounded-lg text-sm font-medium transition-colors">
+                    Hủy
+                </button>
+                <button onclick="importSchedule()" id="import-btn"
+                    class="px-4 py-2 bg-emerald-600 text-white rounded-lg text-sm font-medium hover:bg-emerald-700 transition-colors flex items-center gap-2">
+                    <i class="fa-solid fa-file-import"></i>
+                    Import
+                </button>
+            </div>
+        </div>
+    </div>
+
     <!-- Scripts -->
     <script type="module">
-        import { initGatekeeper } from "../../gatekeeper.js";
+        import { initGatekeeper, db, collection, getDocs, doc, getDoc } from "../../gatekeeper.js";
         initGatekeeper('protected');
+
+        // Expose Firebase to global scope for import function
+        window.firebaseDb = db;
+        window.firebaseCollection = collection;
+        window.firebaseGetDocs = getDocs;
+        window.firebaseDoc = doc;
+        window.firebaseGetDoc = getDoc;
     </script>
 
     <script>
@@ -487,6 +558,36 @@
             entertainment: { name: 'Giải trí', icon: '🎮' },
             study: { name: 'Tự học', icon: '📖' },
             personal: { name: 'Cá nhân', icon: '📝' }
+        };
+
+        // Subject mapping from Admin schedule
+        const SUBJECT_NAMES = {
+            toan: 'Toán',
+            van: 'Ngữ Văn',
+            anh: 'Tiếng Anh',
+            ly: 'Vật Lí',
+            hoa: 'Hoá Học',
+            sinh: 'Sinh Học',
+            su: 'Lịch Sử',
+            dia: 'Địa Lí',
+            gdcd: 'GDCD',
+            tin: 'Tin Học',
+            td: 'Thể Dục',
+            cn: 'Công Nghệ'
+        };
+
+        // Period time mapping (for converting from Admin schedule)
+        const PERIOD_TIMES = {
+            1: { startHour: 7, startMinute: 0 },
+            2: { startHour: 7, startMinute: 50 },
+            3: { startHour: 8, startMinute: 50 },
+            4: { startHour: 9, startMinute: 40 },
+            5: { startHour: 10, startMinute: 30 },
+            6: { startHour: 13, startMinute: 0 },
+            7: { startHour: 13, startMinute: 50 },
+            8: { startHour: 14, startMinute: 50 },
+            9: { startHour: 15, startMinute: 40 },
+            10: { startHour: 16, startMinute: 30 }
         };
 
         // State
@@ -847,6 +948,166 @@
                 top: Math.max(0, topOffset - 100),
                 behavior: 'smooth'
             });
+        };
+
+        // ============================================================
+        // DOWNLOAD CALENDAR AS IMAGE
+        // ============================================================
+        window.downloadCalendar = async function () {
+            const calendarContainer = document.querySelector('main');
+
+            try {
+                // Show loading state
+                const btn = event.target.closest('button');
+                const originalContent = btn.innerHTML;
+                btn.innerHTML = '<i class="fa-solid fa-spinner fa-spin text-xs"></i>';
+                btn.disabled = true;
+
+                // Use html2canvas to capture
+                const canvas = await html2canvas(calendarContainer, {
+                    scale: 2,
+                    backgroundColor: '#f9fafb',
+                    logging: false,
+                    useCORS: true
+                });
+
+                // Create download link
+                const link = document.createElement('a');
+                const now = new Date();
+                const dateStr = now.toISOString().split('T')[0];
+                link.download = `lich-ca-nhan-${dateStr}.png`;
+                link.href = canvas.toDataURL('image/png');
+                link.click();
+
+                // Restore button
+                btn.innerHTML = originalContent;
+                btn.disabled = false;
+
+            } catch (error) {
+                console.error('Download error:', error);
+                alert('Không thể tải xuống. Vui lòng thử lại.');
+            }
+        };
+
+        // ============================================================
+        // IMPORT FROM FIREBASE
+        // ============================================================
+        window.openImportModal = function () {
+            document.getElementById('import-modal').classList.remove('hidden');
+            document.getElementById('import-modal').classList.add('flex');
+            document.getElementById('import-error').classList.add('hidden');
+            document.getElementById('import-success').classList.add('hidden');
+            document.getElementById('import-class').value = '';
+        };
+
+        window.closeImportModal = function () {
+            document.getElementById('import-modal').classList.add('hidden');
+            document.getElementById('import-modal').classList.remove('flex');
+        };
+
+        window.importSchedule = async function () {
+            const classId = document.getElementById('import-class').value;
+            const errorEl = document.getElementById('import-error');
+            const successEl = document.getElementById('import-success');
+            const btn = document.getElementById('import-btn');
+
+            errorEl.classList.add('hidden');
+            successEl.classList.add('hidden');
+
+            if (!classId) {
+                errorEl.textContent = 'Vui lòng chọn lớp';
+                errorEl.classList.remove('hidden');
+                return;
+            }
+
+            // Disable button during import
+            btn.disabled = true;
+            btn.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> Đang import...';
+
+            try {
+                // Wait for Firebase to be available
+                await new Promise(resolve => setTimeout(resolve, 500));
+
+                if (!window.firebaseDb) {
+                    throw new Error('Firebase chưa sẵn sàng. Vui lòng thử lại.');
+                }
+
+                // Get schedule from Firebase
+                const scheduleRef = window.firebaseDoc(window.firebaseDb, 'schedules', classId);
+                const scheduleSnap = await window.firebaseGetDoc(scheduleRef);
+
+                if (!scheduleSnap.exists()) {
+                    errorEl.textContent = `Không tìm thấy thời khoá biểu lớp ${classId}. Admin cần tạo trước.`;
+                    errorEl.classList.remove('hidden');
+                    return;
+                }
+
+                const scheduleData = scheduleSnap.data();
+                let importedCount = 0;
+                let skippedCount = 0;
+
+                // Convert schedule to events
+                for (const [dayStr, periods] of Object.entries(scheduleData)) {
+                    const day = parseInt(dayStr);
+                    if (day < 2 || day > 7) continue;
+
+                    for (const [periodStr, subjectId] of Object.entries(periods)) {
+                        const periodNum = parseInt(periodStr);
+                        const periodTime = PERIOD_TIMES[periodNum];
+                        if (!periodTime) continue;
+
+                        const subjectName = SUBJECT_NAMES[subjectId] || subjectId;
+
+                        // Check for conflicts
+                        const newStart = periodTime.startHour * 60 + periodTime.startMinute;
+                        const newEnd = newStart + 45; // 45 min per period
+
+                        const hasConflict = events.some(e =>
+                            e.day === day &&
+                            newStart < (e.startHour * 60 + e.startMinute + e.duration) &&
+                            newEnd > (e.startHour * 60 + e.startMinute)
+                        );
+
+                        if (hasConflict) {
+                            skippedCount++;
+                            continue;
+                        }
+
+                        // Add event
+                        events.push({
+                            id: `school_${classId}_${day}_${periodNum}`,
+                            title: subjectName,
+                            type: 'school',
+                            day: day,
+                            startHour: periodTime.startHour,
+                            startMinute: periodTime.startMinute,
+                            duration: 45
+                        });
+                        importedCount++;
+                    }
+                }
+
+                saveEvents();
+                renderEvents();
+
+                if (importedCount > 0) {
+                    successEl.innerHTML = `<i class="fa-solid fa-check-circle mr-1"></i> Đã import ${importedCount} tiết học${skippedCount > 0 ? `, bỏ qua ${skippedCount} tiết trùng` : ''}.`;
+                    successEl.classList.remove('hidden');
+                } else {
+                    errorEl.textContent = skippedCount > 0
+                        ? `Tất cả ${skippedCount} tiết đều trùng với lịch hiện có.`
+                        : 'Không có tiết học nào để import.';
+                    errorEl.classList.remove('hidden');
+                }
+
+            } catch (error) {
+                console.error('Import error:', error);
+                errorEl.textContent = 'Lỗi: ' + error.message;
+                errorEl.classList.remove('hidden');
+            } finally {
+                btn.disabled = false;
+                btn.innerHTML = '<i class="fa-solid fa-file-import"></i> Import';
+            }
         };
     </script>
 </body>
