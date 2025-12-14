@@ -1,0 +1,570 @@
+<!DOCTYPE html>
+<html lang="vi">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Quản Lý Thời Khoá Biểu | StudyStation Admin</title>
+    <link rel="icon" type="image/png" href="../../../favicon.png">
+
+    <!-- Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+
+    <!-- Fonts -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Be+Vietnam+Pro:wght@400;500;600;700&display=swap"
+        rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+
+    <style>
+        body {
+            font-family: 'Be Vietnam Pro', sans-serif;
+        }
+
+        /* Gatekeeper Loading */
+        #gatekeeper-loading {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: #0f172a;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            z-index: 9999;
+            color: white;
+            transition: opacity 0.5s ease;
+        }
+
+        .gk-spinner {
+            width: 40px;
+            height: 40px;
+            border: 4px solid rgba(255, 255, 255, 0.1);
+            border-top-color: #3b82f6;
+            border-radius: 50%;
+            animation: spin 1s linear infinite;
+            margin-top: 16px;
+        }
+
+        @keyframes spin {
+            100% {
+                transform: rotate(360deg);
+            }
+        }
+
+        .schedule-cell {
+            min-height: 60px;
+            transition: all 0.2s;
+        }
+
+        .schedule-cell:hover {
+            transform: scale(1.02);
+            z-index: 10;
+        }
+
+        .schedule-cell.empty:hover {
+            background-color: #f1f5f9;
+            cursor: pointer;
+        }
+
+        .subject-badge {
+            transition: all 0.2s;
+        }
+
+        .subject-badge:hover .delete-btn {
+            opacity: 1;
+        }
+
+        .delete-btn {
+            opacity: 0;
+            transition: opacity 0.2s;
+        }
+    </style>
+</head>
+
+<body class="bg-gray-50 min-h-screen">
+
+    <!-- Gatekeeper Loading -->
+    <div id="gatekeeper-loading">
+        <img src="../../../favicon.png" alt="StudyStation" style="width:56px;height:56px;border-radius:12px;">
+        <h3 class="text-xl font-bold mt-3">StudyStation Admin</h3>
+        <p class="text-sm text-slate-400 mt-1">Đang xác thực...</p>
+        <div class="gk-spinner"></div>
+    </div>
+
+    <!-- Access Denied -->
+    <div id="access-denied" class="hidden min-h-screen flex items-center justify-center">
+        <div class="text-center p-8">
+            <div class="w-20 h-20 bg-red-100 rounded-full flex items-center justify-center mx-auto mb-4">
+                <i class="fa-solid fa-lock text-3xl text-red-500"></i>
+            </div>
+            <h2 class="text-2xl font-bold text-gray-800 mb-2">Không có quyền truy cập</h2>
+            <p class="text-gray-500 mb-6">Bạn cần quyền Admin để truy cập trang này.</p>
+            <a href="../../index.html"
+                class="px-6 py-3 bg-blue-600 text-white font-semibold rounded-xl hover:bg-blue-700 transition-colors">
+                Quay lại
+            </a>
+        </div>
+    </div>
+
+    <!-- Main Content -->
+    <div id="main-content" class="hidden">
+        <!-- Header -->
+        <header class="bg-white border-b border-gray-200 sticky top-0 z-40">
+            <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+                <div class="flex items-center justify-between h-16">
+                    <div class="flex items-center gap-4">
+                        <a href="../index.html"
+                            class="flex items-center gap-2 text-gray-500 hover:text-blue-600 transition-colors">
+                            <i class="fa-solid fa-arrow-left"></i>
+                        </a>
+                        <div class="flex items-center gap-3">
+                            <div
+                                class="w-10 h-10 bg-gradient-to-br from-green-500 to-emerald-600 rounded-xl flex items-center justify-center text-white shadow-lg">
+                                <i class="fa-solid fa-calendar-days"></i>
+                            </div>
+                            <div>
+                                <h1 class="font-bold text-lg text-gray-800">Quản Lý Thời Khoá Biểu</h1>
+                                <p class="text-xs text-gray-400">Admin Panel</p>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="flex items-center gap-3">
+                        <span id="admin-email" class="text-sm text-gray-500 hidden sm:block"></span>
+                        <div
+                            class="px-3 py-1 bg-yellow-100 text-yellow-700 text-xs font-bold rounded-full border border-yellow-200">
+                            ADMIN
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </header>
+
+        <!-- Main -->
+        <main class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+            <!-- Toolbar -->
+            <div class="bg-white rounded-2xl border border-gray-200 p-6 mb-8 shadow-sm">
+                <div class="flex flex-col md:flex-row md:items-center justify-between gap-4">
+                    <div>
+                        <h2 class="text-xl font-bold text-gray-800 mb-1">Thiết Lập Thời Khoá Biểu</h2>
+                        <p class="text-sm text-gray-500">Quản lý lịch học theo lớp và môn học</p>
+                    </div>
+                    <div class="flex items-center gap-3">
+                        <select id="class-select"
+                            class="px-4 py-2.5 border border-gray-200 rounded-xl text-sm font-medium focus:ring-2 focus:ring-blue-500 focus:border-blue-500 bg-white">
+                            <option value="" disabled selected>Chọn lớp...</option>
+                        </select>
+                        <button onclick="saveScheduleToFirebase()"
+                            class="px-4 py-2.5 bg-blue-600 text-white rounded-xl text-sm font-semibold hover:bg-blue-700 transition-colors flex items-center gap-2 shadow-sm">
+                            <i class="fa-solid fa-cloud-arrow-up"></i>
+                            Lưu lên Cloud
+                        </button>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Schedule Editor -->
+            <div id="schedule-editor" class="hidden">
+                <div class="bg-white rounded-2xl border border-gray-200 shadow-sm overflow-hidden">
+                    <div class="p-4 border-b border-gray-100 bg-gray-50 flex items-center justify-between">
+                        <div class="flex items-center gap-3">
+                            <span class="text-sm font-bold text-gray-600">Thời khoá biểu lớp:</span>
+                            <span id="current-class-name"
+                                class="px-3 py-1 bg-blue-100 text-blue-700 rounded-lg text-sm font-bold"></span>
+                        </div>
+                        <div class="flex items-center gap-2">
+                            <button onclick="clearSchedule()"
+                                class="px-3 py-1.5 text-red-600 hover:bg-red-50 rounded-lg text-sm font-medium transition-colors">
+                                <i class="fa-solid fa-trash-can mr-1"></i> Xoá tất cả
+                            </button>
+                        </div>
+                    </div>
+                    <div class="overflow-x-auto">
+                        <table class="w-full text-sm">
+                            <thead class="bg-gray-50 border-b border-gray-200">
+                                <tr>
+                                    <th
+                                        class="px-4 py-3 text-left text-xs font-bold text-gray-500 uppercase tracking-wider w-24">
+                                        Tiết</th>
+                                    <th
+                                        class="px-4 py-3 text-center text-xs font-bold text-gray-500 uppercase tracking-wider">
+                                        Thứ 2</th>
+                                    <th
+                                        class="px-4 py-3 text-center text-xs font-bold text-gray-500 uppercase tracking-wider">
+                                        Thứ 3</th>
+                                    <th
+                                        class="px-4 py-3 text-center text-xs font-bold text-gray-500 uppercase tracking-wider">
+                                        Thứ 4</th>
+                                    <th
+                                        class="px-4 py-3 text-center text-xs font-bold text-gray-500 uppercase tracking-wider">
+                                        Thứ 5</th>
+                                    <th
+                                        class="px-4 py-3 text-center text-xs font-bold text-gray-500 uppercase tracking-wider">
+                                        Thứ 6</th>
+                                    <th
+                                        class="px-4 py-3 text-center text-xs font-bold text-gray-500 uppercase tracking-wider">
+                                        Thứ 7</th>
+                                </tr>
+                            </thead>
+                            <tbody id="schedule-body" class="divide-y divide-gray-100">
+                                <!-- Generated by JS -->
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+
+                <!-- Subject List -->
+                <div class="mt-8 bg-white rounded-2xl border border-gray-200 p-6 shadow-sm">
+                    <h3 class="text-lg font-bold text-gray-800 mb-4">Danh Sách Môn Học</h3>
+                    <div class="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-6 gap-3" id="subject-palette">
+                        <!-- Generated by JS -->
+                    </div>
+                    <p class="text-xs text-gray-400 mt-4">
+                        <i class="fa-solid fa-info-circle mr-1"></i>
+                        Kéo thả môn học vào ô trống trong lịch, hoặc click vào ô trống rồi chọn môn.
+                    </p>
+                </div>
+            </div>
+
+            <!-- Placeholder -->
+            <div id="placeholder" class="text-center py-20 bg-white rounded-2xl border-2 border-dashed border-gray-300">
+                <div class="w-20 h-20 bg-gray-100 rounded-full flex items-center justify-center mx-auto mb-4">
+                    <i class="fa-solid fa-calendar-plus text-3xl text-gray-300"></i>
+                </div>
+                <p class="text-gray-500 text-lg font-medium">Chọn một lớp để bắt đầu chỉnh sửa thời khoá biểu</p>
+            </div>
+        </main>
+    </div>
+
+    <!-- Modal Select Subject -->
+    <div id="subject-modal" class="fixed inset-0 z-50 hidden items-center justify-center p-4">
+        <div class="absolute inset-0 bg-black/50 backdrop-blur-sm" onclick="closeSubjectModal()"></div>
+        <div class="relative bg-white rounded-2xl shadow-2xl w-full max-w-md z-10 overflow-hidden">
+            <div class="px-6 py-4 border-b border-gray-100 flex justify-between items-center">
+                <h3 class="font-bold text-lg text-gray-800">Chọn Môn Học</h3>
+                <button onclick="closeSubjectModal()" class="text-gray-400 hover:text-gray-600">
+                    <i class="fa-solid fa-xmark text-xl"></i>
+                </button>
+            </div>
+            <div class="p-4 max-h-96 overflow-y-auto">
+                <div id="modal-subject-list" class="grid grid-cols-2 gap-3">
+                    <!-- Generated by JS -->
+                </div>
+            </div>
+            <div class="px-6 py-3 bg-gray-50 border-t border-gray-100">
+                <button onclick="removeSubjectFromSlot()"
+                    class="w-full py-2 text-red-600 hover:bg-red-50 rounded-lg text-sm font-medium transition-colors">
+                    <i class="fa-solid fa-trash-can mr-1"></i> Xoá môn học khỏi ô này
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Toast -->
+    <div id="toast-container" class="fixed bottom-4 right-4 z-50 space-y-2"></div>
+
+    <script type="module">
+        import {
+            initGatekeeper,
+            checkIsAdmin,
+            onUserChange,
+            db,
+            doc,
+            setDoc,
+            getDoc,
+            collection,
+            getDocs
+        } from "../../../gatekeeper.js";
+
+        // ============================================================
+        // CONFIGURATION
+        // ============================================================
+        const CLASSES = ["10A1", "10A2", "10A3", "11B1", "11B2", "11B3", "12C1", "12C2", "12C3"];
+
+        const SUBJECTS = [
+            { id: "toan", name: "Toán", color: "blue", icon: "fa-calculator" },
+            { id: "van", name: "Ngữ Văn", color: "orange", icon: "fa-feather-pointed" },
+            { id: "anh", name: "Tiếng Anh", color: "violet", icon: "fa-language" },
+            { id: "ly", name: "Vật Lí", color: "indigo", icon: "fa-atom" },
+            { id: "hoa", name: "Hoá Học", color: "teal", icon: "fa-flask" },
+            { id: "sinh", name: "Sinh Học", color: "emerald", icon: "fa-dna" },
+            { id: "su", name: "Lịch Sử", color: "amber", icon: "fa-landmark" },
+            { id: "dia", name: "Địa Lí", color: "cyan", icon: "fa-earth-americas" },
+            { id: "gdcd", name: "GDCD", color: "rose", icon: "fa-scale-balanced" },
+            { id: "tin", name: "Tin Học", color: "sky", icon: "fa-computer" },
+            { id: "td", name: "Thể Dục", color: "red", icon: "fa-dumbbell" },
+            { id: "cn", name: "Công Nghệ", color: "yellow", icon: "fa-screwdriver-wrench" }
+        ];
+
+        const PERIODS = [
+            { id: 1, label: "Tiết 1", time: "07:00 - 07:45", session: "morning" },
+            { id: 2, label: "Tiết 2", time: "07:50 - 08:35", session: "morning" },
+            { id: 3, label: "Tiết 3", time: "08:50 - 09:35", session: "morning" },
+            { id: 4, label: "Tiết 4", time: "09:40 - 10:25", session: "morning" },
+            { id: 5, label: "Tiết 5", time: "10:30 - 11:15", session: "morning" },
+            { id: 6, label: "Tiết 6", time: "13:00 - 13:45", session: "afternoon" },
+            { id: 7, label: "Tiết 7", time: "13:50 - 14:35", session: "afternoon" },
+            { id: 8, label: "Tiết 8", time: "14:50 - 15:35", session: "afternoon" },
+            { id: 9, label: "Tiết 9", time: "15:40 - 16:25", session: "afternoon" },
+            { id: 10, label: "Tiết 10", time: "16:30 - 17:15", session: "afternoon" }
+        ];
+
+        // State
+        let currentClass = null;
+        let scheduleData = {}; // { classId: { day: { period: subjectId } } }
+        let selectedSlot = null; // { day, period }
+
+        // DOM References
+        const refs = {
+            mainContent: document.getElementById('main-content'),
+            accessDenied: document.getElementById('access-denied'),
+            adminEmail: document.getElementById('admin-email'),
+            classSelect: document.getElementById('class-select'),
+            scheduleEditor: document.getElementById('schedule-editor'),
+            placeholder: document.getElementById('placeholder'),
+            currentClassName: document.getElementById('current-class-name'),
+            scheduleBody: document.getElementById('schedule-body'),
+            subjectPalette: document.getElementById('subject-palette'),
+            subjectModal: document.getElementById('subject-modal'),
+            modalSubjectList: document.getElementById('modal-subject-list'),
+            toastContainer: document.getElementById('toast-container')
+        };
+
+        // ============================================================
+        // INITIALIZATION
+        // ============================================================
+        initGatekeeper('protected');
+
+        onUserChange(async (user) => {
+            if (!user) return;
+
+            setTimeout(() => {
+                if (!checkIsAdmin()) {
+                    refs.accessDenied.classList.remove('hidden');
+                    refs.accessDenied.classList.add('flex');
+                    return;
+                }
+
+                refs.adminEmail.textContent = user.email;
+                refs.mainContent.classList.remove('hidden');
+                init();
+            }, 500);
+        });
+
+        async function init() {
+            populateClassSelect();
+            renderSubjectPalette();
+            await loadAllSchedulesFromFirebase();
+
+            refs.classSelect.addEventListener('change', () => {
+                currentClass = refs.classSelect.value;
+                if (currentClass) {
+                    refs.placeholder.classList.add('hidden');
+                    refs.scheduleEditor.classList.remove('hidden');
+                    refs.currentClassName.textContent = currentClass;
+                    renderScheduleTable();
+                }
+            });
+        }
+
+        // ============================================================
+        // FIREBASE OPERATIONS
+        // ============================================================
+        async function loadAllSchedulesFromFirebase() {
+            try {
+                const schedulesCol = collection(db, 'schedules');
+                const snapshot = await getDocs(schedulesCol);
+                snapshot.docs.forEach(doc => {
+                    scheduleData[doc.id] = doc.data();
+                });
+                console.log('Loaded schedules from Firebase:', Object.keys(scheduleData).length);
+            } catch (error) {
+                console.error('Error loading schedules:', error);
+            }
+        }
+
+        window.saveScheduleToFirebase = async function () {
+            if (!currentClass) {
+                showToast('Vui lòng chọn lớp trước', 'error');
+                return;
+            }
+
+            try {
+                const scheduleRef = doc(db, 'schedules', currentClass);
+                await setDoc(scheduleRef, scheduleData[currentClass] || {});
+                showToast(`Đã lưu thời khoá biểu lớp ${currentClass}`, 'success');
+            } catch (error) {
+                console.error('Error saving schedule:', error);
+                showToast('Lỗi khi lưu: ' + error.message, 'error');
+            }
+        };
+
+        // ============================================================
+        // RENDER FUNCTIONS
+        // ============================================================
+        function populateClassSelect() {
+            CLASSES.forEach(cls => {
+                const opt = document.createElement('option');
+                opt.value = cls;
+                opt.textContent = `Lớp ${cls}`;
+                refs.classSelect.appendChild(opt);
+            });
+        }
+
+        function renderSubjectPalette() {
+            refs.subjectPalette.innerHTML = SUBJECTS.map(s => `
+                <div class="subject-badge p-3 rounded-xl border-2 border-${s.color}-200 bg-${s.color}-50 cursor-pointer hover:shadow-md transition-all"
+                     draggable="true" data-subject="${s.id}">
+                    <div class="flex items-center gap-2">
+                        <i class="fa-solid ${s.icon} text-${s.color}-600"></i>
+                        <span class="font-semibold text-${s.color}-700 text-sm">${s.name}</span>
+                    </div>
+                </div>
+            `).join('');
+
+            // Also render modal list
+            refs.modalSubjectList.innerHTML = SUBJECTS.map(s => `
+                <button onclick="selectSubject('${s.id}')"
+                    class="p-3 rounded-xl border-2 border-${s.color}-200 bg-${s.color}-50 hover:shadow-md transition-all text-left">
+                    <div class="flex items-center gap-2">
+                        <i class="fa-solid ${s.icon} text-${s.color}-600"></i>
+                        <span class="font-semibold text-${s.color}-700 text-sm">${s.name}</span>
+                    </div>
+                </button>
+            `).join('');
+        }
+
+        function renderScheduleTable() {
+            let html = '';
+            let lastSession = '';
+
+            PERIODS.forEach(period => {
+                // Session divider
+                if (period.session !== lastSession) {
+                    const sessionName = period.session === 'morning' ? 'Buổi Sáng' : 'Buổi Chiều';
+                    html += `
+                        <tr class="bg-gray-100">
+                            <td colspan="7" class="px-4 py-2 text-center text-xs font-bold text-gray-500 uppercase tracking-wider">
+                                <i class="fa-regular fa-clock mr-1"></i> ${sessionName}
+                            </td>
+                        </tr>
+                    `;
+                    lastSession = period.session;
+                }
+
+                html += `<tr class="hover:bg-gray-50">`;
+                html += `
+                    <td class="px-4 py-3">
+                        <div class="font-bold text-gray-700">${period.label}</div>
+                        <div class="text-xs text-gray-400">${period.time}</div>
+                    </td>
+                `;
+
+                for (let day = 2; day <= 7; day++) {
+                    const subjectId = scheduleData[currentClass]?.[day]?.[period.id];
+                    const subject = SUBJECTS.find(s => s.id === subjectId);
+
+                    if (subject) {
+                        html += `
+                            <td class="px-2 py-2">
+                                <div class="schedule-cell p-2 rounded-xl bg-${subject.color}-50 border border-${subject.color}-200 cursor-pointer"
+                                     onclick="openSubjectModal(${day}, ${period.id})">
+                                    <div class="flex flex-col items-center gap-1">
+                                        <i class="fa-solid ${subject.icon} text-${subject.color}-600"></i>
+                                        <span class="font-semibold text-${subject.color}-700 text-xs">${subject.name}</span>
+                                    </div>
+                                </div>
+                            </td>
+                        `;
+                    } else {
+                        html += `
+                            <td class="px-2 py-2">
+                                <div class="schedule-cell empty p-2 rounded-xl border-2 border-dashed border-gray-200 flex items-center justify-center"
+                                     onclick="openSubjectModal(${day}, ${period.id})">
+                                    <i class="fa-solid fa-plus text-gray-300"></i>
+                                </div>
+                            </td>
+                        `;
+                    }
+                }
+
+                html += `</tr>`;
+            });
+
+            refs.scheduleBody.innerHTML = html;
+        }
+
+        // ============================================================
+        // MODAL & SUBJECT SELECTION
+        // ============================================================
+        window.openSubjectModal = function (day, period) {
+            selectedSlot = { day, period };
+            refs.subjectModal.classList.remove('hidden');
+            refs.subjectModal.classList.add('flex');
+        };
+
+        window.closeSubjectModal = function () {
+            refs.subjectModal.classList.add('hidden');
+            refs.subjectModal.classList.remove('flex');
+            selectedSlot = null;
+        };
+
+        window.selectSubject = function (subjectId) {
+            if (!selectedSlot || !currentClass) return;
+
+            // Initialize nested structure if needed
+            if (!scheduleData[currentClass]) scheduleData[currentClass] = {};
+            if (!scheduleData[currentClass][selectedSlot.day]) scheduleData[currentClass][selectedSlot.day] = {};
+
+            scheduleData[currentClass][selectedSlot.day][selectedSlot.period] = subjectId;
+
+            renderScheduleTable();
+            closeSubjectModal();
+        };
+
+        window.removeSubjectFromSlot = function () {
+            if (!selectedSlot || !currentClass) return;
+
+            if (scheduleData[currentClass]?.[selectedSlot.day]) {
+                delete scheduleData[currentClass][selectedSlot.day][selectedSlot.period];
+            }
+
+            renderScheduleTable();
+            closeSubjectModal();
+        };
+
+        window.clearSchedule = function () {
+            if (!currentClass) return;
+            if (!confirm(`Bạn có chắc muốn xoá toàn bộ thời khoá biểu lớp ${currentClass}?`)) return;
+
+            scheduleData[currentClass] = {};
+            renderScheduleTable();
+            showToast('Đã xoá thời khoá biểu', 'success');
+        };
+
+        // ============================================================
+        // TOAST
+        // ============================================================
+        function showToast(message, type = 'success') {
+            const toast = document.createElement('div');
+            const bgColor = type === 'success' ? 'bg-green-500' : 'bg-red-500';
+            toast.className = `${bgColor} text-white px-4 py-3 rounded-xl shadow-lg flex items-center gap-2 animate-fade-in`;
+            toast.innerHTML = `
+                <i class="fa-solid ${type === 'success' ? 'fa-check-circle' : 'fa-exclamation-circle'}"></i>
+                <span class="font-medium text-sm">${message}</span>
+            `;
+            refs.toastContainer.appendChild(toast);
+
+            setTimeout(() => {
+                toast.style.opacity = '0';
+                toast.style.transform = 'translateX(100px)';
+                setTimeout(() => toast.remove(), 300);
+            }, 3000);
+        }
+    </script>
+</body>
+
+</html>
