@@ -126,10 +126,10 @@
         /* Events */
         .calendar-event {
             position: absolute;
-            left: 4px;
-            right: 4px;
-            border-radius: 12px;
-            padding: 6px 10px;
+            left: 2px;
+            right: 2px;
+            border-radius: 8px;
+            padding: 4px 6px;
             font-size: 11px;
             overflow: hidden;
             cursor: pointer;
@@ -137,8 +137,59 @@
             z-index: 10;
             display: flex;
             flex-direction: column;
-            border-left: 4px solid transparent;
+            border-left: 3px solid transparent;
             box-shadow: 0 1px 2px rgba(0, 0, 0, 0.05);
+            line-height: 1.35;
+        }
+
+        .calendar-event:hover {
+            transform: translateY(-1px);
+            box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
+            z-index: 50;
+        }
+
+        .calendar-event .event-title {
+            font-weight: 700;
+            font-size: 11px;
+            margin-bottom: 2px;
+            /* Allow wrapping up to 2 lines */
+            white-space: normal;
+            display: -webkit-box;
+            -webkit-line-clamp: 2;
+            line-clamp: 2;
+            -webkit-box-orient: vertical;
+            overflow: hidden;
+            z-index: 20;
+            /* Higher than icon */
+            position: relative;
+            color: inherit;
+            text-shadow: 0 1px 0 rgba(255, 255, 255, 0.4);
+            /* Better contrast */
+        }
+
+        .calendar-event .event-time {
+            font-size: 10px;
+            font-weight: 500;
+            opacity: 0.9;
+            display: flex;
+            align-items: center;
+            gap: 4px;
+            z-index: 20;
+            /* Higher than icon */
+            position: relative;
+            white-space: nowrap;
+        }
+
+        .calendar-event .event-icon-bg {
+            position: absolute;
+            bottom: -8px;
+            right: -8px;
+            font-size: 42px;
+            opacity: 0.12;
+            transform: rotate(-15deg);
+            z-index: 1;
+            /* Lowest */
+            pointer-events: none;
         }
 
         .calendar-event:hover {
@@ -658,6 +709,9 @@
     </div>
 
     <!-- Scripts -->
+    <!-- Load Static Schedule Data -->
+    <script src="../admin/schedule/schedules_data.js"></script>
+
     <script type="module">
         import { initGatekeeper, db, collection, getDocs, doc, getDoc } from "../../gatekeeper.js";
         initGatekeeper('protected');
@@ -1243,29 +1297,27 @@
                 return;
             }
 
-            // Disable button during import
-            btn.disabled = true;
-            btn.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> Đang import...';
-
             try {
-                // Wait for Firebase to be available
+                // Show loading state
+                btn.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> Đang import...';
+                btn.disabled = true;
+
+                // Simulate delay for better UX
                 await new Promise(resolve => setTimeout(resolve, 500));
 
-                if (!window.firebaseDb) {
-                    throw new Error('Firebase chưa sẵn sàng. Vui lòng thử lại.');
+                // Get schedule from Static Data instead of Firebase
+                if (!window.STATIC_SCHEDULE_DATA) {
+                    throw new Error('Dữ liệu thời khoá biểu không khả dụng.');
                 }
 
-                // Get schedule from Firebase
-                const scheduleRef = window.firebaseDoc(window.firebaseDb, 'schedules', classId);
-                const scheduleSnap = await window.firebaseGetDoc(scheduleRef);
+                const scheduleData = window.STATIC_SCHEDULE_DATA[classId];
 
-                if (!scheduleSnap.exists()) {
-                    errorEl.textContent = `Không tìm thấy thời khoá biểu lớp ${classId}. Admin cần tạo trước.`;
+                if (!scheduleData) {
+                    errorEl.textContent = `Không tìm thấy thời khoá biểu lớp ${classId}.`;
                     errorEl.classList.remove('hidden');
                     return;
                 }
 
-                const scheduleData = scheduleSnap.data();
                 let importedCount = 0;
                 let skippedCount = 0;
 
@@ -1278,6 +1330,9 @@
                         const periodNum = parseInt(periodStr);
                         const periodTime = PERIOD_TIMES[periodNum];
                         if (!periodTime) continue;
+
+                        // Skip if subjectId is empty string
+                        if (!subjectId) continue;
 
                         const subjectName = SUBJECT_NAMES[subjectId] || subjectId;
 
