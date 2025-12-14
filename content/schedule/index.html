@@ -710,7 +710,7 @@
 
     <!-- Scripts -->
     <!-- Load Static Schedule Data -->
-    <script src="../admin/schedule/schedules_data.js"></script>
+    <script src="../admin/schedule/schedules_data.js?v=20241215"></script>
 
     <script type="module">
         import { initGatekeeper, db, collection, getDocs, doc, getDoc } from "../../gatekeeper.js";
@@ -993,6 +993,88 @@
             line.style.top = `${topOffset}px`;
             column.appendChild(line);
         }
+
+        // ============================================================
+        // DOWNLOAD CALENDAR AS IMAGE
+        // ============================================================
+        window.downloadCalendar = async function () {
+            // Fix: Capture the specific wrapper to avoid extra whitespace
+            const calendarContainer = document.querySelector('.calendar-wrapper') || document.querySelector('main');
+
+            try {
+                // Show loading state
+                const btn = event.target.closest('button');
+                const originalContent = btn.innerHTML;
+                btn.innerHTML = '<i class="fa-solid fa-spinner fa-spin text-xs"></i>';
+                btn.disabled = true;
+
+                // Use html2canvas to capture
+                const canvas = await html2canvas(calendarContainer, {
+                    scale: 3, // Higher scale for better quality
+                    backgroundColor: '#ffffff', // Force white background
+                    logging: false,
+                    useCORS: true,
+                    onclone: (clonedDoc) => {
+                        // Fix clipping issues in the cloned document
+                        const events = clonedDoc.querySelectorAll('.calendar-event');
+                        events.forEach(el => {
+                            // Force visibility of all content
+                            el.style.overflow = 'visible';
+                            el.style.height = 'auto';
+                            el.style.minHeight = el.offsetHeight + 'px'; // Maintain minimum size
+                            el.style.whiteSpace = 'normal';
+                            el.style.boxShadow = 'none'; // Reduce artifacts
+                            el.style.zIndex = '100'; // Ensure on top
+
+                            // Ensure title is fully visible
+                            const title = el.querySelector('.event-title');
+                            if (title) {
+                                title.style.whiteSpace = 'normal';
+                                title.style.overflow = 'visible';
+                                title.style.display = 'block'; // Reset -webkit-box
+                                title.style.fontSize = '12px'; // Slightly larger for readability
+                                title.style.lineHeight = '1.2';
+                            }
+
+                            // Ensure time is visible
+                            const time = el.querySelector('.event-time');
+                            if (time) {
+                                time.style.whiteSpace = 'nowrap';
+                                time.style.marginTop = '2px';
+                            }
+                        });
+
+                        // Hide scrollbars in clone
+                        const grid = clonedDoc.querySelector('#calendar-body');
+                        if (grid) {
+                            grid.style.overflow = 'hidden';
+                            grid.style.maxHeight = 'none';
+                        }
+                    }
+                });
+
+                // Create download link
+                const link = document.createElement('a');
+                const now = new Date();
+                const dateStr = now.toISOString().split('T')[0];
+                link.download = `lich-ca-nhan-${dateStr}.png`;
+                link.href = canvas.toDataURL('image/png');
+                link.click();
+
+                // Restore button
+                btn.innerHTML = originalContent;
+                btn.disabled = false;
+
+            } catch (error) {
+                console.error('Download error:', error);
+                alert('Không thể tải xuống. Vui lòng thử lại.');
+                const btn = event.target.closest('button'); // Re-select to be safe
+                if (btn) {
+                    btn.innerHTML = '<i class="fa-solid fa-camera"></i>';
+                    btn.disabled = false;
+                }
+            }
+        };
 
         function updateCurrentTime() {
             const now = new Date();
