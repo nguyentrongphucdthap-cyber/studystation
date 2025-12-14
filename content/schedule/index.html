@@ -800,11 +800,17 @@
             document.getElementById('add-event-modal').classList.add('flex');
             document.getElementById('evt-title').value = '';
             document.getElementById('modal-error').classList.add('hidden');
+            // Reset edit mode
+            window.editingEventId = null;
+            document.querySelector('#add-event-modal h3').textContent = 'Thêm Hoạt Động Mới';
         };
 
         window.closeAddEventModal = function () {
             document.getElementById('add-event-modal').classList.add('hidden');
             document.getElementById('add-event-modal').classList.remove('flex');
+            // Reset edit mode
+            window.editingEventId = null;
+            document.querySelector('#add-event-modal h3').textContent = 'Thêm Hoạt Động Mới';
         };
 
         window.saveEvent = function () {
@@ -823,12 +829,13 @@
 
             const [startHour, startMinute] = startTime.split(':').map(Number);
 
-            // Check for conflicts
+            // Check for conflicts (exclude current event if editing)
             const newStart = startHour * 60 + startMinute;
             const newEnd = newStart + duration;
 
             const conflict = events.find(e =>
                 e.day === day &&
+                e.id !== window.editingEventId && // Exclude current event when editing
                 newStart < (e.startHour * 60 + e.startMinute + e.duration) &&
                 newEnd > (e.startHour * 60 + e.startMinute)
             );
@@ -839,17 +846,34 @@
                 return;
             }
 
-            const newEvent = {
-                id: Date.now().toString(),
-                title,
-                type,
-                day,
-                startHour,
-                startMinute,
-                duration
-            };
+            if (window.editingEventId) {
+                // Update existing event
+                const eventIndex = events.findIndex(e => e.id === window.editingEventId);
+                if (eventIndex !== -1) {
+                    events[eventIndex] = {
+                        ...events[eventIndex],
+                        title,
+                        type,
+                        day,
+                        startHour,
+                        startMinute,
+                        duration
+                    };
+                }
+            } else {
+                // Create new event
+                const newEvent = {
+                    id: Date.now().toString(),
+                    title,
+                    type,
+                    day,
+                    startHour,
+                    startMinute,
+                    duration
+                };
+                events.push(newEvent);
+            }
 
-            events.push(newEvent);
             saveEvents();
             renderEvents();
             closeAddEventModal();
@@ -887,6 +911,34 @@
             saveEvents();
             renderEvents();
             closeEventDetailModal();
+        };
+
+        window.editCurrentEvent = function () {
+            if (!selectedEventId) return;
+            const event = events.find(e => e.id === selectedEventId);
+            if (!event) return;
+
+            // Close detail modal
+            closeEventDetailModal();
+
+            // Open add modal with event data
+            document.getElementById('add-event-modal').classList.remove('hidden');
+            document.getElementById('add-event-modal').classList.add('flex');
+
+            // Fill form with event data
+            document.getElementById('evt-title').value = event.title;
+            document.getElementById('evt-day').value = event.day;
+            document.getElementById('evt-type').value = event.type;
+            document.getElementById('evt-start').value =
+                `${event.startHour.toString().padStart(2, '0')}:${event.startMinute.toString().padStart(2, '0')}`;
+            document.getElementById('evt-duration').value = event.duration;
+            document.getElementById('modal-error').classList.add('hidden');
+
+            // Mark as editing mode
+            window.editingEventId = selectedEventId;
+
+            // Update modal title
+            document.querySelector('#add-event-modal h3').textContent = 'Chỉnh Sửa Hoạt Động';
         };
 
         window.openSettingsModal = function () {
