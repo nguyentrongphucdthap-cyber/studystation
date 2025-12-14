@@ -1137,15 +1137,24 @@
             const [startHour, startMinute] = startTime.split(':').map(Number);
 
             // Check for conflicts (exclude current event if editing)
-            const newStart = startHour * 60 + startMinute;
-            const newEnd = newStart + duration;
+            const [startHourNum, startMinuteNum] = startTime.split(':').map(Number);
+            const durationNum = parseInt(duration); // Ensure number
 
-            const conflict = events.find(e =>
-                e.day === day &&
-                e.id !== window.editingEventId && // Exclude current event when editing
-                newStart < (e.startHour * 60 + e.startMinute + e.duration) &&
-                newEnd > (e.startHour * 60 + e.startMinute)
-            );
+            // Check for conflicts (exclude current event if editing)
+            const newStart = startHourNum * 60 + startMinuteNum;
+            const newEnd = newStart + durationNum;
+
+            const conflict = events.find(e => {
+                // Ensure all comparisons use numbers
+                const eStart = parseInt(e.startHour) * 60 + parseInt(e.startMinute);
+                const eEnd = eStart + parseInt(e.duration);
+                const eDay = parseInt(e.day);
+
+                return eDay === day &&
+                    e.id !== window.editingEventId && // Exclude current event when editing
+                    newStart < eEnd &&
+                    newEnd > eStart;
+            });
 
             if (conflict) {
                 errorEl.textContent = `Trùng lịch với "${conflict.title}"`;
@@ -1162,9 +1171,9 @@
                         title,
                         type,
                         day,
-                        startHour,
-                        startMinute,
-                        duration
+                        startHour: startHourNum,
+                        startMinute: startMinuteNum,
+                        duration: durationNum
                     };
                 }
             } else {
@@ -1174,9 +1183,9 @@
                     title,
                     type,
                     day,
-                    startHour,
-                    startMinute,
-                    duration
+                    startHour: startHourNum,
+                    startMinute: startMinuteNum,
+                    duration: durationNum
                 };
                 events.push(newEvent);
             }
