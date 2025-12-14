@@ -331,7 +331,7 @@ function setupRealtimeMonitor(userRef, currentLocalSession) {
 /**
  * Export Firestore instance và các helper functions cho Admin Panel
  */
-export { db, collection, getDocs, addDoc, deleteDoc, setDoc, doc };
+export { db, collection, getDocs, addDoc, deleteDoc, setDoc, doc, getDoc };
 
 /**
  * Lấy tất cả exams từ Firestore
