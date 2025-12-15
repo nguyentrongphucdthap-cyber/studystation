@@ -546,6 +546,10 @@ function createPart1QuestionHTML(q, idx) {
                     <textarea class="q-text w-full px-4 py-3 border border-gray-200 rounded-xl text-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none resize-none bg-gray-50 focus:bg-white transition-colors" rows="2" placeholder="Nhập nội dung câu hỏi...">${q.text || ''}</textarea>
                 </div>
                 <div>
+                    <label class="text-xs font-semibold text-gray-600 mb-2 block">📌 Yêu cầu (Instruction) <span class="text-gray-400 font-normal">(Hiện phía trên câu hỏi)</span></label>
+                    <input type="text" class="q-instruction w-full px-4 py-2 border border-gray-200 rounded-xl text-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none bg-gray-50 focus:bg-white transition-colors" placeholder="VD: Chọn từ có phần gạch chân phát âm khác..." value="${q.instruction || ''}">
+                </div>
+                <div>
                     <label class="text-xs font-semibold text-gray-600 mb-2 block">🖼️ Hình ảnh (URL)</label>
                     <div class="flex gap-2">
                         <input type="text" class="q-image flex-1 px-4 py-2 border border-gray-200 rounded-xl text-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none bg-gray-50 focus:bg-white transition-colors" placeholder="https://example.com/image.png" value="${imageUrl}">
@@ -595,6 +599,10 @@ function createPart2QuestionHTML(q, idx) {
                     <textarea class="q-text w-full px-3 py-2 border border-gray-200 rounded-lg text-sm focus:ring-2 focus:ring-indigo-500 outline-none resize-none" rows="2" placeholder="Mô tả hoặc đề dẫn...">${q.text || ''}</textarea>
                 </div>
                 <div>
+                    <label class="text-xs font-semibold text-gray-500 mb-1 block">📌 Yêu cầu (Instruction)</label>
+                    <input type="text" class="q-instruction w-full px-3 py-2 border border-gray-200 rounded-lg text-sm focus:ring-2 focus:ring-indigo-500 outline-none" placeholder="VD: Đọc đoạn văn và trả lời..." value="${q.instruction || ''}">
+                </div>
+                <div>
                     <label class="text-xs font-semibold text-gray-500 mb-1 block">🖼️ Hình ảnh (URL)</label>
                     <input type="text" class="q-image w-full px-3 py-2 border border-gray-200 rounded-lg text-sm focus:ring-2 focus:ring-indigo-500 outline-none" placeholder="https://example.com/image.png" value="${imageUrl}">
                     ${imageUrl ? `<img src="${imageUrl}" class="mt-2 max-h-32 rounded-lg border border-gray-200" onerror="this.style.display='none'">` : ''}
@@ -630,6 +638,10 @@ function createPart3QuestionHTML(q, idx) {
                 <div>
                     <label class="text-xs font-semibold text-gray-500 mb-1 block">Nội dung câu hỏi</label>
                     <textarea class="q-text w-full px-3 py-2 border border-gray-200 rounded-lg text-sm focus:ring-2 focus:ring-emerald-500 outline-none resize-none" rows="2" placeholder="Nhập nội dung câu hỏi...">${q.text || ''}</textarea>
+                </div>
+                <div>
+                    <label class="text-xs font-semibold text-gray-500 mb-1 block">📌 Yêu cầu (Instruction)</label>
+                    <input type="text" class="q-instruction w-full px-3 py-2 border border-gray-200 rounded-lg text-sm focus:ring-2 focus:ring-emerald-500 outline-none" placeholder="VD: Điền từ thích hợp..." value="${q.instruction || ''}">
                 </div>
                 <div>
                     <label class="text-xs font-semibold text-gray-500 mb-1 block">🖼️ Hình ảnh (URL)</label>
@@ -703,18 +715,26 @@ function addQuestion(part) {
         container.innerHTML = '';
     }
 
+
+    // Auto-fill instruction from previous question if available
+    let lastInstruction = '';
+    const lastBlock = container.lastElementChild;
+    if (lastBlock) {
+        lastInstruction = lastBlock.querySelector('.q-instruction')?.value || '';
+    }
+
     const newQ = part === 1
-        ? { id: count + 1, text: '', options: ['', '', '', ''], correct: 0 }
+        ? { id: count + 1, text: '', options: ['', '', '', ''], correct: 0, instruction: lastInstruction }
         : part === 2
             ? {
-                id: count + 1, text: '', subQuestions: [
+                id: count + 1, text: '', instruction: lastInstruction, subQuestions: [
                     { id: 'a', text: '', correct: true },
                     { id: 'b', text: '', correct: false },
                     { id: 'c', text: '', correct: true },
                     { id: 'd', text: '', correct: false }
                 ]
             }
-            : { id: count + 1, text: '', correct: '' };
+            : { id: count + 1, text: '', correct: '', instruction: lastInstruction };
 
     const html = part === 1
         ? createPart1QuestionHTML(newQ, count)
@@ -761,12 +781,14 @@ function collectFormData() {
     const part1 = [];
     refs.part1Questions.querySelectorAll('.question-block').forEach((block, idx) => {
         const text = block.querySelector('.q-text').value.trim();
+        const instruction = block.querySelector('.q-instruction')?.value?.trim() || '';
         const image = block.querySelector('.q-image')?.value?.trim() || '';
         const options = Array.from(block.querySelectorAll('.q-option')).map(i => i.value.trim());
         const correctRadio = block.querySelector('.q-correct:checked');
         const correct = correctRadio ? parseInt(correctRadio.value) : 0;
 
         const q = { id: idx + 1, text, options, correct };
+        if (instruction) q.instruction = instruction;
         if (image) q.image = image;
         part1.push(q);
     });
@@ -775,6 +797,7 @@ function collectFormData() {
     const part2 = [];
     refs.part2Questions.querySelectorAll('.question-block').forEach((block, idx) => {
         const text = block.querySelector('.q-text').value.trim();
+        const instruction = block.querySelector('.q-instruction')?.value?.trim() || '';
         const image = block.querySelector('.q-image')?.value?.trim() || '';
         const subQuestions = [];
         block.querySelectorAll('.sub-question').forEach(sq => {
@@ -785,6 +808,7 @@ function collectFormData() {
         });
 
         const q = { id: idx + 1, text, subQuestions };
+        if (instruction) q.instruction = instruction;
         if (image) q.image = image;
         part2.push(q);
     });
@@ -793,10 +817,12 @@ function collectFormData() {
     const part3 = [];
     refs.part3Questions.querySelectorAll('.question-block').forEach((block, idx) => {
         const text = block.querySelector('.q-text').value.trim();
+        const instruction = block.querySelector('.q-instruction')?.value?.trim() || '';
         const image = block.querySelector('.q-image')?.value?.trim() || '';
         const correct = block.querySelector('.q-correct').value.trim();
 
         const q = { id: idx + 1, text, correct };
+        if (instruction) q.instruction = instruction;
         if (image) q.image = image;
         part3.push(q);
     });
