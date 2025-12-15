@@ -188,11 +188,29 @@ html.dark .review-wrong {
 
 :root {
     --question-font-size: 16px;
+    --question-line-height: 1.6;
+    --ui-scale: 1;
+    --content-max-width: 768px;
 }
 
 .dynamic-text {
-    font-size: var(--question-font-size);
-    line-height: 1.6;
+    font-size: calc(var(--question-font-size) * var(--ui-scale)) !important;
+    line-height: var(--question-line-height) !important;
+}
+
+/* Apply line-height to question cards and options */
+.question-card,
+.question-card .font-question,
+.question-card span,
+.sub-question-row,
+.option-label span {
+    line-height: var(--question-line-height);
+}
+
+/* Question container width control */
+.content-area {
+    max-width: var(--content-max-width);
+    transition: max-width 0.3s ease;
 }
 
 input[type=range] {
