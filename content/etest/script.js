@@ -447,6 +447,7 @@ const app = {
         return questions.map(q => ({
             id: q.id,
             text: q.text || '',
+            instruction: q.instruction || '',
             options: Array.isArray(q.options) ? q.options : [],
             ans: q.ans || 'A'
         }));
@@ -594,7 +595,7 @@ const app = {
                     <!-- Right Pane: Questions -->
                     <div class="w-full lg:flex-1 h-full overflow-y-auto custom-scroll bg-slate-50 dark:bg-slate-900 p-4 lg:p-8 pb-24 hidden lg:block" id="right-pane">
                         <div class="max-w-2xl mx-auto space-y-4 lg:space-y-6">
-                            ${section.questions.map(q => this.renderQuestionCard(q)).join('')}
+                            ${this.renderQuestionsWithInstructions(section.questions)}
                         </div>
                     </div>
                 </div>
@@ -606,7 +607,7 @@ const app = {
         return `
             <div class="h-full overflow-y-auto custom-scroll bg-slate-50 dark:bg-slate-900 p-4 lg:p-8 pb-24 animate-fade-in">
                 <div class="max-w-3xl mx-auto space-y-4 lg:space-y-6">
-                    ${section.questions.map(q => this.renderQuestionCard(q)).join('')}
+                    ${this.renderQuestionsWithInstructions(section.questions)}
                 </div>
             </div>
         `;
@@ -640,6 +641,40 @@ const app = {
             document.body.style.cursor = '';
             document.body.style.userSelect = '';
         });
+    },
+
+    // Helper: Render questions with instruction headers
+    renderQuestionsWithInstructions(questions) {
+        let html = '';
+        let lastInstruction = null;
+
+        questions.forEach(q => {
+            // Render instruction header if it changes and is not empty
+            if (q.instruction && q.instruction.trim() !== '' && q.instruction !== lastInstruction) {
+                html += `
+                    <div class="bg-indigo-50 dark:bg-indigo-900/30 border-l-4 border-indigo-500 p-4 rounded-r-lg mb-4 mt-6 first:mt-0">
+                        <p class="text-sm lg:text-base font-semibold text-indigo-800 dark:text-indigo-200 uppercase tracking-wide">
+                            <i class="ph-bold ph-info mr-2"></i>${q.instruction}
+                        </p>
+                    </div>
+                `;
+                lastInstruction = q.instruction;
+            } else if (!q.instruction || q.instruction.trim() === '') {
+                // Reset lastInstruction if current question has no instruction, 
+                // to ensure next valid instruction is rendered even if same as previous non-adjacent one (edge case)
+                // But typically instructions are grouped. 
+                // If we want "no instruction" to break the group, we set to null.
+                // Let's assume blank instruction means "continue previous" OR "no instruction".
+                // For now, let's treat blank as "no instruction" effectively, but not clearing state could be safer for grouping.
+                // Actually, if a question has NO instruction, we probably shouldn't show a header. 
+                // If it follows a question WITH instruction, we might assume it belongs to the same group IF we were inferring.
+                // But here we are explicit. If q.instruction is missing, do nothing.
+            }
+
+            html += this.renderQuestionCard(q);
+        });
+
+        return html;
     },
 
     // ========================================================================
