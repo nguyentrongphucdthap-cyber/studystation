@@ -559,9 +559,17 @@ function updateQuestion(sectionId, qIndex, field, value) {
     section.questions[qIndex][field] = value;
 }
 
-if (optIndex >= 0) {
-    q.options[optIndex] = `${letter}. ${value}`;
-}
+function updateOption(sectionId, qIndex, letter, value) {
+    const section = state.sections.find(s => s.id === sectionId);
+    if (!section || !section.questions) return;
+
+    const q = section.questions[qIndex];
+    if (!q.options) q.options = ['A. ', 'B. ', 'C. ', 'D. '];
+
+    const optIndex = ['A', 'B', 'C', 'D'].indexOf(letter);
+    if (optIndex >= 0) {
+        q.options[optIndex] = `${letter}. ${value}`;
+    }
 }
 
 function copyInstructionDown(sectionId, startIndex) {
