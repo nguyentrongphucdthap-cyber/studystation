@@ -651,29 +651,28 @@ const app = {
         questions.forEach(q => {
             // Render instruction header if it changes and is not empty
             if (q.instruction && q.instruction.trim() !== '' && q.instruction !== lastInstruction) {
-                html += `
                 // Add separator if not the first item
                 if (html !== '') {
-                    html += `< div class="w-full h-px bg-slate-200 dark:bg-slate-700 my-8 flex items-center justify-center relative" >
-                    <span class="bg-slate-50 dark:bg-slate-900 px-4 text-xs text-slate-400 font-medium tracking-wider uppercase">Phần tiếp theo</span>
-                    </div > `;
+                    html += `<div class="w-full h-px bg-slate-200 dark:bg-slate-700 my-8 flex items-center justify-center relative">
+                        <span class="bg-slate-50 dark:bg-slate-900 px-4 text-xs text-slate-400 font-medium tracking-wider uppercase">Phần tiếp theo</span>
+                    </div>`;
                 }
 
                 html += `
-    < div class="bg-indigo-50/80 dark:bg-indigo-900/20 border-l-[6px] border-indigo-500 pl-4 py-1 pr-4 rounded-r-xl mb-6 mt-8 lg:mt-10 backdrop-blur-sm first:mt-0 shadow-sm" >
-        <div class="flex items-start gap-3">
-            <span class="flex items-center justify-center w-6 h-6 rounded-full bg-indigo-100 dark:bg-indigo-800 text-indigo-600 dark:text-indigo-300 mt-0.5 shrink-0">
-                <i class="ph-bold ph-info text-sm"></i>
-            </span>
-            <div>
-                <h4 class="text-xs font-bold text-indigo-400 uppercase tracking-wider mb-1">Yêu cầu</h4>
-                <p class="text-sm lg:text-base font-semibold text-indigo-900 dark:text-indigo-100 leading-relaxed">
-                    ${q.instruction}
-                </p>
-            </div>
-        </div>
-                    </div >
-    `;
+                    <div class="bg-indigo-50/80 dark:bg-indigo-900/20 border-l-[6px] border-indigo-500 pl-4 py-1 pr-4 rounded-r-xl mb-6 mt-8 lg:mt-10 backdrop-blur-sm first:mt-0 shadow-sm">
+                        <div class="flex items-start gap-3">
+                            <span class="flex items-center justify-center w-6 h-6 rounded-full bg-indigo-100 dark:bg-indigo-800 text-indigo-600 dark:text-indigo-300 mt-0.5 shrink-0">
+                                <i class="ph-bold ph-info text-sm"></i>
+                            </span>
+                            <div>
+                                <h4 class="text-xs font-bold text-indigo-400 uppercase tracking-wider mb-1">Yêu cầu</h4>
+                                <p class="text-sm lg:text-base font-semibold text-indigo-900 dark:text-indigo-100 leading-relaxed">
+                                    ${q.instruction}
+                                </p>
+                            </div>
+                        </div>
+                    </div>
+                `;
                 lastInstruction = q.instruction;
             } else if (!q.instruction || q.instruction.trim() === '') {
                 // Reset lastInstruction if current question has no instruction, 
@@ -777,7 +776,7 @@ const app = {
                 <div class="grid grid-cols-1 sm:grid-cols-2 gap-2 lg:gap-3 pl-0 lg:pl-12">
                     ${optionsHtml}
                 </div>
-                ${ explanation }
+                ${explanation}
             </div >
     `;
     },
@@ -813,7 +812,7 @@ const app = {
                 html += `
     < button id = "bubble-${q.id}" onclick = "app.jumpToQuestion(${q.id})"
 class="flex-shrink-0 w-8 h-8 lg:w-9 lg:h-9 rounded-full border ${bubbleClass} text-[10px] lg:text-xs font-bold transition-all duration-200 shadow-sm hover:shadow-md active:scale-95" >
-    ${ q.id }
+    ${q.id}
                     </button >
     `;
             });
@@ -884,7 +883,7 @@ class="flex-shrink-0 w-8 h-8 lg:w-9 lg:h-9 rounded-full border ${bubbleClass} te
     },
 
     scrollToQ(qid) {
-        const el = document.getElementById(`q - ${ qid } `);
+        const el = document.getElementById(`q - ${qid} `);
         if (el) {
             el.scrollIntoView({ behavior: 'smooth', block: 'center' });
             el.classList.add('ring-2', 'ring-blue-400');
