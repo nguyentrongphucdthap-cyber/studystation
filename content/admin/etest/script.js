@@ -420,34 +420,56 @@ function renderQuestions(section) {
     }
 
     return section.questions.map((q, qIndex) => `
-        <div class="question-row p-3 border border-gray-100 rounded-lg" data-qindex="${qIndex}">
+        <div class="question-row p-3 border border-gray-100 rounded-lg bg-white shadow-sm transition-all hover:shadow-md" data-qindex="${qIndex}">
             <div class="flex items-start gap-3">
-                <span class="w-6 h-6 bg-purple-100 text-purple-700 rounded text-xs font-bold flex items-center justify-center shrink-0 mt-1">
+                <span class="w-8 h-8 bg-purple-100 text-purple-700 rounded-lg text-sm font-bold flex items-center justify-center shrink-0 mt-1 shadow-sm border border-purple-200">
                     ${q.id || qIndex + 1}
                 </span>
-                <div class="flex-1 space-y-2">
+                <div class="flex-1 space-y-3">
+                    <!-- Instruction Field (New) -->
+                    <div class="flex gap-2">
+                        <div class="relative flex-1">
+                            <div class="absolute inset-y-0 left-0 pl-2.5 flex items-center pointer-events-none">
+                                <span class="text-gray-400 text-xs">📌</span>
+                            </div>
+                            <input type="text" value="${escapeHtml(q.instruction || '')}" placeholder="Yêu cầu (Instruction) - Chọn từ đồng nghĩa, trái nghĩa..."
+                                class="w-full pl-8 pr-3 py-1.5 border border-yellow-200 bg-yellow-50 rounded-lg text-sm focus:ring-2 focus:ring-yellow-400 focus:bg-white outline-none transition-all placeholder-gray-400 text-gray-700 font-medium"
+                                onchange="window.updateQuestion('${section.id}', ${qIndex}, 'instruction', this.value)">
+                        </div>
+                        <button onclick="window.copyInstructionDown('${section.id}', ${qIndex})"
+                            class="px-2.5 py-1.5 bg-gray-100 hover:bg-yellow-100 text-gray-500 hover:text-yellow-700 border border-gray-200 hover:border-yellow-300 rounded-lg transition-all flex items-center justify-center" 
+                            title="Áp dụng yêu cầu này cho các câu bên dưới">
+                            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 14l-7 7m0 0l-7-7m7 7V3"/></svg>
+                        </button>
+                    </div>
+
                     <input type="text" value="${escapeHtml(q.text || '')}" placeholder="Nội dung câu hỏi..."
-                        class="w-full px-2 py-1 border border-gray-200 rounded text-sm focus:ring-2 focus:ring-purple-500 outline-none"
+                        class="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm focus:ring-2 focus:ring-purple-500 outline-none"
                         onchange="window.updateQuestion('${section.id}', ${qIndex}, 'text', this.value)">
-                    <div class="grid grid-cols-2 gap-2">
+
+                    <div class="grid grid-cols-1 sm:grid-cols-2 gap-2">
                         ${['A', 'B', 'C', 'D'].map(opt => `
-                            <div class="flex items-center gap-1">
-                                <input type="radio" name="ans-${section.id}-${qIndex}" value="${opt}" 
-                                    ${q.ans === opt ? 'checked' : ''}
-                                    onchange="window.updateQuestion('${section.id}', ${qIndex}, 'ans', '${opt}')"
-                                    class="w-4 h-4 text-purple-600">
+                            <div class="flex items-center gap-2 group">
+                                <div class="relative flex items-center justify-center w-8 h-8">
+                                    <input type="radio" name="ans-${section.id}-${qIndex}" value="${opt}" 
+                                        ${q.ans === opt ? 'checked' : ''}
+                                        onchange="window.updateQuestion('${section.id}', ${qIndex}, 'ans', '${opt}')"
+                                        class="peer sr-only">
+                                    <div class="w-6 h-6 border-2 border-gray-300 rounded-full peer-checked:border-purple-600 peer-checked:bg-purple-600 transition-all"></div>
+                                    <span class="absolute text-xs font-bold text-gray-400 peer-checked:text-white pointer-events-none">${opt}</span>
+                                </div>
                                 <input type="text" value="${escapeHtml(getOptionText(q.options, opt))}" 
-                                    placeholder="${opt}."
-                                    class="flex-1 px-2 py-1 border border-gray-200 rounded text-xs focus:ring-2 focus:ring-purple-500 outline-none"
+                                    placeholder="Đáp án ${opt}"
+                                    class="flex-1 px-3 py-1.5 border border-gray-200 rounded-lg text-sm focus:ring-2 focus:ring-purple-500 outline-none group-hover:border-purple-200 transition-colors"
                                     onchange="window.updateOption('${section.id}', ${qIndex}, '${opt}', this.value)">
                             </div>
                         `).join('')}
                     </div>
                 </div>
                 <button onclick="window.removeQuestion('${section.id}', ${qIndex})"
-                    class="p-1 text-red-400 hover:text-red-600 transition-colors shrink-0" title="Xóa câu hỏi">
-                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/>
+                    class="p-2 text-gray-400 hover:text-red-500 hover:bg-red-50 rounded-lg transition-all shrink-0" title="Xóa câu hỏi">
+                    <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"/>
                     </svg>
                 </button>
             </div>
@@ -502,9 +524,16 @@ function addQuestion(sectionId) {
         }
     });
 
+    // Auto-fill instruction from previous question
+    let lastInstruction = '';
+    if (section.questions.length > 0) {
+        lastInstruction = section.questions[section.questions.length - 1].instruction || '';
+    }
+
     section.questions.push({
         id: nextId,
         text: '',
+        instruction: lastInstruction,
         options: ['A. ', 'B. ', 'C. ', 'D. '],
         ans: 'A'
     });
@@ -530,18 +559,39 @@ function updateQuestion(sectionId, qIndex, field, value) {
     section.questions[qIndex][field] = value;
 }
 
-function updateOption(sectionId, qIndex, letter, value) {
+if (optIndex >= 0) {
+    q.options[optIndex] = `${letter}. ${value}`;
+}
+}
+
+function copyInstructionDown(sectionId, startIndex) {
     const section = state.sections.find(s => s.id === sectionId);
     if (!section || !section.questions) return;
 
-    const q = section.questions[qIndex];
-    if (!q.options) q.options = ['A. ', 'B. ', 'C. ', 'D. '];
+    const sourceInstruction = section.questions[startIndex].instruction;
+    if (!sourceInstruction) return;
 
-    const optIndex = ['A', 'B', 'C', 'D'].indexOf(letter);
-    if (optIndex >= 0) {
-        q.options[optIndex] = `${letter}. ${value}`;
+    if (!confirm(`Bạn có chắc muốn áp dụng yêu cầu "${sourceInstruction}" cho TOÀN BỘ các câu hỏi phía dưới không?`)) return;
+
+    let count = 0;
+    for (let i = startIndex + 1; i < section.questions.length; i++) {
+        section.questions[i].instruction = sourceInstruction;
+        count++;
     }
+
+    renderSections();
+    showToast(`Đã cập nhật ${count} câu hỏi`);
 }
+
+// Expose to window
+window.addQuestion = addQuestion;
+window.removeQuestion = removeQuestion;
+window.updateQuestion = updateQuestion;
+window.updateOption = updateOption;
+window.copyInstructionDown = copyInstructionDown;
+window.removeSection = removeSection;
+window.updateSection = updateSection;
+window.addSection = addSection;
 
 function recalculateQuestionIds() {
     let id = 1;
