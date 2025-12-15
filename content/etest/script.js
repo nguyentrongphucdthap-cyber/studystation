@@ -710,17 +710,17 @@ const app = {
 
             if (isCorrect) {
                 cardClass = "border-green-200 dark:border-green-900 bg-green-50/50 dark:bg-green-900/10";
-                statusIcon = `< i class="ph-fill ph-check-circle text-green-500 text-lg lg:text-xl" ></i > `;
+                statusIcon = `<i class="ph-fill ph-check-circle text-green-500 text-lg lg:text-xl"></i>`;
             } else {
                 cardClass = "border-red-200 dark:border-red-900 bg-red-50/50 dark:bg-red-900/10";
-                statusIcon = `< i class="ph-fill ph-x-circle text-red-500 text-lg lg:text-xl" ></i > `;
+                statusIcon = `<i class="ph-fill ph-x-circle text-red-500 text-lg lg:text-xl"></i>`;
             }
             explanation = `
-    < div class="mt-4 pt-3 border-t border-slate-200 dark:border-slate-700 text-xs lg:text-sm" >
+                <div class="mt-4 pt-3 border-t border-slate-200 dark:border-slate-700 text-xs lg:text-sm">
                     <span class="font-bold text-slate-700 dark:text-slate-300">Đáp án:</span> 
                     <span class="text-green-600 font-bold">${q.ans}</span>
-                </div >
-    `;
+                </div>
+            `;
         }
 
         const optionsHtml = q.options.map(opt => {
@@ -745,9 +745,9 @@ const app = {
             const disabledAttr = this.isReviewMode ? 'disabled' : '';
 
             return `
-    < label class="cursor-pointer group relative ${this.isReviewMode ? 'cursor-default' : ''}" >
-        <input type="radio" name="q${q.id}" value="${val}" ${checkedAttr} ${disabledAttr}
-            class="peer sr-only option-radio" onchange="app.saveAnswer(${q.id}, '${val}')">
+                <label class="cursor-pointer group relative ${this.isReviewMode ? 'cursor-default' : ''}">
+                    <input type="radio" name="q${q.id}" value="${val}" ${checkedAttr} ${disabledAttr}
+                        class="peer sr-only option-radio" onchange="app.saveAnswer(${q.id}, '${val}')">
             <div class="p-3 lg:p-3.5 rounded-xl border transition-all duration-200 flex items-center gap-3 shadow-sm ${optionClass}">
                 <span class="option-circle w-5 h-5 lg:w-6 lg:h-6 rounded-full border-2 flex items-center justify-center text-[9px] lg:text-[10px] font-bold transition-all duration-200 ${circleClass}">
                     ${val}
