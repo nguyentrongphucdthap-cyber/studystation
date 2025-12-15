@@ -652,12 +652,28 @@ const app = {
             // Render instruction header if it changes and is not empty
             if (q.instruction && q.instruction.trim() !== '' && q.instruction !== lastInstruction) {
                 html += `
-                    <div class="bg-indigo-50 dark:bg-indigo-900/30 border-l-4 border-indigo-500 p-4 rounded-r-lg mb-4 mt-6 first:mt-0">
-                        <p class="text-sm lg:text-base font-semibold text-indigo-800 dark:text-indigo-200 uppercase tracking-wide">
-                            <i class="ph-bold ph-info mr-2"></i>${q.instruction}
-                        </p>
-                    </div>
-                `;
+                // Add separator if not the first item
+                if (html !== '') {
+                    html += `< div class="w-full h-px bg-slate-200 dark:bg-slate-700 my-8 flex items-center justify-center relative" >
+                    <span class="bg-slate-50 dark:bg-slate-900 px-4 text-xs text-slate-400 font-medium tracking-wider uppercase">Phần tiếp theo</span>
+                    </div > `;
+                }
+
+                html += `
+    < div class="bg-indigo-50/80 dark:bg-indigo-900/20 border-l-[6px] border-indigo-500 pl-4 py-1 pr-4 rounded-r-xl mb-6 mt-8 lg:mt-10 backdrop-blur-sm first:mt-0 shadow-sm" >
+        <div class="flex items-start gap-3">
+            <span class="flex items-center justify-center w-6 h-6 rounded-full bg-indigo-100 dark:bg-indigo-800 text-indigo-600 dark:text-indigo-300 mt-0.5 shrink-0">
+                <i class="ph-bold ph-info text-sm"></i>
+            </span>
+            <div>
+                <h4 class="text-xs font-bold text-indigo-400 uppercase tracking-wider mb-1">Yêu cầu</h4>
+                <p class="text-sm lg:text-base font-semibold text-indigo-900 dark:text-indigo-100 leading-relaxed">
+                    ${q.instruction}
+                </p>
+            </div>
+        </div>
+                    </div >
+    `;
                 lastInstruction = q.instruction;
             } else if (!q.instruction || q.instruction.trim() === '') {
                 // Reset lastInstruction if current question has no instruction, 
@@ -695,17 +711,17 @@ const app = {
 
             if (isCorrect) {
                 cardClass = "border-green-200 dark:border-green-900 bg-green-50/50 dark:bg-green-900/10";
-                statusIcon = `<i class="ph-fill ph-check-circle text-green-500 text-lg lg:text-xl"></i>`;
+                statusIcon = `< i class="ph-fill ph-check-circle text-green-500 text-lg lg:text-xl" ></i > `;
             } else {
                 cardClass = "border-red-200 dark:border-red-900 bg-red-50/50 dark:bg-red-900/10";
-                statusIcon = `<i class="ph-fill ph-x-circle text-red-500 text-lg lg:text-xl"></i>`;
+                statusIcon = `< i class="ph-fill ph-x-circle text-red-500 text-lg lg:text-xl" ></i > `;
             }
             explanation = `
-                <div class="mt-4 pt-3 border-t border-slate-200 dark:border-slate-700 text-xs lg:text-sm">
+    < div class="mt-4 pt-3 border-t border-slate-200 dark:border-slate-700 text-xs lg:text-sm" >
                     <span class="font-bold text-slate-700 dark:text-slate-300">Đáp án:</span> 
                     <span class="text-green-600 font-bold">${q.ans}</span>
-                </div>
-            `;
+                </div >
+    `;
         }
 
         const optionsHtml = q.options.map(opt => {
@@ -730,23 +746,23 @@ const app = {
             const disabledAttr = this.isReviewMode ? 'disabled' : '';
 
             return `
-                <label class="cursor-pointer group relative ${this.isReviewMode ? 'cursor-default' : ''}">
-                    <input type="radio" name="q${q.id}" value="${val}" ${checkedAttr} ${disabledAttr} 
-                           class="peer sr-only option-radio" onchange="app.saveAnswer(${q.id}, '${val}')">
-                    <div class="p-3 lg:p-3.5 rounded-xl border transition-all duration-200 flex items-center gap-3 shadow-sm ${optionClass}">
-                        <span class="option-circle w-5 h-5 lg:w-6 lg:h-6 rounded-full border-2 flex items-center justify-center text-[9px] lg:text-[10px] font-bold transition-all duration-200 ${circleClass}">
-                            ${val}
-                        </span>
-                        <span class="text-xs lg:text-sm font-medium text-slate-700 dark:text-slate-300">
-                            ${opt.substring(3)}
-                        </span>
-                    </div>
-                </label>
-            `;
+    < label class="cursor-pointer group relative ${this.isReviewMode ? 'cursor-default' : ''}" >
+        <input type="radio" name="q${q.id}" value="${val}" ${checkedAttr} ${disabledAttr}
+            class="peer sr-only option-radio" onchange="app.saveAnswer(${q.id}, '${val}')">
+            <div class="p-3 lg:p-3.5 rounded-xl border transition-all duration-200 flex items-center gap-3 shadow-sm ${optionClass}">
+                <span class="option-circle w-5 h-5 lg:w-6 lg:h-6 rounded-full border-2 flex items-center justify-center text-[9px] lg:text-[10px] font-bold transition-all duration-200 ${circleClass}">
+                    ${val}
+                </span>
+                <span class="text-xs lg:text-sm font-medium text-slate-700 dark:text-slate-300">
+                    ${opt.substring(3)}
+                </span>
+            </div>
+        </label>
+`;
         }).join('');
 
         return `
-            <div class="bg-white dark:bg-slate-800 p-4 lg:p-6 rounded-2xl shadow-sm hover:shadow-lg transition-all duration-300 border border-slate-200 dark:border-slate-700 dynamic-text group/card ${cardClass}" id="q-${q.id}">
+    < div class="bg-white dark:bg-slate-800 p-4 lg:p-6 rounded-2xl shadow-sm hover:shadow-lg transition-all duration-300 border border-slate-200 dark:border-slate-700 dynamic-text group/card ${cardClass}" id = "q-${q.id}" >
                 <div class="flex justify-between items-start mb-3 lg:mb-4">
                     <div class="flex gap-3 lg:gap-4">
                         <span class="flex-shrink-0 w-7 h-7 lg:w-8 lg:h-8 rounded-lg bg-blue-100 dark:bg-blue-900/40 text-blue-600 dark:text-blue-400 font-bold flex items-center justify-center text-xs lg:text-sm shadow-sm">
@@ -761,9 +777,9 @@ const app = {
                 <div class="grid grid-cols-1 sm:grid-cols-2 gap-2 lg:gap-3 pl-0 lg:pl-12">
                     ${optionsHtml}
                 </div>
-                ${explanation}
-            </div>
-        `;
+                ${ explanation }
+            </div >
+    `;
     },
 
     // ========================================================================
@@ -795,11 +811,11 @@ const app = {
                 }
 
                 html += `
-                    <button id="bubble-${q.id}" onclick="app.jumpToQuestion(${q.id})" 
-                            class="flex-shrink-0 w-8 h-8 lg:w-9 lg:h-9 rounded-full border ${bubbleClass} text-[10px] lg:text-xs font-bold transition-all duration-200 shadow-sm hover:shadow-md active:scale-95">
-                        ${q.id}
-                    </button>
-                `;
+    < button id = "bubble-${q.id}" onclick = "app.jumpToQuestion(${q.id})"
+class="flex-shrink-0 w-8 h-8 lg:w-9 lg:h-9 rounded-full border ${bubbleClass} text-[10px] lg:text-xs font-bold transition-all duration-200 shadow-sm hover:shadow-md active:scale-95" >
+    ${ q.id }
+                    </button >
+    `;
             });
         });
         container.innerHTML = html;
@@ -868,7 +884,7 @@ const app = {
     },
 
     scrollToQ(qid) {
-        const el = document.getElementById(`q-${qid}`);
+        const el = document.getElementById(`q - ${ qid } `);
         if (el) {
             el.scrollIntoView({ behavior: 'smooth', block: 'center' });
             el.classList.add('ring-2', 'ring-blue-400');
