@@ -761,7 +761,7 @@ const app = {
         }).join('');
 
         return `
-    < div class="bg-white dark:bg-slate-800 p-4 lg:p-6 rounded-2xl shadow-sm hover:shadow-lg transition-all duration-300 border border-slate-200 dark:border-slate-700 dynamic-text group/card ${cardClass}" id = "q-${q.id}" >
+            <div class="bg-white dark:bg-slate-800 p-4 lg:p-6 rounded-2xl shadow-sm hover:shadow-lg transition-all duration-300 border border-slate-200 dark:border-slate-700 dynamic-text group/card ${cardClass}" id="q-${q.id}">
                 <div class="flex justify-between items-start mb-3 lg:mb-4">
                     <div class="flex gap-3 lg:gap-4">
                         <span class="flex-shrink-0 w-7 h-7 lg:w-8 lg:h-8 rounded-lg bg-blue-100 dark:bg-blue-900/40 text-blue-600 dark:text-blue-400 font-bold flex items-center justify-center text-xs lg:text-sm shadow-sm">
@@ -777,7 +777,7 @@ const app = {
                     ${optionsHtml}
                 </div>
                 ${explanation}
-            </div >
+            </div>
     `;
     },
 
@@ -810,10 +810,10 @@ const app = {
                 }
 
                 html += `
-    < button id = "bubble-${q.id}" onclick = "app.jumpToQuestion(${q.id})"
-class="flex-shrink-0 w-8 h-8 lg:w-9 lg:h-9 rounded-full border ${bubbleClass} text-[10px] lg:text-xs font-bold transition-all duration-200 shadow-sm hover:shadow-md active:scale-95" >
-    ${q.id}
-                    </button >
+                    <button id="bubble-${q.id}" onclick="app.jumpToQuestion(${q.id})"
+                        class="flex-shrink-0 w-8 h-8 lg:w-9 lg:h-9 rounded-full border ${bubbleClass} text-[10px] lg:text-xs font-bold transition-all duration-200 shadow-sm hover:shadow-md active:scale-95">
+                        ${q.id}
+                    </button>
     `;
             });
         });
@@ -883,7 +883,7 @@ class="flex-shrink-0 w-8 h-8 lg:w-9 lg:h-9 rounded-full border ${bubbleClass} te
     },
 
     scrollToQ(qid) {
-        const el = document.getElementById(`q - ${qid} `);
+        const el = document.getElementById(`q-${qid}`);
         if (el) {
             el.scrollIntoView({ behavior: 'smooth', block: 'center' });
             el.classList.add('ring-2', 'ring-blue-400');
