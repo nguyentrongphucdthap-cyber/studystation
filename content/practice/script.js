@@ -681,7 +681,8 @@ const app = {
                                     title: exam.title,
                                     time: exam.time || 50,
                                     examCode: exam.examCode || '',
-                                    createdAt: exam.createdAt || ''
+                                    createdAt: exam.createdAt || '',
+                                    author: exam.author || ''
                                 });
                                 this.examContentDB[exam.id] = {
                                     id: exam.id,
