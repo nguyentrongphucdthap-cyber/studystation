@@ -986,3 +986,148 @@ export function getCurrentUserInfo() {
         photoURL: user.photoURL || ''
     };
 }
+
+// ============================================================
+// 11. PRESENCE TRACKING (Online Users)
+// ============================================================
+
+let presenceInterval = null;
+let presenceDocId = null;
+
+/**
+ * Start presence tracking - call this when user is authenticated
+ * Sends heartbeat every 30 seconds
+ */
+export async function startPresence() {
+    const user = auth.currentUser;
+    if (!user) return;
+
+    // Generate unique session ID
+    presenceDocId = `${user.uid}_${Date.now()}`;
+
+    const updatePresence = async () => {
+        try {
+            const presenceRef = doc(db, 'presence', presenceDocId);
+            await setDoc(presenceRef, {
+                oderId: user.uid,
+                userEmail: user.email,
+                userName: user.displayName || user.email.split('@')[0],
+                lastSeen: new Date().toISOString(),
+                userAgent: navigator.userAgent.substring(0, 100)
+            });
+        } catch (e) {
+            console.warn('Presence update failed:', e);
+        }
+    };
+
+    // Initial presence
+    await updatePresence();
+
+    // Heartbeat every 30 seconds
+    presenceInterval = setInterval(updatePresence, 30000);
+
+    // Clean up on page unload
+    window.addEventListener('beforeunload', stopPresence);
+    window.addEventListener('pagehide', stopPresence);
+}
+
+/**
+ * Stop presence tracking - call this on logout or page close
+ */
+export async function stopPresence() {
+    if (presenceInterval) {
+        clearInterval(presenceInterval);
+        presenceInterval = null;
+    }
+
+    if (presenceDocId) {
+        try {
+            const presenceRef = doc(db, 'presence', presenceDocId);
+            await deleteDoc(presenceRef);
+        } catch (e) {
+            // Ignore errors on cleanup
+        }
+        presenceDocId = null;
+    }
+}
+
+/**
+ * Get count of online users (heartbeat within last 60 seconds)
+ * @returns {Promise<number>} - Number of online users
+ */
+export async function getOnlineUsersCount() {
+    try {
+        const presenceCol = collection(db, 'presence');
+        const snapshot = await getDocs(presenceCol);
+
+        const now = new Date();
+        const cutoff = new Date(now.getTime() - 60000); // 60 seconds ago
+
+        let onlineCount = 0;
+        const seenUsers = new Set();
+
+        snapshot.docs.forEach(doc => {
+            const data = doc.data();
+            const lastSeen = new Date(data.lastSeen);
+
+            // Only count if heartbeat is within last 60 seconds
+            // and count unique users only
+            if (lastSeen >= cutoff && data.oderId && !seenUsers.has(data.oderId)) {
+                seenUsers.add(data.oderId);
+                onlineCount++;
+            }
+        });
+
+        return onlineCount;
+    } catch (e) {
+        console.warn('Failed to get online users count:', e);
+        return 0;
+    }
+}
+
+/**
+ * Subscribe to online users count updates (polls every 30 seconds)
+ * @param {function} callback - Function to call with updated count
+ * @returns {function} - Unsubscribe function
+ */
+export function subscribeToOnlineUsers(callback) {
+    // Initial fetch
+    getOnlineUsersCount().then(callback);
+
+    // Poll every 30 seconds
+    const interval = setInterval(async () => {
+        const count = await getOnlineUsersCount();
+        callback(count);
+    }, 30000);
+
+    // Return unsubscribe function
+    return () => clearInterval(interval);
+}
+
+/**
+ * Clean up old presence records (older than 2 minutes)
+ * Call this periodically or on app init
+ */
+export async function cleanupOldPresence() {
+    try {
+        const presenceCol = collection(db, 'presence');
+        const snapshot = await getDocs(presenceCol);
+
+        const now = new Date();
+        const cutoff = new Date(now.getTime() - 120000); // 2 minutes ago
+
+        const deletePromises = [];
+        snapshot.docs.forEach(docSnap => {
+            const data = docSnap.data();
+            const lastSeen = new Date(data.lastSeen);
+
+            if (lastSeen < cutoff) {
+                deletePromises.push(deleteDoc(doc(db, 'presence', docSnap.id)));
+            }
+        });
+
+        await Promise.all(deletePromises);
+    } catch (e) {
+        console.warn('Presence cleanup failed:', e);
+    }
+}
