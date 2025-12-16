@@ -532,8 +532,25 @@ const app = {
             });
         }
 
+        // Answer Layout Toggle
+        const answerLayoutToggle = document.getElementById('answer-layout-toggle');
+        if (answerLayoutToggle) {
+            answerLayoutToggle.addEventListener('change', (e) => {
+                this.toggleAnswerLayout(e.target.checked);
+            });
+        }
+
         await this.loadSubjects();
         this.goHome();
+    },
+
+    toggleAnswerLayout(isVertical) {
+        if (isVertical) {
+            document.body.classList.add('answers-vertical');
+        } else {
+            document.body.classList.remove('answers-vertical');
+        }
+        localStorage.setItem('studyStation_answerLayout', isVertical ? 'vertical' : 'horizontal');
     },
 
     applyDisplaySetting(type, value) {
@@ -621,6 +638,13 @@ const app = {
         const widthDisplay = document.getElementById('content-width-display');
         if (widthSlider) widthSlider.value = contentWidth;
         if (widthDisplay) widthDisplay.innerText = contentWidth + 'px';
+
+        // Answer Layout (default: horizontal)
+        const answerLayout = localStorage.getItem('studyStation_answerLayout') || 'horizontal';
+        const isVertical = answerLayout === 'vertical';
+        const answerToggle = document.getElementById('answer-layout-toggle');
+        if (answerToggle) answerToggle.checked = isVertical;
+        if (isVertical) document.body.classList.add('answers-vertical');
     },
 
     async loadSubjects() {
