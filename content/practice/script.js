@@ -494,15 +494,133 @@ const app = {
         const savedStats = localStorage.getItem('studyStation_stats');
         if (savedStats) this.stats = JSON.parse(savedStats);
 
+        // Load saved settings from localStorage
+        this.loadDisplaySettings();
+
         // Listeners
         document.getElementById('dark-mode-toggle').addEventListener('change', (e) => this.toggleDarkMode(e.target.checked));
-        document.getElementById('font-size-slider').addEventListener('input', (e) => {
-            document.documentElement.style.setProperty('--question-font-size', e.target.value + 'px');
-            document.getElementById('font-size-display').innerText = e.target.value + 'px';
-        });
+
+        // Font Size
+        const fontSlider = document.getElementById('font-size-slider');
+        if (fontSlider) {
+            fontSlider.addEventListener('input', (e) => {
+                this.applyDisplaySetting('fontSize', e.target.value);
+            });
+        }
+
+        // Line Height  
+        const lineHeightSlider = document.getElementById('line-height-slider');
+        if (lineHeightSlider) {
+            lineHeightSlider.addEventListener('input', (e) => {
+                this.applyDisplaySetting('lineHeight', e.target.value);
+            });
+        }
+
+        // UI Scale
+        const uiScaleSlider = document.getElementById('ui-scale-slider');
+        if (uiScaleSlider) {
+            uiScaleSlider.addEventListener('input', (e) => {
+                this.applyDisplaySetting('uiScale', e.target.value);
+            });
+        }
+
+        // Content Width
+        const contentWidthSlider = document.getElementById('content-width-slider');
+        if (contentWidthSlider) {
+            contentWidthSlider.addEventListener('input', (e) => {
+                this.applyDisplaySetting('contentWidth', e.target.value);
+            });
+        }
 
         await this.loadSubjects();
         this.goHome();
+    },
+
+    applyDisplaySetting(type, value) {
+        const root = document.documentElement;
+
+        switch (type) {
+            case 'fontSize':
+                root.style.setProperty('--question-font-size', value + 'px');
+                const fontDisplay = document.getElementById('font-size-display');
+                if (fontDisplay) fontDisplay.innerText = value + 'px';
+                localStorage.setItem('studyStation_fontSize', value);
+                // Apply directly to dynamic-text elements
+                document.querySelectorAll('.dynamic-text').forEach(el => {
+                    el.style.fontSize = value + 'px';
+                });
+                break;
+
+            case 'lineHeight':
+                root.style.setProperty('--question-line-height', value);
+                const lineDisplay = document.getElementById('line-height-display');
+                if (lineDisplay) lineDisplay.innerText = value;
+                localStorage.setItem('studyStation_lineHeight', value);
+                // Apply directly to question cards
+                document.querySelectorAll('.dynamic-text, .question-card, .option-label span').forEach(el => {
+                    el.style.lineHeight = value;
+                });
+                break;
+
+            case 'uiScale':
+                const scale = value / 100;
+                root.style.setProperty('--ui-scale', scale);
+                const scaleDisplay = document.getElementById('ui-scale-display');
+                if (scaleDisplay) scaleDisplay.innerText = value + '%';
+                localStorage.setItem('studyStation_uiScale', value);
+                // Apply scaled font size directly
+                const baseSize = parseInt(localStorage.getItem('studyStation_fontSize') || '16');
+                const scaledSize = Math.round(baseSize * scale);
+                document.querySelectorAll('.dynamic-text').forEach(el => {
+                    el.style.fontSize = scaledSize + 'px';
+                });
+                break;
+
+            case 'contentWidth':
+                root.style.setProperty('--content-max-width', value + 'px');
+                const widthDisplay = document.getElementById('content-width-display');
+                if (widthDisplay) widthDisplay.innerText = value + 'px';
+                localStorage.setItem('studyStation_contentWidth', value);
+                // Apply directly to content area
+                document.querySelectorAll('.content-area').forEach(el => {
+                    el.style.maxWidth = value + 'px';
+                });
+                break;
+        }
+    },
+
+    loadDisplaySettings() {
+        // Font Size (default: 16)
+        const fontSize = localStorage.getItem('studyStation_fontSize') || '16';
+        document.documentElement.style.setProperty('--question-font-size', fontSize + 'px');
+        const fontSlider = document.getElementById('font-size-slider');
+        const fontDisplay = document.getElementById('font-size-display');
+        if (fontSlider) fontSlider.value = fontSize;
+        if (fontDisplay) fontDisplay.innerText = fontSize + 'px';
+
+        // Line Height (default: 1.6)
+        const lineHeight = localStorage.getItem('studyStation_lineHeight') || '1.6';
+        document.documentElement.style.setProperty('--question-line-height', lineHeight);
+        const lineSlider = document.getElementById('line-height-slider');
+        const lineDisplay = document.getElementById('line-height-display');
+        if (lineSlider) lineSlider.value = lineHeight;
+        if (lineDisplay) lineDisplay.innerText = lineHeight;
+
+        // UI Scale (default: 100)
+        const uiScale = localStorage.getItem('studyStation_uiScale') || '100';
+        document.documentElement.style.setProperty('--ui-scale', uiScale / 100);
+        const scaleSlider = document.getElementById('ui-scale-slider');
+        const scaleDisplay = document.getElementById('ui-scale-display');
+        if (scaleSlider) scaleSlider.value = uiScale;
+        if (scaleDisplay) scaleDisplay.innerText = uiScale + '%';
+
+        // Content Width (default: 768)
+        const contentWidth = localStorage.getItem('studyStation_contentWidth') || '768';
+        document.documentElement.style.setProperty('--content-max-width', contentWidth + 'px');
+        const widthSlider = document.getElementById('content-width-slider');
+        const widthDisplay = document.getElementById('content-width-display');
+        if (widthSlider) widthSlider.value = contentWidth;
+        if (widthDisplay) widthDisplay.innerText = contentWidth + 'px';
     },
 
     async loadSubjects() {
