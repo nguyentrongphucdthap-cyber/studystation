@@ -982,7 +982,7 @@ const app = {
                 </div>`;
 
             if (type === 1) {
-                content += `<div class="grid grid-cols-1 md:grid-cols-2 gap-3 md:gap-4 items-start">
+                content += `<div class="grid grid-cols-1 md:grid-cols-2 gap-3 md:gap-4 items-start answer-options-grid">
                     ${q.options.map((opt, i) => `
                         <label class="cursor-pointer group relative option-label" data-idx="${i}">
                             <input type="radio" name="q_${uniqueId}" value="${i}" class="peer sr-only option-radio" onchange="app.handleAnswer(1, ${q.id}, ${i})" ${this.isReviewMode ? 'disabled' : ''}>
