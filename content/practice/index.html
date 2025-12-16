@@ -780,6 +780,45 @@
                             Xem chi tiết & Lời giải
                         </button>
                     </div>
+
+                    <!-- Feedback Section -->
+                    <div class="mt-8 pt-6 border-t border-slate-200 dark:border-slate-700">
+                        <div class="flex items-center gap-2 mb-4">
+                            <svg class="w-5 h-5 text-purple-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                    d="M7 8h10M7 12h4m1 8l-4-4H5a2 2 0 01-2-2V6a2 2 0 012-2h14a2 2 0 012 2v8a2 2 0 01-2 2h-3l-4 4z" />
+                            </svg>
+                            <h3 class="font-bold text-slate-800 dark:text-white text-lg">Góp ý về đề thi</h3>
+                        </div>
+
+                        <!-- Add Comment Form -->
+                        <div class="bg-slate-50 dark:bg-slate-700/50 rounded-xl p-4 mb-4">
+                            <textarea id="feedback-input" maxlength="256" rows="2"
+                                class="w-full px-4 py-3 border border-slate-200 dark:border-slate-600 rounded-xl text-sm focus:ring-2 focus:ring-purple-500 focus:border-purple-500 outline-none resize-none bg-white dark:bg-slate-800 dark:text-white"
+                                placeholder="Góp ý về câu hỏi, đáp án... (tối đa 256 ký tự)"></textarea>
+                            <div class="flex items-center justify-between mt-2">
+                                <span id="feedback-char-count" class="text-xs text-slate-400">0/256</span>
+                                <button onclick="app.submitFeedback()"
+                                    class="px-4 py-2 bg-purple-600 hover:bg-purple-700 text-white text-sm font-semibold rounded-lg transition-colors flex items-center gap-2">
+                                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                            d="M12 19l9 2-9-18-9 18 9-2zm0 0v-8" />
+                                    </svg>
+                                    Gửi góp ý
+                                </button>
+                            </div>
+                        </div>
+
+                        <!-- Comments List -->
+                        <div id="feedback-list" class="space-y-4">
+                            <div class="text-center text-slate-400 text-sm py-4">
+                                <div
+                                    class="w-8 h-8 border-2 border-slate-200 dark:border-slate-600 border-t-purple-500 rounded-full spinner mx-auto mb-2">
+                                </div>
+                                Đang tải góp ý...
+                            </div>
+                        </div>
+                    </div>
                 </div>
             </div>
         </div>
@@ -1022,12 +1061,34 @@
     <script src="https://www.youtube.com/iframe_api"></script>
     <script src="script.js"></script>
     <script type="module">
-        import { initGatekeeper, getAllExams, getSubjects } from "../../gatekeeper.js";
+        import {
+            initGatekeeper,
+            getAllExams,
+            getSubjects,
+            getExamFeedbacks,
+            addFeedback,
+            addReply,
+            deleteFeedback,
+            markFeedbackFixed,
+            getCurrentUserInfo,
+            checkIsAdmin
+        } from "../../gatekeeper.js";
 
         // Make Firebase functions available globally for the app
         window.firebaseExams = {
             getAllExams,
             getSubjects
+        };
+
+        // Make Feedback functions available globally
+        window.firebaseFeedback = {
+            getExamFeedbacks,
+            addFeedback,
+            addReply,
+            deleteFeedback,
+            markFeedbackFixed,
+            getCurrentUserInfo,
+            checkIsAdmin
         };
 
         // Initialize Gatekeeper
