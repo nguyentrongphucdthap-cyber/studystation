@@ -2550,6 +2550,77 @@ function showMatchingResult(msg, accuracy, correct, total) {
     updateRepeatButton();
 }
 
+// ============================================================
+// TEXT-TO-SPEECH (TTS) FEATURE
+// ============================================================
+
+/**
+ * Speak a word using Web Speech API
+ * @param {Event} event - Click event (to prevent card interaction)
+ */
+function speakWord(event) {
+    if (event) {
+        event.stopPropagation();
+        event.preventDefault();
+    }
+
+    // Get current word from flashcard or from session data
+    const wordEl = document.getElementById('fc-word');
+    const word = wordEl ? wordEl.textContent.trim() : '';
+
+    if (!word) return;
+
+    // Check if speech synthesis is available
+    if (!('speechSynthesis' in window)) {
+        console.warn('Text-to-Speech not supported in this browser');
+        return;
+    }
+
+    // Cancel any ongoing speech
+    window.speechSynthesis.cancel();
+
+    // Create utterance
+    const utterance = new SpeechSynthesisUtterance(word);
+    utterance.lang = 'en-US'; // English pronunciation
+    utterance.rate = 0.9; // Slightly slower for clarity
+    utterance.pitch = 1;
+
+    // Try to use an English voice
+    const voices = window.speechSynthesis.getVoices();
+    const englishVoice = voices.find(voice =>
+        voice.lang.startsWith('en') && voice.name.includes('Google')
+    ) || voices.find(voice =>
+        voice.lang.startsWith('en-US')
+    ) || voices.find(voice =>
+        voice.lang.startsWith('en')
+    );
+
+    if (englishVoice) {
+        utterance.voice = englishVoice;
+    }
+
+    // Visual feedback
+    const btn = event?.target?.closest('button');
+    if (btn) {
+        btn.classList.add('animate-pulse');
+        utterance.onend = () => btn.classList.remove('animate-pulse');
+        utterance.onerror = () => btn.classList.remove('animate-pulse');
+    }
+
+    // Speak the word
+    window.speechSynthesis.speak(utterance);
+}
+
+// Preload voices when available
+if ('speechSynthesis' in window) {
+    window.speechSynthesis.onvoiceschanged = () => {
+        window.speechSynthesis.getVoices();
+    };
+}
+
+// Expose speakWord globally
+window.speakWord = speakWord;
+
 // Init App
 async function initApp() {
     initTheme();
