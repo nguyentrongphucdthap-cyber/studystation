@@ -828,3 +828,161 @@ export async function deleteNotification(notifId) {
     const notifRef = doc(db, 'notifications', notifId);
     await deleteDoc(notifRef);
 }
+
+// ============================================================
+// 10. EXAM FEEDBACK SYSTEM
+// ============================================================
+
+/**
+ * Get all feedbacks for an exam
+ * @param {string} examId - ID of the exam
+ * @returns {Promise<Array>} - Array of feedback objects
+ */
+export async function getExamFeedbacks(examId) {
+    const feedbacksCol = collection(db, 'feedbacks', examId, 'comments');
+    const snapshot = await getDocs(feedbacksCol);
+    const feedbacks = snapshot.docs.map(doc => ({
+        id: doc.id,
+        ...doc.data()
+    }));
+    // Sort by createdAt descending (newest first)
+    feedbacks.sort((a, b) => {
+        if (a.createdAt && b.createdAt) return b.createdAt.localeCompare(a.createdAt);
+        return 0;
+    });
+    return feedbacks;
+}
+
+/**
+ * Add a new feedback comment
+ * @param {string} examId - ID of the exam
+ * @param {string} content - Comment content (max 256 chars)
+ * @returns {Promise<string>} - ID of the new comment
+ */
+export async function addFeedback(examId, content) {
+    const user = auth.currentUser;
+    if (!user) throw new Error('Bạn cần đăng nhập để bình luận.');
+
+    if (!content || content.trim().length === 0) {
+        throw new Error('Nội dung bình luận không được để trống.');
+    }
+    if (content.length > 256) {
+        throw new Error('Bình luận tối đa 256 ký tự.');
+    }
+
+    const feedbacksCol = collection(db, 'feedbacks', examId, 'comments');
+    const docRef = await addDoc(feedbacksCol, {
+        userId: user.uid,
+        userEmail: user.email,
+        userName: user.displayName || user.email.split('@')[0],
+        userAvatar: user.photoURL || '',
+        content: content.trim(),
+        createdAt: new Date().toISOString(),
+        isFixed: false,
+        fixedBy: null,
+        fixedAt: null,
+        replies: []
+    });
+    return docRef.id;
+}
+
+/**
+ * Add a reply to a feedback comment
+ * @param {string} examId - ID of the exam
+ * @param {string} commentId - ID of the parent comment
+ * @param {string} content - Reply content (max 256 chars)
+ */
+export async function addReply(examId, commentId, content) {
+    const user = auth.currentUser;
+    if (!user) throw new Error('Bạn cần đăng nhập để trả lời.');
+
+    if (!content || content.trim().length === 0) {
+        throw new Error('Nội dung trả lời không được để trống.');
+    }
+    if (content.length > 256) {
+        throw new Error('Trả lời tối đa 256 ký tự.');
+    }
+
+    const commentRef = doc(db, 'feedbacks', examId, 'comments', commentId);
+    const commentSnap = await getDoc(commentRef);
+
+    if (!commentSnap.exists()) {
+        throw new Error('Bình luận không tồn tại.');
+    }
+
+    const currentReplies = commentSnap.data().replies || [];
+    const newReply = {
+        id: Date.now().toString() + Math.random().toString(36).substr(2, 9),
+        userId: user.uid,
+        userEmail: user.email,
+        userName: user.displayName || user.email.split('@')[0],
+        userAvatar: user.photoURL || '',
+        content: content.trim(),
+        createdAt: new Date().toISOString()
+    };
+
+    await updateDoc(commentRef, {
+        replies: [...currentReplies, newReply]
+    });
+}
+
+/**
+ * Delete a feedback comment (user's own or admin)
+ * @param {string} examId - ID of the exam
+ * @param {string} commentId - ID of the comment to delete
+ */
+export async function deleteFeedback(examId, commentId) {
+    const user = auth.currentUser;
+    if (!user) throw new Error('Bạn cần đăng nhập.');
+
+    const commentRef = doc(db, 'feedbacks', examId, 'comments', commentId);
+    const commentSnap = await getDoc(commentRef);
+
+    if (!commentSnap.exists()) {
+        throw new Error('Bình luận không tồn tại.');
+    }
+
+    const commentData = commentSnap.data();
+
+    // Allow delete if user is admin OR is the comment owner
+    if (!checkIsAdmin() && commentData.userId !== user.uid) {
+        throw new Error('Bạn chỉ có thể xóa bình luận của mình.');
+    }
+
+    await deleteDoc(commentRef);
+}
+
+/**
+ * Mark a feedback as fixed (Admin only)
+ * @param {string} examId - ID of the exam
+ * @param {string} commentId - ID of the comment to mark
+ */
+export async function markFeedbackFixed(examId, commentId) {
+    if (!checkIsAdmin()) {
+        throw new Error('Cần quyền Admin để đánh dấu đã sửa.');
+    }
+
+    const user = auth.currentUser;
+    const commentRef = doc(db, 'feedbacks', examId, 'comments', commentId);
+
+    await updateDoc(commentRef, {
+        isFixed: true,
+        fixedBy: user.email,
+        fixedAt: new Date().toISOString()
+    });
+}
+
+/**
+ * Get current user info for feedback display
+ * @returns {object|null} - User info or null if not logged in
+ */
+export function getCurrentUserInfo() {
+    const user = auth.currentUser;
+    if (!user) return null;
+    return {
+        uid: user.uid,
+        email: user.email,
+        displayName: user.displayName || user.email.split('@')[0],
+        photoURL: user.photoURL || ''
+    };
+}
