@@ -351,8 +351,9 @@ export async function getExamsBySubject(subjectId) {
 }
 
 /**
- * Thêm exam mới với ID có cấu trúc: {subjectId}_{timestamp}_{randomCode}
- * Ví dụ: bio_20251207_a1b2c3
+ * Thêm exam mới với ID có cấu trúc: {subjectId}-{XXX}
+ * Ví dụ: vatli-001, toan-012, sinhhoc-023
+ * XXX là số thứ tự 3 chữ số, tự động tăng dựa trên số lượng exam hiện có
  * Hoặc sử dụng customId nếu được cung cấp
  */
 export async function createExam(examData, customId = null) {
@@ -362,11 +363,27 @@ export async function createExam(examData, customId = null) {
     if (customId && /^[a-zA-Z0-9_-]+$/.test(customId)) {
         examId = customId;
     } else {
-        // Generate structured ID
-        const now = new Date();
-        const dateStr = now.toISOString().slice(0, 10).replace(/-/g, ''); // YYYYMMDD
-        const randomCode = Math.random().toString(36).substring(2, 8); // 6 chars
-        examId = `${examData.subjectId}_${dateStr}_${randomCode}`;
+        // Count existing exams for this subject to determine next number
+        const subjectId = examData.subjectId || 'exam';
+        const examsCol = collection(db, 'exams');
+        const snapshot = await getDocs(examsCol);
+
+        // Find the highest number for this subject
+        let maxNumber = 0;
+        snapshot.docs.forEach(doc => {
+            const id = doc.id;
+            // Match pattern like "subjectId-XXX" where XXX is a number
+            const pattern = new RegExp(`^${subjectId}-(\\d+)$`);
+            const match = id.match(pattern);
+            if (match) {
+                const num = parseInt(match[1], 10);
+                if (num > maxNumber) maxNumber = num;
+            }
+        });
+
+        // Next number, padded to 3 digits
+        const nextNumber = String(maxNumber + 1).padStart(3, '0');
+        examId = `${subjectId}-${nextNumber}`;
     }
 
     // Generate exam code from title (for display)
