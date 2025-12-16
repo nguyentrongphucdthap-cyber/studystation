@@ -201,9 +201,21 @@
             <div id="menu-cards" class="page-content active">
                 <!-- Header -->
                 <div class="flex flex-row items-center justify-between mb-6">
-                    <h1 class="text-2xl md:text-4xl font-bold text-gray-800">
-                        Study<span class="text-blue-400">Station</span>
-                    </h1>
+                    <div>
+                        <h1 class="text-2xl md:text-4xl font-bold text-gray-800">
+                            Study<span class="text-blue-400">Station</span>
+                        </h1>
+                        <!-- Online Users Counter -->
+                        <div id="online-users-badge" class="flex items-center gap-1.5 mt-1">
+                            <span class="relative flex h-2.5 w-2.5">
+                                <span
+                                    class="animate-ping absolute inline-flex h-full w-full rounded-full bg-green-400 opacity-75"></span>
+                                <span class="relative inline-flex rounded-full h-2.5 w-2.5 bg-green-500"></span>
+                            </span>
+                            <span id="online-users-count" class="text-xs text-gray-500 font-medium">-- người đang
+                                học</span>
+                        </div>
+                    </div>
 
                     <div class="flex items-center gap-3 relative">
                         <!-- Icon Thông báo (Bell) -->
@@ -936,9 +948,36 @@
 
     <!-- MODULE GATEKEEPER & ADMIN LOGIC -->
     <script type="module">
-        // Import checkIsAdmin và getAllNotifications
-        import { initGatekeeper, onUserChange, logoutUser, checkIsAdmin, getAllNotifications } from "../gatekeeper.js";
+        // Import checkIsAdmin và getAllNotifications + Presence functions
+        import {
+            initGatekeeper,
+            onUserChange,
+            logoutUser,
+            checkIsAdmin,
+            getAllNotifications,
+            startPresence,
+            stopPresence,
+            subscribeToOnlineUsers,
+            cleanupOldPresence
+        } from "../gatekeeper.js";
+
         initGatekeeper('protected');
+
+        // Start online users counter subscription
+        let unsubscribeOnline = null;
+        const onlineCountEl = document.getElementById('online-users-count');
+
+        function updateOnlineCount(count) {
+            if (onlineCountEl) {
+                onlineCountEl.textContent = `${count} người đang học`;
+            }
+        }
+
+        // Start subscribing to online users (updates every 30s)
+        unsubscribeOnline = subscribeToOnlineUsers(updateOnlineCount);
+
+        // Clean up old presence records periodically
+        cleanupOldPresence();
 
         // Load notifications from Firebase right away
         getAllNotifications().then(notifs => {
@@ -984,9 +1023,13 @@
             if (!user) {
                 if (accInfo) accInfo.classList.add('hidden');
                 if (accMobileSheet) accMobileSheet.classList.add('hidden');
+                stopPresence(); // Stop presence tracking when logged out
                 return;
             }
             if (accInfo) accInfo.classList.remove('hidden');
+
+            // Start presence tracking for this user
+            startPresence();
 
             // Cập nhật thông tin User
             const userName = user.displayName || 'Người dùng';
