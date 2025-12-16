@@ -433,7 +433,14 @@
                         <h2 id="fc-word"
                             class="text-3xl md:text-4xl font-bold text-slate-800 dark:text-white mb-3 pointer-events-none break-words max-w-full">
                         </h2>
-                        <p id="fc-ipa" class="text-slate-400 font-mono text-sm pointer-events-none mb-10"></p>
+                        <div class="flex items-center gap-2 mb-10">
+                            <p id="fc-ipa" class="text-slate-400 font-mono text-sm pointer-events-none"></p>
+                            <button onclick="speakWord(event)"
+                                class="w-8 h-8 rounded-full bg-indigo-100 dark:bg-indigo-900/50 text-indigo-600 dark:text-indigo-400 flex items-center justify-center hover:bg-indigo-200 dark:hover:bg-indigo-800 active:scale-90 transition-all pointer-events-auto"
+                                aria-label="Phát âm" title="Nghe phát âm">
+                                <i class="ph ph-speaker-high text-lg"></i>
+                            </button>
+                        </div>
                         <div
                             class="absolute bottom-8 text-slate-300 dark:text-slate-600 text-xs uppercase tracking-widest font-semibold flex flex-col items-center gap-2 pointer-events-none animate-bounce">
                             <i class="ph ph-hand-tap text-xl"></i> <span>Chạm để lật</span>
