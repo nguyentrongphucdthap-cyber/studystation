@@ -866,6 +866,10 @@ const app = {
                 ? `<span class="text-[10px] md:text-xs text-slate-400 dark:text-slate-500 flex items-center"><svg class="w-3 h-3 mr-1 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"/></svg>${new Date(exam.createdAt).toLocaleDateString('vi-VN')}</span>`
                 : '';
 
+            const authorInfo = exam.author
+                ? `<span class="text-[10px] md:text-xs text-purple-500 dark:text-purple-400 flex items-center"><svg class="w-3 h-3 mr-1 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z"/></svg>${exam.author}</span>`
+                : '';
+
             el.innerHTML = `
                 <div class="flex items-start gap-3 md:gap-4">
                     <div class="shrink-0 w-9 h-9 md:w-10 md:h-10 rounded-full bg-blue-50 dark:bg-blue-900/30 text-blue-600 dark:text-blue-400 flex items-center justify-center font-bold text-xs md:text-sm">${(index + 1).toString().padStart(2, '0')}</div>
@@ -878,6 +882,7 @@ const app = {
                                 ${exam.time} phút
                             </span>
                             ${createdDate}
+                            ${authorInfo}
                         </div>
                     </div>
                     <div class="shrink-0 hidden md:block opacity-0 group-hover:opacity-100 transition-opacity">
