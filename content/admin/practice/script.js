@@ -109,6 +109,7 @@ const refs = {
     examTime: document.getElementById('exam-time'),
     examTitle: document.getElementById('exam-title'),
     examCustomId: document.getElementById('exam-custom-id'),
+    examAuthor: document.getElementById('exam-author'),
 
     // Question containers
     part1Questions: document.getElementById('part1-questions'),
@@ -637,6 +638,9 @@ function showEditor(examId) {
                 refs.examCustomId.value = examId;
                 refs.examCustomId.disabled = true; // Cannot change ID of existing exam
             }
+            if (refs.examAuthor) {
+                refs.examAuthor.value = exam.author || '';
+            }
 
             renderQuestionsPart1(exam.part1 || []);
             renderQuestionsPart2(exam.part2 || []);
@@ -654,6 +658,9 @@ function showEditor(examId) {
         if (refs.examCustomId) {
             refs.examCustomId.value = '';
             refs.examCustomId.disabled = false; // Can set custom ID for new exam
+        }
+        if (refs.examAuthor) {
+            refs.examAuthor.value = '';
         }
 
         renderQuestionsPart1([]);
@@ -1067,6 +1074,7 @@ function collectFormData() {
     const time = parseInt(refs.examTime.value) || 50;
     const title = refs.examTitle.value.trim();
     const customId = refs.examCustomId?.value?.trim() || '';
+    const author = refs.examAuthor?.value?.trim() || '';
 
     // Collect Part 1
     const part1 = [];
@@ -1112,7 +1120,7 @@ function collectFormData() {
         part3.push(q);
     });
 
-    return { subjectId, time, title, customId, part1, part2, part3 };
+    return { subjectId, time, title, customId, author, part1, part2, part3 };
 }
 
 async function saveExam() {
