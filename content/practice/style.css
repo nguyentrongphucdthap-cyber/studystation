@@ -213,6 +213,12 @@ html.dark .review-wrong {
     transition: max-width 0.3s ease;
 }
 
+/* Vertical answer layout (1 column) */
+.answers-vertical .grid-cols-1.md\\:grid-cols-2,
+.answers-vertical .grid.md\\:grid-cols-2 {
+    grid-template-columns: 1fr !important;
+}
+
 input[type=range] {
     -webkit-appearance: none;
     appearance: none;
