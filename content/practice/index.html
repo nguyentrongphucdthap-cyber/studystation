@@ -343,6 +343,30 @@
                     </div>
                     <p class="text-xs text-slate-400 mt-2">Điều chỉnh chiều ngang khu vực làm bài</p>
                 </div>
+
+                <!-- Answer Layout Toggle -->
+                <div class="flex items-center justify-between p-4 rounded-xl bg-slate-50 dark:bg-slate-700/50">
+                    <div class="flex items-center gap-3">
+                        <div class="p-2 bg-cyan-100 dark:bg-cyan-900 rounded-lg text-cyan-600 dark:text-cyan-400">
+                            <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24"
+                                stroke="currentColor">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                    d="M4 6h16M4 10h16M4 14h16M4 18h16" />
+                            </svg>
+                        </div>
+                        <div>
+                            <span class="font-medium text-slate-700 dark:text-slate-200">Đáp án theo cột dọc</span>
+                            <p class="text-xs text-slate-400">1 cột thay vì 2 cột</p>
+                        </div>
+                    </div>
+                    <div
+                        class="relative inline-block w-12 mr-2 align-middle select-none transition duration-200 ease-in">
+                        <input type="checkbox" name="toggle" id="answer-layout-toggle"
+                            class="toggle-checkbox absolute block w-6 h-6 rounded-full bg-white border-4 border-slate-300 appearance-none cursor-pointer transition-all duration-300" />
+                        <label for="answer-layout-toggle"
+                            class="toggle-label block overflow-hidden h-6 rounded-full bg-slate-300 cursor-pointer transition-colors duration-300"></label>
+                    </div>
+                </div>
             </div>
 
             <div class="mt-6 pt-4 border-t border-slate-100 dark:border-slate-700 text-center text-xs text-slate-400">
