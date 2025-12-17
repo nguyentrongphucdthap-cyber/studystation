@@ -1046,26 +1046,35 @@
                             // Force visibility of all content
                             el.style.overflow = 'visible';
                             el.style.height = 'auto';
-                            el.style.minHeight = el.offsetHeight + 'px'; // Maintain minimum size
+                            el.style.minHeight = '40px';
                             el.style.whiteSpace = 'normal';
-                            el.style.boxShadow = 'none'; // Reduce artifacts
-                            el.style.zIndex = '100'; // Ensure on top
+                            el.style.boxShadow = 'none';
+                            el.style.zIndex = '100';
+                            el.style.padding = '6px 8px';
 
-                            // Ensure title is fully visible
+                            // Ensure title is fully visible - reset ALL clipping properties
                             const title = el.querySelector('.event-title');
                             if (title) {
                                 title.style.whiteSpace = 'normal';
                                 title.style.overflow = 'visible';
-                                title.style.display = 'block'; // Reset -webkit-box
-                                title.style.fontSize = '12px'; // Slightly larger for readability
-                                title.style.lineHeight = '1.2';
+                                title.style.display = 'block';
+                                title.style.webkitLineClamp = 'unset';
+                                title.style.webkitBoxOrient = 'unset';
+                                title.style.lineClamp = 'unset';
+                                title.style.textOverflow = 'unset';
+                                title.style.fontSize = '12px';
+                                title.style.fontWeight = '700';
+                                title.style.lineHeight = '1.3';
+                                title.style.marginBottom = '4px';
                             }
 
-                            // Ensure time is visible
+                            // Ensure time is always visible
                             const time = el.querySelector('.event-time');
                             if (time) {
+                                time.style.display = 'flex';
                                 time.style.whiteSpace = 'nowrap';
                                 time.style.marginTop = '2px';
+                                time.style.fontSize = '10px';
                             }
                         });
 
