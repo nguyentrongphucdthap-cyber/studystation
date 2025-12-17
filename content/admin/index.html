@@ -199,7 +199,7 @@
                 </a>
 
                 <!-- Convert JSON Card - Direct Link -->
-                <a href="https://gemini.google.com/share/e5cc74e57b25" target="_blank" rel="noopener noreferrer"
+                <a href="https://gemini.google.com/share/8f392314a2da" target="_blank" rel="noopener noreferrer"
                     class="module-card bg-white rounded-2xl border border-gray-200 p-6 block hover:border-orange-300 transition-colors">
                     <div class="w-14 h-14 bg-orange-100 rounded-2xl flex items-center justify-center mb-4">
                         <svg class="w-7 h-7 text-orange-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -247,7 +247,8 @@
             initGatekeeper,
             checkIsAdmin,
             checkIsSuperAdmin,
-            onUserChange
+            onUserChange,
+            startPresence
         } from "../../gatekeeper.js";
 
         // DOM refs
@@ -282,6 +283,9 @@
 
                 // Show students card for all admins
                 refs.cardStudents.classList.remove('hidden');
+
+                // Start presence tracking (Admin is also a user online)
+                startPresence();
             }, 500);
         });
     </script>
