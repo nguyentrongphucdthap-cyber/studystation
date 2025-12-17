@@ -1028,14 +1028,8 @@ export async function startPresence() {
     if (presenceInterval) clearInterval(presenceInterval);
     presenceInterval = setInterval(updatePresence, 30000);
 
-    // Only clean up on actual page close (not internal navigation)
-    // Use 'pagehide' with persisted check for better reliability
-    window.addEventListener('pagehide', (event) => {
-        // Only stop presence if page is not being cached (actual close/external nav)
-        if (!event.persisted) {
-            stopPresence();
-        }
-    });
+    // Removed pagehide listener to prevent flickering during navigation.
+    // We rely on the 60s cutoff in getOnlineUsersCount for cleanup.
 }
 
 /**
