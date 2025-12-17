@@ -418,13 +418,16 @@
 
     <script src="script.js"></script>
     <script type="module">
-        import { initGatekeeper, getAllEtestExams } from "../../gatekeeper.js";
+        import { initGatekeeper, getAllEtestExams, startPresence } from "../../gatekeeper.js";
 
         // Make Firebase function available globally for the app
         window.firebaseEtest = { getAllEtestExams };
 
         // Initialize Gatekeeper
         initGatekeeper('protected');
+
+        // Start presence tracking for online users counter
+        startPresence();
 
         // Initialize App after Firebase SDK is ready
         // Using 1000ms to ensure auth state is resolved
