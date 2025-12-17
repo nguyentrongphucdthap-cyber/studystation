@@ -13,7 +13,8 @@ import {
     getAllEtestExams,
     createEtestExam,
     updateEtestExam,
-    deleteEtestExam
+    deleteEtestExam,
+    startPresence
 } from "../../../gatekeeper.js";
 
 // ============================================================
@@ -130,6 +131,8 @@ onUserChange(async (user) => {
 
         refs.adminEmail.textContent = user.email;
         refs.mainContent.classList.remove('hidden');
+
+        startPresence();
 
         await init();
     }, 500);
