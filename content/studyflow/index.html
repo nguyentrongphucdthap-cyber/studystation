@@ -1,42 +1,62 @@
 <!DOCTYPE html>
 <html lang="vi" class="dark">
+
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Pomodoro Focus Timer (Protected)</title>
     <link rel="icon" type="image/png" href="../../favicon.png">
-    
+
     <!-- Tải Tailwind CSS -->
     <script src="https://cdn.tailwindcss.com"></script>
-    
+
     <!-- Tải Tone.js để tạo âm thanh (báo thức, tiếng ồn) -->
     <script src="https://cdnjs.cloudflare.com/ajax/libs/tone/14.8.49/Tone.js"></script>
-    
+
     <!-- Tải phông chữ Inter -->
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;700;900&display=swap" rel="stylesheet">
 
     <style>
         /* [GATEKEEPER] Hiển thị trang, overlay sẽ che nội dung khi kiểm tra quyền */
-        body { }
+        body {}
 
         /* [GATEKEEPER] Màn hình chờ khi đang kiểm tra quyền */
         #gatekeeper-loading {
-            position: fixed; top: 0; left: 0; width: 100%; height: 100%;
-            background: #0f172a; /* Màu nền tối cho hợp theme */
-            display: flex; flex-direction: column; justify-content: center; align-items: center;
-            z-index: 9999; color: white; font-family: 'Inter', sans-serif;
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: #0f172a;
+            /* Màu nền tối cho hợp theme */
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            z-index: 9999;
+            color: white;
+            font-family: 'Inter', sans-serif;
         }
 
         /* [GATEKEEPER] Nút đăng xuất nhỏ ở góc trên phải */
         #gatekeeper-logout-btn {
-            position: fixed; top: 1rem; right: 1rem; z-index: 100;
-            background: rgba(239, 68, 68, 0.2); color: #fca5a5;
+            position: fixed;
+            top: 1rem;
+            right: 1rem;
+            z-index: 100;
+            background: rgba(239, 68, 68, 0.2);
+            color: #fca5a5;
             border: 1px solid rgba(239, 68, 68, 0.5);
-            padding: 0.5rem 1rem; border-radius: 0.5rem;
-            cursor: pointer; font-size: 0.8rem; transition: all 0.2s;
+            padding: 0.5rem 1rem;
+            border-radius: 0.5rem;
+            cursor: pointer;
+            font-size: 0.8rem;
+            transition: all 0.2s;
         }
+
         #gatekeeper-logout-btn:hover {
-            background: rgba(239, 68, 68, 0.8); color: white;
+            background: rgba(239, 68, 68, 0.8);
+            color: white;
         }
 
         /* --- CSS CŨ CỦA POMODORO --- */
@@ -48,10 +68,19 @@
         }
 
         @keyframes gradient-move {
-            0% { background-position: 0% 50%; }
-            50% { background-position: 100% 50%; }
-            100% { background-position: 0% 50%; }
+            0% {
+                background-position: 0% 50%;
+            }
+
+            50% {
+                background-position: 100% 50%;
+            }
+
+            100% {
+                background-position: 0% 50%;
+            }
         }
+
         body {
             background: linear-gradient(-45deg, #1d2b64, #0f172a, #0d1a26, #111827);
             background-size: 400% 400%;
@@ -67,8 +96,11 @@
             animation: none;
         }
 
-        .tab-btn.active { background-color: #ffffff; color: #111827; }
-        
+        .tab-btn.active {
+            background-color: #ffffff;
+            color: #111827;
+        }
+
         .nav-icon-btn.active {
             background-color: #3b82f6;
             color: #ffffff;
@@ -85,64 +117,142 @@
             line-height: 1;
             transition: font-size 0.4s ease-in-out;
         }
+
         @media (min-width: 768px) {
             main.timer-active #timer-display {
                 font-size: 6rem;
             }
         }
-        
+
         main.timer-active #task-input {
-            opacity: 0; pointer-events: none; height: 0; margin-bottom: 0; padding-top: 0; padding-bottom: 0;
+            opacity: 0;
+            pointer-events: none;
+            height: 0;
+            margin-bottom: 0;
+            padding-top: 0;
+            padding-bottom: 0;
             transition: all 0.4s ease-in-out;
         }
 
         input[type=range].volume-slider {
-             -webkit-appearance: none; appearance: none; background: transparent; cursor: pointer; width: 100%;
+            -webkit-appearance: none;
+            appearance: none;
+            background: transparent;
+            cursor: pointer;
+            width: 100%;
         }
-        input[type=range].volume-slider:focus { outline: none; }
+
+        input[type=range].volume-slider:focus {
+            outline: none;
+        }
+
         input[type=range].volume-slider::-webkit-slider-thumb {
-            -webkit-appearance: none; appearance: none; height: 14px; width: 14px;
-            background-color: #ffffff; border-radius: 50%; border: none; margin-top: -5px;
+            -webkit-appearance: none;
+            appearance: none;
+            height: 14px;
+            width: 14px;
+            background-color: #ffffff;
+            border-radius: 50%;
+            border: none;
+            margin-top: -5px;
         }
+
         input[type=range].volume-slider::-moz-range-thumb {
-            height: 14px; width: 14px; background-color: #ffffff; border-radius: 50%; border: none;
+            height: 14px;
+            width: 14px;
+            background-color: #ffffff;
+            border-radius: 50%;
+            border: none;
         }
+
         input[type=range].volume-slider::-webkit-slider-runnable-track {
-            height: 4px; background-color: rgba(255, 255, 255, 0.3); border-radius: 2px;
+            height: 4px;
+            background-color: rgba(255, 255, 255, 0.3);
+            border-radius: 2px;
         }
+
         input[type=range].volume-slider::-moz-range-track {
-             height: 4px; background-color: rgba(255, 255, 255, 0.3); border-radius: 2px;
+            height: 4px;
+            background-color: rgba(255, 255, 255, 0.3);
+            border-radius: 2px;
         }
-        
-        .media-tab-btn.active { background-color: #3b82f6; color: #ffffff; }
-        .bg-tab-btn.active { background-color: #3b82f6; color: #ffffff; }
-        
-        .media-list-item, .bg-list-item {
-            display: block; width: 100%; padding: 8px 10px; font-size: 0.8rem; color: #d1d5db;
-            border-radius: 6px; transition: background-color 0.2s; cursor: pointer; white-space: nowrap;
-            overflow: hidden; text-overflow: ellipsis; text-align: left;
+
+        .media-tab-btn.active {
+            background-color: #3b82f6;
+            color: #ffffff;
         }
-        .media-list-item:hover, .bg-list-item:hover { background-color: rgba(255, 255, 255, 0.1); }
-        .media-list-item .code { font-weight: 600; color: #ffffff; margin-right: 6px; }
-        .bg-list-item .icon { margin-right: 8px; }
+
+        .bg-tab-btn.active {
+            background-color: #3b82f6;
+            color: #ffffff;
+        }
+
+        .media-list-item,
+        .bg-list-item {
+            display: block;
+            width: 100%;
+            padding: 8px 10px;
+            font-size: 0.8rem;
+            color: #d1d5db;
+            border-radius: 6px;
+            transition: background-color 0.2s;
+            cursor: pointer;
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            text-align: left;
+        }
+
+        .media-list-item:hover,
+        .bg-list-item:hover {
+            background-color: rgba(255, 255, 255, 0.1);
+        }
+
+        .media-list-item .code {
+            font-weight: 600;
+            color: #ffffff;
+            margin-right: 6px;
+        }
+
+        .bg-list-item .icon {
+            margin-right: 8px;
+        }
 
         #video-popup-panel.hidden {
-            opacity: 0; pointer-events: none; transform: scale(0.5) translateX(200px); transition: all 0.3s ease-out;
+            opacity: 0;
+            pointer-events: none;
+            transform: scale(0.5) translateX(200px);
+            transition: all 0.3s ease-out;
         }
-        #video-popup-panel { transition: all 0.3s ease-out; }
+
+        #video-popup-panel {
+            transition: all 0.3s ease-out;
+        }
 
         .spinner {
-            width: 40px; height: 40px; border: 4px solid rgba(255,255,255,0.1);
-            border-top-color: #3b82f6; border-radius: 50%; animation: spin 1s linear infinite; margin-bottom: 1rem;
+            width: 40px;
+            height: 40px;
+            border: 4px solid rgba(255, 255, 255, 0.1);
+            border-top-color: #3b82f6;
+            border-radius: 50%;
+            animation: spin 1s linear infinite;
+            margin-bottom: 1rem;
         }
-        @keyframes spin { 100% { transform: rotate(360deg); } }
+
+        @keyframes spin {
+            100% {
+                transform: rotate(360deg);
+            }
+        }
     </style>
 </head>
+
 <body class="min-h-screen text-white p-4 overflow-hidden">
 
     <!-- [GATEKEEPER] MÀN HÌNH LOADING -->
     <div id="gatekeeper-loading">
-        <img src="../../favicon.png" alt="StudyStation" style="width:56px;height:56px;border-radius:12px;margin-bottom:12px">
+        <img src="../../favicon.png" alt="StudyStation"
+            style="width:56px;height:56px;border-radius:12px;margin-bottom:12px">
         <h3 class="text-xl font-bold">StudyStation</h3>
         <div class="spinner"></div>
     </div>
@@ -152,82 +262,114 @@
 
     <!-- NỘI DUNG CHÍNH CỦA POMODORO -->
     <div class="w-full max-w-md mx-auto my-10">
-        <main id="main-content" class="bg-black/20 backdrop-blur-xl rounded-2xl p-6 md:p-8 shadow-2xl border border-white/10 transition-all duration-300">
+        <main id="main-content"
+            class="bg-black/20 backdrop-blur-xl rounded-2xl p-6 md:p-8 shadow-2xl border border-white/10 transition-all duration-300">
             <!-- Tabs -->
             <div class="bg-black/30 p-1.5 rounded-full flex justify-between items-center space-x-1 mb-8">
-                <button id="focus-btn" class="tab-btn active w-full py-2 px-4 rounded-full text-sm font-semibold transition-all duration-300">Focus</button>
-                <button id="short-break-btn" class="tab-btn w-full py-2 px-4 rounded-full text-sm font-semibold text-gray-300 hover:bg-white/10 transition-all duration-300">Short Break</button>
-                <button id="long-break-btn" class="tab-btn w-full py-2 px-4 rounded-full text-sm font-semibold text-gray-300 hover:bg-white/10 transition-all duration-300">Long Break</button>
+                <button id="focus-btn"
+                    class="tab-btn active w-full py-2 px-4 rounded-full text-sm font-semibold transition-all duration-300">Focus</button>
+                <button id="short-break-btn"
+                    class="tab-btn w-full py-2 px-4 rounded-full text-sm font-semibold text-gray-300 hover:bg-white/10 transition-all duration-300">Short
+                    Break</button>
+                <button id="long-break-btn"
+                    class="tab-btn w-full py-2 px-4 rounded-full text-sm font-semibold text-gray-300 hover:bg-white/10 transition-all duration-300">Long
+                    Break</button>
             </div>
 
             <!-- Timer -->
-            <div class ="text-center my-10 md:my-12 transition-all duration-300">
-                <h1 id="timer-display" class="text-8xl md:text-9xl font-extrabold tracking-tighter transition-all duration-400 ease-in-out">25:00</h1>
+            <div class="text-center my-10 md:my-12 transition-all duration-300">
+                <h1 id="timer-display"
+                    class="text-8xl md:text-9xl font-extrabold tracking-tighter transition-all duration-400 ease-in-out">
+                    25:00</h1>
             </div>
 
             <!-- Input -->
-            <input type="text" id="task-input" placeholder="What are you working on?" class="w-full bg-transparent border-b-2 border-white/20 focus:border-white/50 text-center text-lg p-2 outline-none placeholder:text-gray-400 mb-6 transition-all duration-400 ease-in-out">
+            <input type="text" id="task-input" placeholder="What are you working on?"
+                class="w-full bg-transparent border-b-2 border-white/20 focus:border-white/50 text-center text-lg p-2 outline-none placeholder:text-gray-400 mb-6 transition-all duration-400 ease-in-out">
 
             <!-- Start Button -->
-            <button id="start-pause-btn" class="w-full bg-white text-gray-900 py-4 px-6 rounded-xl text-2xl font-bold shadow-lg transition-all duration-300 transform hover:scale-105 hover:shadow-2xl active:scale-95">Start</button>
+            <button id="start-pause-btn"
+                class="w-full bg-white text-gray-900 py-4 px-6 rounded-xl text-2xl font-bold shadow-lg transition-all duration-300 transform hover:scale-105 hover:shadow-2xl active:scale-95">Start</button>
         </main>
     </div>
 
     <!-- Navi Icons -->
     <nav class="fixed bottom-4 left-4 z-50 flex flex-row space-x-2">
-        <button id="toggle-sounds-btn" class="nav-icon-btn w-14 h-14 bg-black/30 backdrop-blur-lg border border-white/10 text-2xl rounded-full flex items-center justify-center text-gray-300 hover:bg-white/20 transition-all duration-300">🌧️</button>
-        <button id="toggle-media-btn" class="nav-icon-btn w-14 h-14 bg-black/30 backdrop-blur-lg border border-white/10 text-2xl rounded-full flex items-center justify-center text-gray-300 hover:bg-white/20 transition-all duration-300">🎵</button>
-        <button id="toggle-background-btn" class="nav-icon-btn w-14 h-14 bg-black/30 backdrop-blur-lg border border-white/10 text-2xl rounded-full flex items-center justify-center text-gray-300 hover:bg-white/20 transition-all duration-300">🖼️</button>
+        <button id="toggle-sounds-btn"
+            class="nav-icon-btn w-14 h-14 bg-black/30 backdrop-blur-lg border border-white/10 text-2xl rounded-full flex items-center justify-center text-gray-300 hover:bg-white/20 transition-all duration-300">🌧️</button>
+        <button id="toggle-media-btn"
+            class="nav-icon-btn w-14 h-14 bg-black/30 backdrop-blur-lg border border-white/10 text-2xl rounded-full flex items-center justify-center text-gray-300 hover:bg-white/20 transition-all duration-300">🎵</button>
+        <button id="toggle-background-btn"
+            class="nav-icon-btn w-14 h-14 bg-black/30 backdrop-blur-lg border border-white/10 text-2xl rounded-full flex items-center justify-center text-gray-300 hover:bg-white/20 transition-all duration-300">🖼️</button>
     </nav>
 
     <!-- Sounds Panel -->
-    <div id="sounds-panel" class="fixed bottom-20 left-4 z-40 bg-black/50 backdrop-blur-lg rounded-lg p-4 shadow-lg hidden w-72">
+    <div id="sounds-panel"
+        class="fixed bottom-20 left-4 z-40 bg-black/50 backdrop-blur-lg rounded-lg p-4 shadow-lg hidden w-72">
         <h3 class="text-center text-sm font-medium text-gray-300 mb-5">Ambient Sounds</h3>
         <div class="flex flex-col space-y-3">
             <!-- White Noise -->
             <div class="flex items-center space-x-3">
-                <button data-sound="white" class="sound-btn bg-black/30 p-2 rounded-lg text-xl transition-all duration-300 hover:bg-white/20 w-16">🤍<span class="block text-xs mt-1">White</span></button>
+                <button data-sound="white"
+                    class="sound-btn bg-black/30 p-2 rounded-lg text-xl transition-all duration-300 hover:bg-white/20 w-16">🤍<span
+                        class="block text-xs mt-1">White</span></button>
                 <input type="range" data-sound="white" min="0" max="100" value="0" class="volume-slider w-full">
             </div>
             <!-- Pink Noise -->
             <div class="flex items-center space-x-3">
-                <button data-sound="pink" class="sound-btn bg-black/30 p-2 rounded-lg text-xl transition-all duration-300 hover:bg-white/20 w-16">🩷<span class="block text-xs mt-1">Pink</span></button>
+                <button data-sound="pink"
+                    class="sound-btn bg-black/30 p-2 rounded-lg text-xl transition-all duration-300 hover:bg-white/20 w-16">🩷<span
+                        class="block text-xs mt-1">Pink</span></button>
                 <input type="range" data-sound="pink" min="0" max="100" value="0" class="volume-slider w-full">
             </div>
             <!-- Brown Noise -->
             <div class="flex items-center space-x-3">
-                <button data-sound="brown" class="sound-btn bg-black/30 p-2 rounded-lg text-xl transition-all duration-300 hover:bg-white/20 w-16">🤎<span class="block text-xs mt-1">Brown</span></button>
+                <button data-sound="brown"
+                    class="sound-btn bg-black/30 p-2 rounded-lg text-xl transition-all duration-300 hover:bg-white/20 w-16">🤎<span
+                        class="block text-xs mt-1">Brown</span></button>
                 <input type="range" data-sound="brown" min="0" max="100" value="0" class="volume-slider w-full">
             </div>
             <!-- Sine -->
             <div class="flex items-center space-x-3">
-                <button data-sound="sine" class="sound-btn bg-black/30 p-2 rounded-lg text-xl transition-all duration-300 hover:bg-white/20 w-16">〰️<span class="block text-xs mt-1">Sine</span></button>
+                <button data-sound="sine"
+                    class="sound-btn bg-black/30 p-2 rounded-lg text-xl transition-all duration-300 hover:bg-white/20 w-16">〰️<span
+                        class="block text-xs mt-1">Sine</span></button>
                 <input type="range" data-sound="sine" min="0" max="100" value="0" class="volume-slider w-full">
             </div>
             <!-- Triangle -->
             <div class="flex items-center space-x-3">
-                <button data-sound="triangle" class="sound-btn bg-black/30 p-2 rounded-lg text-xl transition-all duration-300 hover:bg-white/20 w-16">🔺<span class="block text-xs mt-1">Triangle</span></button>
+                <button data-sound="triangle"
+                    class="sound-btn bg-black/30 p-2 rounded-lg text-xl transition-all duration-300 hover:bg-white/20 w-16">🔺<span
+                        class="block text-xs mt-1">Triangle</span></button>
                 <input type="range" data-sound="triangle" min="0" max="100" value="0" class="volume-slider w-full">
             </div>
             <!-- Sawtooth -->
             <div class="flex items-center space-x-3">
-                <button data-sound="sawtooth" class="sound-btn bg-black/30 p-2 rounded-lg text-xl transition-all duration-300 hover:bg-white/20 w-16">📈<span class="block text-xs mt-1">Saw</span></button>
+                <button data-sound="sawtooth"
+                    class="sound-btn bg-black/30 p-2 rounded-lg text-xl transition-all duration-300 hover:bg-white/20 w-16">📈<span
+                        class="block text-xs mt-1">Saw</span></button>
                 <input type="range" data-sound="sawtooth" min="0" max="100" value="0" class="volume-slider w-full">
             </div>
         </div>
     </div>
 
     <!-- Media Panel -->
-    <div id="media-panel" class="fixed bottom-20 left-4 z-40 bg-black/50 backdrop-blur-lg rounded-lg p-4 shadow-lg w-full max-w-xs hidden">
+    <div id="media-panel"
+        class="fixed bottom-20 left-4 z-40 bg-black/50 backdrop-blur-lg rounded-lg p-4 shadow-lg w-full max-w-xs hidden">
         <div class="bg-black/30 p-1 rounded-full flex justify-between items-center space-x-1 mb-4">
-            <button data-tab="custom" class="media-tab-btn active w-full py-1.5 px-2 rounded-full text-xs font-semibold">Custom</button>
-            <button data-tab="album" class="media-tab-btn w-full py-1.5 px-2 rounded-full text-xs font-semibold text-gray-300 hover:bg-white/10">Album</button>
-            <button data-tab="history" class="media-tab-btn w-full py-1.5 px-2 rounded-full text-xs font-semibold text-gray-300 hover:bg-white/10">History</button>
+            <button data-tab="custom"
+                class="media-tab-btn active w-full py-1.5 px-2 rounded-full text-xs font-semibold">Custom</button>
+            <button data-tab="album"
+                class="media-tab-btn w-full py-1.5 px-2 rounded-full text-xs font-semibold text-gray-300 hover:bg-white/10">Album</button>
+            <button data-tab="history"
+                class="media-tab-btn w-full py-1.5 px-2 rounded-full text-xs font-semibold text-gray-300 hover:bg-white/10">History</button>
         </div>
         <div id="media-tab-custom" class="media-tab-content">
             <div class="flex space-x-2 mb-2">
-                <input type="text" id="media-url-input" placeholder="Paste a YouTube URL" class="flex-grow bg-black/30 text-white p-2 rounded-lg text-sm outline-none focus:ring-2 focus:ring-blue-500 placeholder:text-gray-400">
-                <button id="load-media-btn" class="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-lg text-sm font-semibold transition-all">Load</button>
+                <input type="text" id="media-url-input" placeholder="Paste a YouTube URL"
+                    class="flex-grow bg-black/30 text-white p-2 rounded-lg text-sm outline-none focus:ring-2 focus:ring-blue-500 placeholder:text-gray-400">
+                <button id="load-media-btn"
+                    class="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-lg text-sm font-semibold transition-all">Load</button>
             </div>
         </div>
         <div id="media-tab-album" class="media-tab-content hidden max-h-48 overflow-y-auto"></div>
@@ -235,42 +377,59 @@
     </div>
 
     <!-- Video Popup -->
-    <div id="video-popup-panel" class="fixed bottom-4 right-4 z-40 bg-black/50 backdrop-blur-lg rounded-lg shadow-lg w-full max-w-md hidden">
-        <button id="close-video-popup-btn" class="absolute -top-2 -right-2 z-50 w-7 h-7 bg-black/70 rounded-full text-white flex items-center justify-center text-lg font-bold leading-none pb-0.5 hover:bg-red-500 transition-colors">&times;</button>
-        <div id="media-player-container" class="video-wrapper aspect-video w-full rounded-lg overflow-hidden bg-black/30"></div>
+    <div id="video-popup-panel"
+        class="fixed bottom-4 right-4 z-40 bg-black/50 backdrop-blur-lg rounded-lg shadow-lg w-full max-w-md hidden">
+        <button id="close-video-popup-btn"
+            class="absolute -top-2 -right-2 z-50 w-7 h-7 bg-black/70 rounded-full text-white flex items-center justify-center text-lg font-bold leading-none pb-0.5 hover:bg-red-500 transition-colors">&times;</button>
+        <div id="media-player-container"
+            class="video-wrapper aspect-video w-full rounded-lg overflow-hidden bg-black/30"></div>
     </div>
 
     <!-- Background Panel -->
-    <div id="background-panel" class="fixed bottom-20 left-4 z-40 bg-black/50 backdrop-blur-lg rounded-lg p-4 shadow-lg w-full max-w-xs hidden">
+    <div id="background-panel"
+        class="fixed bottom-20 left-4 z-40 bg-black/50 backdrop-blur-lg rounded-lg p-4 shadow-lg w-full max-w-xs hidden">
         <h3 class="text-center text-sm font-medium text-gray-300 mb-4">Đổi Nền</h3>
         <div class="bg-black/30 p-1 rounded-full flex justify-between items-center space-x-1 mb-4">
-            <button data-tab="custom" class="bg-tab-btn active w-full py-1.5 px-2 rounded-full text-xs font-semibold">Custom</button>
-            <button data-tab="album" class="bg-tab-btn w-full py-1.5 px-2 rounded-full text-xs font-semibold text-gray-300 hover:bg-white/10">Album</button>
+            <button data-tab="custom"
+                class="bg-tab-btn active w-full py-1.5 px-2 rounded-full text-xs font-semibold">Custom</button>
+            <button data-tab="album"
+                class="bg-tab-btn w-full py-1.5 px-2 rounded-full text-xs font-semibold text-gray-300 hover:bg-white/10">Album</button>
         </div>
         <div id="bg-tab-custom" class="bg-tab-content space-y-3">
-            <input type="text" id="bg-url-input" placeholder="Paste an image/GIF URL" class="w-full bg-black/30 text-white p-2 rounded-lg text-sm outline-none focus:ring-2 focus:ring-blue-500 placeholder:text-gray-400">
-            <button id="set-bg-btn" class="w-full bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-lg text-sm font-semibold transition-all">Đặt Nền</button>
-            <button id="reset-bg-btn" class="w-full bg-gray-600 hover:bg-gray-700 text-white px-4 py-2 rounded-lg text-sm font-semibold transition-all">Khôi Phục</button>
+            <input type="text" id="bg-url-input" placeholder="Paste an image/GIF URL"
+                class="w-full bg-black/30 text-white p-2 rounded-lg text-sm outline-none focus:ring-2 focus:ring-blue-500 placeholder:text-gray-400">
+            <button id="set-bg-btn"
+                class="w-full bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-lg text-sm font-semibold transition-all">Đặt
+                Nền</button>
+            <button id="reset-bg-btn"
+                class="w-full bg-gray-600 hover:bg-gray-700 text-white px-4 py-2 rounded-lg text-sm font-semibold transition-all">Khôi
+                Phục</button>
         </div>
         <div id="bg-tab-album" class="bg-tab-content hidden max-h-48 overflow-y-auto"></div>
     </div>
 
     <!-- Error Modal -->
-    <div id="error-modal" class="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center p-4 hidden" style="z-index: 1000;">
+    <div id="error-modal" class="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center p-4 hidden"
+        style="z-index: 1000;">
         <div class="bg-gray-800 rounded-lg p-6 shadow-xl w-full max-w-sm text-center">
             <h3 class="text-lg font-semibold mb-2">Thông báo</h3>
             <p id="error-message" class="text-gray-300 mb-4">URL YouTube không hợp lệ.</p>
-            <button id="close-error-modal-btn" class="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-lg text-sm font-semibold transition-all">Đã hiểu</button>
+            <button id="close-error-modal-btn"
+                class="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-lg text-sm font-semibold transition-all">Đã
+                hiểu</button>
         </div>
     </div>
 
     <!-- [GATEKEEPER] LOGIC BẢO VỆ -->
     <script type="module">
         // Import từ thư mục cha 2 cấp (../../)
-        import { initGatekeeper, logoutUser } from "../../gatekeeper.js";
+        import { initGatekeeper, logoutUser, startPresence } from "../../gatekeeper.js";
 
         // Kích hoạt chế độ bảo vệ trang nội dung
         initGatekeeper('protected_page');
+
+        // Start presence tracking for online users counter
+        startPresence();
 
         // Gán sự kiện cho nút đăng xuất (nút mới tạo)
         document.getElementById('gatekeeper-logout-btn').addEventListener('click', logoutUser);
@@ -284,7 +443,7 @@
             const startPauseBtn = document.getElementById('start-pause-btn');
             const taskInput = document.getElementById('task-input');
             const mainContent = document.getElementById('main-content');
-            
+
             const focusBtn = document.getElementById('focus-btn');
             const shortBreakBtn = document.getElementById('short-break-btn');
             const longBreakBtn = document.getElementById('long-break-btn');
@@ -299,22 +458,22 @@
             const soundsPanel = document.getElementById('sounds-panel');
             const mediaPanel = document.getElementById('media-panel');
             const backgroundPanel = document.getElementById('background-panel');
-            
+
             const mediaUrlInput = document.getElementById('media-url-input');
             const loadMediaBtn = document.getElementById('load-media-btn');
             const mediaPlayerContainer = document.getElementById('media-player-container');
             const videoPopupPanel = document.getElementById('video-popup-panel');
             const closeVideoPopupBtn = document.getElementById('close-video-popup-btn');
-            
+
             const errorModal = document.getElementById('error-modal');
             const errorMessage = document.getElementById('error-message');
             const closeErrorModalBtn = document.getElementById('close-error-modal-btn');
-            
+
             const bgUrlInput = document.getElementById('bg-url-input');
             const setBgBtn = document.getElementById('set-bg-btn');
             const resetBgBtn = document.getElementById('reset-bg-btn');
             const bodyEl = document.body;
-            
+
             const mediaTabButtons = document.querySelectorAll('.media-tab-btn');
             const mediaTabContents = document.querySelectorAll('.media-tab-content');
             const mediaTabAlbum = document.getElementById('media-tab-album');
@@ -343,7 +502,7 @@
                 { code: "#015", title: "Ambient Space", url: "https://www.youtube.com/watch?v=66tqU_oIL-k" },
                 { code: "#016", title: "Synthwave Mix", url: "https://www.youtube.com/watch?v=4xDzrQpsdeY" }
             ];
-            
+
             const BACKGROUND_ALBUM = [
                 { title: "(GIF) Starfall Night Sky Mountains", url: "https://wallpapers-clan.com/wp-content/uploads/2024/03/starfall-night-sky-mountains-aesthetic-gif-preview-desktop-wallpaper.gif" },
                 { title: "(GIF) Abstract Neon", url: "https://cdn.wallpapersafari.com/30/0/n0HOqk.gif" },
@@ -454,7 +613,7 @@
                     }
                 });
             }
-            
+
             function toggleSound(soundType) {
                 startAudioContext();
                 const player = noisePlayers[soundType];
@@ -510,7 +669,7 @@
                         else if (pathname.includes('/shorts/')) videoId = pathname.split('/shorts/')[1].split('?')[0];
                         else if (pathname.includes('/embed/')) videoId = pathname.split('/embed/')[1].split('?')[0];
                     }
-                } catch (e) {}
+                } catch (e) { }
 
                 if (!videoId) {
                     const regex = /(?:youtube\.com\/(?:[^\/]+\/.+\/|(?:v|e(?:mbed)?|shorts)\/|.*[?&]v=)|youtu\.be\/)([^"&?\/ ]{11})/;
@@ -530,7 +689,7 @@
                     return;
                 }
                 loadYouTubeIframe(embedUrl);
-                addMediaToHistory(url); 
+                addMediaToHistory(url);
                 mediaUrlInput.value = '';
             }
 
@@ -547,7 +706,7 @@
                 mediaPanel.classList.add('hidden');
                 toggleMediaBtn.classList.remove('active');
             }
-            
+
             function loadMediaFromList(url) {
                 const embedUrl = getYouTubeEmbedUrl(url);
                 if (embedUrl) {
@@ -555,7 +714,7 @@
                     addMediaToHistory(url);
                 } else showError("Link đã lưu không hợp lệ.");
             }
-            
+
             function getMediaHistory() {
                 try {
                     const history = localStorage.getItem(MEDIA_HISTORY_KEY);
@@ -567,7 +726,7 @@
                 let history = getMediaHistory();
                 history = history.filter(item => item.url !== url);
                 history.unshift({ url: url });
-                history = history.slice(0, 10); 
+                history = history.slice(0, 10);
                 localStorage.setItem(MEDIA_HISTORY_KEY, JSON.stringify(history));
                 if (mediaTabHistory && !mediaTabHistory.classList.contains('hidden')) populateMediaHistory();
             }
@@ -613,14 +772,14 @@
                 img.onerror = () => showError("Không thể tải hình ảnh. Kiểm tra URL.");
                 img.src = url;
             }
-            
+
             function resetBackground() {
                 bodyEl.style.removeProperty('--custom-bg-image');
                 bodyEl.classList.remove('custom-background');
                 localStorage.removeItem('pomodoroBgUrl');
                 bgUrlInput.value = '';
             }
-            
+
             function populateBackgroundAlbum() {
                 bgTabAlbum.innerHTML = '';
                 BACKGROUND_ALBUM.forEach(item => {
@@ -642,7 +801,7 @@
             loadMediaBtn.addEventListener('click', loadMedia);
             closeVideoPopupBtn.addEventListener('click', () => videoPopupPanel.classList.add('hidden'));
             closeErrorModalBtn.addEventListener('click', hideError);
-            
+
             const navButtons = [
                 { btn: toggleSoundsBtn, panel: soundsPanel },
                 { btn: toggleMediaBtn, panel: mediaPanel },
@@ -686,7 +845,7 @@
                         btn.classList.remove('active');
                         btn.classList.add('text-gray-300', 'hover:bg-white/10');
                     });
-                    document.getElementById(`bg-tab-${tabId}`).classList.remove('hidden'); 
+                    document.getElementById(`bg-tab-${tabId}`).classList.remove('hidden');
                     button.classList.add('active');
                     button.classList.remove('text-gray-300', 'hover:bg-white/10');
                 });
@@ -704,10 +863,11 @@
             const savedBgUrl = localStorage.getItem('pomodoroBgUrl');
             if (savedBgUrl) setBackground(savedBgUrl);
             setTimeout(() => {
-                 document.querySelector('.media-tab-btn[data-tab="custom"]').click();
-                 document.querySelector('.bg-tab-btn[data-tab="custom"]').click(); 
+                document.querySelector('.media-tab-btn[data-tab="custom"]').click();
+                document.querySelector('.bg-tab-btn[data-tab="custom"]').click();
             }, 0);
         });
     </script>
 </body>
+
 </html>
