@@ -14,10 +14,77 @@
         rel="stylesheet">
 
     <style>
-        /* Sử dụng font Be Vietnam Pro làm font chữ mặc định */
+        /* Christmas Theme */
         body {
             font-family: 'Be Vietnam Pro', sans-serif;
+            background-image: url('https://t4.ftcdn.net/jpg/03/01/00/57/360_F_301005745_eEiuVSkYf933954O2QRErPpHmiXODheh.jpg');
+            background-size: cover;
+            background-position: center;
+            background-attachment: fixed;
+            background-repeat: no-repeat;
         }
+
+        /* Dark overlay for readability */
+        body::before {
+            content: '';
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0, 0, 0, 0.3);
+            z-index: -1;
+        }
+
+        /* Glassmorphism Classes */
+        .glass-panel {
+            background: rgba(255, 255, 255, 0.85);
+            backdrop-filter: blur(12px);
+            -webkit-backdrop-filter: blur(12px);
+            border: 1px solid rgba(255, 255, 255, 0.3);
+            box-shadow: 0 8px 32px 0 rgba(31, 38, 135, 0.15);
+        }
+
+        .menu-card {
+            background: rgba(255, 255, 255, 0.9) !important;
+            backdrop-filter: blur(8px);
+            border: 1px solid rgba(255, 255, 255, 0.5);
+            transition: all 0.3s ease;
+        }
+
+        .menu-card:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 15px 30px rgba(0, 0, 0, 0.2) !important;
+            background: rgba(255, 255, 255, 0.95) !important;
+            border-color: rgba(59, 130, 246, 0.5);
+        }
+
+        /* Snow Effect */
+        .snowflake {
+            position: fixed;
+            top: -10px;
+            color: #fff;
+            font-size: 1em;
+            font-family: Arial, sans-serif;
+            text-shadow: 0 0 5px #000;
+            user-select: none;
+            z-index: 9999;
+            pointer-events: none;
+            animation: fall linear forwards;
+        }
+
+        @keyframes fall {
+            to {
+                transform: translateY(105vh);
+            }
+        }
+
+        /* Update text colors for better contrast on glass */
+        .page-content h1,
+        .page-content h2 {
+            text-shadow: 0 2px 4px rgba(255, 255, 255, 0.5);
+        }
+
 
         /* Định nghĩa hiệu ứng chuyển cảnh (fade-in và trượt lên) */
         .page-content {
@@ -192,7 +259,8 @@
     </div>
 
     <!-- Card chính của ứng dụng -->
-    <div class="w-full max-w-3xl mx-auto bg-white rounded-lg shadow-lg my-4 md:my-8">
+    <!-- Card chính của ứng dụng -->
+    <div class="w-full max-w-3xl mx-auto glass-panel rounded-2xl shadow-2xl my-4 md:my-8 overflow-hidden">
 
         <!-- Khu vực nội dung chính -->
         <main class="w-full p-6 md:p-10 min-h-[600px]">
@@ -604,6 +672,25 @@
     <!-- UI Interaction Scripts -->
     <script>
         document.addEventListener('DOMContentLoaded', () => {
+            // Create Snowflakes
+            function createSnowflake() {
+                const snowflake = document.createElement('div');
+                snowflake.classList.add('snowflake');
+                snowflake.innerHTML = '❄';
+                snowflake.style.left = Math.random() * 100 + 'vw';
+                snowflake.style.animationDuration = Math.random() * 3 + 2 + 's'; // 2-5s
+                snowflake.style.opacity = Math.random();
+                snowflake.style.fontSize = Math.random() * 10 + 10 + 'px';
+
+                document.body.appendChild(snowflake);
+
+                setTimeout(() => {
+                    snowflake.remove();
+                }, 5000);
+            }
+
+            setInterval(createSnowflake, 200);
+
             // --- DATA THÔNG BÁO (sẽ được load từ Firebase) ---
             let notifications = [];
             window.notifications = notifications;
@@ -762,22 +849,22 @@
                         const newBadge = notif.isNew ?
                             `<div class="absolute top-0 right-0 bg-red-500 text-white text-[10px] font-bold px-2 py-1 rounded-bl-lg uppercase tracking-wider">Mới</div>` : '';
                         item.innerHTML = `
-        ${newBadge}
-        <div class="flex items-center gap-2 mb-2">
-            <span class="inline-flex items-center justify-center w-8 h-8 rounded-full bg-blue-100 text-blue-600">
-                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-                        d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path>
-                </svg>
-            </span>
-            <div class="flex flex-col">
-                <span class="text-sm font-bold text-gray-800">${notif.author}</span>
-                <span class="text-xs text-gray-500">${notif.date}</span>
+            ${newBadge}
+            <div class="flex items-center gap-2 mb-2">
+                <span class="inline-flex items-center justify-center w-8 h-8 rounded-full bg-blue-100 text-blue-600">
+                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                            d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+                    </svg>
+                </span>
+                <div class="flex flex-col">
+                    <span class="text-sm font-bold text-gray-800">${notif.author}</span>
+                    <span class="text-xs text-gray-500">${notif.date}</span>
+                </div>
             </div>
-        </div>
-        <h3 class="text-lg font-bold text-gray-800 mb-2 mt-1">${notif.title}</h3>
-        <p class="text-gray-600 text-sm">${notif.content}</p>
-        `;
+            <h3 class="text-lg font-bold text-gray-800 mb-2 mt-1">${notif.title}</h3>
+            <p class="text-gray-600 text-sm">${notif.content}</p>
+            `;
                         notificationListContainer.appendChild(item);
                     });
                 }
@@ -911,8 +998,8 @@
                         pageLabel = heading ? heading.textContent.trim() : hostPage.id;
                     }
                     resultBtn.innerHTML = `
-        <div class="text-xs text-blue-600 mb-0.5">[${pageLabel || 'Trang'}]</div>
-        <div>${preview}</div>
+            <div class="text-xs text-blue-600 mb-0.5">[${pageLabel || 'Trang'}]</div>
+            <div>${preview}</div>
         `;
                     resultBtn.addEventListener('click', () => {
                         const hostPage = item.el.closest('.page-content');
