@@ -1002,8 +1002,9 @@ export async function startPresence() {
     const user = auth.currentUser;
     if (!user) return;
 
-    // Generate unique session ID
-    presenceDocId = `${user.uid}_${Date.now()}`;
+    // Use user.uid as document ID to ensure one document per user
+    // This allows seamless page transitions without losing presence
+    presenceDocId = user.uid;
 
     const updatePresence = async () => {
         try {
@@ -1024,11 +1025,17 @@ export async function startPresence() {
     await updatePresence();
 
     // Heartbeat every 30 seconds
+    if (presenceInterval) clearInterval(presenceInterval);
     presenceInterval = setInterval(updatePresence, 30000);
 
-    // Clean up on page unload
-    window.addEventListener('beforeunload', stopPresence);
-    window.addEventListener('pagehide', stopPresence);
+    // Only clean up on actual page close (not internal navigation)
+    // Use 'pagehide' with persisted check for better reliability
+    window.addEventListener('pagehide', (event) => {
+        // Only stop presence if page is not being cached (actual close/external nav)
+        if (!event.persisted) {
+            stopPresence();
+        }
+    });
 }
 
 /**
