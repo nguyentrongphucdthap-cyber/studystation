@@ -202,7 +202,8 @@
             getAllNotifications,
             createNotification,
             updateNotification,
-            deleteNotification
+            deleteNotification,
+            startPresence
         } from "../../../gatekeeper.js";
 
         let currentDeleteId = null;
@@ -403,6 +404,7 @@
                 refs.mainContent.classList.remove('hidden');
 
                 loadNotifications();
+                startPresence();
 
                 refs.btnRefresh.addEventListener('click', loadNotifications);
                 refs.addForm.addEventListener('submit', handleAddNotification);
