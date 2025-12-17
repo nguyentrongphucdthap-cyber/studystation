@@ -713,8 +713,11 @@
     <script src="../admin/schedule/schedules_data.js?v=20241215"></script>
 
     <script type="module">
-        import { initGatekeeper, db, collection, getDocs, doc, getDoc } from "../../gatekeeper.js";
+        import { initGatekeeper, db, collection, getDocs, doc, getDoc, startPresence } from "../../gatekeeper.js";
         initGatekeeper('protected');
+
+        // Start presence tracking for online users counter
+        startPresence();
 
         // Expose Firebase to global scope for import function
         window.firebaseDb = db;
