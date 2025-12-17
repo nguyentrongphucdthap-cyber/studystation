@@ -1208,19 +1208,29 @@ const app = {
         this.renderMath();
 
         const data = this.currentExam.data;
-        const setStatus = (id, isCorrect) => {
-            const el = document.getElementById(`q-${id}`);
+
+        // Helper to set status - now uses uniqueId format (type_id)
+        const setStatus = (uniqueId, isCorrect) => {
+            const el = document.getElementById(`q-${uniqueId}`);
+            if (!el) {
+                console.warn(`[Review] Element not found: q-${uniqueId}`);
+                return;
+            }
             el.dataset.status = isCorrect ? 'correct' : 'wrong';
             el.classList.add(isCorrect ? 'border-green-200' : 'border-red-200');
             if (isCorrect) el.classList.add('dark:border-green-900');
             else el.classList.add('dark:border-red-900');
         };
 
+        // Part 1: Multiple Choice (type = 1)
         data.part1.forEach(q => {
-            const userVal = this.answers[q.id]?.val;
+            const uniqueId = `1_${q.id}`;
+            const userVal = this.answers[uniqueId]?.val;
             const isCorrect = userVal == q.correct;
-            setStatus(q.id, isCorrect);
-            const inputs = document.querySelectorAll(`input[name="q${q.id}"]`);
+            setStatus(uniqueId, isCorrect);
+
+            // Select inputs using uniqueId format
+            const inputs = document.querySelectorAll(`input[name="q_${uniqueId}"]`);
             inputs.forEach(inp => {
                 const val = parseInt(inp.value);
                 const wrapper = inp.nextElementSibling;
@@ -1230,14 +1240,24 @@ const app = {
             });
         });
 
+        // Part 2: True/False (type = 2)
         data.part2.forEach(q => {
-            const userSub = this.answers[q.id]?.sub || {};
+            const uniqueId = `2_${q.id}`;
+            const userSub = this.answers[uniqueId]?.sub || {};
             let fullyCorrect = true;
             q.subQuestions.forEach(sub => {
                 const userAns = userSub[sub.id];
-                const row = document.querySelector(`#q-${q.id} .sub-question-row[data-sub="${sub.id}"]`);
-                if (userAns !== sub.correct) { fullyCorrect = false; row.classList.add('bg-red-50', 'dark:bg-red-900/10'); }
-                else { row.classList.add('bg-green-50', 'dark:bg-green-900/10'); }
+                const row = document.querySelector(`#q-${uniqueId} .sub-question-row[data-sub="${sub.id}"]`);
+                if (!row) {
+                    console.warn(`[Review] Row not found for sub ${sub.id} in q-${uniqueId}`);
+                    return;
+                }
+                if (userAns !== sub.correct) {
+                    fullyCorrect = false;
+                    row.classList.add('bg-red-50', 'dark:bg-red-900/10');
+                } else {
+                    row.classList.add('bg-green-50', 'dark:bg-green-900/10');
+                }
                 const btns = row.querySelectorAll('.tf-btn');
                 if (userAns === true) btns[0].classList.add(sub.correct === true ? 'selected-true' : 'selected-false');
                 if (userAns === false) btns[1].classList.add(sub.correct === false ? 'selected-true' : 'selected-false');
@@ -1246,18 +1266,24 @@ const app = {
                     correctBtn.style.border = "2px solid #10b981";
                 }
             });
-            setStatus(q.id, fullyCorrect);
+            setStatus(uniqueId, fullyCorrect);
         });
 
+        // Part 3: Short Answer (type = 3)
         data.part3.forEach(q => {
-            const userVal = String(this.answers[q.id]?.val || "").trim().toLowerCase();
+            const uniqueId = `3_${q.id}`;
+            const userVal = String(this.answers[uniqueId]?.val || "").trim().toLowerCase();
             const correctVal = String(q.correct).trim().toLowerCase();
             const isCorrect = userVal === correctVal;
-            setStatus(q.id, isCorrect);
-            const inp = document.getElementById(`input-${q.id}`);
-            inp.value = this.answers[q.id]?.val || "";
-            if (isCorrect) inp.classList.add('border-green-500', 'bg-green-50');
-            else inp.classList.add('border-red-500', 'bg-red-50');
+            setStatus(uniqueId, isCorrect);
+
+            // Select input using uniqueId format
+            const inp = document.getElementById(`input-${uniqueId}`);
+            if (inp) {
+                inp.value = this.answers[uniqueId]?.val || "";
+                if (isCorrect) inp.classList.add('border-green-500', 'bg-green-50');
+                else inp.classList.add('border-red-500', 'bg-red-50');
+            }
         });
     },
 
