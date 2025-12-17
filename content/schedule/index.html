@@ -193,9 +193,26 @@
         }
 
         .calendar-event:hover {
-            transform: translateY(-2px) scale(1.01);
+            transform: translateY(-2px) scale(1.02);
             box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05);
-            z-index: 50;
+            z-index: 100;
+            /* Expand card on hover to show full content */
+            overflow: visible;
+            height: auto !important;
+            min-height: fit-content;
+        }
+
+        .calendar-event:hover .event-title {
+            /* Show full title on hover */
+            white-space: normal;
+            display: block;
+            -webkit-line-clamp: unset;
+            line-clamp: unset;
+            overflow: visible;
+        }
+
+        .calendar-event:hover .event-time {
+            display: flex !important;
         }
 
         .calendar-event .event-title {
@@ -973,11 +990,9 @@
             eventEl.innerHTML = `
                 <div class="event-icon-bg">${typeConfig.icon}</div>
                 <div class="event-title text-gray-800">${event.title}</div>
-                ${height >= 40 ? `
-                    <div class="event-time text-gray-600">
-                        <i class="fa-regular fa-clock text-[9px]"></i> ${timeStr}
-                    </div>
-                ` : ''}
+                <div class="event-time text-gray-600" ${height < 40 ? 'style="display:none"' : ''}>
+                    <i class="fa-regular fa-clock text-[9px]"></i> ${timeStr}
+                </div>
             `;
 
             column.appendChild(eventEl);
