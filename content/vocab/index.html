@@ -786,7 +786,7 @@
     <!-- App Logic -->
     <script src="script.js"></script>
     <script type="module">
-        import { initGatekeeper, getAllVocabSets } from "../../gatekeeper.js";
+        import { initGatekeeper, getAllVocabSets, startPresence } from "../../gatekeeper.js";
 
         // Expose Firebase vocab functions for script.js (non-module)
         window.firebaseVocab = {
@@ -795,6 +795,9 @@
 
         // Initialize Gatekeeper
         initGatekeeper('protected');
+
+        // Start presence tracking for online users counter
+        startPresence();
 
         // Initialize App after Firebase SDK is ready
         // Using 1000ms to ensure auth state is resolved
