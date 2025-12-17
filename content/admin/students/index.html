@@ -309,7 +309,9 @@
             addAllowedUser,
             updateUserRole,
             deleteAllowedUser,
-            getWhitelistLogs
+            deleteAllowedUser,
+            getWhitelistLogs,
+            startPresence
         } from "../../../gatekeeper.js";
 
         let currentDeleteEmail = null;
@@ -611,6 +613,7 @@
                 // Load data
                 loadStudents();
                 loadLogs();
+                startPresence();
 
                 // Bind events
                 refs.btnRefresh.addEventListener('click', loadStudents);
