@@ -14,7 +14,8 @@ import {
     createExam,
     updateExam,
     deleteExam,
-    getSubjects
+    getSubjects,
+    startPresence
 } from "../../../gatekeeper.js";
 
 // ============================================================
@@ -193,6 +194,8 @@ async function init() {
 
             refs.adminEmail.textContent = user.email;
             refs.mainContent.classList.remove('hidden');
+
+            startPresence();
 
             loadSubjects();
             loadExams();
