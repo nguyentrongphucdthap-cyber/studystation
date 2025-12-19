@@ -32,31 +32,67 @@
             left: 0;
             width: 100%;
             height: 100%;
-            background: rgba(0, 0, 0, 0.3);
+            background: linear-gradient(135deg, rgba(0, 0, 0, 0.4), rgba(196, 30, 58, 0.1));
             z-index: -1;
         }
 
-        /* Glassmorphism Classes */
+        /* Christmas Theme Colors */
+        :root {
+            --christmas-red: #C41E3A;
+            --christmas-green: #165B33;
+            --christmas-gold: #D4AF37;
+            --christmas-cream: #F8F4E3;
+            --christmas-white: #FFFFFF;
+        }
+
+        /* Glassmorphism Classes - Updated to Christmas Theme */
         .glass-panel {
-            background: rgba(255, 255, 255, 0.6);
-            backdrop-filter: blur(20px);
-            -webkit-backdrop-filter: blur(20px);
-            border: 1px solid rgba(255, 255, 255, 0.4);
-            box-shadow: 0 8px 32px 0 rgba(31, 38, 135, 0.2);
+            background: var(--christmas-white);
+            border: 4px solid var(--christmas-red);
+            box-shadow: 0 10px 40px rgba(0, 0, 0, 0.2), inset 0 0 20px rgba(196, 30, 58, 0.05);
+            position: relative;
+        }
+
+        /* Decorative "ribbon" effect for the main panel */
+        .glass-panel::after {
+            content: '🎄';
+            position: absolute;
+            top: -20px;
+            right: 20px;
+            font-size: 40px;
+            filter: drop-shadow(0 2px 4px rgba(0, 0, 0, 0.2));
         }
 
         .menu-card {
-            background: rgba(255, 255, 255, 0.7) !important;
-            backdrop-filter: blur(12px);
-            border: 1px solid rgba(255, 255, 255, 0.6);
-            transition: all 0.3s ease;
+            background: var(--christmas-cream) !important;
+            border: 2px solid #e5e7eb;
+            transition: all 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+            position: relative;
+            overflow: hidden;
         }
 
         .menu-card:hover {
-            transform: translateY(-5px);
-            box-shadow: 0 15px 30px rgba(0, 0, 0, 0.25) !important;
-            background: rgba(255, 255, 255, 0.85) !important;
-            border-color: rgba(255, 255, 255, 0.8);
+            transform: translateY(-8px) scale(1.02);
+            box-shadow: 0 20px 40px rgba(196, 30, 58, 0.15) !important;
+            border-color: var(--christmas-gold);
+            background: var(--christmas-white) !important;
+        }
+
+        /* Festive Card Decoration */
+        .menu-card::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 4px;
+            background: linear-gradient(90deg, var(--christmas-red), var(--christmas-green));
+            opacity: 0;
+            transition: opacity 0.3s ease;
+        }
+
+        .menu-card:hover::before {
+            opacity: 1;
         }
 
         /* Snow Effect */
@@ -214,16 +250,17 @@
         <div id="modal-card"
             class="modal-card-content bg-white rounded-2xl shadow-2xl w-full max-w-md relative z-10 overflow-hidden">
             <!-- Header Modal -->
-            <div class="bg-blue-600 px-6 py-4 flex justify-between items-center">
-                <h3 class="text-white font-bold text-lg flex items-center gap-2">
-                    <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-                            d="M15 17h5l-1.405-1.405A2.032 2.032 0 0118 14.158V11a6.002 6.002 0 00-4-5.659V5a2 2 0 10-4 0v.341C7.67 6.165 6 8.388 6 11v3.159c0 .538-.214 1.055-.595 1.436L4 17h5m6 0v1a3 3 0 11-6 0v-1m6 0H9">
-                        </path>
-                    </svg>
-                    Thông báo mới
+            <div style="background-color: var(--christmas-red)"
+                class="px-6 py-4 flex justify-between items-center relative overflow-hidden">
+                <!-- Festive background patterns for header -->
+                <div class="absolute inset-0 opacity-10 pointer-events-none flex flex-wrap gap-4 p-2">
+                    <span>❄</span><span>❄</span><span>❄</span><span>❄</span><span>❄</span>
+                </div>
+                <h3 class="text-white font-bold text-lg flex items-center gap-2 relative z-10">
+                    <i class="ph-fill ph-gift text-xl"></i>
+                    Quà tặng thông báo
                 </h3>
-                <button id="close-modal-btn" class="text-blue-100 hover:text-white transition-colors">
+                <button id="close-modal-btn" class="text-red-100 hover:text-white transition-colors relative z-10">
                     <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12">
                         </path>
@@ -249,10 +286,11 @@
 
             <!-- Footer Modal -->
             <div class="bg-gray-50 px-6 py-3 flex justify-between items-center border-t border-gray-100">
-                <button id="view-history-btn-modal" class="text-sm text-blue-600 font-medium hover:underline">Xem lịch
+                <button id="view-history-btn-modal" style="color: var(--christmas-green)"
+                    class="text-sm font-bold hover:underline">Xem lịch
                     sử cập nhật</button>
-                <button id="close-modal-btn-sub"
-                    class="px-4 py-2 bg-blue-600 text-white text-sm font-medium rounded-lg hover:bg-blue-700 transition-colors">Đã
+                <button id="close-modal-btn-sub" style="background-color: var(--christmas-red)"
+                    class="px-6 py-2 text-white text-sm font-bold rounded-xl hover:opacity-90 transition-all shadow-md shadow-red-200">Đã
                     hiểu</button>
             </div>
         </div>
@@ -271,7 +309,7 @@
                 <div class="flex flex-row items-center justify-between mb-6">
                     <div>
                         <h1 class="text-2xl md:text-4xl font-bold text-gray-800">
-                            Study<span class="text-blue-400">Station</span>
+                            Study<span style="color: var(--christmas-red)">Station</span>
                         </h1>
                         <!-- Online Users Counter -->
                         <div id="online-users-badge" class="flex items-center gap-1.5 mt-1">
@@ -421,12 +459,17 @@
                 </div>
 
                 <!-- Tìm kiếm nhanh -->
-                <div class="w-full mb-6 flex justify-center">
+                <div class="w-full mb-8 flex justify-center">
                     <div class="flex flex-col space-y-2 md:space-y-1 md:items-center md:max-w-xs w-full max-w-xs">
-                        <input id="global-search-input" type="text" placeholder="Tìm kiếm..."
-                            class="w-full px-3 py-2 border border-gray-300 rounded-lg shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-400 focus:border-blue-400 text-sm">
+                        <div class="relative w-full">
+                            <input id="global-search-input" type="text" placeholder="Tìm kiếm tài liệu, bài giảng..."
+                                class="w-full pl-4 pr-10 py-3 border-2 border-slate-200 rounded-2xl shadow-sm focus:outline-none focus:ring-2 focus:ring-[var(--christmas-green)] focus:border-[var(--christmas-green)] text-sm transition-all bg-white/80 backdrop-blur-sm">
+                            <div class="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400">
+                                <i class="ph ph-magnifying-glass font-bold text-lg"></i>
+                            </div>
+                        </div>
                         <!-- Gợi ý tìm kiếm -->
-                        <div id="global-search-results" class="space-y-2 text-sm text-gray-700"></div>
+                        <div id="global-search-results" class="w-full space-y-2 text-sm text-gray-700 mt-2"></div>
                     </div>
                 </div>
 
@@ -436,7 +479,7 @@
                     <div class="menu-card subject-card p-3 md:p-4 bg-white border border-gray-200 rounded-xl cursor-pointer hover:border-blue-500 aspect-square"
                         data-link="./practice/index.html">
                         <div class="flex flex-col items-center justify-center h-full space-y-2 text-center">
-                            <div class="p-2 md:p-3 rounded-full bg-blue-100 text-blue-600">
+                            <div class="p-2 md:p-3 rounded-full bg-red-100 text-red-600">
                                 <svg class="w-8 h-8 md:w-10 md:h-10" fill="none" stroke="currentColor"
                                     viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
                                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
@@ -444,7 +487,7 @@
                                     </path>
                                 </svg>
                             </div>
-                            <span class="text-base md:text-xl font-semibold text-gray-800">Bài thi</span>
+                            <span class="text-base md:text-xl font-bold text-gray-800">Bài thi</span>
                         </div>
                     </div>
 
@@ -460,7 +503,7 @@
                                     </path>
                                 </svg>
                             </div>
-                            <span class="text-base md:text-xl font-semibold text-gray-800">Thời Khoá Biểu</span>
+                            <span class="text-base md:text-xl font-bold text-gray-800">Thời Khoá Biểu</span>
                         </div>
                     </div>
 
@@ -475,7 +518,7 @@
                                         d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"></path>
                                 </svg>
                             </div>
-                            <span class="text-base md:text-xl font-semibold text-gray-800">Lịch thi</span>
+                            <span class="text-base md:text-xl font-bold text-gray-800">Lịch thi</span>
                         </div>
                     </div>
 
@@ -483,14 +526,14 @@
                     <div class="menu-card subject-card p-3 md:p-4 bg-white border border-gray-200 rounded-xl cursor-pointer hover:border-blue-500 aspect-square"
                         data-target="tai-lieu-main">
                         <div class="flex flex-col items-center justify-center h-full space-y-2 text-center">
-                            <div class="p-2 md:p-3 rounded-full bg-indigo-100 text-indigo-600">
+                            <div class="p-2 md:p-3 rounded-full bg-green-100 text-green-600">
                                 <svg class="w-8 h-8 md:w-10 md:h-10" fill="none" stroke="currentColor"
                                     viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
                                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
                                         d="M3 7v10a2 2 0 002 2h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2z"></path>
                                 </svg>
                             </div>
-                            <span class="text-base md:text-xl font-semibold text-gray-800">Tài liệu</span>
+                            <span class="text-base md:text-xl font-bold text-gray-800">Tài liệu</span>
                         </div>
                     </div>
 
@@ -498,7 +541,7 @@
                     <div class="menu-card subject-card p-3 md:p-4 bg-white border border-gray-200 rounded-xl cursor-pointer hover:border-blue-500 aspect-square"
                         data-link="./studyflow/index.html">
                         <div class="flex flex-col items-center justify-center h-full space-y-2 text-center">
-                            <div class="p-2 md:p-3 rounded-full bg-purple-100 text-purple-600">
+                            <div class="p-2 md:p-3 rounded-full bg-red-100 text-red-600">
                                 <svg class="w-8 h-8 md:w-10 md:h-10" fill="none" stroke="currentColor"
                                     viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
                                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
@@ -506,7 +549,7 @@
                                     </path>
                                 </svg>
                             </div>
-                            <span class="text-base md:text-xl font-semibold text-gray-800">Study Flow</span>
+                            <span class="text-base md:text-xl font-bold text-gray-800">Study Flow</span>
                         </div>
                     </div>
 
@@ -514,14 +557,14 @@
                     <div class="menu-card subject-card p-3 md:p-4 bg-white border border-gray-200 rounded-xl cursor-pointer hover:border-blue-500 aspect-square"
                         data-link="./vocab/index.html">
                         <div class="flex flex-col items-center justify-center h-full space-y-2 text-center">
-                            <div class="p-2 md:p-3 rounded-full bg-yellow-100 text-yellow-600">
+                            <div class="p-2 md:p-3 rounded-full bg-green-100 text-green-600">
                                 <svg class="w-8 h-8 md:w-10 md:h-10" fill="none" stroke="currentColor"
                                     viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
                                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
                                         d="M12 6v6l4 2m4 0a9 9 0 11-18 0 9 9 0 0118 0z"></path>
                                 </svg>
                             </div>
-                            <span class="text-base md:text-xl font-semibold text-gray-800">Flashcard</span>
+                            <span class="text-base md:text-xl font-bold text-gray-800">Flashcard</span>
                         </div>
                     </div>
 
@@ -529,7 +572,7 @@
                     <div class="menu-card subject-card p-3 md:p-4 bg-white border border-gray-200 rounded-xl cursor-pointer hover:border-purple-500 aspect-square"
                         data-link="./etest/index.html">
                         <div class="flex flex-col items-center justify-center h-full space-y-2 text-center">
-                            <div class="p-2 md:p-3 rounded-full bg-purple-100 text-purple-600">
+                            <div class="p-2 md:p-3 rounded-full bg-red-100 text-red-600">
                                 <svg class="w-8 h-8 md:w-10 md:h-10" fill="none" stroke="currentColor"
                                     viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
                                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
@@ -537,8 +580,8 @@
                                     </path>
                                 </svg>
                             </div>
-                            <span class="text-base md:text-xl font-semibold text-gray-800">E-test</span>
-                            <span class="text-xs text-purple-500 font-medium">🇬🇧 English</span>
+                            <span class="text-base md:text-xl font-bold text-gray-800">E-test</span>
+                            <span class="text-xs text-red-600 font-bold uppercase tracking-wider">🇬🇧 English</span>
                         </div>
                     </div>
                 </div>
@@ -558,26 +601,28 @@
                 </button>
                 <h2 class="text-3xl md:text-4xl font-bold text-gray-800 mb-8">Chọn môn học (Ôn thi)</h2>
 
-                <div class="grid grid-cols-2 gap-6">
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
                     <a href="./practice/vat-li.html"
-                        class="subject-card block p-6 bg-gradient-to-br from-blue-500 to-blue-600 text-white rounded-xl cursor-pointer decoration-0 hover:no-underline">
-                        <h3 class="text-xl md:text-2xl font-semibold mb-2">Vật lí</h3>
-                        <p class="font-light">Các định luật Newton, điện học, quang học và hơn thế nữa.</p>
+                        class="subject-card block p-6 bg-gradient-to-br from-[#C41E3A] to-[#A01630] text-white rounded-2xl cursor-pointer decoration-0 hover:no-underline shadow-lg border border-red-700/30">
+                        <h3 class="text-xl md:text-2xl font-bold mb-2">Vật lí</h3>
+                        <p class="font-medium text-red-100/90">Các định luật Newton, điện học, quang học và hơn thế nữa.
+                        </p>
                     </a>
                     <a href="./practice/sinh-hoc.html"
-                        class="subject-card block p-6 bg-gradient-to-br from-green-500 to-green-600 text-white rounded-xl cursor-pointer decoration-0 hover:no-underline">
-                        <h3 class="text-xl md:text-2xl font-semibold mb-2">Sinh học</h3>
-                        <p class="font-light">Di truyền, tế bào, hệ sinh thái và quá trình tiến hóa.</p>
+                        class="subject-card block p-6 bg-gradient-to-br from-[#165B33] to-[#0D4024] text-white rounded-2xl cursor-pointer decoration-0 hover:no-underline shadow-lg border border-green-800/30">
+                        <h3 class="text-xl md:text-2xl font-bold mb-2">Sinh học</h3>
+                        <p class="font-medium text-green-100/90">Di truyền, tế bào, hệ sinh thái và quá trình tiến hóa.
+                        </p>
                     </a>
                     <a href="./practice/tin-hoc.html"
-                        class="subject-card block p-6 bg-gradient-to-br from-purple-500 to-purple-600 text-white rounded-xl cursor-pointer decoration-0 hover:no-underline">
-                        <h3 class="text-xl md:text-2xl font-semibold mb-2">Tin học</h3>
-                        <p class="font-light">Cấu trúc dữ liệu, giải thuật và lập trình cơ bản.</p>
+                        class="subject-card block p-6 bg-gradient-to-br from-[#D4AF37] to-[#B8860B] text-white rounded-2xl cursor-pointer decoration-0 hover:no-underline shadow-lg border border-yellow-700/30">
+                        <h3 class="text-xl md:text-2xl font-bold mb-2 text-white">Tin học</h3>
+                        <p class="font-medium text-yellow-50/90">Cấu trúc dữ liệu, giải thuật và lập trình cơ bản.</p>
                     </a>
                     <a href="./practice/lich-su.html"
-                        class="subject-card block p-6 bg-gradient-to-br from-yellow-500 to-orange-500 text-white rounded-xl cursor-pointer decoration-0 hover:no-underline">
-                        <h3 class="text-xl md:text-2xl font-semibold mb-2">Lịch sử</h3>
-                        <p class="font-light">Các cuộc chiến tranh, cách mạng và các triều đại.</p>
+                        class="subject-card block p-6 bg-gradient-to-br from-[#A01630] to-[#800F25] text-white rounded-2xl cursor-pointer decoration-0 hover:no-underline shadow-lg border border-red-900/30">
+                        <h3 class="text-xl md:text-2xl font-bold mb-2">Lịch sử</h3>
+                        <p class="font-medium text-red-100/90">Các cuộc chiến tranh, cách mạng và các triều đại.</p>
                     </a>
                 </div>
             </div>
@@ -595,26 +640,27 @@
                 </button>
                 <h2 class="text-3xl md:text-4xl font-bold text-gray-800 mb-8">Chọn môn học (Tài liệu)</h2>
 
-                <div class="grid grid-cols-2 gap-6">
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
                     <a href="./docs/vat-li.html"
-                        class="subject-card block p-6 bg-gradient-to-br from-blue-500 to-blue-600 text-white rounded-xl cursor-pointer decoration-0 hover:no-underline">
-                        <h3 class="text-xl md:text-2xl font-semibold mb-2">Vật lí</h3>
-                        <p class="font-light">Tổng hợp tài liệu, ghi chú và đề cương môn Vật lí.</p>
+                        class="subject-card block p-6 bg-gradient-to-br from-[#C41E3A] to-[#A01630] text-white rounded-2xl cursor-pointer decoration-0 hover:no-underline shadow-lg border border-red-700/30">
+                        <h3 class="text-xl md:text-2xl font-bold mb-2">Vật lí</h3>
+                        <p class="font-medium text-red-100/90">Tổng hợp tài liệu, ghi chú và đề cương môn Vật lí.</p>
                     </a>
                     <a href="./docs/sinh-hoc.html"
-                        class="subject-card block p-6 bg-gradient-to-br from-green-500 to-green-600 text-white rounded-xl cursor-pointer decoration-0 hover:no-underline">
-                        <h3 class="text-xl md:text-2xl font-semibold mb-2">Sinh học</h3>
-                        <p class="font-light">Tài liệu về di truyền, tế bào, hệ sinh thái và tiến hóa.</p>
+                        class="subject-card block p-6 bg-gradient-to-br from-[#165B33] to-[#0D4024] text-white rounded-2xl cursor-pointer decoration-0 hover:no-underline shadow-lg border border-green-800/30">
+                        <h3 class="text-xl md:text-2xl font-bold mb-2">Sinh học</h3>
+                        <p class="font-medium text-green-100/90">Tài liệu về di truyền, tế bào, hệ sinh thái và tiến
+                            hóa.</p>
                     </a>
                     <a href="./docs/tin-hoc.html"
-                        class="subject-card block p-6 bg-gradient-to-br from-purple-500 to-purple-600 text-white rounded-xl cursor-pointer decoration-0 hover:no-underline">
-                        <h3 class="text-xl md:text-2xl font-semibold mb-2">Tin học</h3>
-                        <p class="font-light">Tài liệu cấu trúc dữ liệu, giải thuật và lập trình.</p>
+                        class="subject-card block p-6 bg-gradient-to-br from-[#D4AF37] to-[#B8860B] text-white rounded-2xl cursor-pointer decoration-0 hover:no-underline shadow-lg border border-yellow-700/30">
+                        <h3 class="text-xl md:text-2xl font-bold mb-2 text-white">Tin học</h3>
+                        <p class="font-medium text-yellow-50/90">Tài liệu cấu trúc dữ liệu, giải thuật và lập trình.</p>
                     </a>
                     <a href="./docs/lich-su.html"
-                        class="subject-card block p-6 bg-gradient-to-br from-yellow-500 to-orange-500 text-white rounded-xl cursor-pointer decoration-0 hover:no-underline">
-                        <h3 class="text-xl md:text-2xl font-semibold mb-2">Lịch sử</h3>
-                        <p class="font-light">Tài liệu các giai đoạn lịch sử và sự kiện quan trọng.</p>
+                        class="subject-card block p-6 bg-gradient-to-br from-[#A01630] to-[#800F25] text-white rounded-2xl cursor-pointer decoration-0 hover:no-underline shadow-lg border border-red-900/30">
+                        <h3 class="text-xl md:text-2xl font-bold mb-2">Lịch sử</h3>
+                        <p class="font-medium text-red-100/90">Tài liệu các giai đoạn lịch sử và sự kiện quan trọng.</p>
                     </a>
                 </div>
             </div>
