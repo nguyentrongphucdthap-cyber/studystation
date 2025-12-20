@@ -723,11 +723,51 @@ function toggleMusicOverlay(visible) {
 
 // --- THEME & DATA ---
 function initTheme() {
+    // Check if first visit - show theme selector modal
+    const hasSelectedTheme = localStorage.getItem('studyStation_themeSelected');
+    if (!hasSelectedTheme) {
+        // Show theme selector modal for first-time visitors
+        const themeModal = document.getElementById('theme-selector-modal');
+        if (themeModal) {
+            themeModal.classList.remove('hidden');
+        }
+        // Don't apply any theme yet - wait for user selection
+        return;
+    }
+
+    // Apply saved theme for returning visitors
     const savedTheme = localStorage.getItem('theme');
     const isDark = savedTheme === 'dark' || (!savedTheme && window.matchMedia('(prefers-color-scheme: dark)').matches);
 
     if (isDark) document.documentElement.classList.add('dark');
     else document.documentElement.classList.remove('dark');
+}
+
+// Theme Selection from first-visit modal
+function selectThemeFromModal(theme) {
+    // Apply the selected theme
+    if (theme === 'dark') {
+        document.documentElement.classList.add('dark');
+        localStorage.setItem('theme', 'dark');
+    } else {
+        document.documentElement.classList.remove('dark');
+        localStorage.setItem('theme', 'light');
+    }
+
+    // Mark as theme selected (won't show modal again)
+    localStorage.setItem('studyStation_themeSelected', 'true');
+
+    // Hide the modal
+    const themeModal = document.getElementById('theme-selector-modal');
+    if (themeModal) {
+        themeModal.classList.add('hidden');
+    }
+
+    // Update dark mode toggle in settings if exists
+    const darkToggle = document.getElementById('dark-mode-toggle');
+    if (darkToggle) {
+        darkToggle.checked = theme === 'dark';
+    }
 }
 
 function toggleTheme() {
