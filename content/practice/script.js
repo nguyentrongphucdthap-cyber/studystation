@@ -647,11 +647,18 @@ const app = {
         this.updateFontFamilyUI(fontType);
     },
 
-    // Apply font family to body
+    // Apply font family to question and answer elements only (not entire body)
     applyFontFamily(fontType) {
         const fontConfig = this.fontFamilies[fontType] || this.fontFamilies.modern;
-        document.body.style.fontFamily = fontConfig.family;
-        document.documentElement.style.setProperty('--app-font-family', fontConfig.family);
+
+        // Set CSS variable for question/answer font
+        document.documentElement.style.setProperty('--question-font-family', fontConfig.family);
+
+        // Apply to specific question/answer elements
+        const selectors = '.dynamic-text, .question-text, .question-card p, .option-label, .answer-text, [data-question-content]';
+        document.querySelectorAll(selectors).forEach(el => {
+            el.style.fontFamily = fontConfig.family;
+        });
     },
 
     // Update font family UI in settings panel
