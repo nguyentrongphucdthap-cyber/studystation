@@ -191,11 +191,23 @@ html.dark .review-wrong {
     --question-line-height: 1.6;
     --ui-scale: 1;
     --content-max-width: 768px;
+    --question-font-family: 'Plus Jakarta Sans', 'Be Vietnam Pro', sans-serif;
 }
 
+/* Question and Answer text styling - uses custom font */
 .dynamic-text {
     font-size: calc(var(--question-font-size) * var(--ui-scale)) !important;
     line-height: var(--question-line-height) !important;
+    font-family: var(--question-font-family) !important;
+}
+
+/* Apply custom font to question cards content */
+.question-card .font-question,
+.question-card p,
+.option-label span,
+.sub-question-row .dynamic-text,
+[data-question-content] {
+    font-family: var(--question-font-family);
 }
 
 /* Apply line-height to question cards and options */
