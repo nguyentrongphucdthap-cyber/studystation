@@ -555,10 +555,65 @@ const app = {
         this.goHome();
     },
 
-    // Theme Selection from first-visit modal
-    selectTheme(theme) {
-        // Apply the selected theme
-        if (theme === 'dark') {
+    // Font family mapping
+    fontFamilies: {
+        classic: { name: 'Cổ điển', family: "'Roboto', sans-serif" },
+        basic: { name: 'Cơ bản', family: "'Times New Roman', Georgia, serif" },
+        modern: { name: 'Hiện đại', family: "'Plus Jakarta Sans', 'Be Vietnam Pro', sans-serif" }
+    },
+
+    // Temporary settings for modal preview
+    tempSettings: {
+        theme: 'light',
+        font: 'modern'
+    },
+
+    // Preview theme in modal (doesn't save yet)
+    previewTheme(theme) {
+        this.tempSettings.theme = theme;
+
+        // Update button styles
+        const lightBtn = document.getElementById('theme-btn-light');
+        const darkBtn = document.getElementById('theme-btn-dark');
+
+        if (theme === 'light') {
+            lightBtn.classList.add('ring-2', 'ring-blue-500', 'ring-offset-2');
+            darkBtn.classList.remove('ring-2', 'ring-indigo-500', 'ring-offset-2');
+        } else {
+            darkBtn.classList.add('ring-2', 'ring-indigo-500', 'ring-offset-2');
+            lightBtn.classList.remove('ring-2', 'ring-blue-500', 'ring-offset-2');
+        }
+    },
+
+    // Preview font in modal (updates preview text)
+    previewFont(fontType) {
+        this.tempSettings.font = fontType;
+
+        // Update font button styles
+        ['classic', 'basic', 'modern'].forEach(type => {
+            const btn = document.getElementById(`font-btn-${type}`);
+            if (btn) {
+                if (type === fontType) {
+                    btn.classList.remove('border-slate-200');
+                    btn.classList.add('border-blue-400', 'bg-blue-50');
+                } else {
+                    btn.classList.add('border-slate-200');
+                    btn.classList.remove('border-blue-400', 'bg-blue-50');
+                }
+            }
+        });
+
+        // Update preview text font
+        const previewText = document.getElementById('font-preview-text');
+        if (previewText) {
+            previewText.style.fontFamily = this.fontFamilies[fontType].family;
+        }
+    },
+
+    // Confirm and save all settings from modal
+    confirmSettings() {
+        // Apply theme
+        if (this.tempSettings.theme === 'dark') {
             document.documentElement.classList.add('dark');
             localStorage.theme = 'dark';
             document.getElementById('dark-mode-toggle').checked = true;
@@ -568,7 +623,11 @@ const app = {
             document.getElementById('dark-mode-toggle').checked = false;
         }
 
-        // Mark as theme selected (won't show modal again)
+        // Apply font
+        this.applyFontFamily(this.tempSettings.font);
+        localStorage.setItem('studyStation_fontFamily', this.tempSettings.font);
+
+        // Mark as settings selected (won't show modal again)
         localStorage.setItem('studyStation_themeSelected', 'true');
 
         // Hide the modal
@@ -576,6 +635,55 @@ const app = {
         if (themeModal) {
             themeModal.classList.add('hidden');
         }
+
+        // Update settings panel UI
+        this.updateFontFamilyUI(this.tempSettings.font);
+    },
+
+    // Set font family from settings panel
+    setFontFamily(fontType) {
+        this.applyFontFamily(fontType);
+        localStorage.setItem('studyStation_fontFamily', fontType);
+        this.updateFontFamilyUI(fontType);
+    },
+
+    // Apply font family to body
+    applyFontFamily(fontType) {
+        const fontConfig = this.fontFamilies[fontType] || this.fontFamilies.modern;
+        document.body.style.fontFamily = fontConfig.family;
+        document.documentElement.style.setProperty('--app-font-family', fontConfig.family);
+    },
+
+    // Update font family UI in settings panel
+    updateFontFamilyUI(fontType) {
+        const fontConfig = this.fontFamilies[fontType] || this.fontFamilies.modern;
+
+        // Update display text
+        const fontDisplay = document.getElementById('font-family-display');
+        if (fontDisplay) {
+            fontDisplay.textContent = fontConfig.name;
+        }
+
+        // Update button styles
+        ['classic', 'basic', 'modern'].forEach(type => {
+            const btn = document.getElementById(`settings-font-${type}`);
+            if (btn) {
+                if (type === fontType) {
+                    btn.classList.remove('border-slate-200', 'dark:border-slate-600');
+                    btn.classList.add('border-blue-500', 'bg-blue-50', 'dark:bg-blue-900/30');
+                } else {
+                    btn.classList.add('border-slate-200', 'dark:border-slate-600');
+                    btn.classList.remove('border-blue-500', 'bg-blue-50', 'dark:bg-blue-900/30');
+                }
+            }
+        });
+    },
+
+    // Legacy function for backward compatibility
+    selectTheme(theme) {
+        this.tempSettings.theme = theme;
+        this.tempSettings.font = 'modern';
+        this.confirmSettings();
     },
 
     toggleAnswerLayout(isVertical) {
@@ -679,6 +787,11 @@ const app = {
         const answerToggle = document.getElementById('answer-layout-toggle');
         if (answerToggle) answerToggle.checked = isVertical;
         if (isVertical) document.body.classList.add('answers-vertical');
+
+        // Font Family (default: modern)
+        const fontFamily = localStorage.getItem('studyStation_fontFamily') || 'modern';
+        this.applyFontFamily(fontFamily);
+        this.updateFontFamilyUI(fontFamily);
     },
 
     async loadSubjects() {
