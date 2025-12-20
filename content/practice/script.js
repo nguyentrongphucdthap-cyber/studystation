@@ -485,10 +485,21 @@ const app = {
     stats: { attempts: {}, totalTime: 0 },
 
     async init() {
-        // Theme Init
-        if (localStorage.theme === 'dark' || (!('theme' in localStorage) && window.matchMedia('(prefers-color-scheme: dark)').matches)) {
-            document.documentElement.classList.add('dark'); document.getElementById('dark-mode-toggle').checked = true;
-        } else { document.getElementById('dark-mode-toggle').checked = false; }
+        // Check if first visit - show theme selector modal
+        const hasSelectedTheme = localStorage.getItem('studyStation_themeSelected');
+        if (!hasSelectedTheme) {
+            // Show theme selector modal for first-time visitors
+            const themeModal = document.getElementById('theme-selector-modal');
+            if (themeModal) {
+                themeModal.classList.remove('hidden');
+            }
+            // Don't apply any theme yet - wait for user selection
+        } else {
+            // Theme Init (for returning visitors)
+            if (localStorage.theme === 'dark' || (!('theme' in localStorage) && window.matchMedia('(prefers-color-scheme: dark)').matches)) {
+                document.documentElement.classList.add('dark'); document.getElementById('dark-mode-toggle').checked = true;
+            } else { document.getElementById('dark-mode-toggle').checked = false; }
+        }
 
         // Load Stats
         const savedStats = localStorage.getItem('studyStation_stats');
@@ -542,6 +553,29 @@ const app = {
 
         await this.loadSubjects();
         this.goHome();
+    },
+
+    // Theme Selection from first-visit modal
+    selectTheme(theme) {
+        // Apply the selected theme
+        if (theme === 'dark') {
+            document.documentElement.classList.add('dark');
+            localStorage.theme = 'dark';
+            document.getElementById('dark-mode-toggle').checked = true;
+        } else {
+            document.documentElement.classList.remove('dark');
+            localStorage.theme = 'light';
+            document.getElementById('dark-mode-toggle').checked = false;
+        }
+
+        // Mark as theme selected (won't show modal again)
+        localStorage.setItem('studyStation_themeSelected', 'true');
+
+        // Hide the modal
+        const themeModal = document.getElementById('theme-selector-modal');
+        if (themeModal) {
+            themeModal.classList.add('hidden');
+        }
     },
 
     toggleAnswerLayout(isVertical) {
