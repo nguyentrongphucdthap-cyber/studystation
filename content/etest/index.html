@@ -259,6 +259,54 @@
         </div>
     </div>
 
+    <!-- Theme Selector Modal (First Visit) -->
+    <div id="theme-selector-modal"
+        class="hidden fixed inset-0 z-[9998] flex items-center justify-center bg-gradient-to-br from-slate-900/95 via-blue-900/90 to-indigo-900/95 backdrop-blur-sm p-4">
+        <div
+            class="bg-white w-full max-w-md rounded-3xl p-8 shadow-2xl transform transition-all border border-slate-100 text-center animate-pop">
+            <!-- Icon -->
+            <div
+                class="w-20 h-20 mx-auto mb-6 rounded-2xl bg-gradient-to-br from-blue-500 to-indigo-600 flex items-center justify-center shadow-lg shadow-blue-500/30">
+                <i class="ph-bold ph-paint-brush text-4xl text-white"></i>
+            </div>
+
+            <!-- Title -->
+            <h3 class="text-2xl font-bold text-slate-900 mb-2">Chào mừng bạn đến StudyStation Test!</h3>
+            <p class="text-slate-500 mb-8">Hãy chọn giao diện bạn muốn sử dụng:</p>
+
+            <!-- Theme Options -->
+            <div class="grid grid-cols-2 gap-4 mb-8">
+                <!-- Light Mode Option -->
+                <button onclick="app.selectTheme('light')"
+                    class="group relative p-6 rounded-2xl border-2 border-slate-200 bg-slate-50 hover:border-blue-400 hover:bg-blue-50 transition-all duration-300 cursor-pointer">
+                    <div
+                        class="w-14 h-14 mx-auto mb-4 rounded-xl bg-white border border-slate-200 flex items-center justify-center group-hover:scale-110 transition-transform shadow-sm">
+                        <i class="ph-bold ph-sun text-3xl text-amber-500"></i>
+                    </div>
+                    <div class="font-bold text-slate-800 text-lg mb-1">Sáng</div>
+                    <div class="text-xs text-slate-500">Giao diện truyền thống</div>
+                </button>
+
+                <!-- Dark Mode Option -->
+                <button onclick="app.selectTheme('dark')"
+                    class="group relative p-6 rounded-2xl border-2 border-slate-700 bg-slate-800 hover:border-indigo-500 hover:bg-slate-700 transition-all duration-300 cursor-pointer">
+                    <div
+                        class="w-14 h-14 mx-auto mb-4 rounded-xl bg-slate-900 border border-slate-600 flex items-center justify-center group-hover:scale-110 transition-transform shadow-sm">
+                        <i class="ph-bold ph-moon text-3xl text-indigo-400"></i>
+                    </div>
+                    <div class="font-bold text-white text-lg mb-1">Tối</div>
+                    <div class="text-xs text-slate-400">Dễ nhìn ban đêm</div>
+                </button>
+            </div>
+
+            <!-- Note -->
+            <p class="text-xs text-slate-400">
+                <i class="ph-bold ph-info inline mr-1"></i>
+                Bạn có thể thay đổi sau trong phần Cài đặt
+            </p>
+        </div>
+    </div>
+
     <!-- Main Content -->
     <main id="app-container" class="flex-1 overflow-hidden relative transition-all duration-300"></main>
 
