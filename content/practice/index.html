@@ -534,6 +534,70 @@
         </div>
     </div>
 
+    <!-- Theme Selector Modal (First Visit) -->
+    <div id="theme-selector-modal"
+        class="hidden fixed inset-0 z-[9998] flex items-center justify-center bg-gradient-to-br from-slate-900/95 via-blue-900/90 to-indigo-900/95 backdrop-blur-sm p-4">
+        <div
+            class="bg-white w-full max-w-md rounded-3xl p-8 shadow-2xl transform transition-all border border-slate-100 text-center animate-fade-in">
+            <!-- Icon -->
+            <div
+                class="w-20 h-20 mx-auto mb-6 rounded-2xl bg-gradient-to-br from-blue-500 to-indigo-600 flex items-center justify-center shadow-lg shadow-blue-500/30">
+                <svg xmlns="http://www.w3.org/2000/svg" class="h-10 w-10 text-white" fill="none" viewBox="0 0 24 24"
+                    stroke="currentColor">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                        d="M7 21a4 4 0 01-4-4V5a2 2 0 012-2h4a2 2 0 012 2v12a4 4 0 01-4 4zm0 0h12a2 2 0 002-2v-4a2 2 0 00-2-2h-2.343M11 7.343l1.657-1.657a2 2 0 012.828 0l2.829 2.829a2 2 0 010 2.828l-8.486 8.485M7 17h.01" />
+                </svg>
+            </div>
+
+            <!-- Title -->
+            <h3 class="text-2xl font-bold text-slate-900 mb-2">Chào mừng bạn đến StudyStation!</h3>
+            <p class="text-slate-500 mb-8">Hãy chọn giao diện bạn muốn sử dụng:</p>
+
+            <!-- Theme Options -->
+            <div class="grid grid-cols-2 gap-4 mb-8">
+                <!-- Light Mode Option -->
+                <button onclick="app.selectTheme('light')"
+                    class="group relative p-6 rounded-2xl border-2 border-slate-200 bg-slate-50 hover:border-blue-400 hover:bg-blue-50 transition-all duration-300 cursor-pointer">
+                    <div
+                        class="w-14 h-14 mx-auto mb-4 rounded-xl bg-white border border-slate-200 flex items-center justify-center group-hover:scale-110 transition-transform shadow-sm">
+                        <svg xmlns="http://www.w3.org/2000/svg" class="h-7 w-7 text-amber-500" fill="none"
+                            viewBox="0 0 24 24" stroke="currentColor">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                d="M12 3v1m0 16v1m9-9h-1M4 12H3m15.364 6.364l-.707-.707M6.343 6.343l-.707-.707m12.728 0l-.707.707M6.343 17.657l-.707.707M16 12a4 4 0 11-8 0 4 4 0 018 0z" />
+                        </svg>
+                    </div>
+                    <div class="font-bold text-slate-800 text-lg mb-1">Sáng</div>
+                    <div class="text-xs text-slate-500">Giao diện truyền thống</div>
+                </button>
+
+                <!-- Dark Mode Option -->
+                <button onclick="app.selectTheme('dark')"
+                    class="group relative p-6 rounded-2xl border-2 border-slate-700 bg-slate-800 hover:border-indigo-500 hover:bg-slate-700 transition-all duration-300 cursor-pointer">
+                    <div
+                        class="w-14 h-14 mx-auto mb-4 rounded-xl bg-slate-900 border border-slate-600 flex items-center justify-center group-hover:scale-110 transition-transform shadow-sm">
+                        <svg xmlns="http://www.w3.org/2000/svg" class="h-7 w-7 text-indigo-400" fill="none"
+                            viewBox="0 0 24 24" stroke="currentColor">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                d="M20.354 15.354A9 9 0 018.646 3.646 9.003 9.003 0 0012 21a9.003 9.003 0 008.354-5.646z" />
+                        </svg>
+                    </div>
+                    <div class="font-bold text-white text-lg mb-1">Tối</div>
+                    <div class="text-xs text-slate-400">Dễ nhìn ban đêm</div>
+                </button>
+            </div>
+
+            <!-- Note -->
+            <p class="text-xs text-slate-400">
+                <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4 inline mr-1" fill="none" viewBox="0 0 24 24"
+                    stroke="currentColor">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                        d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                </svg>
+                Bạn có thể thay đổi sau trong phần Cài đặt
+            </p>
+        </div>
+    </div>
+
     <!-- Spacer for fixed header -->
     <div class="h-16 shrink-0 bg-slate-50 dark:bg-slate-900"></div>
 
