@@ -237,12 +237,47 @@ const app = {
     },
 
     loadSettings() {
+        // Check if first visit - show theme selector modal
+        const hasSelectedTheme = localStorage.getItem('studyStation_themeSelected');
+        if (!hasSelectedTheme) {
+            // Show theme selector modal for first-time visitors
+            const themeModal = document.getElementById('theme-selector-modal');
+            if (themeModal) {
+                themeModal.classList.remove('hidden');
+            }
+            // Continue with other settings but don't apply theme yet
+        } else {
+            // Apply saved theme for returning visitors
+            if (localStorage.getItem('theme') === 'dark') {
+                document.documentElement.classList.add('dark');
+            }
+        }
+
+        // Load other settings
         const fs = localStorage.getItem('fontSize') || 16;
         this.setFontSize(fs);
         const rangeInput = document.querySelector('input[type="range"]');
         if (rangeInput) rangeInput.value = fs;
-        if (localStorage.getItem('theme') === 'dark') {
+    },
+
+    // Theme Selection from first-visit modal
+    selectTheme(theme) {
+        // Apply the selected theme
+        if (theme === 'dark') {
             document.documentElement.classList.add('dark');
+            localStorage.setItem('theme', 'dark');
+        } else {
+            document.documentElement.classList.remove('dark');
+            localStorage.setItem('theme', 'light');
+        }
+
+        // Mark as theme selected (won't show modal again)
+        localStorage.setItem('studyStation_themeSelected', 'true');
+
+        // Hide the modal
+        const themeModal = document.getElementById('theme-selector-modal');
+        if (themeModal) {
+            themeModal.classList.add('hidden');
         }
     },
 
@@ -763,17 +798,12 @@ const app = {
         return `
             <div class="bg-white dark:bg-slate-800 p-4 lg:p-6 rounded-2xl shadow-sm hover:shadow-lg transition-all duration-300 border border-slate-200 dark:border-slate-700 dynamic-text group/card ${cardClass}" id="q-${q.id}">
                 <div class="flex justify-between items-start mb-3 lg:mb-4">
-                    <div class="flex gap-3 lg:gap-4">
-                        <span class="flex-shrink-0 w-7 h-7 lg:w-8 lg:h-8 rounded-lg bg-blue-100 dark:bg-blue-900/40 text-blue-600 dark:text-blue-400 font-bold flex items-center justify-center text-xs lg:text-sm shadow-sm">
-                            ${q.id}
-                        </span>
-                        <div class="font-medium pt-1 text-slate-800 dark:text-slate-200 leading-relaxed">
-                            ${q.text}
-                        </div>
+                    <div class="font-medium text-slate-800 dark:text-slate-200 leading-relaxed">
+                        <span class="inline-flex items-center justify-center w-6 h-6 lg:w-7 lg:h-7 mr-2 rounded-lg bg-blue-100 dark:bg-blue-900/40 text-blue-600 dark:text-blue-400 font-bold text-xs lg:text-sm align-middle">${q.id}</span>${q.text}
                     </div>
                     ${statusIcon}
                 </div>
-                <div class="grid grid-cols-1 sm:grid-cols-2 gap-2 lg:gap-3 pl-0 lg:pl-12">
+                <div class="grid grid-cols-1 sm:grid-cols-2 gap-2 lg:gap-3">
                     ${optionsHtml}
                 </div>
                 ${explanation}
