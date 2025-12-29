@@ -1123,6 +1123,7 @@ const app = {
     renderQuestions(data) {
         /**
          * Helper: Escape HTML code safely using Manual Regex to ensure content preservation.
+         * Includes aggressive escaping for =, `, and quotes to prevent browser attribute parsing errors.
          * @param {string} text - Input text
          * @param {boolean} restoreBold - If true, <b>/<strong> tags will be rendered as Blue Bold text.
          *                                If false, they will be displayed as raw code (emerald mono).
@@ -1130,13 +1131,16 @@ const app = {
         const formatText = (text, restoreBold = false) => {
             if (text === null || text === undefined) return '';
 
-            // 1. Manual Escape: Control exact behavior. Convert special chars to entities.
+            // 1. Manual Aggressive Escape:
+            // Escaping '=' to '&#61;' prevents strings like 'type="text"' from being parsed as HTML attributes if leaked.
             let safe = String(text)
                 .replace(/&/g, "&amp;")
                 .replace(/</g, "&lt;")
                 .replace(/>/g, "&gt;")
                 .replace(/"/g, "&quot;")
-                .replace(/'/g, "&#039;");
+                .replace(/'/g, "&#039;")
+                .replace(/`/g, "&#96;")
+                .replace(/=/g, "&#61;");
 
             // 2. Formatting (Only if enabled): Restore <b>/<strong> pairs
             if (restoreBold) {
@@ -1146,9 +1150,9 @@ const app = {
             }
 
             // 3. Code Highlighting: Display HTML tags with Emerald Color
-            // Matches &lt;tag ... &gt; OR &lt;tag ... (for incomplete/self-closing visuals if needed)
+            // Matches &lt;tag ... &gt; OR &lt;tag ...
             safe = safe.replace(/&lt;(\/?[a-z][a-z0-9]*)([\s\S]*?)&gt;/gi, (match, tag, attrs) => {
-                return `<span class="font-mono text-emerald-600 dark:text-emerald-400 bg-gray-100 dark:bg-slate-700 px-1.5 py-0.5 rounded text-sm font-bold">&lt;${tag}${attrs}&gt;</span>`;
+                return `<span class="font-mono text-emerald-600 dark:text-emerald-400 bg-gray-100 dark:bg-slate-700 px-1.5 py-0.5 rounded text-sm font-bold my-0.5 inline-block">&lt;${tag}${attrs}&gt;</span>`;
             });
 
             return safe;
