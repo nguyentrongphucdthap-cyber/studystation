@@ -1153,7 +1153,8 @@ const app = {
                 });
             }
 
-            const codeClass = "font-mono text-emerald-600 dark:text-emerald-400 bg-gray-100 dark:bg-slate-700 px-1.5 py-0.5 rounded text-sm font-bold my-0.5 inline-block";
+            // Remove inline-block to allow wrapping, add decoration-clone for consistent padding wrap
+            const codeClass = "font-mono text-emerald-600 dark:text-emerald-400 bg-gray-100 dark:bg-slate-700 px-1.5 py-0.5 rounded text-sm font-bold break-words decoration-clone";
 
             // 3. Highlight CSS Blocks: selector { content }
             // Capture pattern: word/symbol + space + { + content + }
