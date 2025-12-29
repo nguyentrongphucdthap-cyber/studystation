@@ -1122,18 +1122,21 @@ const app = {
 
     renderQuestions(data) {
         /**
-         * Helper: Escape HTML code safely.
+         * Helper: Escape HTML code safely using Manual Regex to avoid DOM quirks.
          * @param {string} text - Input text
          * @param {boolean} restoreBold - If true, <b>/<strong> tags will be rendered as Blue Bold text.
-         *                                If false, they will be displayed as raw code (pink mono).
+         *                                If false, they will be displayed as raw code (emerald mono).
          */
         const formatText = (text, restoreBold = false) => {
             if (text === null || text === undefined) return '';
 
-            // 1. Use DOM textContent to escape HTML safely and completely
-            const tempDiv = document.createElement('div');
-            tempDiv.textContent = String(text);
-            let safe = tempDiv.innerHTML;
+            // 1. Manual Escape: Control exact behavior, avoid browser normalization
+            let safe = String(text)
+                .replace(/&/g, "&amp;")
+                .replace(/</g, "&lt;")
+                .replace(/>/g, "&gt;")
+                .replace(/"/g, "&quot;")
+                .replace(/'/g, "&#039;");
 
             // 2. Formatting (Only if enabled): Restore <b>/<strong> pairs
             if (restoreBold) {
@@ -1142,8 +1145,9 @@ const app = {
                 });
             }
 
-            // 3. Code Highlighting: Display remaining/all tags as code
-            safe = safe.replace(/&lt;(\/?[a-z][a-z0-9]*)(.*?)&gt;/gi, (match, tag, attrs) => {
+            // 3. Code Highlighting: Display remaining/all tags as code with Emerald Color
+            // Use [\s\S] to match multiline tags
+            safe = safe.replace(/&lt;(\/?[a-z][a-z0-9]*)([\s\S]*?)&gt;/gi, (match, tag, attrs) => {
                 return `<span class="font-mono text-emerald-600 dark:text-emerald-400 bg-gray-100 dark:bg-slate-700 px-1.5 py-0.5 rounded text-sm font-bold">&lt;${tag}${attrs}&gt;</span>`;
             });
 
