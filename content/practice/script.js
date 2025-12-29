@@ -1122,7 +1122,7 @@ const app = {
 
     renderQuestions(data) {
         /**
-         * Helper: Escape HTML code safely using Manual Regex to avoid DOM quirks.
+         * Helper: Escape HTML code safely.
          * @param {string} text - Input text
          * @param {boolean} restoreBold - If true, <b>/<strong> tags will be rendered as Blue Bold text.
          *                                If false, they will be displayed as raw code (emerald mono).
@@ -1130,13 +1130,10 @@ const app = {
         const formatText = (text, restoreBold = false) => {
             if (text === null || text === undefined) return '';
 
-            // 1. Manual Escape: Control exact behavior, avoid browser normalization
-            let safe = String(text)
-                .replace(/&/g, "&amp;")
-                .replace(/</g, "&lt;")
-                .replace(/>/g, "&gt;")
-                .replace(/"/g, "&quot;")
-                .replace(/'/g, "&#039;");
+            // 1. DOM Escape: Most robust way to handle special chars & encoding
+            const div = document.createElement('div');
+            div.textContent = String(text);
+            let safe = div.innerHTML;
 
             // 2. Formatting (Only if enabled): Restore <b>/<strong> pairs
             if (restoreBold) {
@@ -1145,8 +1142,8 @@ const app = {
                 });
             }
 
-            // 3. Code Highlighting: Display remaining/all tags as code with Emerald Color
-            // Use [\s\S] to match multiline tags
+            // 3. Code Highlighting: Display HTML tags with Emerald Color
+            // Matches &lt;tag ... &gt; including multiline content
             safe = safe.replace(/&lt;(\/?[a-z][a-z0-9]*)([\s\S]*?)&gt;/gi, (match, tag, attrs) => {
                 return `<span class="font-mono text-emerald-600 dark:text-emerald-400 bg-gray-100 dark:bg-slate-700 px-1.5 py-0.5 rounded text-sm font-bold">&lt;${tag}${attrs}&gt;</span>`;
             });
