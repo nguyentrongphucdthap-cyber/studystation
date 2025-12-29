@@ -1131,9 +1131,12 @@ const app = {
         const formatText = (text, restoreBold = false) => {
             if (text === null || text === undefined) return '';
 
+            // 0. Sanitize: Remove internal event handlers that might have leaked into data
+            let safe = String(text).replace(/onclick="event\.stopPropagation\(\)"/gi, "");
+
             // 1. Manual Aggressive Escape:
             // Escaping '=' to '&#61;' prevents strings like 'type="text"' from being parsed as HTML attributes if leaked.
-            let safe = String(text)
+            safe = safe
                 .replace(/&/g, "&amp;")
                 .replace(/</g, "&lt;")
                 .replace(/>/g, "&gt;")
