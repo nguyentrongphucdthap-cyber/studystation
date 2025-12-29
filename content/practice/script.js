@@ -1122,48 +1122,31 @@ const app = {
 
     renderQuestions(data) {
         /**
-         * Helper: Escape HTML code safely using Manual Regex to ensure content preservation.
-         * Includes aggressive escaping for =, `, and quotes to prevent browser attribute parsing errors.
+         * Helper: Escape HTML for safe display.
+         * SIMPLIFIED: Only escape &, <, > to prevent HTML injection.
+         * Other chars (", ', =, {, }) are safe inside text content.
          * @param {string} text - Input text
-         * @param {boolean} restoreBold - If true, <b>/<strong> tags will be rendered as Blue Bold text.
-         *                                If false, they will be displayed as raw code (emerald mono).
+         * @param {boolean} restoreBold - If true, <b>/<strong> tags render as Blue Bold.
          */
         const formatText = (text, restoreBold = false) => {
             if (text === null || text === undefined) return '';
 
-            // 0. Sanitize: Remove internal event handlers
-            let safe = String(text).replace(/onclick="event\.stopPropagation\(\)"/gi, "");
-
-            // 1. Manual Escape: Comprehensive special char handling (Avoiding { } to preserve MathJax)
-            safe = safe
+            // 1. Minimal Escape: Only 3 chars needed for HTML safety
+            let safe = String(text)
                 .replace(/&/g, "&amp;")
                 .replace(/</g, "&lt;")
-                .replace(/>/g, "&gt;")
-                .replace(/"/g, "&quot;")
-                .replace(/'/g, "&#039;")
-                .replace(/`/g, "&#96;")
-                .replace(/=/g, "&#61;");
+                .replace(/>/g, "&gt;");
 
-            // 2. Formatting (Only if enabled): Restore <b>/<strong> pairs
+            // 2. Restore <b>/<strong> as blue bold (only for question text)
             if (restoreBold) {
                 safe = safe.replace(/&lt;(b|strong)&gt;([\s\S]*?)&lt;\/\1&gt;/gi, (match, tag, content) => {
                     return `<${tag} class="font-bold text-blue-600 dark:text-blue-400">${content}</${tag}>`;
                 });
             }
 
-            // Remove inline-block to allow wrapping, add decoration-clone for consistent padding wrap
-            const codeClass = "font-mono text-emerald-600 dark:text-emerald-400 bg-gray-100 dark:bg-slate-700 px-1.5 py-0.5 rounded text-sm font-bold break-words decoration-clone";
-
-            // 3. Highlight CSS Blocks: selector { property: value }
-            // Constraint 1: Prefix not '\' (avoid \ce{...}, \frac{...})
-            // Constraint 2: Content has ':' (looks like CSS)
-            // Constraint 3: Content matches [^{}]* (non-greedy, no nested braces) to prevent merging separate blocks
-            safe = safe.replace(/((?:^|[^\\]))([a-z0-9\-_:\.#\s]+)\{([^{}]*:[^{}]*)\}/gi, (match, prefix, selector, content) => {
-                return `${prefix}<span class="${codeClass}">${selector}{${content}}</span>`;
-            });
-
-            // 4. Highlight HTML Tags: <tag ...>
-            safe = safe.replace(/&lt;(\/?[a-z][a-z0-9]*)([\s\S]*?)&gt;/gi, (match) => {
+            // 3. Highlight HTML Tags with Emerald color
+            const codeClass = "font-mono text-emerald-600 dark:text-emerald-400 bg-gray-100 dark:bg-slate-700 px-1 py-0.5 rounded text-sm font-bold";
+            safe = safe.replace(/&lt;(\/?[a-z][a-z0-9]*)((?:[^&]|&(?!gt;))*)&gt;/gi, (match) => {
                 return `<span class="${codeClass}">${match}</span>`;
             });
 
