@@ -1117,15 +1117,17 @@ const app = {
         this.renderQuestions(examData);
         this.renderPalette(examData);
         this.startTimer(examMeta.time * 60);
-
         this.renderMath();
     },
 
     renderQuestions(data) {
-        // Helper: Escape HTML code but keep bold formatting styled Blue
-        // Smart Logic: Only restores <b>/<strong> if they are part of a closed pair (e.g. <b>text</b>).
-        // Isolated tags (e.g. "The <b> tag") will remain escaped and display as code.
-        const formatText = (text) => {
+        /**
+         * Helper: Escape HTML code safely.
+         * @param {string} text - Input text
+         * @param {boolean} restoreBold - If true, <b>/<strong> tags will be rendered as Blue Bold text.
+         *                                If false, they will be displayed as raw code (pink mono).
+         */
+        const formatText = (text, restoreBold = false) => {
             if (text === null || text === undefined) return '';
 
             // 1. Use DOM textContent to escape HTML safely and completely
@@ -1133,10 +1135,16 @@ const app = {
             tempDiv.textContent = String(text);
             let safe = tempDiv.innerHTML;
 
-            // 2. Regex to find &lt;b&gt;...&lt;/b&gt; PAIRS and restore them to HTML
-            // This distinguishes "formatting" (pairs) from "code references" (isolated)
-            safe = safe.replace(/&lt;(b|strong)&gt;([\s\S]*?)&lt;\/\1&gt;/gi, (match, tag, content) => {
-                return `<${tag} class="font-bold text-blue-600 dark:text-blue-400">${content}</${tag}>`;
+            // 2. Formatting (Only if enabled): Restore <b>/<strong> pairs
+            if (restoreBold) {
+                safe = safe.replace(/&lt;(b|strong)&gt;([\s\S]*?)&lt;\/\1&gt;/gi, (match, tag, content) => {
+                    return `<${tag} class="font-bold text-blue-600 dark:text-blue-400">${content}</${tag}>`;
+                });
+            }
+
+            // 3. Code Highlighting: Display remaining/all tags as code
+            safe = safe.replace(/&lt;(\/?[a-z][a-z0-9]*)(.*?)&gt;/gi, (match, tag, attrs) => {
+                return `<span class="font-mono text-pink-500 bg-gray-100 dark:bg-slate-700 px-1.5 py-0.5 rounded text-sm">&lt;${tag}${attrs}&gt;</span>`;
             });
 
             return safe;
@@ -1155,7 +1163,7 @@ const app = {
             let content = `
                 <div class="mb-4 md:mb-6 font-medium text-slate-800 dark:text-white">
                     <div>
-                        <span class="inline-flex items-center justify-center w-8 h-8 md:w-9 md:h-9 mr-2 bg-blue-100 dark:bg-blue-900/30 text-blue-700 dark:text-blue-400 rounded-xl font-bold text-sm shadow-sm align-middle">${displayId}</span><span class="leading-relaxed font-question dynamic-text font-bold text-lg">${formatText(q.text)}</span>
+                        <span class="inline-flex items-center justify-center w-8 h-8 md:w-9 md:h-9 mr-2 bg-blue-100 dark:bg-blue-900/30 text-blue-700 dark:text-blue-400 rounded-xl font-bold text-sm shadow-sm align-middle">${displayId}</span><span class="leading-relaxed font-question dynamic-text font-bold text-lg">${formatText(q.text, true)}</span>
                         ${q.image ? `<img src="${q.image}" class="mt-3 max-w-full md:max-w-md rounded-xl border border-slate-200 dark:border-slate-600 shadow-sm cursor-pointer hover:opacity-90 hover:shadow-lg transition-all" alt="Question image" title="Nhấn để xem ảnh lớn" onclick="openLightbox('${q.image}')" onerror="this.style.display='none'">` : ''}
                     </div>
                 </div>`;
@@ -1169,14 +1177,14 @@ const app = {
                                 <div class="option-dot-outer w-6 h-6 rounded-full border-2 border-slate-300 dark:border-slate-500 mr-3 flex items-center justify-center shrink-0">
                                     <div class="option-dot-inner w-2.5 h-2.5 bg-white rounded-full"></div>
                                 </div>
-                                <span class="text-slate-600 dark:text-slate-300 group-hover:text-slate-800 dark:group-hover:text-white font-question dynamic-text text-left">${formatText(opt)}</span>
+                                <span class="text-slate-600 dark:text-slate-300 group-hover:text-slate-800 dark:group-hover:text-white font-question dynamic-text text-left">${formatText(opt, false)}</span>
                             </div>
                         </label>`).join('')}</div>`;
             } else if (type === 2) {
                 content += `<div class="space-y-3">
                     ${q.subQuestions.map(sub => `
                         <div class="sub-question-row p-3 md:p-4 rounded-2xl bg-slate-50/80 dark:bg-slate-700/30 border border-slate-100 dark:border-slate-700" data-sub="${sub.id}">
-                            <div class="text-slate-700 dark:text-slate-300 font-question dynamic-text mb-3"><span class="font-bold mr-2 text-indigo-600 dark:text-indigo-400 font-sans">${sub.id})</span>${formatText(sub.text)}</div>
+                            <div class="text-slate-700 dark:text-slate-300 font-question dynamic-text mb-3"><span class="font-bold mr-2 text-indigo-600 dark:text-indigo-400 font-sans">${sub.id})</span>${formatText(sub.text, false)}</div>
                             <div class="flex justify-end">
                                 <div class="inline-flex bg-white dark:bg-slate-800 rounded-lg p-1 border border-slate-200 dark:border-slate-600 shadow-sm">
                                     <button onclick="app.handleTFAnswer(${q.id}, '${sub.id}', true, this)" class="tf-btn px-4 py-2 text-sm font-bold rounded-md text-slate-500 dark:text-slate-400 hover:bg-slate-50 dark:hover:bg-slate-700 transition-colors" ${this.isReviewMode ? 'disabled' : ''}>ĐÚNG</button>
@@ -1187,7 +1195,7 @@ const app = {
             } else if (type === 3) {
                 content += `<div class="relative">
                     <input type="text" id="input-${uniqueId}" oninput="app.handleAnswer(3, ${q.id}, this.value)" placeholder="Nhập đáp án..." class="w-full md:w-2/3 p-3 md:p-4 pl-5 border border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-900 rounded-xl focus:ring-4 focus:ring-emerald-100 dark:focus:ring-emerald-900 focus:border-emerald-500 outline-none transition-all font-medium text-lg text-slate-800 dark:text-white placeholder:text-slate-400 font-question" ${this.isReviewMode ? 'disabled' : ''}>
-                    ${this.isReviewMode ? `<div class="mt-2 text-sm font-bold text-emerald-600">Đáp án đúng: ${formatText(q.correct)}</div>` : ''}
+                    ${this.isReviewMode ? `<div class="mt-2 text-sm font-bold text-emerald-600">Đáp án đúng: ${formatText(q.correct, false)}</div>` : ''}
                 </div>`;
             }
             div.innerHTML = content;
