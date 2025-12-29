@@ -1156,9 +1156,9 @@ const app = {
             // Remove inline-block to allow wrapping, add decoration-clone for consistent padding wrap
             const codeClass = "font-mono text-emerald-600 dark:text-emerald-400 bg-gray-100 dark:bg-slate-700 px-1.5 py-0.5 rounded text-sm font-bold break-words decoration-clone";
 
-            // 3. Highlight CSS Blocks: selector { content }
-            // Capture pattern: word/symbol + space + { + content + }
-            safe = safe.replace(/([a-z0-9\-_:\.#\s]+&#123;[\s\S]*?&#125;)/gi, (match) => {
+            // 3. Highlight CSS Blocks: selector { property: value }
+            // Constraint: Must contain a colon (:) inside braces to distinguish from LaTeX/MathJax expressions like \ce{...}
+            safe = safe.replace(/([a-z0-9\-_:\.#\s]+&#123;[\s\S]*?:[\s\S]*?&#125;)/gi, (match) => {
                 return `<span class="${codeClass}">${match}</span>`;
             });
 
