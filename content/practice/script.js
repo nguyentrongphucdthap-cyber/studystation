@@ -1144,7 +1144,7 @@ const app = {
 
             // 3. Code Highlighting: Display remaining/all tags as code
             safe = safe.replace(/&lt;(\/?[a-z][a-z0-9]*)(.*?)&gt;/gi, (match, tag, attrs) => {
-                return `<span class="font-mono text-pink-500 bg-gray-100 dark:bg-slate-700 px-1.5 py-0.5 rounded text-sm">&lt;${tag}${attrs}&gt;</span>`;
+                return `<span class="font-mono text-emerald-600 dark:text-emerald-400 bg-gray-100 dark:bg-slate-700 px-1.5 py-0.5 rounded text-sm font-bold">&lt;${tag}${attrs}&gt;</span>`;
             });
 
             return safe;
