@@ -1142,11 +1142,12 @@ const app = {
                 });
             }
 
-            // 3. Highlight HTML Tags (only if requested - can cause issues with complex content)
+            // 3. Highlight HTML Tags (only if requested)
             if (highlightCode) {
                 const codeClass = "font-mono text-emerald-600 dark:text-emerald-400 bg-gray-100 dark:bg-slate-700 px-1 py-0.5 rounded text-sm font-bold";
-                // Simple regex: match &lt;tagname...&gt; without being greedy on attributes
-                safe = safe.replace(/(&lt;\/?[a-z][a-z0-9]*[^&]*?&gt;)/gi, (match) => {
+                // Match escaped HTML tags: &lt;tagname...&gt;
+                // Uses negative lookahead to stop at &gt; without consuming it prematurely
+                safe = safe.replace(/(&lt;\/?[a-zA-Z][a-zA-Z0-9]*(?:(?!&gt;).)*&gt;)/g, (match) => {
                     return `<span class="${codeClass}">${match}</span>`;
                 });
             }
