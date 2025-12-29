@@ -1173,17 +1173,48 @@ const app = {
                 </div>`;
 
             if (type === 1) {
-                content += `<div class="grid grid-cols-1 md:grid-cols-2 gap-3 md:gap-4 items-start answer-options-grid">
-                    ${q.options.map((opt, i) => `
-                        <label class="cursor-pointer group relative option-label" data-idx="${i}">
-                            <input type="radio" name="q_${uniqueId}" value="${i}" class="peer sr-only option-radio" onchange="app.handleAnswer(1, ${q.id}, ${i})" ${this.isReviewMode ? 'disabled' : ''}>
-                            <div class="p-3 md:p-4 rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 hover:bg-slate-50 dark:hover:bg-slate-700 transition-all flex items-start h-full">
-                                <div class="option-dot-outer w-6 h-6 rounded-full border-2 border-slate-300 dark:border-slate-500 mr-3 mt-0.5 flex items-center justify-center shrink-0">
-                                    <div class="option-dot-inner w-2.5 h-2.5 bg-white rounded-full"></div>
-                                </div>
-                                <span class="text-slate-600 dark:text-slate-300 group-hover:text-slate-800 dark:group-hover:text-white font-question dynamic-text text-left flex-1 min-w-0 w-full break-words whitespace-pre-wrap">${formatText(opt, false)}</span>
-                            </div>
-                        </label>`).join('')}</div>`;
+                // Build options using DOM APIs for absolute safety (textContent never breaks)
+                const optionsGrid = document.createElement('div');
+                optionsGrid.className = 'grid grid-cols-1 md:grid-cols-2 gap-3 md:gap-4 items-start answer-options-grid';
+
+                q.options.forEach((opt, i) => {
+                    const label = document.createElement('label');
+                    label.className = 'cursor-pointer group relative option-label';
+                    label.dataset.idx = i;
+
+                    const radio = document.createElement('input');
+                    radio.type = 'radio';
+                    radio.name = `q_${uniqueId}`;
+                    radio.value = i;
+                    radio.className = 'peer sr-only option-radio';
+                    radio.disabled = this.isReviewMode;
+                    radio.addEventListener('change', () => this.handleAnswer(1, q.id, i));
+
+                    const optionDiv = document.createElement('div');
+                    optionDiv.className = 'p-3 md:p-4 rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 hover:bg-slate-50 dark:hover:bg-slate-700 transition-all flex items-start h-full';
+
+                    const dotOuter = document.createElement('div');
+                    dotOuter.className = 'option-dot-outer w-6 h-6 rounded-full border-2 border-slate-300 dark:border-slate-500 mr-3 mt-0.5 flex items-center justify-center shrink-0';
+                    const dotInner = document.createElement('div');
+                    dotInner.className = 'option-dot-inner w-2.5 h-2.5 bg-white rounded-full';
+                    dotOuter.appendChild(dotInner);
+
+                    const optionText = document.createElement('span');
+                    optionText.className = 'text-slate-600 dark:text-slate-300 group-hover:text-slate-800 dark:group-hover:text-white font-question dynamic-text text-left flex-1 min-w-0 w-full break-words whitespace-pre-wrap';
+                    // CRITICAL: Use textContent for 100% safe display - NO HTML parsing issues
+                    optionText.textContent = opt;
+
+                    optionDiv.appendChild(dotOuter);
+                    optionDiv.appendChild(optionText);
+                    label.appendChild(radio);
+                    label.appendChild(optionDiv);
+                    optionsGrid.appendChild(label);
+                });
+
+                // Append grid after setting div.innerHTML for question header
+                div.innerHTML = content;
+                div.appendChild(optionsGrid);
+                return div;
             } else if (type === 2) {
                 content += `<div class="space-y-3">
                     ${q.subQuestions.map(sub => `
