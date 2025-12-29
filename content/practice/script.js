@@ -1123,6 +1123,8 @@ const app = {
 
     renderQuestions(data) {
         // Helper: Escape HTML code but keep bold formatting styled Blue
+        // Smart Logic: Only restores <b>/<strong> if they are part of a closed pair (e.g. <b>text</b>).
+        // Isolated tags (e.g. "The <b> tag") will remain escaped and display as code.
         const formatText = (text) => {
             if (text === null || text === undefined) return '';
 
@@ -1131,13 +1133,11 @@ const app = {
             tempDiv.textContent = String(text);
             let safe = tempDiv.innerHTML;
 
-            // 2. Restore <b> and <strong> tags, adding Blue styling class
-            // Since we escaped everything, <b> became &lt;b&gt;
-            safe = safe
-                .replace(/&lt;b&gt;/gi, '<b class="text-blue-600 dark:text-blue-400">')
-                .replace(/&lt;\/b&gt;/gi, '</b>')
-                .replace(/&lt;strong&gt;/gi, '<strong class="text-blue-600 dark:text-blue-400">')
-                .replace(/&lt;\/strong&gt;/gi, '</strong>');
+            // 2. Regex to find &lt;b&gt;...&lt;/b&gt; PAIRS and restore them to HTML
+            // This distinguishes "formatting" (pairs) from "code references" (isolated)
+            safe = safe.replace(/&lt;(b|strong)&gt;([\s\S]*?)&lt;\/\1&gt;/gi, (match, tag, content) => {
+                return `<${tag} class="font-bold text-blue-600 dark:text-blue-400">${content}</${tag}>`;
+            });
 
             return safe;
         };
