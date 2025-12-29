@@ -1122,6 +1122,26 @@ const app = {
     },
 
     renderQuestions(data) {
+        // Helper: Escape HTML code but keep bold formatting styled Blue
+        const formatText = (text) => {
+            if (!text) return '';
+            // 1. Escape basic HTML chars so tags like <table> show as text
+            let safe = String(text)
+                .replace(/&/g, "&amp;")
+                .replace(/</g, "&lt;")
+                .replace(/>/g, "&gt;")
+                .replace(/"/g, "&quot;")
+                .replace(/'/g, "&#039;");
+
+            // 2. Restore <b> and <strong> tags, adding Blue styling class
+            safe = safe
+                .replace(/&lt;b&gt;/gi, '<b class="text-blue-600 dark:text-blue-400">')
+                .replace(/&lt;\/b&gt;/gi, '</b>')
+                .replace(/&lt;strong&gt;/gi, '<strong class="text-blue-600 dark:text-blue-400">')
+                .replace(/&lt;\/strong&gt;/gi, '</strong>');
+            return safe;
+        };
+
         let globalQIndex = 0;
         const renderQ = (q, index, type) => {
             globalQIndex++;
@@ -1135,7 +1155,7 @@ const app = {
             let content = `
                 <div class="mb-4 md:mb-6 font-medium text-slate-800 dark:text-white">
                     <div>
-                        <span class="inline-flex items-center justify-center w-8 h-8 md:w-9 md:h-9 mr-2 bg-blue-100 dark:bg-blue-900/30 text-blue-700 dark:text-blue-400 rounded-xl font-bold text-sm shadow-sm align-middle">${displayId}</span><span class="leading-relaxed font-question dynamic-text">${q.text}</span>
+                        <span class="inline-flex items-center justify-center w-8 h-8 md:w-9 md:h-9 mr-2 bg-blue-100 dark:bg-blue-900/30 text-blue-700 dark:text-blue-400 rounded-xl font-bold text-sm shadow-sm align-middle">${displayId}</span><span class="leading-relaxed font-question dynamic-text font-bold">${formatText(q.text)}</span>
                         ${q.image ? `<img src="${q.image}" class="mt-3 max-w-full md:max-w-md rounded-xl border border-slate-200 dark:border-slate-600 shadow-sm cursor-pointer hover:opacity-90 hover:shadow-lg transition-all" alt="Question image" title="Nhấn để xem ảnh lớn" onclick="openLightbox('${q.image}')" onerror="this.style.display='none'">` : ''}
                     </div>
                 </div>`;
@@ -1149,14 +1169,14 @@ const app = {
                                 <div class="option-dot-outer w-6 h-6 rounded-full border-2 border-slate-300 dark:border-slate-500 mr-3 flex items-center justify-center shrink-0">
                                     <div class="option-dot-inner w-2.5 h-2.5 bg-white rounded-full"></div>
                                 </div>
-                                <span class="font-medium text-slate-600 dark:text-slate-300 group-hover:text-slate-800 dark:group-hover:text-white font-question dynamic-text text-left">${opt}</span>
+                                <span class="font-medium text-slate-600 dark:text-slate-300 group-hover:text-slate-800 dark:group-hover:text-white font-question dynamic-text text-left">${formatText(opt)}</span>
                             </div>
                         </label>`).join('')}</div>`;
             } else if (type === 2) {
                 content += `<div class="space-y-3">
                     ${q.subQuestions.map(sub => `
                         <div class="sub-question-row p-3 md:p-4 rounded-2xl bg-slate-50/80 dark:bg-slate-700/30 border border-slate-100 dark:border-slate-700" data-sub="${sub.id}">
-                            <div class="text-slate-700 dark:text-slate-300 font-question dynamic-text mb-3"><span class="font-bold mr-2 text-indigo-600 dark:text-indigo-400 font-sans">${sub.id})</span>${sub.text}</div>
+                            <div class="text-slate-700 dark:text-slate-300 font-question dynamic-text mb-3"><span class="font-bold mr-2 text-indigo-600 dark:text-indigo-400 font-sans">${sub.id})</span>${formatText(sub.text)}</div>
                             <div class="flex justify-end">
                                 <div class="inline-flex bg-white dark:bg-slate-800 rounded-lg p-1 border border-slate-200 dark:border-slate-600 shadow-sm">
                                     <button onclick="app.handleTFAnswer(${q.id}, '${sub.id}', true, this)" class="tf-btn px-4 py-2 text-sm font-bold rounded-md text-slate-500 dark:text-slate-400 hover:bg-slate-50 dark:hover:bg-slate-700 transition-colors" ${this.isReviewMode ? 'disabled' : ''}>ĐÚNG</button>
@@ -1167,7 +1187,7 @@ const app = {
             } else if (type === 3) {
                 content += `<div class="relative">
                     <input type="text" id="input-${uniqueId}" oninput="app.handleAnswer(3, ${q.id}, this.value)" placeholder="Nhập đáp án..." class="w-full md:w-2/3 p-3 md:p-4 pl-5 border border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-900 rounded-xl focus:ring-4 focus:ring-emerald-100 dark:focus:ring-emerald-900 focus:border-emerald-500 outline-none transition-all font-medium text-lg text-slate-800 dark:text-white placeholder:text-slate-400 font-question" ${this.isReviewMode ? 'disabled' : ''}>
-                    ${this.isReviewMode ? `<div class="mt-2 text-sm font-bold text-emerald-600">Đáp án đúng: ${q.correct}</div>` : ''}
+                    ${this.isReviewMode ? `<div class="mt-2 text-sm font-bold text-emerald-600">Đáp án đúng: ${formatText(q.correct)}</div>` : ''}
                 </div>`;
             }
             div.innerHTML = content;
