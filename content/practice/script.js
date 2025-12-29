@@ -1201,8 +1201,8 @@ const app = {
 
                     const optionText = document.createElement('span');
                     optionText.className = 'text-slate-600 dark:text-slate-300 group-hover:text-slate-800 dark:group-hover:text-white font-question dynamic-text text-left flex-1 min-w-0 w-full break-words whitespace-pre-wrap';
-                    // CRITICAL: Use textContent for 100% safe display - NO HTML parsing issues
-                    optionText.textContent = opt;
+                    // Use formatText with highlightCode=true to show HTML tags in emerald color
+                    optionText.innerHTML = formatText(opt, false, true);
 
                     optionDiv.appendChild(dotOuter);
                     optionDiv.appendChild(optionText);
@@ -1219,7 +1219,7 @@ const app = {
                 content += `<div class="space-y-3">
                     ${q.subQuestions.map(sub => `
                         <div class="sub-question-row p-3 md:p-4 rounded-2xl bg-slate-50/80 dark:bg-slate-700/30 border border-slate-100 dark:border-slate-700" data-sub="${sub.id}">
-                            <div class="text-slate-700 dark:text-slate-300 font-question dynamic-text mb-3"><span class="font-bold mr-2 text-indigo-600 dark:text-indigo-400 font-sans">${sub.id})</span>${formatText(sub.text, false)}</div>
+                            <div class="text-slate-700 dark:text-slate-300 font-question dynamic-text mb-3"><span class="font-bold mr-2 text-indigo-600 dark:text-indigo-400 font-sans">${sub.id})</span>${formatText(sub.text, false, true)}</div>
                             <div class="flex justify-end">
                                 <div class="inline-flex bg-white dark:bg-slate-800 rounded-lg p-1 border border-slate-200 dark:border-slate-600 shadow-sm">
                                     <button onclick="app.handleTFAnswer(${q.id}, '${sub.id}', true, this)" class="tf-btn px-4 py-2 text-sm font-bold rounded-md text-slate-500 dark:text-slate-400 hover:bg-slate-50 dark:hover:bg-slate-700 transition-colors" ${this.isReviewMode ? 'disabled' : ''}>ĐÚNG</button>
@@ -1230,7 +1230,7 @@ const app = {
             } else if (type === 3) {
                 content += `<div class="relative">
                     <input type="text" id="input-${uniqueId}" oninput="app.handleAnswer(3, ${q.id}, this.value)" placeholder="Nhập đáp án..." class="w-full md:w-2/3 p-3 md:p-4 pl-5 border border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-900 rounded-xl focus:ring-4 focus:ring-emerald-100 dark:focus:ring-emerald-900 focus:border-emerald-500 outline-none transition-all font-medium text-lg text-slate-800 dark:text-white placeholder:text-slate-400 font-question" ${this.isReviewMode ? 'disabled' : ''}>
-                    ${this.isReviewMode ? `<div class="mt-2 text-sm font-bold text-emerald-600">Đáp án đúng: ${formatText(q.correct, false)}</div>` : ''}
+                    ${this.isReviewMode ? `<div class="mt-2 text-sm font-bold text-emerald-600">Đáp án đúng: ${formatText(q.correct, false, true)}</div>` : ''}
                 </div>`;
             }
             div.innerHTML = content;
