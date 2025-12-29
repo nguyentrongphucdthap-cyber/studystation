@@ -1134,7 +1134,7 @@ const app = {
             // 0. Sanitize: Remove internal event handlers
             let safe = String(text).replace(/onclick="event\.stopPropagation\(\)"/gi, "");
 
-            // 1. Manual Escape: Comprehensive special char handling
+            // 1. Manual Escape: Comprehensive special char handling (Avoiding { } to preserve MathJax)
             safe = safe
                 .replace(/&/g, "&amp;")
                 .replace(/</g, "&lt;")
@@ -1142,9 +1142,7 @@ const app = {
                 .replace(/"/g, "&quot;")
                 .replace(/'/g, "&#039;")
                 .replace(/`/g, "&#96;")
-                .replace(/=/g, "&#61;")
-                .replace(/{/g, "&#123;")
-                .replace(/}/g, "&#125;");
+                .replace(/=/g, "&#61;");
 
             // 2. Formatting (Only if enabled): Restore <b>/<strong> pairs
             if (restoreBold) {
@@ -1157,9 +1155,11 @@ const app = {
             const codeClass = "font-mono text-emerald-600 dark:text-emerald-400 bg-gray-100 dark:bg-slate-700 px-1.5 py-0.5 rounded text-sm font-bold break-words decoration-clone";
 
             // 3. Highlight CSS Blocks: selector { property: value }
-            // Constraint: Must contain a colon (:) inside braces to distinguish from LaTeX/MathJax expressions like \ce{...}
-            safe = safe.replace(/([a-z0-9\-_:\.#\s]+&#123;[\s\S]*?:[\s\S]*?&#125;)/gi, (match) => {
-                return `<span class="${codeClass}">${match}</span>`;
+            // Constraint 1: Prefix not '\' (avoid \ce{...}, \frac{...})
+            // Constraint 2: Content has ':' (looks like CSS)
+            // Constraint 3: Content matches [^{}]* (non-greedy, no nested braces) to prevent merging separate blocks
+            safe = safe.replace(/((?:^|[^\\]))([a-z0-9\-_:\.#\s]+)\{([^{}]*:[^{}]*)\}/gi, (match, prefix, selector, content) => {
+                return `${prefix}<span class="${codeClass}">${selector}{${content}}</span>`;
             });
 
             // 4. Highlight HTML Tags: <tag ...>
