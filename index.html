@@ -1,17 +1,19 @@
 <!DOCTYPE html>
 <html lang="vi">
+
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>StudyStation Login</title>
-    <meta name="ga-measurement-id" content="G-59HQ3N4CG8">
+    <meta name="ga-measurement-id" content="G-4FGSW7XDZ9">
     <link rel="icon" type="image/png" href="favicon.png">
-    
+
     <!-- Font Be Vietnam Pro -->
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Be+Vietnam+Pro:wght@300;400;500;600;700&display=swap" rel="stylesheet">
-    
+    <link href="https://fonts.googleapis.com/css2?family=Be+Vietnam+Pro:wght@300;400;500;600;700&display=swap"
+        rel="stylesheet">
+
     <style>
         /* --- GIỮ NGUYÊN CSS CỦA STUDYSTATION --- */
         :root {
@@ -27,7 +29,9 @@
             --radius-xl: 20px;
         }
 
-        * { box-sizing: border-box; }
+        * {
+            box-sizing: border-box;
+        }
 
         body {
             font-family: var(--font-main);
@@ -97,7 +101,9 @@
             gap: 12px;
         }
 
-        .btn:active { transform: scale(0.98); }
+        .btn:active {
+            transform: scale(0.98);
+        }
 
         .btn-google {
             background: #FFFFFF;
@@ -105,6 +111,7 @@
             border: 1px solid #D1D5DB;
             box-shadow: 0 1px 2px 0 rgba(0, 0, 0, 0.05);
         }
+
         .btn-google:hover {
             background: #F9FAFB;
             border-color: #9CA3AF;
@@ -117,19 +124,35 @@
             font-size: 14px;
             color: var(--text-secondary);
         }
-        
+
         .register-link {
             color: var(--accent);
             text-decoration: none;
             font-weight: 600;
         }
-        .register-link:hover { text-decoration: underline; }
 
-        .hidden { display: none !important; }
-        .fade-in { animation: fadeIn 0.4s ease-out forwards; }
-        @keyframes fadeIn { 
-            from { opacity: 0; transform: translateY(10px); } 
-            to { opacity: 1; transform: translateY(0); } 
+        .register-link:hover {
+            text-decoration: underline;
+        }
+
+        .hidden {
+            display: none !important;
+        }
+
+        .fade-in {
+            animation: fadeIn 0.4s ease-out forwards;
+        }
+
+        @keyframes fadeIn {
+            from {
+                opacity: 0;
+                transform: translateY(10px);
+            }
+
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
         }
 
         .alert {
@@ -140,10 +163,11 @@
             text-align: left;
             display: none;
         }
-        .alert-error { 
-            background: #FEF2F2; 
-            color: #991B1B; 
-            border: 1px solid #FECACA; 
+
+        .alert-error {
+            background: #FEF2F2;
+            color: #991B1B;
+            border: 1px solid #FECACA;
         }
 
         .spinner {
@@ -155,33 +179,19 @@
             animation: spin 0.8s linear infinite;
             margin: 0 auto 16px;
         }
-        @keyframes spin { to { transform: rotate(360deg); } }
 
-        .credits {
-            position: fixed;
-            bottom: calc(6px + env(safe-area-inset-bottom));
-            left: 50%;
-            transform: translateX(-50%);
-            width: auto;
-            max-width: 260px;
-            text-align: center;
-            font-size: 10px;
-            line-height: 1.3;
-            color: #9CA3AF;
-            pointer-events: none;
-            opacity: 0.9;
-        }
-        .credits p { margin: 0; }
-        .credits strong { color: #6B7280; font-weight: 600; }
-        @media (min-width: 480px) {
-            .credits { font-size: 11px; max-width: 320px; }
+        @keyframes spin {
+            to {
+                transform: rotate(360deg);
+            }
         }
     </style>
 </head>
+
 <body>
 
     <div class="wrapper">
-        
+
         <!-- VIEW: LOADING -->
         <div id="view-loading" class="card hidden">
             <div class="spinner"></div>
@@ -198,8 +208,10 @@
         <!-- VIEW: LOGIN -->
         <div id="view-login" class="card fade-in">
             <div style="margin-bottom: 24px;">
-                <div style="width: 48px; height: 48px; background: #EFF6FF; border-radius: 12px; margin: 0 auto 16px; display: flex; align-items: center; justify-content: center;">
-                    <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#2563EB" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <div
+                    style="width: 48px; height: 48px; background: #EFF6FF; border-radius: 12px; margin: 0 auto 16px; display: flex; align-items: center; justify-content: center;">
+                    <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#2563EB" stroke-width="2"
+                        stroke-linecap="round" stroke-linejoin="round">
                         <path d="M15 3h4a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2h-4"></path>
                         <polyline points="10 17 15 12 10 7"></polyline>
                         <line x1="15" y1="12" x2="3" y2="12"></line>
@@ -212,27 +224,32 @@
 
             <button id="btnLogin" class="btn btn-google">
                 <svg width="18" height="18" viewBox="0 0 24 24">
-                    <path d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z" fill="#4285F4"/>
-                    <path d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z" fill="#34A853"/>
-                    <path d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l2.85-2.84z" fill="#FBBC05"/>
-                    <path d="M12 4.63c1.69 0 3.26.58 4.54 1.8l3.29-3.29C17.45 1.14 14.97 0 12 0 7.7 0 3.99 2.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z" fill="#EA4335"/>
+                    <path
+                        d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z"
+                        fill="#4285F4" />
+                    <path
+                        d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z"
+                        fill="#34A853" />
+                    <path
+                        d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l2.85-2.84z"
+                        fill="#FBBC05" />
+                    <path
+                        d="M12 4.63c1.69 0 3.26.58 4.54 1.8l3.29-3.29C17.45 1.14 14.97 0 12 0 7.7 0 3.99 2.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z"
+                        fill="#EA4335" />
                 </svg>
                 Đăng nhập bằng Google
             </button>
             <div id="loginError" class="alert alert-error"></div>
 
             <div class="register-section">
-                Bạn chưa có tài khoản? 
+                Bạn chưa có tài khoản?
                 <!-- THAY LINK ĐĂNG KÝ CỦA BẠN VÀO ĐÂY -->
                 <a href="https://forms.gle/DiTJpf85bScCrzxT8" target="_blank" class="register-link">Đăng ký truy cập</a>
             </div>
         </div>
     </div>
 
-    <div class="credits">
-        <p>Designed & Developed by <strong>Trọng Phúc</strong></p>
-        <p>From Concept to Content by <strong>Phương Kiều</strong></p>
-    </div>
+
 
     <!-- LOGIC FIREBASE -->
     <script type="module">
@@ -242,8 +259,5 @@
         if (btn) btn.addEventListener('click', loginWithGoogle);
     </script>
 </body>
+
 </html>
-
-
-
-
