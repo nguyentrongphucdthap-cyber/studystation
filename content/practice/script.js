@@ -1124,22 +1124,23 @@ const app = {
     renderQuestions(data) {
         // Helper: Escape HTML code but keep bold formatting styled Blue
         const formatText = (text) => {
-            if (!text) return '';
+            if (text === null || text === undefined) return '';
+            let str = String(text);
+
             // 1. Escape basic HTML chars so tags like <table> show as text
-            let safe = String(text)
-                .replace(/&/g, "&amp;")
+            str = str.replace(/&/g, "&amp;")
                 .replace(/</g, "&lt;")
                 .replace(/>/g, "&gt;")
                 .replace(/"/g, "&quot;")
                 .replace(/'/g, "&#039;");
 
-            // 2. Restore <b> and <strong> tags, adding Blue styling class
-            safe = safe
-                .replace(/&lt;b&gt;/gi, '<b class="text-blue-600 dark:text-blue-400">')
-                .replace(/&lt;\/b&gt;/gi, '</b>')
-                .replace(/&lt;strong&gt;/gi, '<strong class="text-blue-600 dark:text-blue-400">')
-                .replace(/&lt;\/strong&gt;/gi, '</strong>');
-            return safe;
+            // 2. Restore <b> and <strong> tags (which are now escaped), adding Blue styling class
+            // We match the ESCAPED version: &lt;b&gt;
+            str = str.replace(/&lt;b&gt;/gi, '<b class="text-blue-600 dark:text-blue-400">');
+            str = str.replace(/&lt;\/b&gt;/gi, '</b>');
+            str = str.replace(/&lt;strong&gt;/gi, '<strong class="text-blue-600 dark:text-blue-400">');
+            str = str.replace(/&lt;\/strong&gt;/gi, '</strong>');
+            return str;
         };
 
         let globalQIndex = 0;
@@ -1155,7 +1156,7 @@ const app = {
             let content = `
                 <div class="mb-4 md:mb-6 font-medium text-slate-800 dark:text-white">
                     <div>
-                        <span class="inline-flex items-center justify-center w-8 h-8 md:w-9 md:h-9 mr-2 bg-blue-100 dark:bg-blue-900/30 text-blue-700 dark:text-blue-400 rounded-xl font-bold text-sm shadow-sm align-middle">${displayId}</span><span class="leading-relaxed font-question dynamic-text font-bold">${formatText(q.text)}</span>
+                        <span class="inline-flex items-center justify-center w-8 h-8 md:w-9 md:h-9 mr-2 bg-blue-100 dark:bg-blue-900/30 text-blue-700 dark:text-blue-400 rounded-xl font-bold text-sm shadow-sm align-middle">${displayId}</span><span class="leading-relaxed font-question dynamic-text font-bold text-lg">${formatText(q.text)}</span>
                         ${q.image ? `<img src="${q.image}" class="mt-3 max-w-full md:max-w-md rounded-xl border border-slate-200 dark:border-slate-600 shadow-sm cursor-pointer hover:opacity-90 hover:shadow-lg transition-all" alt="Question image" title="Nhấn để xem ảnh lớn" onclick="openLightbox('${q.image}')" onerror="this.style.display='none'">` : ''}
                     </div>
                 </div>`;
