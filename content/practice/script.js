@@ -1122,20 +1122,18 @@ const app = {
 
     renderQuestions(data) {
         /**
-         * Helper: Escape HTML for safe display.
-         * SIMPLIFIED: Only escape &, <, > to prevent HTML injection.
-         * Other chars (", ', =, {, }) are safe inside text content.
+         * Helper: Escape HTML for safe display using DOM textContent (safest method).
          * @param {string} text - Input text
          * @param {boolean} restoreBold - If true, <b>/<strong> tags render as Blue Bold.
+         * @param {boolean} highlightCode - If true, HTML tags are highlighted with Emerald color.
          */
-        const formatText = (text, restoreBold = false) => {
+        const formatText = (text, restoreBold = false, highlightCode = false) => {
             if (text === null || text === undefined) return '';
 
-            // 1. Minimal Escape: Only 3 chars needed for HTML safety
-            let safe = String(text)
-                .replace(/&/g, "&amp;")
-                .replace(/</g, "&lt;")
-                .replace(/>/g, "&gt;");
+            // 1. Safe Escape using DOM (browser handles all edge cases perfectly)
+            const div = document.createElement('div');
+            div.textContent = String(text);
+            let safe = div.innerHTML;
 
             // 2. Restore <b>/<strong> as blue bold (only for question text)
             if (restoreBold) {
@@ -1144,11 +1142,14 @@ const app = {
                 });
             }
 
-            // 3. Highlight HTML Tags with Emerald color
-            const codeClass = "font-mono text-emerald-600 dark:text-emerald-400 bg-gray-100 dark:bg-slate-700 px-1 py-0.5 rounded text-sm font-bold";
-            safe = safe.replace(/&lt;(\/?[a-z][a-z0-9]*)((?:[^&]|&(?!gt;))*)&gt;/gi, (match) => {
-                return `<span class="${codeClass}">${match}</span>`;
-            });
+            // 3. Highlight HTML Tags (only if requested - can cause issues with complex content)
+            if (highlightCode) {
+                const codeClass = "font-mono text-emerald-600 dark:text-emerald-400 bg-gray-100 dark:bg-slate-700 px-1 py-0.5 rounded text-sm font-bold";
+                // Simple regex: match &lt;tagname...&gt; without being greedy on attributes
+                safe = safe.replace(/(&lt;\/?[a-z][a-z0-9]*[^&]*?&gt;)/gi, (match) => {
+                    return `<span class="${codeClass}">${match}</span>`;
+                });
+            }
 
             return safe;
         };
@@ -1166,7 +1167,7 @@ const app = {
             let content = `
                 <div class="mb-4 md:mb-6 font-medium text-slate-800 dark:text-white">
                     <div>
-                        <span class="inline-flex items-center justify-center w-8 h-8 md:w-9 md:h-9 mr-2 bg-blue-100 dark:bg-blue-900/30 text-blue-700 dark:text-blue-400 rounded-xl font-bold text-sm shadow-sm align-middle">${displayId}</span><span class="leading-relaxed font-question dynamic-text font-bold text-lg">${formatText(q.text, true)}</span>
+                        <span class="inline-flex items-center justify-center w-8 h-8 md:w-9 md:h-9 mr-2 bg-blue-100 dark:bg-blue-900/30 text-blue-700 dark:text-blue-400 rounded-xl font-bold text-sm shadow-sm align-middle">${displayId}</span><span class="leading-relaxed font-question dynamic-text font-bold text-lg">${formatText(q.text, true, true)}</span>
                         ${q.image ? `<img src="${q.image}" class="mt-3 max-w-full md:max-w-md rounded-xl border border-slate-200 dark:border-slate-600 shadow-sm cursor-pointer hover:opacity-90 hover:shadow-lg transition-all" alt="Question image" title="Nhấn để xem ảnh lớn" onclick="openLightbox('${q.image}')" onerror="this.style.display='none'">` : ''}
                     </div>
                 </div>`;
