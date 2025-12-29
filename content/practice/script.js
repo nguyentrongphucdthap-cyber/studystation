@@ -1125,22 +1125,21 @@ const app = {
         // Helper: Escape HTML code but keep bold formatting styled Blue
         const formatText = (text) => {
             if (text === null || text === undefined) return '';
-            let str = String(text);
 
-            // 1. Escape basic HTML chars so tags like <table> show as text
-            str = str.replace(/&/g, "&amp;")
-                .replace(/</g, "&lt;")
-                .replace(/>/g, "&gt;")
-                .replace(/"/g, "&quot;")
-                .replace(/'/g, "&#039;");
+            // 1. Use DOM textContent to escape HTML safely and completely
+            const tempDiv = document.createElement('div');
+            tempDiv.textContent = String(text);
+            let safe = tempDiv.innerHTML;
 
-            // 2. Restore <b> and <strong> tags (which are now escaped), adding Blue styling class
-            // We match the ESCAPED version: &lt;b&gt;
-            str = str.replace(/&lt;b&gt;/gi, '<b class="text-blue-600 dark:text-blue-400">');
-            str = str.replace(/&lt;\/b&gt;/gi, '</b>');
-            str = str.replace(/&lt;strong&gt;/gi, '<strong class="text-blue-600 dark:text-blue-400">');
-            str = str.replace(/&lt;\/strong&gt;/gi, '</strong>');
-            return str;
+            // 2. Restore <b> and <strong> tags, adding Blue styling class
+            // Since we escaped everything, <b> became &lt;b&gt;
+            safe = safe
+                .replace(/&lt;b&gt;/gi, '<b class="text-blue-600 dark:text-blue-400">')
+                .replace(/&lt;\/b&gt;/gi, '</b>')
+                .replace(/&lt;strong&gt;/gi, '<strong class="text-blue-600 dark:text-blue-400">')
+                .replace(/&lt;\/strong&gt;/gi, '</strong>');
+
+            return safe;
         };
 
         let globalQIndex = 0;
@@ -1170,7 +1169,7 @@ const app = {
                                 <div class="option-dot-outer w-6 h-6 rounded-full border-2 border-slate-300 dark:border-slate-500 mr-3 flex items-center justify-center shrink-0">
                                     <div class="option-dot-inner w-2.5 h-2.5 bg-white rounded-full"></div>
                                 </div>
-                                <span class="font-medium text-slate-600 dark:text-slate-300 group-hover:text-slate-800 dark:group-hover:text-white font-question dynamic-text text-left">${formatText(opt)}</span>
+                                <span class="text-slate-600 dark:text-slate-300 group-hover:text-slate-800 dark:group-hover:text-white font-question dynamic-text text-left">${formatText(opt)}</span>
                             </div>
                         </label>`).join('')}</div>`;
             } else if (type === 2) {
