@@ -1177,11 +1177,11 @@ const app = {
                     ${q.options.map((opt, i) => `
                         <label class="cursor-pointer group relative option-label" data-idx="${i}">
                             <input type="radio" name="q_${uniqueId}" value="${i}" class="peer sr-only option-radio" onchange="app.handleAnswer(1, ${q.id}, ${i})" ${this.isReviewMode ? 'disabled' : ''}>
-                            <div class="p-3 md:p-4 rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 hover:bg-slate-50 dark:hover:bg-slate-700 transition-all flex items-center">
-                                <div class="option-dot-outer w-6 h-6 rounded-full border-2 border-slate-300 dark:border-slate-500 mr-3 flex items-center justify-center shrink-0">
+                            <div class="p-3 md:p-4 rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 hover:bg-slate-50 dark:hover:bg-slate-700 transition-all flex items-start">
+                                <div class="option-dot-outer w-6 h-6 rounded-full border-2 border-slate-300 dark:border-slate-500 mr-3 mt-0.5 flex items-center justify-center shrink-0">
                                     <div class="option-dot-inner w-2.5 h-2.5 bg-white rounded-full"></div>
                                 </div>
-                                <span class="text-slate-600 dark:text-slate-300 group-hover:text-slate-800 dark:group-hover:text-white font-question dynamic-text text-left">${formatText(opt, false)}</span>
+                                <span class="text-slate-600 dark:text-slate-300 group-hover:text-slate-800 dark:group-hover:text-white font-question dynamic-text text-left flex-1 break-words leading-relaxed">${formatText(opt, false)}</span>
                             </div>
                         </label>`).join('')}</div>`;
             } else if (type === 2) {
