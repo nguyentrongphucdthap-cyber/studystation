@@ -1131,11 +1131,10 @@ const app = {
         const formatText = (text, restoreBold = false) => {
             if (text === null || text === undefined) return '';
 
-            // 0. Sanitize: Remove internal event handlers that might have leaked into data
+            // 0. Sanitize: Remove internal event handlers
             let safe = String(text).replace(/onclick="event\.stopPropagation\(\)"/gi, "");
 
-            // 1. Manual Aggressive Escape:
-            // Escaping '=' to '&#61;' prevents strings like 'type="text"' from being parsed as HTML attributes if leaked.
+            // 1. Manual Escape: Comprehensive special char handling
             safe = safe
                 .replace(/&/g, "&amp;")
                 .replace(/</g, "&lt;")
@@ -1143,7 +1142,9 @@ const app = {
                 .replace(/"/g, "&quot;")
                 .replace(/'/g, "&#039;")
                 .replace(/`/g, "&#96;")
-                .replace(/=/g, "&#61;");
+                .replace(/=/g, "&#61;")
+                .replace(/{/g, "&#123;")
+                .replace(/}/g, "&#125;");
 
             // 2. Formatting (Only if enabled): Restore <b>/<strong> pairs
             if (restoreBold) {
@@ -1152,10 +1153,17 @@ const app = {
                 });
             }
 
-            // 3. Code Highlighting: Display HTML tags with Emerald Color
-            // Matches &lt;tag ... &gt; OR &lt;tag ...
-            safe = safe.replace(/&lt;(\/?[a-z][a-z0-9]*)([\s\S]*?)&gt;/gi, (match, tag, attrs) => {
-                return `<span class="font-mono text-emerald-600 dark:text-emerald-400 bg-gray-100 dark:bg-slate-700 px-1.5 py-0.5 rounded text-sm font-bold my-0.5 inline-block">&lt;${tag}${attrs}&gt;</span>`;
+            const codeClass = "font-mono text-emerald-600 dark:text-emerald-400 bg-gray-100 dark:bg-slate-700 px-1.5 py-0.5 rounded text-sm font-bold my-0.5 inline-block";
+
+            // 3. Highlight CSS Blocks: selector { content }
+            // Capture pattern: word/symbol + space + { + content + }
+            safe = safe.replace(/([a-z0-9\-_:\.#\s]+&#123;[\s\S]*?&#125;)/gi, (match) => {
+                return `<span class="${codeClass}">${match}</span>`;
+            });
+
+            // 4. Highlight HTML Tags: <tag ...>
+            safe = safe.replace(/&lt;(\/?[a-z][a-z0-9]*)([\s\S]*?)&gt;/gi, (match) => {
+                return `<span class="${codeClass}">${match}</span>`;
             });
 
             return safe;
