@@ -1253,9 +1253,13 @@ const app = {
 
         // Event delegation for True/False buttons
         if (p2) {
-            p2.addEventListener('click', (e) => {
+            // Handler function to avoid code duplication
+            const handleTFClick = (e) => {
                 const btn = e.target.closest('.tf-btn[data-tf-value]');
                 if (!btn || btn.disabled) return;
+
+                // Prevent default to stop any unwanted behavior
+                e.preventDefault();
 
                 const row = btn.closest('.sub-question-row');
                 if (!row) return;
@@ -1265,7 +1269,28 @@ const app = {
                 const isTrue = btn.dataset.tfValue === 'true';
 
                 this.handleTFAnswer(qId, subId, isTrue, btn);
-            });
+            };
+
+            // Use both click and touchend for better mobile support
+            p2.addEventListener('click', handleTFClick);
+
+            // Touchend for immediate mobile response
+            p2.addEventListener('touchend', (e) => {
+                const btn = e.target.closest('.tf-btn[data-tf-value]');
+                if (!btn || btn.disabled) return;
+
+                // Prevent ghost click
+                e.preventDefault();
+
+                const row = btn.closest('.sub-question-row');
+                if (!row) return;
+
+                const qId = parseInt(row.dataset.qid, 10);
+                const subId = row.dataset.sub;
+                const isTrue = btn.dataset.tfValue === 'true';
+
+                this.handleTFAnswer(qId, subId, isTrue, btn);
+            }, { passive: false });
         }
     },
 
