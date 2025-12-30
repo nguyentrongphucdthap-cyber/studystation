@@ -1010,7 +1010,18 @@ let unsubscribeConnected = null;
  */
 export async function startPresence() {
     const user = auth.currentUser;
-    if (!user) return;
+    if (!user) {
+        console.log('[Presence] No user, skipping presence tracking');
+        return;
+    }
+
+    // Prevent duplicate listeners if already started
+    if (presenceRef) {
+        console.log('[Presence] Already tracking, skipping duplicate start');
+        return;
+    }
+
+    console.log('[Presence] Starting presence tracking for:', user.email);
 
     try {
         // Reference to this user's presence in RTDB
@@ -1021,8 +1032,10 @@ export async function startPresence() {
 
         // Listen for connection state changes
         unsubscribeConnected = onValue(connectedRef, async (snapshot) => {
+            console.log('[Presence] Connection state:', snapshot.val());
             if (snapshot.val() === true) {
                 // We're connected (or reconnected)
+                console.log('[Presence] Connected! Setting up onDisconnect and presence data...');
 
                 // Set up onDisconnect FIRST - this will run on server when client disconnects
                 await onDisconnect(presenceRef).remove();
@@ -1036,6 +1049,8 @@ export async function startPresence() {
                     connectedAt: new Date().toISOString(),
                     userAgent: navigator.userAgent.substring(0, 100)
                 });
+
+                console.log('[Presence] Presence data set successfully!');
             }
         });
 
@@ -1044,7 +1059,7 @@ export async function startPresence() {
         startHeartbeat();
 
     } catch (e) {
-        console.warn('Presence start failed:', e);
+        console.error('[Presence] Start failed:', e);
     }
 }
 
