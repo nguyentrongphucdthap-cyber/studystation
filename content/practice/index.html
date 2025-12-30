@@ -1221,8 +1221,7 @@
             deleteFeedback,
             markFeedbackFixed,
             getCurrentUserInfo,
-            checkIsAdmin,
-            startPresence
+            checkIsAdmin
         } from "../../gatekeeper.js";
 
         // Make Firebase functions available globally for the app
@@ -1242,11 +1241,8 @@
             checkIsAdmin
         };
 
-        // Initialize Gatekeeper
+        // Initialize Gatekeeper (presence tracking is started automatically inside)
         initGatekeeper('protected');
-
-        // Start presence tracking for online users counter
-        startPresence();
 
         // Initialize App after Firebase is ready
         if (window.musicPlayer) window.musicPlayer.init();
