@@ -10,6 +10,7 @@
 import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-app.js";
 import { getAuth, signInWithPopup, GoogleAuthProvider, signOut, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-auth.js";
 import { getFirestore, doc, getDoc, updateDoc, onSnapshot, collection, getDocs, addDoc, deleteDoc, setDoc, increment } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js";
+import { getDatabase, ref, set, onValue, onDisconnect, serverTimestamp, remove, get } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-database.js";
 
 // ============================================================
 // 1. CẤU HÌNH FIREBASE
@@ -17,6 +18,7 @@ import { getFirestore, doc, getDoc, updateDoc, onSnapshot, collection, getDocs, 
 const firebaseConfig = {
     apiKey: "AIzaSyBdSnR-z6CJWzDH-WxdG-0rNX58srJrb8A",
     authDomain: "studystation-auth.firebaseapp.com",
+    databaseURL: "https://studystation-auth-default-rtdb.asia-southeast1.firebasedatabase.app",
     projectId: "studystation-auth",
     storageBucket: "studystation-auth.firebasestorage.app",
     messagingSenderId: "293717187040",
@@ -26,6 +28,7 @@ const firebaseConfig = {
 const app = initializeApp(firebaseConfig);
 const auth = getAuth(app);
 const db = getFirestore(app);
+const rtdb = getDatabase(app); // Realtime Database for presence
 const provider = new GoogleAuthProvider();
 
 // ============================================================
@@ -988,98 +991,122 @@ export function getCurrentUserInfo() {
 }
 
 // ============================================================
-// 11. PRESENCE TRACKING (Online Users)
+// 11. PRESENCE TRACKING (Online Users) - Using Firebase Realtime Database
 // ============================================================
+// This uses Firebase RTDB for accurate presence tracking with onDisconnect()
+// which automatically removes the user when they close the tab/browser or lose connection.
 
-let presenceInterval = null;
-let presenceDocId = null;
+let presenceRef = null;
+let connectedRef = null;
+let unsubscribeConnected = null;
 
 /**
- * Start presence tracking - call this when user is authenticated
- * Sends heartbeat every 30 seconds
+ * Start presence tracking using Firebase Realtime Database
+ * Uses onDisconnect() for automatic cleanup when client goes offline
  */
 export async function startPresence() {
     const user = auth.currentUser;
     if (!user) return;
 
-    // Use user.uid as document ID to ensure one document per user
-    // This allows seamless page transitions without losing presence
-    presenceDocId = user.uid;
+    try {
+        // Reference to this user's presence in RTDB
+        presenceRef = ref(rtdb, `presence/${user.uid}`);
 
-    const updatePresence = async () => {
-        try {
-            const presenceRef = doc(db, 'presence', presenceDocId);
-            await setDoc(presenceRef, {
-                oderId: user.uid,
-                userEmail: user.email,
-                userName: user.displayName || user.email.split('@')[0],
-                lastSeen: new Date().toISOString(),
-                userAgent: navigator.userAgent.substring(0, 100)
-            });
-        } catch (e) {
-            console.warn('Presence update failed:', e);
+        // Reference to .info/connected to detect connection state
+        connectedRef = ref(rtdb, '.info/connected');
+
+        // Listen for connection state changes
+        unsubscribeConnected = onValue(connectedRef, async (snapshot) => {
+            if (snapshot.val() === true) {
+                // We're connected (or reconnected)
+
+                // Set up onDisconnect FIRST - this will run on server when client disconnects
+                await onDisconnect(presenceRef).remove();
+
+                // Now set our presence data
+                await set(presenceRef, {
+                    oderId: user.uid,
+                    userEmail: user.email,
+                    userName: user.displayName || user.email.split('@')[0],
+                    lastSeen: new Date().toISOString(),
+                    connectedAt: new Date().toISOString(),
+                    userAgent: navigator.userAgent.substring(0, 100)
+                });
+            }
+        });
+
+        // Also update lastSeen periodically for "last activity" tracking
+        // This is optional but useful to see if user is actively using the app
+        startHeartbeat();
+
+    } catch (e) {
+        console.warn('Presence start failed:', e);
+    }
+}
+
+// Heartbeat to update lastSeen (doesn't affect online status, just activity)
+let heartbeatInterval = null;
+
+function startHeartbeat() {
+    if (heartbeatInterval) clearInterval(heartbeatInterval);
+
+    heartbeatInterval = setInterval(async () => {
+        const user = auth.currentUser;
+        if (user && presenceRef) {
+            try {
+                await set(presenceRef, {
+                    oderId: user.uid,
+                    userEmail: user.email,
+                    userName: user.displayName || user.email.split('@')[0],
+                    lastSeen: new Date().toISOString(),
+                    userAgent: navigator.userAgent.substring(0, 100)
+                });
+            } catch (e) {
+                // Ignore heartbeat errors
+            }
         }
-    };
-
-    // Initial presence
-    await updatePresence();
-
-    // Heartbeat every 30 seconds
-    if (presenceInterval) clearInterval(presenceInterval);
-    presenceInterval = setInterval(updatePresence, 30000);
-
-    // Removed pagehide listener to prevent flickering during navigation.
-    // We rely on the 60s cutoff in getOnlineUsersCount for cleanup.
+    }, 60000); // Every 60 seconds for activity tracking
 }
 
 /**
- * Stop presence tracking - call this on logout or page close
+ * Stop presence tracking - call this on logout
  */
 export async function stopPresence() {
-    if (presenceInterval) {
-        clearInterval(presenceInterval);
-        presenceInterval = null;
+    // Clear heartbeat
+    if (heartbeatInterval) {
+        clearInterval(heartbeatInterval);
+        heartbeatInterval = null;
     }
 
-    if (presenceDocId) {
+    // Unsubscribe from connection listener
+    if (unsubscribeConnected) {
+        unsubscribeConnected();
+        unsubscribeConnected = null;
+    }
+
+    // Remove presence from RTDB
+    if (presenceRef) {
         try {
-            const presenceRef = doc(db, 'presence', presenceDocId);
-            await deleteDoc(presenceRef);
+            await remove(presenceRef);
         } catch (e) {
             // Ignore errors on cleanup
         }
-        presenceDocId = null;
+        presenceRef = null;
     }
 }
 
 /**
- * Get count of online users (heartbeat within last 60 seconds)
+ * Get count of online users from Realtime Database
  * @returns {Promise<number>} - Number of online users
  */
 export async function getOnlineUsersCount() {
     try {
-        const presenceCol = collection(db, 'presence');
-        const snapshot = await getDocs(presenceCol);
+        const presenceListRef = ref(rtdb, 'presence');
+        const snapshot = await get(presenceListRef);
 
-        const now = new Date();
-        const cutoff = new Date(now.getTime() - 60000); // 60 seconds ago
+        if (!snapshot.exists()) return 0;
 
-        let onlineCount = 0;
-        const seenUsers = new Set();
-
-        snapshot.docs.forEach(doc => {
-            const data = doc.data();
-            const lastSeen = new Date(data.lastSeen);
-
-            // Only count if heartbeat is within last 60 seconds
-            // and count unique users only
-            if (lastSeen >= cutoff && data.oderId && !seenUsers.has(data.oderId)) {
-                seenUsers.add(data.oderId);
-                onlineCount++;
-            }
-        });
-
-        return onlineCount;
+        return Object.keys(snapshot.val()).length;
     } catch (e) {
         console.warn('Failed to get online users count:', e);
         return 0;
@@ -1087,83 +1114,54 @@ export async function getOnlineUsersCount() {
 }
 
 /**
- * Subscribe to online users count updates (polls every 30 seconds)
+ * Subscribe to online users count updates (real-time from RTDB)
  * @param {function} callback - Function to call with updated count
  * @returns {function} - Unsubscribe function
  */
 export function subscribeToOnlineUsers(callback) {
-    // Initial fetch
-    getOnlineUsersCount().then(callback);
+    const presenceListRef = ref(rtdb, 'presence');
 
-    // Poll every 30 seconds
-    const interval = setInterval(async () => {
-        const count = await getOnlineUsersCount();
-        callback(count);
-    }, 30000);
+    const unsubscribe = onValue(presenceListRef, (snapshot) => {
+        if (!snapshot.exists()) {
+            callback(0);
+            return;
+        }
+        callback(Object.keys(snapshot.val()).length);
+    });
 
     // Return unsubscribe function
-    return () => clearInterval(interval);
+    return unsubscribe;
 }
 
 /**
- * Clean up old presence records (older than 2 minutes)
- * Call this periodically or on app init
+ * Clean up old presence records - NOT NEEDED with RTDB onDisconnect
+ * Keeping for backwards compatibility but it's a no-op now
  */
 export async function cleanupOldPresence() {
-    try {
-        const presenceCol = collection(db, 'presence');
-        const snapshot = await getDocs(presenceCol);
-
-        const now = new Date();
-        const cutoff = new Date(now.getTime() - 120000); // 2 minutes ago
-
-        const deletePromises = [];
-        snapshot.docs.forEach(docSnap => {
-            const data = docSnap.data();
-            const lastSeen = new Date(data.lastSeen);
-
-            if (lastSeen < cutoff) {
-                deletePromises.push(deleteDoc(doc(db, 'presence', docSnap.id)));
-            }
-        });
-
-        await Promise.all(deletePromises);
-    } catch (e) {
-        console.warn('Presence cleanup failed:', e);
-    }
+    // No longer needed - onDisconnect handles this automatically
+    console.log('cleanupOldPresence: Using RTDB onDisconnect, cleanup is automatic');
 }
 
 /**
- * Get list of online users with details (within last 60 seconds)
+ * Get list of online users with details from Realtime Database
  * @returns {Promise<Array>} - Array of online user objects
  */
 export async function getOnlineUsersList() {
     try {
-        const presenceCol = collection(db, 'presence');
-        const snapshot = await getDocs(presenceCol);
+        const presenceListRef = ref(rtdb, 'presence');
+        const snapshot = await get(presenceListRef);
 
-        const now = new Date();
-        const cutoff = new Date(now.getTime() - 60000); // 60 seconds ago
+        if (!snapshot.exists()) return [];
 
-        const onlineUsers = [];
-        const seenUsers = new Set();
-
-        snapshot.docs.forEach(docSnap => {
-            const data = docSnap.data();
-            const lastSeen = new Date(data.lastSeen);
-
-            // Only include if heartbeat is within last 60 seconds and unique user
-            if (lastSeen >= cutoff && data.oderId && !seenUsers.has(data.oderId)) {
-                seenUsers.add(data.oderId);
-                onlineUsers.push({
-                    oderId: data.oderId,
-                    email: data.userEmail || '',
-                    name: data.userName || data.userEmail?.split('@')[0] || 'Unknown',
-                    lastSeen: data.lastSeen,
-                    userAgent: data.userAgent || ''
-                });
-            }
-        });
+        const data = snapshot.val();
+        const onlineUsers = Object.entries(data).map(([oderId, userData]) => ({
+            oderId: userData.oderId || oderId,
+            email: userData.userEmail || '',
+            name: userData.userName || userData.userEmail?.split('@')[0] || 'Unknown',
+            lastSeen: userData.lastSeen,
+            connectedAt: userData.connectedAt,
+            userAgent: userData.userAgent || ''
+        }));
 
         // Sort by name
         onlineUsers.sort((a, b) => a.name.localeCompare(b.name));
@@ -1176,20 +1174,35 @@ export async function getOnlineUsersList() {
 }
 
 /**
- * Subscribe to online users list updates (polls every 30 seconds)
+ * Subscribe to online users list updates (real-time from RTDB)
  * @param {function} callback - Function to call with updated list
  * @returns {function} - Unsubscribe function
  */
 export function subscribeToOnlineUsersList(callback) {
-    // Initial fetch
-    getOnlineUsersList().then(callback);
+    const presenceListRef = ref(rtdb, 'presence');
 
-    // Poll every 30 seconds
-    const interval = setInterval(async () => {
-        const users = await getOnlineUsersList();
-        callback(users);
-    }, 30000);
+    const unsubscribe = onValue(presenceListRef, (snapshot) => {
+        if (!snapshot.exists()) {
+            callback([]);
+            return;
+        }
+
+        const data = snapshot.val();
+        const onlineUsers = Object.entries(data).map(([oderId, userData]) => ({
+            oderId: userData.oderId || oderId,
+            email: userData.userEmail || '',
+            name: userData.userName || userData.userEmail?.split('@')[0] || 'Unknown',
+            lastSeen: userData.lastSeen,
+            connectedAt: userData.connectedAt,
+            userAgent: userData.userAgent || ''
+        }));
+
+        // Sort by name
+        onlineUsers.sort((a, b) => a.name.localeCompare(b.name));
+
+        callback(onlineUsers);
+    });
 
     // Return unsubscribe function
-    return () => clearInterval(interval);
+    return unsubscribe;
 }
