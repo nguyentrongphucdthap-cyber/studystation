@@ -243,6 +243,10 @@ export function initGatekeeper(mode = 'protected') {
                         document.body.style.overflow = '';
                     }, 500);
                 }
+
+                // E. Tự động bắt đầu Presence Tracking
+                // Gọi ở đây để đảm bảo user đã authenticated và trên tất cả protected pages
+                startPresence();
             }
 
         } catch (error) {
