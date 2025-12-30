@@ -1517,11 +1517,20 @@ const app = {
                     row.classList.add('bg-green-50', 'dark:bg-green-900/10');
                 }
                 const btns = row.querySelectorAll('.tf-btn');
+                // btns[0] = ĐÚNG, btns[1] = SAI
+
+                // Highlight user's answer
                 if (userAns === true) btns[0].classList.add(sub.correct === true ? 'selected-true' : 'selected-false');
                 if (userAns === false) btns[1].classList.add(sub.correct === false ? 'selected-true' : 'selected-false');
-                if (userAns !== sub.correct) {
-                    const correctBtn = sub.correct ? btns[0] : btns[1];
-                    correctBtn.style.border = "2px solid #10b981";
+
+                // Always highlight the correct answer prominently
+                const correctBtn = sub.correct ? btns[0] : btns[1];
+                correctBtn.classList.add('review-correct-answer');
+
+                // If user was wrong, also mark their wrong choice
+                if (userAns !== sub.correct && userAns !== undefined) {
+                    const wrongBtn = userAns ? btns[0] : btns[1];
+                    wrongBtn.classList.add('review-wrong-answer');
                 }
             });
             setStatus(uniqueId, fullyCorrect);
