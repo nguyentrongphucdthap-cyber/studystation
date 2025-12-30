@@ -449,6 +449,14 @@ function parseRawTextToQuestions(text) {
  * Parse multiple choice question
  */
 function parseMultipleChoice(content) {
+    // Extract Explanation if exists
+    let explanationText = '';
+    const expMatch = content.match(/(?:Lời giải|Giải thích|Hướng dẫn)[:\.]?\s*([\s\S]*)$/i);
+    if (expMatch) {
+        explanationText = expMatch[1].trim();
+        content = content.replace(expMatch[0], '').trim();
+    }
+
     // Split into question and options
     const parts = content.split(/(?=[A-D]\.)/i);
     const questionText = parts[0]?.trim() || '';
@@ -460,28 +468,38 @@ function parseMultipleChoice(content) {
     for (let i = 1; i < parts.length && i <= 4; i++) {
         const optMatch = parts[i].match(/([A-D])\.\s*([\s\S]*)/i);
         if (optMatch) {
-            options.push(optMatch[2].trim());
-            // Check for correct answer marker
-            if (/\(đúng\)|✓|correct/i.test(optMatch[2])) {
+            let optText = optMatch[2].trim();
+            // Check for correct answer marker inside option
+            if (/\(đúng\)|✓|correct/i.test(optText)) {
                 correctAnswer = optMatch[1].toUpperCase();
+                optText = optText.replace(/\(đúng\)|✓|correct/gi, '').trim();
             }
+            options.push(optText);
         }
     }
 
-    // Check for answer at end (Đáp án: A)
-    const answerMatch = content.match(/Đáp án[:\s]*([A-D])/i);
-    if (answerMatch) {
-        correctAnswer = answerMatch[1].toUpperCase();
+    // Check for answer at end (Đáp án: A) if not found in options
+    if (!correctAnswer) {
+        const answerMatch = content.match(/Đáp án[:\s]*([A-D])/i);
+        if (answerMatch) {
+            correctAnswer = answerMatch[1].toUpperCase();
+        }
     }
+
+    // Map A->0, B->1. Default to 0 (A) if not found
+    const correctMap = { 'A': 0, 'B': 1, 'C': 2, 'D': 3 };
 
     return {
         id: Date.now() + Math.random(),
-        question: convertMathChemSymbols(questionText),
-        A: convertMathChemSymbols(options[0] || ''),
-        B: convertMathChemSymbols(options[1] || ''),
-        C: convertMathChemSymbols(options[2] || ''),
-        D: convertMathChemSymbols(options[3] || ''),
-        answer: correctAnswer || 'A'
+        text: convertMathChemSymbols(questionText),
+        options: [
+            convertMathChemSymbols(options[0] || ''),
+            convertMathChemSymbols(options[1] || ''),
+            convertMathChemSymbols(options[2] || ''),
+            convertMathChemSymbols(options[3] || '')
+        ],
+        correct: correctMap[correctAnswer] ?? 0,
+        explanation: explanationText ? { text: convertMathChemSymbols(explanationText) } : null
     };
 }
 
@@ -489,17 +507,27 @@ function parseMultipleChoice(content) {
  * Parse true/false question
  */
 function parseTrueFalse(content) {
+    // Extract Explanation
+    let explanationText = '';
+    const expMatch = content.match(/(?:Lời giải|Giải thích|Hướng dẫn)[:\.]?\s*([\s\S]*)$/i);
+    if (expMatch) {
+        explanationText = expMatch[1].trim();
+        content = content.replace(expMatch[0], '').trim();
+    }
+
     // Split into question and statements
     const parts = content.split(/(?=[a-d]\))/i);
     const questionText = parts[0]?.trim() || '';
 
-    const statements = [];
+    const subQuestions = [];
+    const validIds = ['a', 'b', 'c', 'd'];
 
     // Extract each statement
+    let idx = 0;
     for (let i = 1; i < parts.length && i <= 4; i++) {
-        const stMatch = parts[i].match(/[a-d]\)\s*([\s\S]*)/i);
+        const stMatch = parts[i].match(/([a-d])\)\s*([\s\S]*)/i);
         if (stMatch) {
-            let stText = stMatch[1].trim();
+            let stText = stMatch[2].trim();
             let isCorrect = false;
 
             // Check for correct marker
@@ -508,22 +536,25 @@ function parseTrueFalse(content) {
                 stText = stText.replace(/\s*\(đúng\)|\s*✓|\s*Đ\b/gi, '').trim();
             }
 
-            statements.push({
+            subQuestions.push({
+                id: validIds[idx],
                 text: convertMathChemSymbols(stText),
-                isTrue: isCorrect
+                correct: isCorrect
             });
+            idx++;
         }
+    }
+
+    // Ensure 4 subquestions
+    while (subQuestions.length < 4) {
+        subQuestions.push({ id: validIds[subQuestions.length], text: '', correct: false });
     }
 
     return {
         id: Date.now() + Math.random(),
-        question: convertMathChemSymbols(questionText),
-        statements: statements.length ? statements : [
-            { text: '', isTrue: false },
-            { text: '', isTrue: false },
-            { text: '', isTrue: false },
-            { text: '', isTrue: false }
-        ]
+        text: convertMathChemSymbols(questionText),
+        subQuestions: subQuestions,
+        explanation: explanationText ? { text: convertMathChemSymbols(explanationText) } : null
     };
 }
 
@@ -532,7 +563,16 @@ function parseTrueFalse(content) {
  */
 function parseShortAnswer(content) {
     let answer = '';
+    let explanationText = '';
     let question = content;
+
+    // Extract Explanation
+    const expMatch = content.match(/(?:Lời giải|Giải thích|Hướng dẫn)[:\.]?\s*([\s\S]*)$/i);
+    if (expMatch) {
+        explanationText = expMatch[1].trim();
+        content = content.replace(expMatch[0], '').trim();
+        question = content;
+    }
 
     // Extract answer if present
     const answerMatch = content.match(/Đáp án[:\s]*([\s\S]*?)(?:$|(?=\n\n))/i);
@@ -543,8 +583,9 @@ function parseShortAnswer(content) {
 
     return {
         id: Date.now() + Math.random(),
-        question: convertMathChemSymbols(question),
-        answer: convertMathChemSymbols(answer)
+        text: convertMathChemSymbols(question),
+        correct: convertMathChemSymbols(answer),
+        explanation: explanationText ? { text: convertMathChemSymbols(explanationText) } : null
     };
 }
 
@@ -816,12 +857,17 @@ function createPart1QuestionHTML(q, idx) {
                                 <div class="flex gap-2">
                                     <input type="text" class="q-explanation-image flex-1 px-3 py-2 border border-gray-200 rounded-lg text-sm focus:ring-2 focus:ring-orange-500 outline-none" placeholder="URL hình ảnh lời giải..." value="${explanation.image || ''}">
                                     <input type="file" class="q-explanation-image-file hidden" accept="image/*">
-                                    <button type="button" class="btn-upload-explanation-image px-3 py-2 bg-orange-500 text-white text-sm font-semibold rounded-lg hover:bg-orange-600 transition-colors">
+                                    <button type="button" class="btn-upload-explanation-image px-3 py-2 bg-orange-500 text-white text-sm font-semibold rounded-lg hover:bg-orange-600 transition-colors flex items-center gap-1">
                                         <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-8l-4-4m0 0L8 8m4-4v12"/></svg>
+                                        Upload
                                     </button>
                                 </div>
                                 <div class="q-explanation-image-preview mt-2 ${explanation.image ? '' : 'hidden'}">
                                     ${explanation.image ? `<img src="${explanation.image}" class="max-h-24 rounded-lg border border-gray-200">` : ''}
+                                </div>
+                                <div class="q-explanation-image-loading hidden mt-2 flex items-center gap-2 text-orange-600 text-sm">
+                                    <div class="w-4 h-4 border-2 border-orange-200 border-t-orange-600 rounded-full spinner"></div>
+                                    Đang upload...
                                 </div>
                             </div>
                             <div>
@@ -906,12 +952,17 @@ function createPart2QuestionHTML(q, idx) {
                                 <div class="flex gap-2">
                                     <input type="text" class="q-explanation-image flex-1 px-3 py-2 border border-gray-200 rounded-lg text-sm focus:ring-2 focus:ring-orange-500 outline-none" placeholder="URL hình ảnh lời giải..." value="${explanation.image || ''}">
                                     <input type="file" class="q-explanation-image-file hidden" accept="image/*">
-                                    <button type="button" class="btn-upload-explanation-image px-3 py-2 bg-orange-500 text-white text-sm font-semibold rounded-lg hover:bg-orange-600 transition-colors">
+                                    <button type="button" class="btn-upload-explanation-image px-3 py-2 bg-orange-500 text-white text-sm font-semibold rounded-lg hover:bg-orange-600 transition-colors flex items-center gap-1">
                                         <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-8l-4-4m0 0L8 8m4-4v12"/></svg>
+                                        Upload
                                     </button>
                                 </div>
                                 <div class="q-explanation-image-preview mt-2 ${explanation.image ? '' : 'hidden'}">
                                     ${explanation.image ? `<img src="${explanation.image}" class="max-h-24 rounded-lg border border-gray-200">` : ''}
+                                </div>
+                                <div class="q-explanation-image-loading hidden mt-2 flex items-center gap-2 text-orange-600 text-sm">
+                                    <div class="w-4 h-4 border-2 border-orange-200 border-t-orange-600 rounded-full spinner"></div>
+                                    Đang upload...
                                 </div>
                             </div>
                             <div>
@@ -981,12 +1032,17 @@ function createPart3QuestionHTML(q, idx) {
                                 <div class="flex gap-2">
                                     <input type="text" class="q-explanation-image flex-1 px-3 py-2 border border-gray-200 rounded-lg text-sm focus:ring-2 focus:ring-orange-500 outline-none" placeholder="URL hình ảnh lời giải..." value="${explanation.image || ''}">
                                     <input type="file" class="q-explanation-image-file hidden" accept="image/*">
-                                    <button type="button" class="btn-upload-explanation-image px-3 py-2 bg-orange-500 text-white text-sm font-semibold rounded-lg hover:bg-orange-600 transition-colors">
+                                    <button type="button" class="btn-upload-explanation-image px-3 py-2 bg-orange-500 text-white text-sm font-semibold rounded-lg hover:bg-orange-600 transition-colors flex items-center gap-1">
                                         <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-8l-4-4m0 0L8 8m4-4v12"/></svg>
+                                        Upload
                                     </button>
                                 </div>
                                 <div class="q-explanation-image-preview mt-2 ${explanation.image ? '' : 'hidden'}">
                                     ${explanation.image ? `<img src="${explanation.image}" class="max-h-24 rounded-lg border border-gray-200">` : ''}
+                                </div>
+                                <div class="q-explanation-image-loading hidden mt-2 flex items-center gap-2 text-orange-600 text-sm">
+                                    <div class="w-4 h-4 border-2 border-orange-200 border-t-orange-600 rounded-full spinner"></div>
+                                    Đang upload...
                                 </div>
                             </div>
                             <div>
@@ -1154,8 +1210,11 @@ function bindQuestionEvents(part) {
             const block = input.closest('.question-block');
             const urlInput = block.querySelector('.q-explanation-image');
             const previewContainer = block.querySelector('.q-explanation-image-preview');
+            const loadingContainer = block.querySelector('.q-explanation-image-loading');
             const uploadBtn = block.querySelector('.btn-upload-explanation-image');
 
+            // Show loading state
+            if (loadingContainer) loadingContainer.classList.remove('hidden');
             uploadBtn.disabled = true;
             uploadBtn.classList.add('opacity-50', 'cursor-not-allowed');
 
@@ -1169,6 +1228,8 @@ function bindQuestionEvents(part) {
                 console.error('Upload failed:', error);
                 showToast('Upload thất bại: ' + error.message, 'error');
             } finally {
+                // Hide loading state
+                if (loadingContainer) loadingContainer.classList.add('hidden');
                 uploadBtn.disabled = false;
                 uploadBtn.classList.remove('opacity-50', 'cursor-not-allowed');
                 input.value = '';
@@ -1587,6 +1648,17 @@ function detectAnswerKeys(fullText, questions) {
 function convertMathChemSymbols(text) {
     let result = text;
 
+    // Trigonometry (sin, cos, tan, cot) -> \sin, \cos...
+    result = result.replace(/(^|[^\\a-zA-Z])\b(sin|cos|tan|cot)\b/g, '$1\\\\$2');
+
+    // Vectors
+    result = result.replace(/\bvec\s+([a-z])\b/g, '$\\vec{$1}$'); // vec u
+    result = result.replace(/\bvecto\s+([A-Z]{2})\b/gi, '$\\overrightarrow{$1}$'); // vecto AB
+
+    // Angles
+    result = result.replace(/\bgóc\s+([A-Z]{3})\b/gi, '$\\widehat{$1}$'); // góc ABC
+    result = result.replace(/\b([A-Z]{3})\^\b/g, '$\\widehat{$1}$'); // ABC^
+
     // Superscripts: x^2 -> $x^{2}$
     result = result.replace(/([a-zA-Z])\^(\d+)/g, '$$$1^{$2}$$');
 
@@ -1598,6 +1670,7 @@ function convertMathChemSymbols(text) {
         'CaCO3', 'NaHCO3', 'NH3', 'CH4', 'C2H5OH', 'Fe2O3', 'CuSO4',
         'H3PO4', 'Ca(OH)2', 'Mg(OH)2', 'Al2O3', 'Fe3O4', 'O2', 'N2', 'Cl2', 'H2'];
     chemFormulas.forEach(formula => {
+        // Avoid replacing inside existing latex commands or long words
         const regex = new RegExp(`\\b${formula}\\b`, 'g');
         result = result.replace(regex, `$\\ce{${formula}}$`);
     });
