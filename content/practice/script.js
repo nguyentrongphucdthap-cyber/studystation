@@ -1480,6 +1480,49 @@ const app = {
             else el.classList.add('dark:border-red-900');
         };
 
+        // Helper to render explanation
+        const renderExplanation = (uniqueId, explanation) => {
+            if (!explanation || (!explanation.text && !explanation.image && !explanation.video)) return;
+
+            const el = document.getElementById(`q-${uniqueId}`);
+            if (!el) return;
+
+            // Extract YouTube video ID
+            const getYouTubeId = (url) => {
+                if (!url) return null;
+                const match = url.match(/(?:youtube\.com\/(?:watch\?v=|embed\/)|youtu\.be\/)([a-zA-Z0-9_-]{11})/);
+                return match ? match[1] : null;
+            };
+
+            const videoId = getYouTubeId(explanation.video);
+
+            const explanationHtml = `
+                <div class="explanation-section mt-4 p-4 bg-gradient-to-r from-orange-50 to-amber-50 dark:from-orange-900/20 dark:to-amber-900/20 border border-orange-200 dark:border-orange-800 rounded-xl">
+                    <div class="flex items-center gap-2 mb-3">
+                        <svg class="w-5 h-5 text-orange-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9.663 17h4.673M12 3v1m6.364 1.636l-.707.707M21 12h-1M4 12H3m3.343-5.657l-.707-.707m2.828 9.9a5 5 0 117.072 0l-.548.547A3.374 3.374 0 0014 18.469V19a2 2 0 11-4 0v-.531c0-.895-.356-1.754-.988-2.386l-.548-.547z"/>
+                        </svg>
+                        <span class="font-bold text-orange-700 dark:text-orange-400">💡 Lời giải</span>
+                    </div>
+                    ${explanation.text ? `<p class="text-slate-700 dark:text-slate-300 text-sm leading-relaxed mb-3 whitespace-pre-wrap">${this.escapeHtml(explanation.text)}</p>` : ''}
+                    ${explanation.image ? `<img src="${explanation.image}" class="max-w-full md:max-w-lg rounded-lg border border-orange-200 dark:border-orange-700 shadow-sm mb-3 cursor-pointer hover:shadow-lg transition-shadow" alt="Hình ảnh lời giải" onclick="openLightbox('${explanation.image}')" onerror="this.style.display='none'">` : ''}
+                    ${videoId ? `
+                        <div class="aspect-video max-w-lg rounded-lg overflow-hidden shadow-sm">
+                            <iframe 
+                                class="w-full h-full" 
+                                src="https://www.youtube.com/embed/${videoId}" 
+                                title="Video lời giải" 
+                                frameborder="0" 
+                                allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture" 
+                                allowfullscreen>
+                            </iframe>
+                        </div>
+                    ` : (explanation.video ? `<a href="${explanation.video}" target="_blank" class="inline-flex items-center gap-2 text-orange-600 hover:text-orange-700 dark:text-orange-400 text-sm font-medium"><svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M14.752 11.168l-3.197-2.132A1 1 0 0010 9.87v4.263a1 1 0 001.555.832l3.197-2.132a1 1 0 000-1.664z"/><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>Xem video lời giải</a>` : '')}
+                </div>
+            `;
+            el.insertAdjacentHTML('beforeend', explanationHtml);
+        };
+
         // Part 1: Multiple Choice (type = 1)
         data.part1.forEach(q => {
             const uniqueId = `1_${q.id}`;
@@ -1496,6 +1539,9 @@ const app = {
                 if (val === userVal && val !== q.correct) wrapper.classList.add('review-wrong');
                 if (val === userVal) inp.checked = true;
             });
+
+            // Render explanation if exists
+            if (q.explanation) renderExplanation(uniqueId, q.explanation);
         });
 
         // Part 2: True/False (type = 2)
@@ -1534,6 +1580,9 @@ const app = {
                 }
             });
             setStatus(uniqueId, fullyCorrect);
+
+            // Render explanation if exists
+            if (q.explanation) renderExplanation(uniqueId, q.explanation);
         });
 
         // Part 3: Short Answer (type = 3)
@@ -1551,6 +1600,9 @@ const app = {
                 if (isCorrect) inp.classList.add('border-green-500', 'bg-green-50');
                 else inp.classList.add('border-red-500', 'bg-red-50');
             }
+
+            // Render explanation if exists
+            if (q.explanation) renderExplanation(uniqueId, q.explanation);
         });
     },
 
