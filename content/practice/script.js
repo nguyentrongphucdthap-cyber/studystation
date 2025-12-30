@@ -1130,6 +1130,12 @@ const app = {
         const formatText = (text, restoreBold = false, highlightCode = false) => {
             if (text === null || text === undefined) return '';
 
+            // Fix non-standard LaTeX commands for MathJax
+            // Converts \female -> \venus and \male -> \mars
+            text = String(text)
+                .replace(/\\female/g, '\\venus')
+                .replace(/\\male/g, '\\mars');
+
             // 1. Safe Escape using DOM (browser handles all edge cases perfectly)
             const div = document.createElement('div');
             div.textContent = String(text);
