@@ -1135,14 +1135,19 @@ const app = {
             div.textContent = String(text);
             let safe = div.innerHTML;
 
-            // 2. Restore <b>/<strong> as blue bold (only for question text)
+            // 2. Convert newlines to <br> for proper line breaks
+            // Handle both actual newlines (\n) and literal backslash-n from JSON (\\n)
+            safe = safe.replace(/\\n/g, '<br>');  // Literal \n from JSON (escaped as \\n in source)
+            safe = safe.replace(/\n/g, '<br>');   // Actual newline characters
+
+            // 3. Restore <b>/<strong> as blue bold (only for question text)
             if (restoreBold) {
                 safe = safe.replace(/&lt;(b|strong)&gt;([\s\S]*?)&lt;\/\1&gt;/gi, (match, tag, content) => {
                     return `<${tag} class="font-bold text-blue-600 dark:text-blue-400">${content}</${tag}>`;
                 });
             }
 
-            // 3. Highlight HTML Tags (only if requested)
+            // 4. Highlight HTML Tags (only if requested)
             if (highlightCode) {
                 const codeClass = "font-mono text-emerald-600 dark:text-emerald-400 bg-gray-100 dark:bg-slate-700 px-1 py-0.5 rounded text-sm font-bold";
                 // Match escaped HTML tags: &lt;tagname...&gt;
