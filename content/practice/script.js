@@ -1224,12 +1224,12 @@ const app = {
             } else if (type === 2) {
                 content += `<div class="space-y-3">
                     ${q.subQuestions.map(sub => `
-                        <div class="sub-question-row p-3 md:p-4 rounded-2xl bg-slate-50/80 dark:bg-slate-700/30 border border-slate-100 dark:border-slate-700" data-sub="${sub.id}">
+                        <div class="sub-question-row p-3 md:p-4 rounded-2xl bg-slate-50/80 dark:bg-slate-700/30 border border-slate-100 dark:border-slate-700" data-sub="${sub.id}" data-qid="${q.id}">
                             <div class="text-slate-700 dark:text-slate-300 font-question dynamic-text mb-3"><span class="font-bold mr-2 text-indigo-600 dark:text-indigo-400 font-sans">${sub.id})</span>${formatText(sub.text, false, true)}</div>
                             <div class="flex justify-end">
-                                <div class="inline-flex bg-white dark:bg-slate-800 rounded-lg p-1 border border-slate-200 dark:border-slate-600 shadow-sm">
-                                    <button onclick="app.handleTFAnswer(${q.id}, '${sub.id}', true, this)" class="tf-btn px-4 py-2 text-sm font-bold rounded-md text-slate-500 dark:text-slate-400 hover:bg-slate-50 dark:hover:bg-slate-700 transition-colors" ${this.isReviewMode ? 'disabled' : ''}>ĐÚNG</button>
-                                    <button onclick="app.handleTFAnswer(${q.id}, '${sub.id}', false, this)" class="tf-btn px-4 py-2 text-sm font-bold rounded-md text-slate-500 dark:text-slate-400 hover:bg-slate-50 dark:hover:bg-slate-700 transition-colors" ${this.isReviewMode ? 'disabled' : ''}>SAI</button>
+                                <div class="inline-flex bg-white dark:bg-slate-800 rounded-lg p-1 border border-slate-200 dark:border-slate-600 shadow-sm tf-btn-group">
+                                    <button type="button" data-tf-value="true" class="tf-btn px-4 py-2 text-sm font-bold rounded-md text-slate-500 dark:text-slate-400 hover:bg-slate-50 dark:hover:bg-slate-700 transition-colors" ${this.isReviewMode ? 'disabled' : ''}>ĐÚNG</button>
+                                    <button type="button" data-tf-value="false" class="tf-btn px-4 py-2 text-sm font-bold rounded-md text-slate-500 dark:text-slate-400 hover:bg-slate-50 dark:hover:bg-slate-700 transition-colors" ${this.isReviewMode ? 'disabled' : ''}>SAI</button>
                                 </div>
                             </div>
                         </div>`).join('')}</div>`;
@@ -1250,6 +1250,23 @@ const app = {
         if (data.part1.length) data.part1.forEach(q => p1.appendChild(renderQ(q, 0, 1))); else document.getElementById('part-1-container').classList.add('hidden');
         if (data.part2.length) data.part2.forEach(q => p2.appendChild(renderQ(q, 0, 2))); else document.getElementById('part-2-container').classList.add('hidden');
         if (data.part3.length) data.part3.forEach(q => p3.appendChild(renderQ(q, 0, 3))); else document.getElementById('part-3-container').classList.add('hidden');
+
+        // Event delegation for True/False buttons
+        if (p2) {
+            p2.addEventListener('click', (e) => {
+                const btn = e.target.closest('.tf-btn[data-tf-value]');
+                if (!btn || btn.disabled) return;
+
+                const row = btn.closest('.sub-question-row');
+                if (!row) return;
+
+                const qId = parseInt(row.dataset.qid, 10);
+                const subId = row.dataset.sub;
+                const isTrue = btn.dataset.tfValue === 'true';
+
+                this.handleTFAnswer(qId, subId, isTrue, btn);
+            });
+        }
     },
 
     renderPalette(data) {
@@ -1292,21 +1309,14 @@ const app = {
         if (!this.answers[key].sub) this.answers[key].sub = {};
         this.answers[key].sub[subId] = isTrue;
 
-        const parent = btnEl.parentElement;
+        const parent = btnEl.closest('.tf-btn-group') || btnEl.parentElement;
         parent.querySelectorAll('.tf-btn').forEach(b => {
             b.classList.remove('active-tf', 'bg-blue-600', 'bg-emerald-600', 'bg-red-500', 'text-white');
             b.classList.add('text-slate-500', 'dark:text-slate-400');
         });
 
         btnEl.classList.remove('text-slate-500', 'dark:text-slate-400');
-        btnEl.classList.add('active-tf', 'text-white');
-
-        // ĐÚNG = green/blue, SAI = red
-        if (isTrue) {
-            btnEl.classList.add('bg-blue-600');
-        } else {
-            btnEl.classList.add('bg-red-500');
-        }
+        btnEl.classList.add('active-tf', 'text-white', 'bg-blue-600');
 
         const qData = this.currentExam.data.part2.find(q => q.id === qId);
         const req = qData ? qData.subQuestions.map(s => s.id) : [];
