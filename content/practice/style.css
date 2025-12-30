@@ -121,6 +121,21 @@ html.dark .question-nav-item:hover:not(.answered) {
 /* --- Buttons --- */
 .tf-btn {
     transition: all 0.2s ease;
+    -webkit-tap-highlight-color: transparent;
+    touch-action: manipulation;
+    user-select: none;
+    -webkit-user-select: none;
+    cursor: pointer;
+}
+
+/* Remove stuck active state on mobile */
+.tf-btn:active {
+    opacity: 0.8;
+}
+
+/* Ensure proper touch response */
+.tf-btn-group {
+    touch-action: manipulation;
 }
 
 .tf-btn.selected-true {
@@ -437,7 +452,7 @@ html.dark input[type=range]::-webkit-slider-runnable-track {
         font-size: 2.5rem !important;
     }
 
-    /* Make MathJax formulas scrollable on overflow */
+    /* Make MathJax formulas scrollable onr overflow */
     mjx-container {
         overflow-x: auto;
         max-width: 100%;
