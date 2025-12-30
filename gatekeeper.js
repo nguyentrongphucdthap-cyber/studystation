@@ -1132,3 +1132,64 @@ export async function cleanupOldPresence() {
         console.warn('Presence cleanup failed:', e);
     }
 }
+
+/**
+ * Get list of online users with details (within last 60 seconds)
+ * @returns {Promise<Array>} - Array of online user objects
+ */
+export async function getOnlineUsersList() {
+    try {
+        const presenceCol = collection(db, 'presence');
+        const snapshot = await getDocs(presenceCol);
+
+        const now = new Date();
+        const cutoff = new Date(now.getTime() - 60000); // 60 seconds ago
+
+        const onlineUsers = [];
+        const seenUsers = new Set();
+
+        snapshot.docs.forEach(docSnap => {
+            const data = docSnap.data();
+            const lastSeen = new Date(data.lastSeen);
+
+            // Only include if heartbeat is within last 60 seconds and unique user
+            if (lastSeen >= cutoff && data.oderId && !seenUsers.has(data.oderId)) {
+                seenUsers.add(data.oderId);
+                onlineUsers.push({
+                    oderId: data.oderId,
+                    email: data.userEmail || '',
+                    name: data.userName || data.userEmail?.split('@')[0] || 'Unknown',
+                    lastSeen: data.lastSeen,
+                    userAgent: data.userAgent || ''
+                });
+            }
+        });
+
+        // Sort by name
+        onlineUsers.sort((a, b) => a.name.localeCompare(b.name));
+
+        return onlineUsers;
+    } catch (e) {
+        console.warn('Failed to get online users list:', e);
+        return [];
+    }
+}
+
+/**
+ * Subscribe to online users list updates (polls every 30 seconds)
+ * @param {function} callback - Function to call with updated list
+ * @returns {function} - Unsubscribe function
+ */
+export function subscribeToOnlineUsersList(callback) {
+    // Initial fetch
+    getOnlineUsersList().then(callback);
+
+    // Poll every 30 seconds
+    const interval = setInterval(async () => {
+        const users = await getOnlineUsersList();
+        callback(users);
+    }, 30000);
+
+    // Return unsubscribe function
+    return () => clearInterval(interval);
+}
