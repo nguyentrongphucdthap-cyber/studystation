@@ -745,6 +745,7 @@ function createPart1QuestionHTML(q, idx) {
     const options = q.options || ['', '', '', ''];
     const correctIdx = q.correct ?? 0;
     const imageUrl = q.image || '';
+    const explanation = q.explanation || {};
     // Use unique question ID for radio button name to prevent conflicts
     const uniqueQId = q.id || `q${Date.now()}_${idx}`;
 
@@ -765,7 +766,7 @@ function createPart1QuestionHTML(q, idx) {
                     <textarea class="q-text w-full px-4 py-3 border border-gray-200 rounded-xl text-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none resize-none bg-gray-50 focus:bg-white transition-colors" rows="2" placeholder="Nhập nội dung câu hỏi...">${q.text || ''}</textarea>
                 </div>
                 <div>
-                    <label class="text-xs font-semibold text-gray-600 mb-2 block">🖼️ Hình ảnh</label>
+                    <label class="text-xs font-semibold text-gray-600 mb-2 block">🖼️ Hình ảnh câu hỏi</label>
                     <div class="flex gap-2">
                         <input type="text" class="q-image flex-1 px-4 py-2 border border-gray-200 rounded-xl text-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none bg-gray-50 focus:bg-white transition-colors" placeholder="URL hình ảnh hoặc upload..." value="${imageUrl}">
                         <input type="file" class="q-image-file hidden" accept="image/*">
@@ -797,6 +798,39 @@ function createPart1QuestionHTML(q, idx) {
                         `).join('')}
                     </div>
                 </div>
+                <!-- Explanation Section -->
+                <div class="border-t border-gray-100 pt-4 mt-4">
+                    <details class="group">
+                        <summary class="cursor-pointer text-xs font-semibold text-orange-600 hover:text-orange-700 flex items-center gap-2">
+                            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9.663 17h4.673M12 3v1m6.364 1.636l-.707.707M21 12h-1M4 12H3m3.343-5.657l-.707-.707m2.828 9.9a5 5 0 117.072 0l-.548.547A3.374 3.374 0 0014 18.469V19a2 2 0 11-4 0v-.531c0-.895-.356-1.754-.988-2.386l-.548-.547z"/></svg>
+                            💡 Lời giải (tùy chọn)
+                            <svg class="w-4 h-4 transition-transform group-open:rotate-180" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"/></svg>
+                        </summary>
+                        <div class="mt-3 space-y-3 pl-1">
+                            <div>
+                                <label class="text-xs text-gray-500 mb-1 block">📝 Lời giải văn bản</label>
+                                <textarea class="q-explanation-text w-full px-3 py-2 border border-gray-200 rounded-lg text-sm focus:ring-2 focus:ring-orange-500 outline-none resize-none" rows="3" placeholder="Nhập lời giải chi tiết...">${explanation.text || ''}</textarea>
+                            </div>
+                            <div>
+                                <label class="text-xs text-gray-500 mb-1 block">🖼️ Hình ảnh lời giải</label>
+                                <div class="flex gap-2">
+                                    <input type="text" class="q-explanation-image flex-1 px-3 py-2 border border-gray-200 rounded-lg text-sm focus:ring-2 focus:ring-orange-500 outline-none" placeholder="URL hình ảnh lời giải..." value="${explanation.image || ''}">
+                                    <input type="file" class="q-explanation-image-file hidden" accept="image/*">
+                                    <button type="button" class="btn-upload-explanation-image px-3 py-2 bg-orange-500 text-white text-sm font-semibold rounded-lg hover:bg-orange-600 transition-colors">
+                                        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-8l-4-4m0 0L8 8m4-4v12"/></svg>
+                                    </button>
+                                </div>
+                                <div class="q-explanation-image-preview mt-2 ${explanation.image ? '' : 'hidden'}">
+                                    ${explanation.image ? `<img src="${explanation.image}" class="max-h-24 rounded-lg border border-gray-200">` : ''}
+                                </div>
+                            </div>
+                            <div>
+                                <label class="text-xs text-gray-500 mb-1 block">🎬 Link video lời giải (YouTube)</label>
+                                <input type="text" class="q-explanation-video w-full px-3 py-2 border border-gray-200 rounded-lg text-sm focus:ring-2 focus:ring-orange-500 outline-none" placeholder="https://youtube.com/watch?v=..." value="${explanation.video || ''}">
+                            </div>
+                        </div>
+                    </details>
+                </div>
             </div>
         </div>
     `;
@@ -810,6 +844,7 @@ function createPart2QuestionHTML(q, idx) {
         { id: 'd', text: '', correct: false }
     ];
     const imageUrl = q.image || '';
+    const explanation = q.explanation || {};
 
     return `
         <div class="question-block border border-gray-200 rounded-lg p-4 bg-gray-50" data-idx="${idx}">
@@ -854,6 +889,38 @@ function createPart2QuestionHTML(q, idx) {
                         </div>
                     `).join('')}
                 </div>
+                <!-- Explanation Section -->
+                <div class="border-t border-gray-200 pt-3 mt-3">
+                    <details class="group">
+                        <summary class="cursor-pointer text-xs font-semibold text-orange-600 hover:text-orange-700 flex items-center gap-2">
+                            💡 Lời giải (tùy chọn)
+                            <svg class="w-4 h-4 transition-transform group-open:rotate-180" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"/></svg>
+                        </summary>
+                        <div class="mt-3 space-y-3">
+                            <div>
+                                <label class="text-xs text-gray-500 mb-1 block">📝 Lời giải văn bản</label>
+                                <textarea class="q-explanation-text w-full px-3 py-2 border border-gray-200 rounded-lg text-sm focus:ring-2 focus:ring-orange-500 outline-none resize-none" rows="3" placeholder="Nhập lời giải chi tiết...">${explanation.text || ''}</textarea>
+                            </div>
+                            <div>
+                                <label class="text-xs text-gray-500 mb-1 block">🖼️ Hình ảnh lời giải</label>
+                                <div class="flex gap-2">
+                                    <input type="text" class="q-explanation-image flex-1 px-3 py-2 border border-gray-200 rounded-lg text-sm focus:ring-2 focus:ring-orange-500 outline-none" placeholder="URL hình ảnh lời giải..." value="${explanation.image || ''}">
+                                    <input type="file" class="q-explanation-image-file hidden" accept="image/*">
+                                    <button type="button" class="btn-upload-explanation-image px-3 py-2 bg-orange-500 text-white text-sm font-semibold rounded-lg hover:bg-orange-600 transition-colors">
+                                        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-8l-4-4m0 0L8 8m4-4v12"/></svg>
+                                    </button>
+                                </div>
+                                <div class="q-explanation-image-preview mt-2 ${explanation.image ? '' : 'hidden'}">
+                                    ${explanation.image ? `<img src="${explanation.image}" class="max-h-24 rounded-lg border border-gray-200">` : ''}
+                                </div>
+                            </div>
+                            <div>
+                                <label class="text-xs text-gray-500 mb-1 block">🎬 Link video lời giải (YouTube)</label>
+                                <input type="text" class="q-explanation-video w-full px-3 py-2 border border-gray-200 rounded-lg text-sm focus:ring-2 focus:ring-orange-500 outline-none" placeholder="https://youtube.com/watch?v=..." value="${explanation.video || ''}">
+                            </div>
+                        </div>
+                    </details>
+                </div>
             </div>
         </div>
     `;
@@ -861,6 +928,7 @@ function createPart2QuestionHTML(q, idx) {
 
 function createPart3QuestionHTML(q, idx) {
     const imageUrl = q.image || '';
+    const explanation = q.explanation || {};
     return `
         <div class="question-block border border-gray-200 rounded-lg p-4 bg-gray-50" data-idx="${idx}">
             <div class="flex items-start justify-between gap-2 mb-3">
@@ -892,10 +960,41 @@ function createPart3QuestionHTML(q, idx) {
                         Đang upload...
                     </div>
                 </div>
-                </div>
                 <div>
                     <label class="text-xs font-semibold text-gray-500 mb-1 block">Đáp án đúng</label>
                     <input type="text" class="q-correct w-full px-3 py-2 border border-gray-200 rounded-lg text-sm focus:ring-2 focus:ring-emerald-500 outline-none" placeholder="VD: 123, -5.5, ABC" value="${escapeAttr(q.correct)}">
+                </div>
+                <!-- Explanation Section -->
+                <div class="border-t border-gray-200 pt-3 mt-3">
+                    <details class="group">
+                        <summary class="cursor-pointer text-xs font-semibold text-orange-600 hover:text-orange-700 flex items-center gap-2">
+                            💡 Lời giải (tùy chọn)
+                            <svg class="w-4 h-4 transition-transform group-open:rotate-180" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"/></svg>
+                        </summary>
+                        <div class="mt-3 space-y-3">
+                            <div>
+                                <label class="text-xs text-gray-500 mb-1 block">📝 Lời giải văn bản</label>
+                                <textarea class="q-explanation-text w-full px-3 py-2 border border-gray-200 rounded-lg text-sm focus:ring-2 focus:ring-orange-500 outline-none resize-none" rows="3" placeholder="Nhập lời giải chi tiết...">${explanation.text || ''}</textarea>
+                            </div>
+                            <div>
+                                <label class="text-xs text-gray-500 mb-1 block">🖼️ Hình ảnh lời giải</label>
+                                <div class="flex gap-2">
+                                    <input type="text" class="q-explanation-image flex-1 px-3 py-2 border border-gray-200 rounded-lg text-sm focus:ring-2 focus:ring-orange-500 outline-none" placeholder="URL hình ảnh lời giải..." value="${explanation.image || ''}">
+                                    <input type="file" class="q-explanation-image-file hidden" accept="image/*">
+                                    <button type="button" class="btn-upload-explanation-image px-3 py-2 bg-orange-500 text-white text-sm font-semibold rounded-lg hover:bg-orange-600 transition-colors">
+                                        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-8l-4-4m0 0L8 8m4-4v12"/></svg>
+                                    </button>
+                                </div>
+                                <div class="q-explanation-image-preview mt-2 ${explanation.image ? '' : 'hidden'}">
+                                    ${explanation.image ? `<img src="${explanation.image}" class="max-h-24 rounded-lg border border-gray-200">` : ''}
+                                </div>
+                            </div>
+                            <div>
+                                <label class="text-xs text-gray-500 mb-1 block">🎬 Link video lời giải (YouTube)</label>
+                                <input type="text" class="q-explanation-video w-full px-3 py-2 border border-gray-200 rounded-lg text-sm focus:ring-2 focus:ring-orange-500 outline-none" placeholder="https://youtube.com/watch?v=..." value="${explanation.video || ''}">
+                            </div>
+                        </div>
+                    </details>
                 </div>
             </div>
         </div>
@@ -1027,6 +1126,72 @@ function bindQuestionEvents(part) {
             }
         });
     });
+
+    // Explanation image upload handlers
+    container.querySelectorAll('.btn-upload-explanation-image').forEach(btn => {
+        btn.addEventListener('click', () => {
+            const block = btn.closest('.question-block');
+            const fileInput = block.querySelector('.q-explanation-image-file');
+            if (fileInput) fileInput.click();
+        });
+    });
+
+    container.querySelectorAll('.q-explanation-image-file').forEach(input => {
+        input.addEventListener('change', async (e) => {
+            const file = e.target.files[0];
+            if (!file) return;
+
+            if (!file.type.startsWith('image/')) {
+                showToast('Vui lòng chọn file hình ảnh', 'error');
+                return;
+            }
+
+            if (file.size > 32 * 1024 * 1024) {
+                showToast('File quá lớn (tối đa 32MB)', 'error');
+                return;
+            }
+
+            const block = input.closest('.question-block');
+            const urlInput = block.querySelector('.q-explanation-image');
+            const previewContainer = block.querySelector('.q-explanation-image-preview');
+            const uploadBtn = block.querySelector('.btn-upload-explanation-image');
+
+            uploadBtn.disabled = true;
+            uploadBtn.classList.add('opacity-50', 'cursor-not-allowed');
+
+            try {
+                const imageUrl = await uploadImageToImgBB(file);
+                urlInput.value = imageUrl;
+                previewContainer.innerHTML = `<img src="${imageUrl}" class="max-h-24 rounded-lg border border-gray-200">`;
+                previewContainer.classList.remove('hidden');
+                showToast('Upload ảnh lời giải thành công!');
+            } catch (error) {
+                console.error('Upload failed:', error);
+                showToast('Upload thất bại: ' + error.message, 'error');
+            } finally {
+                uploadBtn.disabled = false;
+                uploadBtn.classList.remove('opacity-50', 'cursor-not-allowed');
+                input.value = '';
+            }
+        });
+    });
+
+    // Update explanation image preview when URL is manually entered
+    container.querySelectorAll('.q-explanation-image').forEach(input => {
+        input.addEventListener('change', (e) => {
+            const block = input.closest('.question-block');
+            const previewContainer = block.querySelector('.q-explanation-image-preview');
+            const url = e.target.value.trim();
+
+            if (url) {
+                previewContainer.innerHTML = `<img src="${url}" class="max-h-24 rounded-lg border border-gray-200" onerror="this.parentElement.classList.add('hidden')">`;
+                previewContainer.classList.remove('hidden');
+            } else {
+                previewContainer.classList.add('hidden');
+                previewContainer.innerHTML = '';
+            }
+        });
+    });
 }
 
 function addQuestion(part) {
@@ -1093,6 +1258,23 @@ function collectFormData() {
     const customId = refs.examCustomId?.value?.trim() || '';
     const author = refs.examAuthor?.value?.trim() || '';
 
+    // Helper to collect explanation data
+    const collectExplanation = (block) => {
+        const text = block.querySelector('.q-explanation-text')?.value?.trim() || '';
+        const image = block.querySelector('.q-explanation-image')?.value?.trim() || '';
+        const video = block.querySelector('.q-explanation-video')?.value?.trim() || '';
+
+        // Only return explanation object if at least one field has content
+        if (text || image || video) {
+            const explanation = {};
+            if (text) explanation.text = text;
+            if (image) explanation.image = image;
+            if (video) explanation.video = video;
+            return explanation;
+        }
+        return null;
+    };
+
     // Collect Part 1
     const part1 = [];
     refs.part1Questions.querySelectorAll('.question-block').forEach((block, idx) => {
@@ -1104,6 +1286,10 @@ function collectFormData() {
 
         const q = { id: idx + 1, text, options, correct };
         if (image) q.image = image;
+
+        const explanation = collectExplanation(block);
+        if (explanation) q.explanation = explanation;
+
         part1.push(q);
     });
 
@@ -1122,6 +1308,10 @@ function collectFormData() {
 
         const q = { id: idx + 1, text, subQuestions };
         if (image) q.image = image;
+
+        const explanation = collectExplanation(block);
+        if (explanation) q.explanation = explanation;
+
         part2.push(q);
     });
 
@@ -1134,6 +1324,10 @@ function collectFormData() {
 
         const q = { id: idx + 1, text, correct };
         if (image) q.image = image;
+
+        const explanation = collectExplanation(block);
+        if (explanation) q.explanation = explanation;
+
         part3.push(q);
     });
 
