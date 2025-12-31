@@ -802,7 +802,120 @@ export async function getWhitelistLogs(limit = 50) {
 }
 
 // ============================================================
-// 10. NOTIFICATIONS CRUD
+// 10. USER ACTIVITY LOGS (Track user module access)
+// ============================================================
+
+/**
+ * Log khi user truy cập một module
+ * @param {string} moduleName - Tên module (VD: 'practice', 'etest', 'vocab', 'flashcard')
+ * @param {string} moduleLabel - Label hiển thị (VD: 'Bài Thi', 'E-test')
+ */
+export async function logUserActivity(moduleName, moduleLabel = '') {
+    const user = auth.currentUser;
+    if (!user) return; // Không log nếu chưa đăng nhập
+
+    try {
+        const logsCol = collection(db, 'user_activity_logs');
+        await addDoc(logsCol, {
+            userId: user.uid,
+            userEmail: user.email,
+            userName: user.displayName || user.email.split('@')[0],
+            userAvatar: user.photoURL || '',
+            module: moduleName,
+            moduleLabel: moduleLabel || moduleName,
+            timestamp: new Date().toISOString(),
+            userAgent: navigator.userAgent.substring(0, 150)
+        });
+    } catch (error) {
+        console.error('Failed to log user activity:', error);
+        // Không throw error để không ảnh hưởng UX
+    }
+}
+
+/**
+ * Lấy danh sách activity logs (Admin only)
+ * @param {number} limit - Số lượng logs tối đa (mặc định 100)
+ * @returns {Promise<Array>} - Mảng các activity log
+ */
+export async function getUserActivityLogs(limit = 100) {
+    if (!checkIsAdmin()) {
+        throw new Error('Không có quyền truy cập activity logs.');
+    }
+
+    const currentEmail = getCurrentUserEmail();
+    const logsCol = collection(db, 'user_activity_logs');
+    const snapshot = await getDocs(logsCol);
+
+    // Get all logs
+    let logs = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+
+    // Nếu KHÔNG phải Super-Admin, chỉ trả về logs của user do mình thêm
+    if (!checkIsSuperAdmin()) {
+        // Lấy danh sách user do admin này thêm
+        const usersCol = collection(db, 'allowed_users');
+        const usersSnapshot = await getDocs(usersCol);
+        const myUsers = usersSnapshot.docs
+            .filter(doc => doc.data().addedBy === currentEmail)
+            .map(doc => doc.id); // email là doc ID
+
+        logs = logs.filter(log => myUsers.includes(log.userEmail));
+    }
+
+    // Sort by timestamp descending and limit
+    logs.sort((a, b) => new Date(b.timestamp) - new Date(a.timestamp));
+    return logs.slice(0, limit);
+}
+
+/**
+ * Lấy thống kê activity (Admin only)
+ * @returns {Promise<Object>} - Thống kê gồm: totalAccess, moduleStats, recentUsers
+ */
+export async function getActivityStats() {
+    if (!checkIsAdmin()) {
+        throw new Error('Không có quyền truy cập thống kê.');
+    }
+
+    const logs = await getUserActivityLogs(500);
+
+    // Thống kê theo module
+    const moduleStats = {};
+    logs.forEach(log => {
+        const mod = log.module || 'unknown';
+        if (!moduleStats[mod]) {
+            moduleStats[mod] = { count: 0, label: log.moduleLabel || mod };
+        }
+        moduleStats[mod].count++;
+    });
+
+    // Thống kê theo user (unique users)
+    const uniqueUsers = new Set(logs.map(log => log.userEmail));
+
+    // Recent unique users (last 10)
+    const seenUsers = new Set();
+    const recentUsers = [];
+    for (const log of logs) {
+        if (!seenUsers.has(log.userEmail) && recentUsers.length < 10) {
+            seenUsers.add(log.userEmail);
+            recentUsers.push({
+                email: log.userEmail,
+                name: log.userName,
+                avatar: log.userAvatar,
+                lastModule: log.moduleLabel || log.module,
+                lastAccess: log.timestamp
+            });
+        }
+    }
+
+    return {
+        totalAccess: logs.length,
+        uniqueUsers: uniqueUsers.size,
+        moduleStats: moduleStats,
+        recentUsers: recentUsers
+    };
+}
+
+// ============================================================
+// 11. NOTIFICATIONS CRUD
 // ============================================================
 
 /**
