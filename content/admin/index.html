@@ -199,7 +199,7 @@
                 </a>
 
                 <!-- Convert JSON Card - Direct Link -->
-                <a href="https://gemini.google.com/share/3dd5c7e81606" target="_blank" rel="noopener noreferrer"
+                <a href="https://gemini.google.com/share/8f392314a2da" target="_blank" rel="noopener noreferrer"
                     class="module-card bg-white rounded-2xl border border-gray-200 p-6 block hover:border-orange-300 transition-colors">
                     <div class="w-14 h-14 bg-orange-100 rounded-2xl flex items-center justify-center mb-4">
                         <svg class="w-7 h-7 text-orange-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -224,7 +224,7 @@
                         </svg>
                     </div>
                     <h3 class="text-lg font-bold text-gray-800 mb-2">Người dùng</h3>
-                    <p class="text-sm text-gray-500">Quản lý tài khoản người dùng</p>
+                    <p id="students-card-desc" class="text-sm text-gray-500">Quản lý whitelist người dùng</p>
                     <div class="mt-4 flex items-center text-red-600 text-sm font-semibold">
                         Mở
                         <svg class="w-4 h-4 ml-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -247,8 +247,7 @@
             initGatekeeper,
             checkIsAdmin,
             checkIsSuperAdmin,
-            onUserChange,
-            startPresence
+            onUserChange
         } from "../../gatekeeper.js";
 
         // DOM refs
@@ -261,7 +260,7 @@
             cardStudents: document.getElementById('card-students')
         };
 
-        // Init
+        // Init (presence tracking is started automatically inside)
         initGatekeeper('protected');
 
         onUserChange(async (user) => {
@@ -284,8 +283,7 @@
                 // Show students card for all admins
                 refs.cardStudents.classList.remove('hidden');
 
-                // Start presence tracking (Admin is also a user online)
-                startPresence();
+                // Presence tracking is started automatically in initGatekeeper
             }, 500);
         });
     </script>
