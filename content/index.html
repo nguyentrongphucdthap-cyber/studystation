@@ -17,7 +17,7 @@
         /* Tet Theme */
         body {
             font-family: 'Be Vietnam Pro', sans-serif;
-            background-image: url('../background.jpg');
+            background-image: url('../background.png');
             background-size: cover;
             background-position: center;
             background-attachment: fixed;
@@ -770,9 +770,29 @@
                 card.addEventListener('click', (e) => {
                     card.classList.add('clicked');
                     setTimeout(() => { card.classList.remove('clicked'); }, 350);
+
+                    // Log activity khi click vào module
+                    const moduleLabel = card.querySelector('span:last-of-type')?.textContent?.trim() || 'Unknown';
                     const externalLink = card.dataset.link;
-                    if (externalLink) { window.location.href = externalLink; return; }
                     const targetId = card.dataset.target;
+
+                    // Xác định tên module
+                    let moduleName = 'unknown';
+                    if (externalLink) {
+                        if (externalLink.includes('practice')) moduleName = 'practice';
+                        else if (externalLink.includes('etest')) moduleName = 'etest';
+                        else if (externalLink.includes('vocab')) moduleName = 'vocab';
+                        else moduleName = externalLink.split('/').pop().replace('.html', '');
+                    } else if (targetId) {
+                        moduleName = targetId;
+                    }
+
+                    // Log async (không chờ)
+                    if (window.logUserActivity) {
+                        window.logUserActivity(moduleName, moduleLabel);
+                    }
+
+                    if (externalLink) { window.location.href = externalLink; return; }
                     if (targetId) { e.preventDefault(); showPage(targetId); }
                 });
             });
@@ -994,12 +1014,16 @@
             logoutUser,
             checkIsAdmin,
             getAllNotifications,
-            startPresence,
             stopPresence,
             subscribeToOnlineUsers,
-            cleanupOldPresence
+            cleanupOldPresence,
+            logUserActivity
         } from "../gatekeeper.js";
 
+        // Expose logUserActivity để script inline có thể gọi
+        window.logUserActivity = logUserActivity;
+
+        // Initialize Gatekeeper (presence tracking is started automatically inside)
         initGatekeeper('protected');
 
         // Start online users counter subscription
@@ -1012,10 +1036,10 @@
             }
         }
 
-        // Start subscribing to online users (updates every 30s)
+        // Start subscribing to online users (updates in real-time)
         unsubscribeOnline = subscribeToOnlineUsers(updateOnlineCount);
 
-        // Clean up old presence records periodically
+        // Clean up old presence records (no-op with RTDB, kept for compatibility)
         cleanupOldPresence();
 
         // Load notifications from Firebase right away
@@ -1067,8 +1091,7 @@
             }
             if (accInfo) accInfo.classList.remove('hidden');
 
-            // Start presence tracking for this user
-            startPresence();
+            // Presence tracking is started automatically in initGatekeeper
 
             // Cập nhật thông tin User
             const userName = user.displayName || 'Người dùng';
