@@ -658,9 +658,18 @@ export async function getAllAllowedUsers() {
     if (!checkIsAdmin()) {
         throw new Error('Không có quyền truy cập. Cần quyền Admin để xem danh sách người dùng.');
     }
+
+    const currentEmail = getCurrentUserEmail();
     const usersCol = collection(db, 'allowed_users');
     const snapshot = await getDocs(usersCol);
-    return snapshot.docs.map(doc => ({ id: doc.id, email: doc.id, ...doc.data() }));
+    let users = snapshot.docs.map(doc => ({ id: doc.id, email: doc.id, ...doc.data() }));
+
+    // Nếu KHÔNG phải Super-Admin, chỉ trả về user do chính mình thêm
+    if (!checkIsSuperAdmin()) {
+        users = users.filter(user => user.addedBy === currentEmail);
+    }
+
+    return users;
 }
 
 /**
@@ -684,9 +693,11 @@ export async function addAllowedUser(email, role = 'user') {
         throw new Error('Email không hợp lệ.');
     }
 
+    const currentEmail = getCurrentUserEmail();
     const userRef = doc(db, 'allowed_users', email);
     await setDoc(userRef, {
         role: role,
+        addedBy: currentEmail, // Lưu lại ai đã thêm user này
         createdAt: new Date().toISOString(),
         updatedAt: new Date().toISOString()
     });
@@ -738,17 +749,26 @@ export async function deleteAllowedUser(email) {
         throw new Error('Không có quyền. Cần quyền Admin để xóa người dùng.');
     }
 
-    // Get user role before delete (for logging)
+    const currentEmail = getCurrentUserEmail();
+    const userRef = doc(db, 'allowed_users', email);
+
+    // Get user data before delete
     let targetRole = 'user';
+    let addedBy = null;
     try {
-        const userRef = doc(db, 'allowed_users', email);
         const userDoc = await getDoc(userRef);
         if (userDoc.exists()) {
-            targetRole = userDoc.data().role || 'user';
+            const userData = userDoc.data();
+            targetRole = userData.role || 'user';
+            addedBy = userData.addedBy || null;
         }
     } catch (e) { /* ignore */ }
 
-    const userRef = doc(db, 'allowed_users', email);
+    // Admin (không phải Super-Admin) chỉ được xóa user do chính họ thêm
+    if (!checkIsSuperAdmin() && addedBy !== currentEmail) {
+        throw new Error('Bạn chỉ có thể xóa người dùng do chính bạn thêm.');
+    }
+
     await deleteDoc(userRef);
 
     // Log action
@@ -763,11 +783,20 @@ export async function getWhitelistLogs(limit = 50) {
     if (!checkIsAdmin()) {
         throw new Error('Không có quyền truy cập logs.');
     }
+
+    const currentEmail = getCurrentUserEmail();
     const logsCol = collection(db, 'whitelist_logs');
     const snapshot = await getDocs(logsCol);
 
+    // Get all logs
+    let logs = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+
+    // Nếu KHÔNG phải Super-Admin, chỉ trả về logs do chính mình thực hiện
+    if (!checkIsSuperAdmin()) {
+        logs = logs.filter(log => log.performed_by === currentEmail);
+    }
+
     // Sort by timestamp descending and limit
-    const logs = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
     logs.sort((a, b) => new Date(b.timestamp) - new Date(a.timestamp));
     return logs.slice(0, limit);
 }
