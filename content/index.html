@@ -1016,12 +1016,19 @@
             getAllNotifications,
             stopPresence,
             subscribeToOnlineUsers,
-            cleanupOldPresence,
-            logUserActivity
+            cleanupOldPresence
         } from "../gatekeeper.js";
 
-        // Expose logUserActivity để script inline có thể gọi
-        window.logUserActivity = logUserActivity;
+        // Placeholder for logUserActivity (will be dynamically loaded)
+        window.logUserActivity = async function (moduleName, moduleLabel) {
+            // Try to dynamically import and call
+            try {
+                const { logUserActivity } = await import("../gatekeeper.js");
+                if (logUserActivity) logUserActivity(moduleName, moduleLabel);
+            } catch (e) {
+                console.log('Activity logging not available');
+            }
+        };
 
         // Initialize Gatekeeper (presence tracking is started automatically inside)
         initGatekeeper('protected');
@@ -1134,4 +1141,4 @@
 
 </body>
 
-</html>
+</html>\
