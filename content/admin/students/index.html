@@ -91,7 +91,7 @@
                 </svg>
             </div>
             <h2 class="text-2xl font-bold text-gray-800 mb-2">Không có quyền truy cập</h2>
-            <p class="text-gray-500 mb-6">Bạn cần quyền <strong>Super-Admin</strong> để truy cập trang này.</p>
+            <p class="text-gray-500 mb-6">Bạn cần quyền <strong>Admin</strong> để truy cập trang này.</p>
             <a href="../index.html"
                 class="px-6 py-3 bg-blue-600 text-white font-semibold rounded-xl hover:bg-blue-700 transition-colors">Quay
                 lại</a>
@@ -118,9 +118,9 @@
                     </div>
                     <div class="flex items-center gap-3">
                         <span id="admin-email" class="text-sm text-gray-500 hidden sm:block"></span>
-                        <div
-                            class="px-3 py-1 bg-red-100 text-red-700 text-xs font-bold rounded-full border border-red-200">
-                            SUPER ADMIN
+                        <div id="role-badge"
+                            class="px-3 py-1 bg-yellow-100 text-yellow-700 text-xs font-bold rounded-full border border-yellow-200">
+                            ADMIN
                         </div>
                     </div>
                 </div>
@@ -183,7 +183,7 @@
                         </div>
                         <div>
                             <h2 class="font-bold text-gray-800">Danh sách Người dùng</h2>
-                            <p class="text-xs text-gray-500">Tài khoản được phép truy cập hệ thống</p>
+                            <p id="table-subtitle" class="text-xs text-gray-500">Người dùng do bạn thêm vào hệ thống</p>
                         </div>
                     </div>
                     <div class="flex items-center gap-2">
@@ -277,8 +277,9 @@
                 </div>
             </div>
 
-            <!-- Audit Log Section -->
-            <div class="bg-white rounded-2xl border border-gray-200 shadow-sm overflow-hidden mt-6">
+            <!-- Audit Log Section (Super Admin Only) -->
+            <div id="audit-log-section"
+                class="bg-white rounded-2xl border border-gray-200 shadow-sm overflow-hidden mt-6 hidden">
                 <div class="p-4 border-b border-gray-100 bg-amber-50 flex items-center justify-between">
                     <div class="flex items-center gap-3">
                         <div class="w-10 h-10 bg-amber-100 rounded-xl flex items-center justify-center">
@@ -355,7 +356,6 @@
             updateUserRole,
             deleteAllowedUser,
             getWhitelistLogs,
-            startPresence,
             getOnlineUsersList,
             subscribeToOnlineUsersList
         } from "../../../gatekeeper.js";
@@ -731,22 +731,44 @@
                 if (!isSuperAdmin) {
                     if (refs.roleSelectWrapper) refs.roleSelectWrapper.classList.add('hidden');
                     if (refs.thRole) refs.thRole.classList.add('hidden');
+
+                    // Update subtitle for non-super-admin
+                    const tableSubtitle = document.getElementById('table-subtitle');
+                    if (tableSubtitle) tableSubtitle.textContent = 'Người dùng do bạn thêm vào hệ thống';
                 }
 
                 refs.adminEmail.textContent = user.email;
                 refs.mainContent.classList.remove('hidden');
 
-                // Load data
                 loadStudents();
-                loadLogs();
-                startPresence();
 
-                // Show online users section for Super Admin only
-                if (isSuperAdmin && refs.onlineUsersSection) {
-                    refs.onlineUsersSection.classList.remove('hidden');
-                    // Subscribe to online users updates
-                    unsubscribeOnlineUsers = subscribeToOnlineUsersList(renderOnlineUsers);
+                // Show sections for Super Admin only
+                if (isSuperAdmin) {
+                    // Update role badge
+                    const roleBadge = document.getElementById('role-badge');
+                    if (roleBadge) {
+                        roleBadge.className = 'px-3 py-1 bg-red-100 text-red-700 text-xs font-bold rounded-full border border-red-200';
+                        roleBadge.textContent = 'SUPER ADMIN';
+                    }
+
+                    // Update subtitle
+                    const tableSubtitle = document.getElementById('table-subtitle');
+                    if (tableSubtitle) tableSubtitle.textContent = 'Tài khoản được phép truy cập hệ thống';
+
+                    // Show Online Users section
+                    if (refs.onlineUsersSection) {
+                        refs.onlineUsersSection.classList.remove('hidden');
+                        unsubscribeOnlineUsers = subscribeToOnlineUsersList(renderOnlineUsers);
+                    }
+
+                    // Show Audit Log section
+                    const auditLogSection = document.getElementById('audit-log-section');
+                    if (auditLogSection) {
+                        auditLogSection.classList.remove('hidden');
+                        loadLogs();
+                    }
                 }
+                // Presence tracking is started automatically in initGatekeeper
 
                 // Bind events
                 refs.btnRefresh.addEventListener('click', loadStudents);
