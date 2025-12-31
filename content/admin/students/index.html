@@ -155,11 +155,12 @@
         <nav class="bg-white border-b border-gray-200">
             <div class="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8">
                 <div class="flex gap-1 overflow-x-auto">
-                    <button class="nav-tab active px-4 py-3 text-sm font-semibold whitespace-nowrap rounded-t-lg"
+                    <button id="tab-dashboard"
+                        class="nav-tab px-4 py-3 text-sm font-semibold text-gray-600 whitespace-nowrap rounded-t-lg hidden"
                         data-tab="dashboard">
                         <span class="flex items-center gap-2">📊 Dashboard</span>
                     </button>
-                    <button class="nav-tab px-4 py-3 text-sm font-semibold text-gray-600 whitespace-nowrap rounded-t-lg"
+                    <button class="nav-tab active px-4 py-3 text-sm font-semibold whitespace-nowrap rounded-t-lg"
                         data-tab="whitelist">
                         <span class="flex items-center gap-2">👥 Whitelist</span>
                     </button>
@@ -178,8 +179,8 @@
         </nav>
 
         <main class="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-            <!-- Tab: Dashboard -->
-            <div id="content-dashboard" class="tab-content active">
+            <!-- Tab: Dashboard (Super-Admin only) -->
+            <div id="content-dashboard" class="tab-content">
                 <div class="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
                     <div class="bg-white rounded-2xl border p-6">
                         <div class="flex items-center gap-4">
@@ -237,7 +238,7 @@
             </div>
 
             <!-- Tab: Whitelist -->
-            <div id="content-whitelist" class="tab-content">
+            <div id="content-whitelist" class="tab-content active">
                 <div class="bg-white rounded-2xl border overflow-hidden mb-6">
                     <div class="p-4 border-b bg-emerald-50">
                         <h3 class="font-bold text-gray-800">➕ Thêm Người dùng mới</h3>
@@ -587,17 +588,22 @@
                     refs.roleBadge.className = 'px-3 py-1 bg-red-100 text-red-700 text-xs font-bold rounded-full border border-red-200';
                     refs.roleBadge.textContent = 'SUPER ADMIN';
                     refs.tableSubtitle.textContent = 'Tất cả người dùng hệ thống';
+
+                    // Show Dashboard tab for Super-Admin
+                    const tabDashboard = document.getElementById('tab-dashboard');
+                    if (tabDashboard) tabDashboard.classList.remove('hidden');
+
                     refs.tabOnline.classList.remove('hidden');
                     refs.tabLogs.classList.remove('hidden');
                     unsubscribeOnline = subscribeToOnlineUsersList(renderOnlineUsers);
+                    loadDashboard();
+                    loadLogs();
                 } else {
                     refs.roleSelectWrapper?.classList.add('hidden');
                     refs.thRole?.classList.add('hidden');
                 }
 
-                loadDashboard();
                 loadStudents();
-                if (isSuperAdmin) loadLogs();
             }, 500);
         });
     </script>
