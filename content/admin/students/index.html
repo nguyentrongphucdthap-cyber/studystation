@@ -4,18 +4,13 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Quản lý Học sinh | Admin - StudyStation</title>
+    <title>Quản lý Người dùng | Admin - StudyStation</title>
     <link rel="icon" type="image/png" href="../../../favicon.png">
-
-    <!-- Tailwind CSS -->
     <script src="https://cdn.tailwindcss.com"></script>
-
-    <!-- Fonts -->
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Be+Vietnam+Pro:wght@400;500;600;700&display=swap"
         rel="stylesheet">
-
     <style>
         body {
             font-family: 'Be Vietnam Pro', sans-serif;
@@ -31,7 +26,6 @@
             animation: spin 1s linear infinite;
         }
 
-        /* Toast animations */
         .toast-enter {
             animation: slideIn 0.3s ease-out forwards;
         }
@@ -63,18 +57,52 @@
                 opacity: 0;
             }
         }
+
+        .nav-tab {
+            transition: all 0.2s;
+            border-bottom: 2px solid transparent;
+        }
+
+        .nav-tab.active {
+            border-bottom-color: #2563eb;
+            color: #2563eb;
+            background: #eff6ff;
+        }
+
+        .nav-tab:hover:not(.active) {
+            background: #f9fafb;
+        }
+
+        .tab-content {
+            display: none;
+        }
+
+        .tab-content.active {
+            display: block;
+            animation: fadeIn 0.3s ease;
+        }
+
+        @keyframes fadeIn {
+            from {
+                opacity: 0;
+                transform: translateY(10px);
+            }
+
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
     </style>
 </head>
 
-<body class="bg-gradient-to-br from-slate-50 to-red-50 min-h-screen">
-
+<body class="bg-gradient-to-br from-slate-50 to-blue-50 min-h-screen">
     <!-- Gatekeeper Loading -->
     <div id="gatekeeper-loading"
-        style="position:fixed;top:0;left:0;width:100%;height:100%;background:#0f172a;display:none;justify-content:center;align-items:center;color:#ffffff;z-index:9999">
+        style="position:fixed;top:0;left:0;width:100%;height:100%;background:#0f172a;display:none;justify-content:center;align-items:center;color:#fff;z-index:9999">
         <div style="display:flex;flex-direction:column;align-items:center;gap:10px">
             <img src="../../../favicon.png" alt="StudyStation" style="width:56px;height:56px;border-radius:12px">
             <div style="font-weight:700;font-size:18px">StudyStation Admin</div>
-            <div style="font-size:14px;opacity:0.7">Đang xác thực...</div>
         </div>
     </div>
 
@@ -91,10 +119,9 @@
                 </svg>
             </div>
             <h2 class="text-2xl font-bold text-gray-800 mb-2">Không có quyền truy cập</h2>
-            <p class="text-gray-500 mb-6">Bạn cần quyền <strong>Admin</strong> để truy cập trang này.</p>
+            <p class="text-gray-500 mb-6">Bạn cần quyền <strong>Admin</strong> để truy cập.</p>
             <a href="../index.html"
-                class="px-6 py-3 bg-blue-600 text-white font-semibold rounded-xl hover:bg-blue-700 transition-colors">Quay
-                lại</a>
+                class="px-6 py-3 bg-blue-600 text-white font-semibold rounded-xl hover:bg-blue-700">Quay lại</a>
         </div>
     </div>
 
@@ -105,684 +132,475 @@
             <div class="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8">
                 <div class="flex items-center justify-between h-16">
                     <div class="flex items-center gap-3">
-                        <a href="../index.html"
-                            class="flex items-center gap-2 text-gray-500 hover:text-red-600 transition-colors">
+                        <a href="../index.html" class="flex items-center gap-2 text-gray-500 hover:text-blue-600">
                             <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
                                     d="M10 19l-7-7m0 0l7-7m-7 7h18" />
                             </svg>
                         </a>
-                        <h1 class="text-xl font-bold text-gray-800">
-                            <span class="text-red-500">👥</span> Quản lý Người dùng
-                        </h1>
+                        <h1 class="text-xl font-bold text-gray-800"><span class="text-blue-500">👥</span> Quản lý Người
+                            dùng</h1>
                     </div>
                     <div class="flex items-center gap-3">
                         <span id="admin-email" class="text-sm text-gray-500 hidden sm:block"></span>
                         <div id="role-badge"
                             class="px-3 py-1 bg-yellow-100 text-yellow-700 text-xs font-bold rounded-full border border-yellow-200">
-                            ADMIN
-                        </div>
+                            ADMIN</div>
                     </div>
                 </div>
             </div>
         </header>
 
-        <!-- Main -->
-        <main class="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-            <!-- Add User Form -->
-            <div class="bg-white rounded-2xl border border-gray-200 shadow-sm overflow-hidden mb-6">
-                <div class="p-4 border-b border-gray-100 bg-emerald-50">
-                    <h3 class="font-bold text-gray-800 flex items-center gap-2">
-                        <svg class="w-5 h-5 text-emerald-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-                                d="M18 9v3m0 0v3m0-3h3m-3 0h-3m-2-5a4 4 0 11-8 0 4 4 0 018 0zM3 20a6 6 0 0112 0v1H3v-1z" />
-                        </svg>
-                        Thêm Người dùng mới
-                    </h3>
-                </div>
-                <div class="p-4">
-                    <form id="add-user-form" class="flex flex-wrap gap-3 items-end">
-                        <div class="flex-1 min-w-[200px]">
-                            <label class="block text-sm font-semibold text-gray-700 mb-1">Email <span
-                                    class="text-red-500">*</span></label>
-                            <input type="email" id="new-user-email"
-                                class="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500 outline-none"
-                                placeholder="user@example.com" required>
-                        </div>
-                        <div id="role-select-wrapper" class="w-40">
-                            <label class="block text-sm font-semibold text-gray-700 mb-1">Quyền</label>
-                            <select id="new-user-role"
-                                class="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500 outline-none">
-                                <option value="user">User</option>
-                                <option value="admin">Admin</option>
-                                <option value="super-admin">Super Admin</option>
-                            </select>
-                        </div>
-                        <button type="submit" id="btn-add-user"
-                            class="px-4 py-2 bg-emerald-600 text-white text-sm font-semibold rounded-lg hover:bg-emerald-700 transition-colors flex items-center gap-2">
-                            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-                                    d="M12 4v16m8-8H4" />
-                            </svg>
-                            Thêm
-                        </button>
-                    </form>
-                </div>
-            </div>
-
-            <!-- Users Table -->
-            <div class="bg-white rounded-2xl border border-gray-200 shadow-sm overflow-hidden">
-                <!-- Header -->
-                <div class="p-4 border-b border-gray-100 bg-gray-50 flex items-center justify-between">
-                    <div class="flex items-center gap-3">
-                        <div class="w-10 h-10 bg-red-100 rounded-xl flex items-center justify-center">
-                            <svg class="w-5 h-5 text-red-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-                                    d="M12 4.354a4 4 0 110 5.292M15 21H3v-1a6 6 0 0112 0v1zm0 0h6v-1a6 6 0 00-9-5.197M13 7a4 4 0 11-8 0 4 4 0 018 0z" />
-                            </svg>
-                        </div>
-                        <div>
-                            <h2 class="font-bold text-gray-800">Danh sách Người dùng</h2>
-                            <p id="table-subtitle" class="text-xs text-gray-500">Người dùng do bạn thêm vào hệ thống</p>
-                        </div>
-                    </div>
-                    <div class="flex items-center gap-2">
-                        <span id="students-count"
-                            class="px-2 py-1 bg-gray-100 text-gray-600 text-xs font-bold rounded-lg">0 users</span>
-                        <button id="btn-refresh"
-                            class="px-3 py-1.5 bg-blue-600 text-white text-sm font-semibold rounded-lg hover:bg-blue-700 transition-colors flex items-center gap-1">
-                            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-                                    d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
-                            </svg>
-                            Refresh
-                        </button>
-                    </div>
-                </div>
-
-                <!-- Users Table -->
-                <div class="max-h-[60vh] overflow-y-auto">
-                    <table class="w-full text-sm">
-                        <thead class="bg-gray-50 sticky top-0">
-                            <tr>
-                                <th class="px-4 py-3 text-left font-semibold text-gray-600">Người dùng</th>
-                                <th id="th-role" class="px-4 py-3 text-left font-semibold text-gray-600">Quyền</th>
-                                <th class="px-4 py-3 text-left font-semibold text-gray-600">Đăng nhập</th>
-                                <th class="px-4 py-3 text-center font-semibold text-gray-600">Số lần</th>
-                                <th class="px-4 py-3 text-right font-semibold text-gray-600">Hành động</th>
-                            </tr>
-                        </thead>
-                        <tbody id="students-table-body" class="divide-y divide-gray-100">
-                            <tr>
-                                <td colspan="5" class="px-4 py-8 text-center text-gray-400">
-                                    <div class="flex flex-col items-center gap-2">
-                                        <svg class="w-8 h-8 spinner text-blue-500" fill="none" viewBox="0 0 24 24">
-                                            <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor"
-                                                stroke-width="4"></circle>
-                                            <path class="opacity-75" fill="currentColor"
-                                                d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z">
-                                            </path>
-                                        </svg>
-                                        <span>Đang tải danh sách...</span>
-                                    </div>
-                                </td>
-                            </tr>
-                        </tbody>
-                    </table>
-                </div>
-            </div>
-
-            <!-- Online Users Section (Super Admin Only) -->
-            <div id="online-users-section"
-                class="bg-white rounded-2xl border border-gray-200 shadow-sm overflow-hidden mt-6 hidden">
-                <div class="p-4 border-b border-gray-100 bg-green-50 flex items-center justify-between">
-                    <div class="flex items-center gap-3">
-                        <div class="w-10 h-10 bg-green-100 rounded-xl flex items-center justify-center relative">
-                            <svg class="w-5 h-5 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-                                    d="M5.636 18.364a9 9 0 010-12.728m12.728 0a9 9 0 010 12.728m-9.9-2.829a5 5 0 010-7.07m7.072 0a5 5 0 010 7.07M13 12a1 1 0 11-2 0 1 1 0 012 0z" />
-                            </svg>
-                            <span
-                                class="absolute -top-1 -right-1 w-3 h-3 bg-green-500 rounded-full border-2 border-white animate-pulse"></span>
-                        </div>
-                        <div>
-                            <h2 class="font-bold text-gray-800">Người dùng đang Online</h2>
-                            <p class="text-xs text-gray-500">Cập nhật tự động mỗi 30 giây</p>
-                        </div>
-                    </div>
-                    <div class="flex items-center gap-2">
-                        <span id="online-count-badge"
-                            class="px-3 py-1 bg-green-500 text-white text-sm font-bold rounded-full flex items-center gap-1.5">
-                            <span class="w-2 h-2 bg-white rounded-full animate-pulse"></span>
-                            <span id="online-count-number">0</span> online
-                        </span>
-                        <span id="last-update-time" class="text-xs text-gray-400"></span>
-                    </div>
-                </div>
-                <div class="max-h-[300px] overflow-y-auto">
-                    <table class="w-full text-sm">
-                        <thead class="bg-gray-50 sticky top-0">
-                            <tr>
-                                <th class="px-4 py-2 text-left font-semibold text-gray-600">Người dùng</th>
-                                <th class="px-4 py-2 text-left font-semibold text-gray-600">Email</th>
-                                <th class="px-4 py-2 text-left font-semibold text-gray-600">Lần hoạt động cuối</th>
-                            </tr>
-                        </thead>
-                        <tbody id="online-users-table-body" class="divide-y divide-gray-100">
-                            <tr>
-                                <td colspan="3" class="px-4 py-6 text-center text-gray-400 text-sm">Đang tải...</td>
-                            </tr>
-                        </tbody>
-                    </table>
-                </div>
-            </div>
-
-            <!-- Audit Log Section (Super Admin Only) -->
-            <div id="audit-log-section"
-                class="bg-white rounded-2xl border border-gray-200 shadow-sm overflow-hidden mt-6 hidden">
-                <div class="p-4 border-b border-gray-100 bg-amber-50 flex items-center justify-between">
-                    <div class="flex items-center gap-3">
-                        <div class="w-10 h-10 bg-amber-100 rounded-xl flex items-center justify-center">
-                            <svg class="w-5 h-5 text-amber-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-                                    d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
-                            </svg>
-                        </div>
-                        <div>
-                            <h2 class="font-bold text-gray-800">Lịch sử Whitelist</h2>
-                            <p class="text-xs text-gray-500">Log thêm/xóa người dùng</p>
-                        </div>
-                    </div>
-                    <button id="btn-refresh-logs"
-                        class="px-3 py-1.5 bg-amber-600 text-white text-sm font-semibold rounded-lg hover:bg-amber-700 transition-colors flex items-center gap-1">
-                        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-                                d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
-                        </svg>
-                        Làm mới
+        <!-- Navigation Tabs -->
+        <nav class="bg-white border-b border-gray-200">
+            <div class="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8">
+                <div class="flex gap-1 overflow-x-auto">
+                    <button class="nav-tab active px-4 py-3 text-sm font-semibold whitespace-nowrap rounded-t-lg"
+                        data-tab="dashboard">
+                        <span class="flex items-center gap-2">📊 Dashboard</span>
+                    </button>
+                    <button class="nav-tab px-4 py-3 text-sm font-semibold text-gray-600 whitespace-nowrap rounded-t-lg"
+                        data-tab="whitelist">
+                        <span class="flex items-center gap-2">👥 Whitelist</span>
+                    </button>
+                    <button id="tab-online"
+                        class="nav-tab px-4 py-3 text-sm font-semibold text-gray-600 whitespace-nowrap rounded-t-lg hidden"
+                        data-tab="online">
+                        <span class="flex items-center gap-2">🟢 Online</span>
+                    </button>
+                    <button id="tab-logs"
+                        class="nav-tab px-4 py-3 text-sm font-semibold text-gray-600 whitespace-nowrap rounded-t-lg hidden"
+                        data-tab="logs">
+                        <span class="flex items-center gap-2">📋 Lịch sử</span>
                     </button>
                 </div>
-                <div class="max-h-[300px] overflow-y-auto">
-                    <table class="w-full text-sm">
-                        <thead class="bg-gray-50 sticky top-0">
-                            <tr>
-                                <th class="px-4 py-2 text-left font-semibold text-gray-600">Thời gian</th>
-                                <th class="px-4 py-2 text-left font-semibold text-gray-600">Hành động</th>
-                                <th class="px-4 py-2 text-left font-semibold text-gray-600">Email</th>
-                                <th class="px-4 py-2 text-left font-semibold text-gray-600">Người thực hiện</th>
-                            </tr>
-                        </thead>
-                        <tbody id="logs-table-body" class="divide-y divide-gray-100">
-                            <tr>
-                                <td colspan="4" class="px-4 py-6 text-center text-gray-400 text-sm">Đang tải...</td>
-                            </tr>
-                        </tbody>
-                    </table>
+            </div>
+        </nav>
+
+        <main class="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+            <!-- Tab: Dashboard -->
+            <div id="content-dashboard" class="tab-content active">
+                <div class="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
+                    <div class="bg-white rounded-2xl border p-6">
+                        <div class="flex items-center gap-4">
+                            <div class="w-12 h-12 bg-blue-100 rounded-xl flex items-center justify-center"><span
+                                    class="text-2xl">📈</span></div>
+                            <div>
+                                <p class="text-sm text-gray-500">Tổng lượt truy cập</p>
+                                <p id="stat-total" class="text-2xl font-bold text-gray-800">--</p>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="bg-white rounded-2xl border p-6">
+                        <div class="flex items-center gap-4">
+                            <div class="w-12 h-12 bg-green-100 rounded-xl flex items-center justify-center"><span
+                                    class="text-2xl">👤</span></div>
+                            <div>
+                                <p class="text-sm text-gray-500">Người dùng</p>
+                                <p id="stat-users" class="text-2xl font-bold text-gray-800">--</p>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="bg-white rounded-2xl border p-6">
+                        <div class="flex items-center gap-4">
+                            <div class="w-12 h-12 bg-purple-100 rounded-xl flex items-center justify-center"><span
+                                    class="text-2xl">📚</span></div>
+                            <div>
+                                <p class="text-sm text-gray-500">Module phổ biến</p>
+                                <p id="stat-popular" class="text-2xl font-bold text-gray-800">--</p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                <div class="bg-white rounded-2xl border overflow-hidden">
+                    <div class="p-4 border-b bg-gray-50 flex items-center justify-between">
+                        <h3 class="font-bold text-gray-800">📍 Hoạt động gần đây</h3>
+                        <button id="btn-refresh-activity" class="text-sm text-blue-600 hover:underline">Làm mới</button>
+                    </div>
+                    <div class="max-h-[400px] overflow-y-auto">
+                        <table class="w-full text-sm">
+                            <thead class="bg-gray-50 sticky top-0">
+                                <tr>
+                                    <th class="px-4 py-3 text-left font-semibold text-gray-600">Người dùng</th>
+                                    <th class="px-4 py-3 text-left font-semibold text-gray-600">Module</th>
+                                    <th class="px-4 py-3 text-left font-semibold text-gray-600">Thời gian</th>
+                                </tr>
+                            </thead>
+                            <tbody id="activity-table-body" class="divide-y divide-gray-100">
+                                <tr>
+                                    <td colspan="3" class="px-4 py-8 text-center text-gray-400">Đang tải...</td>
+                                </tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Tab: Whitelist -->
+            <div id="content-whitelist" class="tab-content">
+                <div class="bg-white rounded-2xl border overflow-hidden mb-6">
+                    <div class="p-4 border-b bg-emerald-50">
+                        <h3 class="font-bold text-gray-800">➕ Thêm Người dùng mới</h3>
+                    </div>
+                    <div class="p-4">
+                        <form id="add-user-form" class="flex flex-wrap gap-3 items-end">
+                            <div class="flex-1 min-w-[200px]">
+                                <label class="block text-sm font-semibold text-gray-700 mb-1">Email <span
+                                        class="text-red-500">*</span></label>
+                                <input type="email" id="new-user-email"
+                                    class="w-full px-3 py-2 border rounded-lg text-sm focus:ring-2 focus:ring-emerald-500 outline-none"
+                                    placeholder="user@example.com" required>
+                            </div>
+                            <div id="role-select-wrapper" class="w-40">
+                                <label class="block text-sm font-semibold text-gray-700 mb-1">Quyền</label>
+                                <select id="new-user-role"
+                                    class="w-full px-3 py-2 border rounded-lg text-sm focus:ring-2 focus:ring-emerald-500 outline-none">
+                                    <option value="user">User</option>
+                                    <option value="admin">Admin</option>
+                                    <option value="super-admin">Super Admin</option>
+                                </select>
+                            </div>
+                            <button type="submit"
+                                class="px-4 py-2 bg-emerald-600 text-white text-sm font-semibold rounded-lg hover:bg-emerald-700">➕
+                                Thêm</button>
+                        </form>
+                    </div>
+                </div>
+                <div class="bg-white rounded-2xl border overflow-hidden">
+                    <div class="p-4 border-b bg-gray-50 flex items-center justify-between">
+                        <div>
+                            <h3 class="font-bold text-gray-800">Danh sách Người dùng</h3>
+                            <p id="table-subtitle" class="text-xs text-gray-500">Người dùng do bạn thêm</p>
+                        </div>
+                        <div class="flex items-center gap-2">
+                            <span id="students-count"
+                                class="px-2 py-1 bg-gray-100 text-gray-600 text-xs font-bold rounded-lg">0</span>
+                            <button id="btn-refresh"
+                                class="px-3 py-1.5 bg-blue-600 text-white text-sm font-semibold rounded-lg hover:bg-blue-700">🔄
+                                Refresh</button>
+                        </div>
+                    </div>
+                    <div class="max-h-[50vh] overflow-y-auto">
+                        <table class="w-full text-sm">
+                            <thead class="bg-gray-50 sticky top-0">
+                                <tr>
+                                    <th class="px-4 py-3 text-left font-semibold text-gray-600">Người dùng</th>
+                                    <th id="th-role" class="px-4 py-3 text-left font-semibold text-gray-600">Quyền</th>
+                                    <th class="px-4 py-3 text-left font-semibold text-gray-600">Đăng nhập</th>
+                                    <th class="px-4 py-3 text-center font-semibold text-gray-600">Số lần</th>
+                                    <th class="px-4 py-3 text-right font-semibold text-gray-600">Hành động</th>
+                                </tr>
+                            </thead>
+                            <tbody id="students-table-body" class="divide-y divide-gray-100">
+                                <tr>
+                                    <td colspan="5" class="px-4 py-8 text-center text-gray-400">Đang tải...</td>
+                                </tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Tab: Online (Super-Admin only) -->
+            <div id="content-online" class="tab-content">
+                <div class="bg-white rounded-2xl border overflow-hidden">
+                    <div class="p-4 border-b bg-green-50 flex items-center justify-between">
+                        <h3 class="font-bold text-gray-800">🟢 Người dùng đang Online</h3>
+                        <span id="online-count-badge"
+                            class="px-3 py-1 bg-green-500 text-white text-sm font-bold rounded-full"><span
+                                id="online-count-number">0</span> online</span>
+                    </div>
+                    <div class="max-h-[400px] overflow-y-auto">
+                        <table class="w-full text-sm">
+                            <thead class="bg-gray-50 sticky top-0">
+                                <tr>
+                                    <th class="px-4 py-2 text-left font-semibold text-gray-600">Người dùng</th>
+                                    <th class="px-4 py-2 text-left font-semibold text-gray-600">Email</th>
+                                    <th class="px-4 py-2 text-left font-semibold text-gray-600">Hoạt động</th>
+                                </tr>
+                            </thead>
+                            <tbody id="online-users-table-body" class="divide-y divide-gray-100">
+                                <tr>
+                                    <td colspan="3" class="px-4 py-6 text-center text-gray-400">Đang tải...</td>
+                                </tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Tab: Logs (Super-Admin only) -->
+            <div id="content-logs" class="tab-content">
+                <div class="bg-white rounded-2xl border overflow-hidden">
+                    <div class="p-4 border-b bg-amber-50 flex items-center justify-between">
+                        <h3 class="font-bold text-gray-800">📋 Lịch sử Whitelist</h3>
+                        <button id="btn-refresh-logs"
+                            class="px-3 py-1.5 bg-amber-600 text-white text-sm font-semibold rounded-lg hover:bg-amber-700">🔄
+                            Làm mới</button>
+                    </div>
+                    <div class="max-h-[400px] overflow-y-auto">
+                        <table class="w-full text-sm">
+                            <thead class="bg-gray-50 sticky top-0">
+                                <tr>
+                                    <th class="px-4 py-2 text-left font-semibold text-gray-600">Thời gian</th>
+                                    <th class="px-4 py-2 text-left font-semibold text-gray-600">Hành động</th>
+                                    <th class="px-4 py-2 text-left font-semibold text-gray-600">Email</th>
+                                    <th class="px-4 py-2 text-left font-semibold text-gray-600">Người thực hiện</th>
+                                </tr>
+                            </thead>
+                            <tbody id="logs-table-body" class="divide-y divide-gray-100">
+                                <tr>
+                                    <td colspan="4" class="px-4 py-6 text-center text-gray-400">Đang tải...</td>
+                                </tr>
+                            </tbody>
+                        </table>
+                    </div>
                 </div>
             </div>
         </main>
     </div>
 
-    <!-- Delete Confirmation Modal -->
+    <!-- Delete Modal -->
     <div id="delete-modal"
         class="hidden fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm p-4">
         <div class="bg-white rounded-2xl p-6 max-w-sm w-full shadow-2xl">
-            <div class="w-12 h-12 bg-red-100 rounded-full flex items-center justify-center mx-auto mb-4">
-                <svg class="w-6 h-6 text-red-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-                        d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
-                </svg>
-            </div>
             <h3 class="text-lg font-bold text-gray-800 text-center mb-2">Xóa người dùng?</h3>
-            <p id="delete-user-email" class="text-gray-500 text-sm text-center mb-6">Người dùng này sẽ bị xóa khỏi hệ
-                thống.</p>
+            <p id="delete-user-email" class="text-gray-500 text-sm text-center mb-6"></p>
             <div class="flex gap-3">
                 <button id="btn-cancel-delete"
-                    class="flex-1 px-4 py-2.5 border border-gray-200 text-gray-600 font-semibold rounded-xl hover:bg-gray-50 transition-colors">Hủy</button>
+                    class="flex-1 px-4 py-2.5 border text-gray-600 font-semibold rounded-xl hover:bg-gray-50">Hủy</button>
                 <button id="btn-confirm-delete"
-                    class="flex-1 px-4 py-2.5 bg-red-600 text-white font-semibold rounded-xl hover:bg-red-700 transition-colors">Xóa</button>
+                    class="flex-1 px-4 py-2.5 bg-red-600 text-white font-semibold rounded-xl hover:bg-red-700">Xóa</button>
             </div>
         </div>
     </div>
 
     <script type="module">
         import {
-            initGatekeeper,
-            checkIsAdmin,
-            checkIsSuperAdmin,
-            onUserChange,
-            getAllAllowedUsers,
-            addAllowedUser,
-            updateUserRole,
-            deleteAllowedUser,
-            getWhitelistLogs,
-            getOnlineUsersList,
-            subscribeToOnlineUsersList
+            initGatekeeper, checkIsAdmin, checkIsSuperAdmin, onUserChange,
+            getAllAllowedUsers, addAllowedUser, updateUserRole, deleteAllowedUser,
+            getWhitelistLogs, getOnlineUsersList, subscribeToOnlineUsersList,
+            getUserActivityLogs, getActivityStats
         } from "../../../gatekeeper.js";
 
         let currentDeleteEmail = null;
         let isSuperAdmin = false;
+        let unsubscribeOnline = null;
 
         const refs = {
             accessDenied: document.getElementById('access-denied'),
             mainContent: document.getElementById('main-content'),
             adminEmail: document.getElementById('admin-email'),
+            roleBadge: document.getElementById('role-badge'),
             studentsTableBody: document.getElementById('students-table-body'),
             studentsCount: document.getElementById('students-count'),
+            tableSubtitle: document.getElementById('table-subtitle'),
+            thRole: document.getElementById('th-role'),
+            roleSelectWrapper: document.getElementById('role-select-wrapper'),
             btnRefresh: document.getElementById('btn-refresh'),
             toastContainer: document.getElementById('toast-container'),
-            // Add User Form
             addUserForm: document.getElementById('add-user-form'),
             newUserEmail: document.getElementById('new-user-email'),
             newUserRole: document.getElementById('new-user-role'),
-            roleSelectWrapper: document.getElementById('role-select-wrapper'),
-            // Role header for conditional hiding
-            thRole: document.getElementById('th-role'),
-            // Delete Modal
             deleteModal: document.getElementById('delete-modal'),
             deleteUserEmail: document.getElementById('delete-user-email'),
             btnCancelDelete: document.getElementById('btn-cancel-delete'),
             btnConfirmDelete: document.getElementById('btn-confirm-delete'),
-            // Audit Logs
             logsTableBody: document.getElementById('logs-table-body'),
             btnRefreshLogs: document.getElementById('btn-refresh-logs'),
-            // Online Users
-            onlineUsersSection: document.getElementById('online-users-section'),
             onlineUsersTableBody: document.getElementById('online-users-table-body'),
             onlineCountNumber: document.getElementById('online-count-number'),
-            lastUpdateTime: document.getElementById('last-update-time')
+            activityTableBody: document.getElementById('activity-table-body'),
+            btnRefreshActivity: document.getElementById('btn-refresh-activity'),
+            statTotal: document.getElementById('stat-total'),
+            statUsers: document.getElementById('stat-users'),
+            statPopular: document.getElementById('stat-popular'),
+            tabOnline: document.getElementById('tab-online'),
+            tabLogs: document.getElementById('tab-logs')
         };
 
-        // Toast notification
         function showToast(message, type = 'success') {
             const toast = document.createElement('div');
-            const bgColor = type === 'success' ? 'bg-emerald-600' : type === 'error' ? 'bg-red-600' : 'bg-blue-600';
-            toast.className = `${bgColor} text-white px-4 py-3 rounded-xl shadow-lg flex items-center gap-3 toast-enter max-w-sm`;
-            toast.innerHTML = `
-                <svg class="w-5 h-5 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    ${type === 'success'
-                    ? '<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"/>'
-                    : type === 'error'
-                        ? '<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/>'
-                        : '<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/>'}
-                </svg>
-                <span class="font-medium text-sm">${message}</span>
-            `;
+            const bg = type === 'success' ? 'bg-emerald-600' : type === 'error' ? 'bg-red-600' : 'bg-blue-600';
+            toast.className = `${bg} text-white px-4 py-3 rounded-xl shadow-lg flex items-center gap-3 toast-enter max-w-sm`;
+            toast.innerHTML = `<span class="font-medium text-sm">${message}</span>`;
             refs.toastContainer.appendChild(toast);
-
-            setTimeout(() => {
-                toast.classList.remove('toast-enter');
-                toast.classList.add('toast-exit');
-                setTimeout(() => toast.remove(), 300);
-            }, 3000);
+            setTimeout(() => { toast.classList.add('toast-exit'); setTimeout(() => toast.remove(), 300); }, 3000);
         }
 
-        // Format datetime to Vietnam timezone (UTC+7)
-        function formatVietnamTime(isoString) {
-            if (!isoString) return 'Chưa đăng nhập';
+        function formatVietnamTime(iso) {
+            if (!iso) return 'Chưa đăng nhập';
             try {
-                const date = new Date(isoString);
-                return date.toLocaleString('vi-VN', {
-                    timeZone: 'Asia/Ho_Chi_Minh',
-                    day: '2-digit',
-                    month: '2-digit',
-                    year: 'numeric',
-                    hour: '2-digit',
-                    minute: '2-digit'
-                });
-            } catch {
-                return isoString;
+                return new Date(iso).toLocaleString('vi-VN', { timeZone: 'Asia/Ho_Chi_Minh', day: '2-digit', month: '2-digit', year: 'numeric', hour: '2-digit', minute: '2-digit' });
+            } catch { return iso; }
+        }
+
+        function formatTimeAgo(iso) {
+            if (!iso) return '';
+            const diff = Math.floor((new Date() - new Date(iso)) / 1000);
+            if (diff < 60) return `${diff} giây trước`;
+            if (diff < 3600) return `${Math.floor(diff / 60)} phút trước`;
+            return formatVietnamTime(iso);
+        }
+
+        // Tab Navigation
+        document.querySelectorAll('.nav-tab').forEach(tab => {
+            tab.addEventListener('click', () => {
+                document.querySelectorAll('.nav-tab').forEach(t => t.classList.remove('active'));
+                document.querySelectorAll('.tab-content').forEach(c => c.classList.remove('active'));
+                tab.classList.add('active');
+                document.getElementById(`content-${tab.dataset.tab}`)?.classList.add('active');
+            });
+        });
+
+        // Load Dashboard
+        async function loadDashboard() {
+            try {
+                const [stats, logs] = await Promise.all([getActivityStats(), getUserActivityLogs(50)]);
+                refs.statTotal.textContent = stats.totalAccess;
+                refs.statUsers.textContent = stats.uniqueUsers;
+                const popular = Object.entries(stats.moduleStats).sort((a, b) => b[1].count - a[1].count)[0];
+                refs.statPopular.textContent = popular ? popular[1].label : '--';
+
+                if (logs.length === 0) {
+                    refs.activityTableBody.innerHTML = `<tr><td colspan="3" class="px-4 py-8 text-center text-gray-400">Chưa có hoạt động nào</td></tr>`;
+                } else {
+                    refs.activityTableBody.innerHTML = logs.map(log => `
+                        <tr class="hover:bg-gray-50">
+                            <td class="px-4 py-3"><div class="flex items-center gap-2">
+                                ${log.userAvatar ? `<img src="${log.userAvatar}" class="w-8 h-8 rounded-full object-cover" onerror="this.style.display='none'">` : `<div class="w-8 h-8 bg-blue-100 rounded-full flex items-center justify-center text-blue-600 font-bold text-sm">${(log.userName || 'U')[0].toUpperCase()}</div>`}
+                                <div><div class="font-medium text-gray-800">${log.userName || 'Unknown'}</div><div class="text-xs text-gray-500">${log.userEmail}</div></div>
+                            </div></td>
+                            <td class="px-4 py-3"><span class="px-2 py-1 bg-blue-100 text-blue-700 text-xs font-bold rounded">${log.moduleLabel || log.module}</span></td>
+                            <td class="px-4 py-3 text-gray-500 text-xs">${formatVietnamTime(log.timestamp)}</td>
+                        </tr>
+                    `).join('');
+                }
+            } catch (e) {
+                console.error(e);
+                refs.activityTableBody.innerHTML = `<tr><td colspan="3" class="px-4 py-8 text-center text-red-500">Lỗi: ${e.message}</td></tr>`;
             }
         }
 
-        // Get role options HTML
-        function getRoleOptions(currentRole) {
-            const roles = ['user', 'admin', 'super-admin'];
-            return roles.map(role => {
-                const selected = (currentRole || 'user').toLowerCase() === role ? 'selected' : '';
-                const label = role === 'super-admin' ? 'Super Admin' : role === 'admin' ? 'Admin' : 'User';
-                return `<option value="${role}" ${selected}>${label}</option>`;
-            }).join('');
-        }
-
-        // Load and render students list
+        // Load Whitelist
         async function loadStudents() {
-            refs.studentsTableBody.innerHTML = `
-                <tr>
-                    <td colspan="5" class="px-4 py-8 text-center text-gray-400">
-                        <div class="flex flex-col items-center gap-2">
-                            <svg class="w-8 h-8 spinner text-blue-500" fill="none" viewBox="0 0 24 24">
-                                <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
-                                <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
-                            </svg>
-                            <span>Đang tải danh sách...</span>
-                        </div>
-                    </td>
-                </tr>
-            `;
-
+            refs.studentsTableBody.innerHTML = `<tr><td colspan="5" class="px-4 py-8 text-center text-gray-400">Đang tải...</td></tr>`;
             try {
                 const users = await getAllAllowedUsers();
-
-                // Sort by last_login (most recent first)
-                users.sort((a, b) => {
-                    const dateA = a.last_login ? new Date(a.last_login) : new Date(0);
-                    const dateB = b.last_login ? new Date(b.last_login) : new Date(0);
-                    return dateB - dateA;
-                });
-
+                users.sort((a, b) => new Date(b.last_login || 0) - new Date(a.last_login || 0));
                 refs.studentsCount.textContent = `${users.length} users`;
 
                 if (users.length === 0) {
-                    refs.studentsTableBody.innerHTML = `
-                        <tr>
-                            <td colspan="5" class="px-4 py-8 text-center text-gray-400">
-                                Chưa có người dùng nào
-                            </td>
-                        </tr>
-                    `;
+                    refs.studentsTableBody.innerHTML = `<tr><td colspan="5" class="px-4 py-8 text-center text-gray-400">Chưa có người dùng</td></tr>`;
                     return;
                 }
 
-                refs.studentsTableBody.innerHTML = users.map(user => {
-                    const avatarHtml = user.photo_url
-                        ? `<img src="${user.photo_url}" class="w-8 h-8 rounded-full object-cover" alt="" onerror="this.style.display='none';this.nextElementSibling.style.display='flex';"><div class="w-8 h-8 bg-blue-100 rounded-full items-center justify-center text-blue-600 font-bold text-sm hidden">${(user.email || 'U')[0].toUpperCase()}</div>`
-                        : `<div class="w-8 h-8 bg-blue-100 rounded-full flex items-center justify-center text-blue-600 font-bold text-sm">${(user.email || 'U')[0].toUpperCase()}</div>`;
-                    const displayName = user.display_name || '';
-                    const loginCount = user.login_count || 0;
+                refs.studentsTableBody.innerHTML = users.map(u => {
+                    const avatar = u.photo_url ? `<img src="${u.photo_url}" class="w-8 h-8 rounded-full object-cover" onerror="this.style.display='none'">` : `<div class="w-8 h-8 bg-blue-100 rounded-full flex items-center justify-center text-blue-600 font-bold text-sm">${(u.email || 'U')[0].toUpperCase()}</div>`;
+                    const roleCol = isSuperAdmin ? `<td class="px-4 py-3"><select class="role-select px-2 py-1 border rounded text-sm" data-email="${u.email}">
+                        <option value="user" ${u.role === 'user' ? 'selected' : ''}>User</option>
+                        <option value="admin" ${u.role === 'admin' ? 'selected' : ''}>Admin</option>
+                        <option value="super-admin" ${u.role === 'super-admin' ? 'selected' : ''}>Super Admin</option>
+                    </select></td>` : '';
+                    return `<tr class="hover:bg-gray-50">
+                        <td class="px-4 py-3"><div class="flex items-center gap-3">${avatar}<div><div class="font-medium text-gray-800">${u.display_name || ''}</div><div class="text-xs text-gray-500">${u.email}</div></div></div></td>
+                        ${roleCol}
+                        <td class="px-4 py-3 text-gray-500 text-xs">${formatVietnamTime(u.last_login)}</td>
+                        <td class="px-4 py-3 text-center"><span class="px-2 py-1 bg-indigo-100 text-indigo-700 text-xs font-bold rounded-full">${u.login_count || 0}</span></td>
+                        <td class="px-4 py-3 text-right"><button class="btn-delete-user px-3 py-1 border border-red-200 text-red-600 text-sm font-semibold rounded-lg hover:bg-red-50" data-email="${u.email}">Xóa</button></td>
+                    </tr>`;
+                }).join('');
 
-                    // Role column - only show for Super-Admin
-                    const roleColumn = isSuperAdmin
-                        ? `<td class="px-4 py-3">
-                            <select class="role-select px-2 py-1 border border-gray-200 rounded-lg text-sm focus:ring-2 focus:ring-blue-500 outline-none" data-email="${user.email || user.id}">
-                                ${getRoleOptions(user.role)}
-                            </select>
-                           </td>`
-                        : '';
-
-                    return `
-                    <tr class="hover:bg-gray-50 transition-colors" data-email="${user.email || user.id}">
-                        <td class="px-4 py-3">
-                            <div class="flex items-center gap-3">
-                                ${avatarHtml}
-                                <div class="min-w-0">
-                                    ${displayName ? `<div class="font-medium text-gray-800 truncate">${displayName}</div>` : ''}
-                                    <div class="text-xs text-gray-500 truncate">${user.email || user.id}</div>
-                                </div>
-                            </div>
-                        </td>
-                        ${roleColumn}
-                        <td class="px-4 py-3 text-gray-500 text-xs">
-                            ${formatVietnamTime(user.last_login)}
-                        </td>
-                        <td class="px-4 py-3 text-center">
-                            <span class="inline-flex items-center justify-center min-w-[2rem] px-2 py-1 bg-indigo-100 text-indigo-700 text-xs font-bold rounded-full">${loginCount}</span>
-                        </td>
-                        <td class="px-4 py-3 text-right">
-                            <button class="btn-delete-user px-3 py-1 border border-red-200 text-red-600 text-sm font-semibold rounded-lg hover:bg-red-50 transition-colors" data-email="${user.email || user.id}">
-                                Xóa
-                            </button>
-                        </td>
-                    </tr>
-                `}).join('');
-
-                // Bind role change events
-                refs.studentsTableBody.querySelectorAll('.role-select').forEach(select => {
-                    select.addEventListener('change', async (e) => {
-                        const email = e.target.dataset.email;
-                        const newRole = e.target.value;
-                        try {
-                            await updateUserRole(email, newRole);
-                            showToast(`Đã cập nhật quyền cho ${email}`);
-                        } catch (error) {
-                            showToast('Lỗi: ' + error.message, 'error');
-                            loadStudents(); // Reload to reset
-                        }
+                // Bind events
+                refs.studentsTableBody.querySelectorAll('.role-select').forEach(sel => {
+                    sel.addEventListener('change', async (e) => {
+                        try { await updateUserRole(e.target.dataset.email, e.target.value); showToast('Đã cập nhật quyền'); } catch (err) { showToast(err.message, 'error'); loadStudents(); }
                     });
                 });
-
-                // Bind delete events
                 refs.studentsTableBody.querySelectorAll('.btn-delete-user').forEach(btn => {
-                    btn.addEventListener('click', (e) => {
-                        currentDeleteEmail = e.target.dataset.email;
-                        refs.deleteUserEmail.textContent = `Xóa "${currentDeleteEmail}" khỏi hệ thống?`;
-                        refs.deleteModal.classList.remove('hidden');
-                    });
+                    btn.addEventListener('click', (e) => { currentDeleteEmail = e.target.dataset.email; refs.deleteUserEmail.textContent = `Xóa "${currentDeleteEmail}"?`; refs.deleteModal.classList.remove('hidden'); });
                 });
-
-            } catch (error) {
-                console.error('Load students failed:', error);
-                refs.studentsTableBody.innerHTML = `
-                    <tr>
-                        <td colspan="4" class="px-4 py-8 text-center text-red-500">
-                            Lỗi: ${error.message}
-                        </td>
-                    </tr>
-                `;
-            }
+            } catch (e) { refs.studentsTableBody.innerHTML = `<tr><td colspan="5" class="px-4 py-8 text-center text-red-500">Lỗi: ${e.message}</td></tr>`; }
         }
 
-        // Load audit logs
+        // Load Logs
         async function loadLogs() {
-            if (!refs.logsTableBody) return;
-
-            refs.logsTableBody.innerHTML = `<tr><td colspan="4" class="px-4 py-6 text-center text-gray-400 text-sm">Đang tải...</td></tr>`;
-
+            refs.logsTableBody.innerHTML = `<tr><td colspan="4" class="px-4 py-6 text-center text-gray-400">Đang tải...</td></tr>`;
             try {
                 const logs = await getWhitelistLogs(50);
-
-                if (logs.length === 0) {
-                    refs.logsTableBody.innerHTML = `<tr><td colspan="4" class="px-4 py-6 text-center text-gray-400 text-sm">Chưa có log nào</td></tr>`;
-                    return;
-                }
-
-                refs.logsTableBody.innerHTML = logs.map(log => {
-                    const actionBadge = log.action === 'add'
-                        ? '<span class="px-2 py-0.5 bg-emerald-100 text-emerald-700 text-xs font-bold rounded">THÊM</span>'
-                        : '<span class="px-2 py-0.5 bg-red-100 text-red-700 text-xs font-bold rounded">XÓA</span>';
-
-                    return `
-                    <tr class="hover:bg-gray-50">
-                        <td class="px-4 py-2 text-gray-500 text-xs">${formatVietnamTime(log.timestamp)}</td>
-                        <td class="px-4 py-2">${actionBadge}</td>
-                        <td class="px-4 py-2 font-medium text-gray-800">${log.target_email}</td>
-                        <td class="px-4 py-2 text-gray-500 text-sm">${log.performed_by}</td>
-                    </tr>
-                `}).join('');
-            } catch (error) {
-                console.error('Load logs failed:', error);
-                refs.logsTableBody.innerHTML = `<tr><td colspan="4" class="px-4 py-6 text-center text-red-500 text-sm">Lỗi: ${error.message}</td></tr>`;
-            }
+                if (logs.length === 0) { refs.logsTableBody.innerHTML = `<tr><td colspan="4" class="px-4 py-6 text-center text-gray-400">Chưa có log</td></tr>`; return; }
+                refs.logsTableBody.innerHTML = logs.map(log => `<tr class="hover:bg-gray-50">
+                    <td class="px-4 py-2 text-gray-500 text-xs">${formatVietnamTime(log.timestamp)}</td>
+                    <td class="px-4 py-2"><span class="px-2 py-0.5 ${log.action === 'add' ? 'bg-emerald-100 text-emerald-700' : 'bg-red-100 text-red-700'} text-xs font-bold rounded">${log.action === 'add' ? 'THÊM' : 'XÓA'}</span></td>
+                    <td class="px-4 py-2 font-medium text-gray-800">${log.target_email}</td>
+                    <td class="px-4 py-2 text-gray-500 text-sm">${log.performed_by}</td>
+                </tr>`).join('');
+            } catch (e) { refs.logsTableBody.innerHTML = `<tr><td colspan="4" class="px-4 py-6 text-center text-red-500">Lỗi: ${e.message}</td></tr>`; }
         }
 
-        // Format time ago for last seen
-        function formatTimeAgo(isoString) {
-            if (!isoString) return 'Không rõ';
-            try {
-                const date = new Date(isoString);
-                const now = new Date();
-                const diffMs = now - date;
-                const diffSec = Math.floor(diffMs / 1000);
-
-                if (diffSec < 60) return `${diffSec} giây trước`;
-                if (diffSec < 3600) return `${Math.floor(diffSec / 60)} phút trước`;
-                return formatVietnamTime(isoString);
-            } catch {
-                return isoString;
-            }
-        }
-
-        // Render online users list
+        // Render Online Users
         function renderOnlineUsers(users) {
-            if (!refs.onlineUsersTableBody) return;
-
-            // Update count
-            if (refs.onlineCountNumber) {
-                refs.onlineCountNumber.textContent = users.length;
-            }
-
-            // Update last update time (Vietnam timezone)
-            if (refs.lastUpdateTime) {
-                const now = new Date();
-                refs.lastUpdateTime.textContent = `Cập nhật: ${now.toLocaleTimeString('vi-VN', { timeZone: 'Asia/Ho_Chi_Minh', hour: '2-digit', minute: '2-digit', second: '2-digit' })}`;
-            }
-
-            if (users.length === 0) {
-                refs.onlineUsersTableBody.innerHTML = `
-                    <tr>
-                        <td colspan="3" class="px-4 py-6 text-center text-gray-400 text-sm">
-                            <div class="flex flex-col items-center gap-2">
-                                <svg class="w-8 h-8 text-gray-300" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M18.364 5.636a9 9 0 010 12.728m0 0l-2.829-2.829m2.829 2.829L21 21M15.536 8.464a5 5 0 010 7.072m0 0l-2.829-2.829m-4.243 2.829a4.978 4.978 0 01-1.414-2.83m-1.414 5.658a9 9 0 01-2.167-9.238m7.824 2.167a1 1 0 111.414 1.414m-1.414-1.414L3 3m8.293 8.293l1.414 1.414" />
-                                </svg>
-                                <span>Không có ai đang online</span>
-                            </div>
-                        </td>
-                    </tr>
-                `;
-                return;
-            }
-
-            refs.onlineUsersTableBody.innerHTML = users.map(user => `
-                <tr class="hover:bg-green-50/50 transition-colors">
-                    <td class="px-4 py-3">
-                        <div class="flex items-center gap-2">
-                            <div class="relative">
-                                <div class="w-8 h-8 bg-green-100 rounded-full flex items-center justify-center text-green-600 font-bold text-sm">
-                                    ${(user.name || 'U')[0].toUpperCase()}
-                                </div>
-                                <span class="absolute bottom-0 right-0 w-2.5 h-2.5 bg-green-500 rounded-full border-2 border-white"></span>
-                            </div>
-                            <span class="font-medium text-gray-800">${user.name || 'Unknown'}</span>
-                        </div>
-                    </td>
-                    <td class="px-4 py-3 text-gray-600 text-sm">${user.email}</td>
-                    <td class="px-4 py-3 text-gray-500 text-xs">
-                        <span class="inline-flex items-center gap-1">
-                            <span class="w-1.5 h-1.5 bg-green-500 rounded-full"></span>
-                            ${formatTimeAgo(user.lastSeen)}
-                        </span>
-                    </td>
-                </tr>
-            `).join('');
+            refs.onlineCountNumber.textContent = users.length;
+            if (users.length === 0) { refs.onlineUsersTableBody.innerHTML = `<tr><td colspan="3" class="px-4 py-6 text-center text-gray-400">Không có ai online</td></tr>`; return; }
+            refs.onlineUsersTableBody.innerHTML = users.map(u => `<tr class="hover:bg-green-50/50">
+                <td class="px-4 py-3"><div class="flex items-center gap-2"><div class="w-8 h-8 bg-green-100 rounded-full flex items-center justify-center text-green-600 font-bold text-sm">${(u.name || 'U')[0].toUpperCase()}</div><span class="font-medium text-gray-800">${u.name}</span></div></td>
+                <td class="px-4 py-3 text-gray-600 text-sm">${u.email}</td>
+                <td class="px-4 py-3 text-gray-500 text-xs">${formatTimeAgo(u.lastSeen)}</td>
+            </tr>`).join('');
         }
 
-        // Unsubscribe function holder
-        let unsubscribeOnlineUsers = null;
-
-        // Add new user
-        async function handleAddUser(e) {
+        // Add User
+        refs.addUserForm.addEventListener('submit', async (e) => {
             e.preventDefault();
-
             const email = refs.newUserEmail.value.trim();
             const role = refs.newUserRole.value;
+            if (!email) { showToast('Vui lòng nhập email', 'error'); return; }
+            try { await addAllowedUser(email, role); showToast(`Đã thêm ${email}`); refs.newUserEmail.value = ''; loadStudents(); loadLogs(); } catch (err) { showToast(err.message, 'error'); }
+        });
 
-            if (!email) {
-                showToast('Vui lòng nhập email', 'error');
-                return;
-            }
-
-            try {
-                await addAllowedUser(email, role);
-                showToast(`Đã thêm ${email}`);
-                refs.newUserEmail.value = '';
-                refs.newUserRole.value = 'user';
-                loadStudents();
-                loadLogs(); // Refresh logs after add
-            } catch (error) {
-                showToast('Lỗi: ' + error.message, 'error');
-            }
-        }
-
-        // Delete user
-        async function handleDeleteUser() {
+        // Delete User
+        refs.btnConfirmDelete.addEventListener('click', async () => {
             if (!currentDeleteEmail) return;
-
             refs.deleteModal.classList.add('hidden');
+            try { await deleteAllowedUser(currentDeleteEmail); showToast(`Đã xóa ${currentDeleteEmail}`); loadStudents(); loadLogs(); } catch (err) { showToast(err.message, 'error'); }
+            currentDeleteEmail = null;
+        });
+        refs.btnCancelDelete.addEventListener('click', () => { refs.deleteModal.classList.add('hidden'); currentDeleteEmail = null; });
 
-            try {
-                await deleteAllowedUser(currentDeleteEmail);
-                showToast(`Đã xóa ${currentDeleteEmail}`);
-                currentDeleteEmail = null;
-                loadStudents();
-                loadLogs(); // Refresh logs after delete
-            } catch (error) {
-                showToast('Lỗi: ' + error.message, 'error');
-            }
-        }
+        // Refresh buttons
+        refs.btnRefresh.addEventListener('click', loadStudents);
+        refs.btnRefreshLogs?.addEventListener('click', loadLogs);
+        refs.btnRefreshActivity?.addEventListener('click', loadDashboard);
 
         // Init
         initGatekeeper('protected');
-
         onUserChange(async (user) => {
             if (!user) return;
-
             setTimeout(() => {
-                // Check ADMIN access (not just super-admin)
-                if (!checkIsAdmin()) {
-                    refs.accessDenied.classList.remove('hidden');
-                    return;
-                }
-
-                // Check if Super-Admin for role-based UI
+                if (!checkIsAdmin()) { refs.accessDenied.classList.remove('hidden'); return; }
                 isSuperAdmin = checkIsSuperAdmin();
-
-                // Hide role selector and column header for regular Admin
-                if (!isSuperAdmin) {
-                    if (refs.roleSelectWrapper) refs.roleSelectWrapper.classList.add('hidden');
-                    if (refs.thRole) refs.thRole.classList.add('hidden');
-
-                    // Update subtitle for non-super-admin
-                    const tableSubtitle = document.getElementById('table-subtitle');
-                    if (tableSubtitle) tableSubtitle.textContent = 'Người dùng do bạn thêm vào hệ thống';
-                }
 
                 refs.adminEmail.textContent = user.email;
                 refs.mainContent.classList.remove('hidden');
 
-                loadStudents();
-
-                // Show sections for Super Admin only
                 if (isSuperAdmin) {
-                    // Update role badge
-                    const roleBadge = document.getElementById('role-badge');
-                    if (roleBadge) {
-                        roleBadge.className = 'px-3 py-1 bg-red-100 text-red-700 text-xs font-bold rounded-full border border-red-200';
-                        roleBadge.textContent = 'SUPER ADMIN';
-                    }
-
-                    // Update subtitle
-                    const tableSubtitle = document.getElementById('table-subtitle');
-                    if (tableSubtitle) tableSubtitle.textContent = 'Tài khoản được phép truy cập hệ thống';
-
-                    // Show Online Users section
-                    if (refs.onlineUsersSection) {
-                        refs.onlineUsersSection.classList.remove('hidden');
-                        unsubscribeOnlineUsers = subscribeToOnlineUsersList(renderOnlineUsers);
-                    }
-
-                    // Show Audit Log section
-                    const auditLogSection = document.getElementById('audit-log-section');
-                    if (auditLogSection) {
-                        auditLogSection.classList.remove('hidden');
-                        loadLogs();
-                    }
+                    refs.roleBadge.className = 'px-3 py-1 bg-red-100 text-red-700 text-xs font-bold rounded-full border border-red-200';
+                    refs.roleBadge.textContent = 'SUPER ADMIN';
+                    refs.tableSubtitle.textContent = 'Tất cả người dùng hệ thống';
+                    refs.tabOnline.classList.remove('hidden');
+                    refs.tabLogs.classList.remove('hidden');
+                    unsubscribeOnline = subscribeToOnlineUsersList(renderOnlineUsers);
+                } else {
+                    refs.roleSelectWrapper?.classList.add('hidden');
+                    refs.thRole?.classList.add('hidden');
                 }
-                // Presence tracking is started automatically in initGatekeeper
 
-                // Bind events
-                refs.btnRefresh.addEventListener('click', loadStudents);
-                refs.addUserForm.addEventListener('submit', handleAddUser);
-                refs.btnCancelDelete.addEventListener('click', () => {
-                    refs.deleteModal.classList.add('hidden');
-                    currentDeleteEmail = null;
-                });
-                refs.btnConfirmDelete.addEventListener('click', handleDeleteUser);
-                if (refs.btnRefreshLogs) refs.btnRefreshLogs.addEventListener('click', loadLogs);
+                loadDashboard();
+                loadStudents();
+                if (isSuperAdmin) loadLogs();
             }, 500);
         });
     </script>
-
 </body>
 
 </html>
