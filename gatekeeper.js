@@ -453,11 +453,17 @@ export async function deleteExam(examId) {
  * @param {string} subjectId - ID môn học
  */
 export async function logPracticeAttempt(examId, examTitle, subjectId) {
+    console.log('[logPracticeAttempt] Starting...', { examId, examTitle, subjectId });
     try {
         const user = auth.currentUser;
-        if (!user) return;
+        if (!user) {
+            console.warn('[logPracticeAttempt] No user logged in');
+            return;
+        }
+        console.log('[logPracticeAttempt] User:', user.email);
 
         // 1. Lưu log vào collection practice_logs
+        console.log('[logPracticeAttempt] Step 1: Adding to practice_logs...');
         const logsCol = collection(db, 'practice_logs');
         await addDoc(logsCol, {
             examId: examId,
@@ -467,16 +473,19 @@ export async function logPracticeAttempt(examId, examTitle, subjectId) {
             userName: user.displayName || user.email.split('@')[0],
             timestamp: new Date().toISOString()
         });
+        console.log('[logPracticeAttempt] Step 1: SUCCESS - Log added');
 
         // 2. Tăng attemptCount trong exam document
+        console.log('[logPracticeAttempt] Step 2: Updating attemptCount for exam:', examId);
         const examRef = doc(db, 'exams', examId);
         await updateDoc(examRef, {
             attemptCount: increment(1)
         });
+        console.log('[logPracticeAttempt] Step 2: SUCCESS - attemptCount incremented');
 
-        console.log('[logPracticeAttempt] Logged attempt for:', examTitle);
+        console.log('[logPracticeAttempt] COMPLETED for:', examTitle);
     } catch (error) {
-        console.warn('[logPracticeAttempt] Failed to log:', error);
+        console.error('[logPracticeAttempt] FAILED:', error.code, error.message);
         // Không throw error để không ảnh hưởng đến trải nghiệm làm bài
     }
 }
