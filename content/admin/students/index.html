@@ -174,6 +174,11 @@
                         data-tab="logs">
                         <span class="flex items-center gap-2">📋 Lịch sử</span>
                     </button>
+                    <button id="tab-practice-logs"
+                        class="nav-tab px-4 py-3 text-sm font-semibold text-gray-600 whitespace-nowrap rounded-t-lg hidden"
+                        data-tab="practice-logs">
+                        <span class="flex items-center gap-2">📝 Practice Log</span>
+                    </button>
                 </div>
             </div>
         </nav>
@@ -358,6 +363,35 @@
                     </div>
                 </div>
             </div>
+
+            <!-- Tab: Practice Logs (Super-Admin only) -->
+            <div id="content-practice-logs" class="tab-content">
+                <div class="bg-white rounded-2xl border overflow-hidden">
+                    <div class="p-4 border-b bg-indigo-50 flex items-center justify-between">
+                        <h3 class="font-bold text-gray-800">📝 Lịch sử Làm bài</h3>
+                        <button id="btn-refresh-practice-logs"
+                            class="px-3 py-1.5 bg-indigo-600 text-white text-sm font-semibold rounded-lg hover:bg-indigo-700">🔄
+                            Làm mới</button>
+                    </div>
+                    <div class="max-h-[500px] overflow-y-auto">
+                        <table class="w-full text-sm">
+                            <thead class="bg-gray-50 sticky top-0">
+                                <tr>
+                                    <th class="px-4 py-3 text-left font-semibold text-gray-600">Thời gian</th>
+                                    <th class="px-4 py-3 text-left font-semibold text-gray-600">Người dùng</th>
+                                    <th class="px-4 py-3 text-left font-semibold text-gray-600">Bài thi</th>
+                                    <th class="px-4 py-3 text-left font-semibold text-gray-600">Môn</th>
+                                </tr>
+                            </thead>
+                            <tbody id="practice-logs-table-body" class="divide-y divide-gray-100">
+                                <tr>
+                                    <td colspan="4" class="px-4 py-6 text-center text-gray-400">Đang tải...</td>
+                                </tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
         </main>
     </div>
 
@@ -381,7 +415,7 @@
             initGatekeeper, checkIsAdmin, checkIsSuperAdmin, onUserChange,
             getAllAllowedUsers, addAllowedUser, updateUserRole, deleteAllowedUser,
             getWhitelistLogs, getOnlineUsersList, subscribeToOnlineUsersList,
-            getUserActivityLogs, getActivityStats
+            getUserActivityLogs, getActivityStats, getAllPracticeLogs
         } from "../../../gatekeeper.js";
 
         let currentDeleteEmail = null;
@@ -417,7 +451,10 @@
             statUsers: document.getElementById('stat-users'),
             statPopular: document.getElementById('stat-popular'),
             tabOnline: document.getElementById('tab-online'),
-            tabLogs: document.getElementById('tab-logs')
+            tabLogs: document.getElementById('tab-logs'),
+            tabPracticeLogs: document.getElementById('tab-practice-logs'),
+            practiceLogsTableBody: document.getElementById('practice-logs-table-body'),
+            btnRefreshPracticeLogs: document.getElementById('btn-refresh-practice-logs')
         };
 
         function showToast(message, type = 'success') {
@@ -539,6 +576,44 @@
             } catch (e) { refs.logsTableBody.innerHTML = `<tr><td colspan="4" class="px-4 py-6 text-center text-red-500">Lỗi: ${e.message}</td></tr>`; }
         }
 
+        // Load Practice Logs (Super-Admin only)
+        async function loadPracticeLogs() {
+            refs.practiceLogsTableBody.innerHTML = `<tr><td colspan="4" class="px-4 py-6 text-center text-gray-400">Đang tải...</td></tr>`;
+            try {
+                const logs = await getAllPracticeLogs();
+                if (logs.length === 0) {
+                    refs.practiceLogsTableBody.innerHTML = `<tr><td colspan="4" class="px-4 py-6 text-center text-gray-400">Chưa có lịch sử làm bài</td></tr>`;
+                    return;
+                }
+
+                // Map subject IDs to names
+                const subjectNames = {
+                    'math': 'Toán', 'chem': 'Hóa học', 'bio': 'Sinh học',
+                    'history': 'Lịch sử', 'info': 'Tin học', 'physics': 'Vật lí'
+                };
+
+                refs.practiceLogsTableBody.innerHTML = logs.map(log => {
+                    const subjectName = subjectNames[log.subjectId] || log.subjectId || '--';
+                    return `<tr class="hover:bg-gray-50">
+                        <td class="px-4 py-3 text-gray-500 text-xs">${formatVietnamTime(log.timestamp)}</td>
+                        <td class="px-4 py-3">
+                            <div class="flex items-center gap-2">
+                                <div class="w-8 h-8 bg-indigo-100 rounded-full flex items-center justify-center text-indigo-600 font-bold text-sm">${(log.userName || 'U')[0].toUpperCase()}</div>
+                                <div>
+                                    <div class="font-medium text-gray-800">${log.userName || 'Unknown'}</div>
+                                    <div class="text-xs text-gray-500">${log.userEmail}</div>
+                                </div>
+                            </div>
+                        </td>
+                        <td class="px-4 py-3"><span class="font-medium text-gray-800">${log.examTitle || '--'}</span></td>
+                        <td class="px-4 py-3"><span class="px-2 py-1 bg-blue-100 text-blue-700 text-xs font-bold rounded">${subjectName}</span></td>
+                    </tr>`;
+                }).join('');
+            } catch (e) {
+                refs.practiceLogsTableBody.innerHTML = `<tr><td colspan="4" class="px-4 py-6 text-center text-red-500">Lỗi: ${e.message}</td></tr>`;
+            }
+        }
+
         // Render Online Users
         function renderOnlineUsers(users) {
             refs.onlineCountNumber.textContent = users.length;
@@ -572,6 +647,7 @@
         refs.btnRefresh.addEventListener('click', loadStudents);
         refs.btnRefreshLogs?.addEventListener('click', loadLogs);
         refs.btnRefreshActivity?.addEventListener('click', loadDashboard);
+        refs.btnRefreshPracticeLogs?.addEventListener('click', loadPracticeLogs);
 
         // Init
         initGatekeeper('protected');
@@ -595,9 +671,11 @@
 
                     refs.tabOnline.classList.remove('hidden');
                     refs.tabLogs.classList.remove('hidden');
+                    refs.tabPracticeLogs.classList.remove('hidden');
                     unsubscribeOnline = subscribeToOnlineUsersList(renderOnlineUsers);
                     loadDashboard();
                     loadLogs();
+                    loadPracticeLogs();
                 } else {
                     refs.roleSelectWrapper?.classList.add('hidden');
                     refs.thRole?.classList.add('hidden');
