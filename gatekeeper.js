@@ -441,6 +441,65 @@ export async function deleteExam(examId) {
     await deleteDoc(examRef);
 }
 
+// ============================================================
+// 6b. PRACTICE LOGGING (Collection: practice_logs)
+// ============================================================
+
+/**
+ * Log khi user bắt đầu làm bài thi
+ * Lưu vào collection practice_logs và tăng attemptCount trong exam
+ * @param {string} examId - ID của bài thi
+ * @param {string} examTitle - Tên bài thi
+ * @param {string} subjectId - ID môn học
+ */
+export async function logPracticeAttempt(examId, examTitle, subjectId) {
+    try {
+        const user = auth.currentUser;
+        if (!user) return;
+
+        // 1. Lưu log vào collection practice_logs
+        const logsCol = collection(db, 'practice_logs');
+        await addDoc(logsCol, {
+            examId: examId,
+            examTitle: examTitle,
+            subjectId: subjectId || '',
+            userEmail: user.email,
+            userName: user.displayName || user.email.split('@')[0],
+            timestamp: new Date().toISOString()
+        });
+
+        // 2. Tăng attemptCount trong exam document
+        const examRef = doc(db, 'exams', examId);
+        await updateDoc(examRef, {
+            attemptCount: increment(1)
+        });
+
+        console.log('[logPracticeAttempt] Logged attempt for:', examTitle);
+    } catch (error) {
+        console.warn('[logPracticeAttempt] Failed to log:', error);
+        // Không throw error để không ảnh hưởng đến trải nghiệm làm bài
+    }
+}
+
+/**
+ * Lấy tất cả practice logs (chỉ Super-Admin)
+ * @returns {Promise<Array>} - Danh sách logs
+ */
+export async function getAllPracticeLogs() {
+    if (!checkIsSuperAdmin()) {
+        throw new Error('Không có quyền truy cập. Cần quyền Super-Admin để xem Practice Logs.');
+    }
+
+    const logsCol = collection(db, 'practice_logs');
+    const snapshot = await getDocs(logsCol);
+    const logs = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+
+    // Sắp xếp theo thời gian mới nhất
+    logs.sort((a, b) => new Date(b.timestamp) - new Date(a.timestamp));
+
+    return logs;
+}
+
 /**
  * Lấy danh sách subjects (hardcoded for now)
  */
