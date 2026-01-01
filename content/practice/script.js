@@ -1013,16 +1013,13 @@ const app = {
             el.className = 'exam-card bg-white dark:bg-slate-800 p-4 md:p-6 rounded-2xl border border-slate-200 dark:border-slate-700 shadow-sm hover:border-blue-300 dark:hover:border-blue-500 hover:shadow-md transition-all cursor-pointer group';
             el.onclick = () => this.startExam(subId, exam.id);
 
-            const badgeCode = exam.examCode
-                ? `<div class="text-[10px] md:text-xs font-mono font-medium text-slate-400 dark:text-slate-500 truncate">ID: ${exam.examCode}</div>`
-                : '';
-
             const createdDate = exam.createdAt
                 ? `<span class="text-[10px] md:text-xs text-slate-400 dark:text-slate-500 flex items-center"><svg class="w-3 h-3 mr-1 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"/></svg>${new Date(exam.createdAt).toLocaleDateString('vi-VN')}</span>`
                 : '';
 
-            const authorInfo = exam.author
-                ? `<span class="text-[10px] md:text-xs text-purple-500 dark:text-purple-400 flex items-center"><svg class="w-3 h-3 mr-1 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z"/></svg>${exam.author}</span>`
+            // Số lượt làm đề (attemptCount)
+            const attemptInfo = typeof exam.attemptCount === 'number' && exam.attemptCount > 0
+                ? `<span class="text-[10px] md:text-xs text-emerald-600 dark:text-emerald-400 flex items-center"><svg class="w-3 h-3 mr-1 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"/><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"/></svg>${exam.attemptCount} lượt thi</span>`
                 : '';
 
             el.innerHTML = `
@@ -1030,14 +1027,13 @@ const app = {
                     <div class="shrink-0 w-9 h-9 md:w-10 md:h-10 rounded-full bg-blue-50 dark:bg-blue-900/30 text-blue-600 dark:text-blue-400 flex items-center justify-center font-bold text-xs md:text-sm">${(index + 1).toString().padStart(2, '0')}</div>
                     <div class="flex-1 min-w-0 overflow-hidden">
                         <h4 class="font-bold text-base md:text-lg text-slate-800 dark:text-white group-hover:text-blue-600 dark:group-hover:text-blue-400 transition-colors leading-snug mb-1">${exam.title}</h4>
-                        ${badgeCode}
                         <div class="flex flex-wrap items-center gap-2 md:gap-4 mt-2">
                             <span class="text-[10px] md:text-xs font-semibold text-slate-500 dark:text-slate-400 bg-slate-100 dark:bg-slate-700 px-2 py-1 rounded flex items-center">
                                 <svg class="w-3 h-3 mr-1 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>
                                 ${exam.time} phút
                             </span>
                             ${createdDate}
-                            ${authorInfo}
+                            ${attemptInfo}
                         </div>
                     </div>
                     <div class="shrink-0 hidden md:block opacity-0 group-hover:opacity-100 transition-opacity">
@@ -1118,6 +1114,11 @@ const app = {
         this.renderPalette(examData);
         this.startTimer(examMeta.time * 60);
         this.renderMath();
+
+        // Log practice attempt (ghi log và tăng số lượt thi)
+        if (window.firebaseExams?.logPracticeAttempt) {
+            window.firebaseExams.logPracticeAttempt(examId, examMeta.title, subId);
+        }
     },
 
     renderQuestions(data) {
@@ -1510,7 +1511,7 @@ const app = {
                         </svg>
                         <span class="font-bold text-orange-700 dark:text-orange-400">💡 Lời giải</span>
                     </div>
-                    ${explanation.text ? `<p class="text-slate-700 dark:text-slate-300 text-sm leading-relaxed mb-3 whitespace-pre-wrap">${this.escapeHtml(explanation.text)}</p>` : ''}
+                    ${explanation.text ? `<p class="text-slate-700 dark:text-slate-300 text-sm leading-relaxed mb-3 whitespace-pre-wrap">${this.escapeHtml(explanation.text.replace(/\\female/g, '\\venus').replace(/\\male/g, '\\mars'))}</p>` : ''}
                     ${explanation.image ? `<img src="${explanation.image}" class="max-w-full md:max-w-lg rounded-lg border border-orange-200 dark:border-orange-700 shadow-sm mb-3 cursor-pointer hover:shadow-lg transition-shadow" alt="Hình ảnh lời giải" onclick="openLightbox('${explanation.image}')" onerror="this.style.display='none'">` : ''}
                     ${videoId ? `
                         <div class="aspect-video max-w-lg rounded-lg overflow-hidden shadow-sm">
