@@ -836,7 +836,8 @@ const app = {
                                     time: exam.time || 50,
                                     examCode: exam.examCode || '',
                                     createdAt: exam.createdAt || '',
-                                    author: exam.author || ''
+                                    author: exam.author || '',
+                                    attemptCount: exam.attemptCount || 0
                                 });
                                 this.examContentDB[exam.id] = {
                                     id: exam.id,
