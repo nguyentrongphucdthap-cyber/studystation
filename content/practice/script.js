@@ -1116,7 +1116,12 @@ const app = {
 
         // Log practice attempt (ghi log và tăng số lượt thi)
         if (window.firebaseExams?.logPracticeAttempt) {
-            window.firebaseExams.logPracticeAttempt(examId, examMeta.title, subId);
+            console.log('[Practice] Logging attempt for:', examId, examMeta.title, subId);
+            window.firebaseExams.logPracticeAttempt(examId, examMeta.title, subId)
+                .then(() => console.log('[Practice] Attempt logged successfully'))
+                .catch(err => console.error('[Practice] Failed to log attempt:', err));
+        } else {
+            console.warn('[Practice] logPracticeAttempt not available');
         }
     },
 
