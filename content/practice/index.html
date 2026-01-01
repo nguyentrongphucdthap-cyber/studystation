@@ -1215,6 +1215,7 @@
             initGatekeeper,
             getAllExams,
             getSubjects,
+            logPracticeAttempt,
             getExamFeedbacks,
             addFeedback,
             addReply,
@@ -1227,7 +1228,8 @@
         // Make Firebase functions available globally for the app
         window.firebaseExams = {
             getAllExams,
-            getSubjects
+            getSubjects,
+            logPracticeAttempt
         };
 
         // Make Feedback functions available globally
