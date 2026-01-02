@@ -11,31 +11,57 @@ body {
 }
 
 @keyframes slideUpFade {
-    from { opacity: 0; transform: translateY(20px); }
-    to { opacity: 1; transform: translateY(0); }
+    from {
+        opacity: 0;
+        transform: translateY(20px);
+    }
+
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
 }
 
 /* Button Interactions */
 .btn-press {
     transition: transform 0.1s ease, background-color 0.2s, border-color 0.2s;
 }
+
 .btn-press:active {
     transform: scale(0.95);
 }
 
 /* 3D Flip & Card Styles */
-.perspective-1000 { perspective: 1000px; }
-.preserve-3d { transform-style: preserve-3d; }
-.backface-hidden { backface-visibility: hidden; -webkit-backface-visibility: hidden; }
-.rotate-y-180 { transform: rotateY(180deg); }
+.perspective-1000 {
+    perspective: 1000px;
+}
+
+.preserve-3d {
+    transform-style: preserve-3d;
+}
+
+.backface-hidden {
+    backface-visibility: hidden;
+    -webkit-backface-visibility: hidden;
+}
+
+.rotate-y-180 {
+    transform: rotateY(180deg);
+}
 
 /* Dragging Classes */
-.cursor-grab { cursor: grab; }
-.cursor-grabbing { cursor: grabbing; }
+.cursor-grab {
+    cursor: grab;
+}
+
+.cursor-grabbing {
+    cursor: grabbing;
+}
 
 .card-transition {
     transition: transform 0.5s cubic-bezier(0.2, 0.8, 0.2, 1), opacity 0.5s;
 }
+
 .no-transition {
     transition: none !important;
 }
@@ -47,6 +73,7 @@ body {
     border-color: #22c55e !important;
     color: #15803d !important;
 }
+
 .anim-wrong {
     animation: shake 0.4s ease;
     background-color: #fee2e2 !important;
@@ -56,25 +83,51 @@ body {
 
 /* Dark Mode Overrides for Games */
 html.dark .anim-correct {
-    background-color: #064e3b !important; /* emerald-900 */
-    border-color: #10b981 !important; /* emerald-500 */
-    color: #ecfdf5 !important; /* emerald-50 */
+    background-color: #064e3b !important;
+    /* emerald-900 */
+    border-color: #10b981 !important;
+    /* emerald-500 */
+    color: #ecfdf5 !important;
+    /* emerald-50 */
 }
+
 html.dark .anim-wrong {
-    background-color: #7f1d1d !important; /* red-900 */
-    border-color: #ef4444 !important; /* red-500 */
-    color: #fef2f2 !important; /* red-50 */
+    background-color: #7f1d1d !important;
+    /* red-900 */
+    border-color: #ef4444 !important;
+    /* red-500 */
+    color: #fef2f2 !important;
+    /* red-50 */
 }
 
 @keyframes pulseGreen {
-    0% { transform: scale(1); }
-    50% { transform: scale(1.02); }
-    100% { transform: scale(1); }
+    0% {
+        transform: scale(1);
+    }
+
+    50% {
+        transform: scale(1.02);
+    }
+
+    100% {
+        transform: scale(1);
+    }
 }
+
 @keyframes shake {
-    0%, 100% { transform: translateX(0); }
-    25% { transform: translateX(-5px); }
-    75% { transform: translateX(5px); }
+
+    0%,
+    100% {
+        transform: translateX(0);
+    }
+
+    25% {
+        transform: translateX(-5px);
+    }
+
+    75% {
+        transform: translateX(5px);
+    }
 }
 
 /* Toggle Switch */
@@ -82,38 +135,152 @@ html.dark .anim-wrong {
     right: 0;
     border-color: #6366f1;
 }
-.toggle-checkbox:checked + .toggle-label {
+
+.toggle-checkbox:checked+.toggle-label {
     background-color: #6366f1;
 }
 
 /* Hide Scrollbar */
-.no-scrollbar::-webkit-scrollbar { display: none; }
-.no-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
+.no-scrollbar::-webkit-scrollbar {
+    display: none;
+}
+
+.no-scrollbar {
+    -ms-overflow-style: none;
+    scrollbar-width: none;
+}
 
 /* Music panel custom scrollbar */
 .music-scroll {
     scrollbar-width: thin;
-    scrollbar-color: #c7d2fe transparent; /* thumb track */
+    scrollbar-color: #c7d2fe transparent;
+    /* thumb track */
 }
+
 .music-scroll::-webkit-scrollbar {
     width: 6px;
 }
+
 .music-scroll::-webkit-scrollbar-track {
     background: transparent;
 }
+
 .music-scroll::-webkit-scrollbar-thumb {
-    background-color: #c7d2fe; /* indigo-200 */
+    background-color: #c7d2fe;
+    /* indigo-200 */
     border-radius: 999px;
 }
+
 .music-scroll::-webkit-scrollbar-thumb:hover {
-    background-color: #818cf8; /* indigo-400 */
+    background-color: #818cf8;
+    /* indigo-400 */
 }
+
 html.dark .music-scroll {
-    scrollbar-color: #4f46e5 transparent; /* indigo-600 */
+    scrollbar-color: #4f46e5 transparent;
+    /* indigo-600 */
 }
+
 html.dark .music-scroll::-webkit-scrollbar-thumb {
     background-color: #4f46e5;
 }
+
 html.dark .music-scroll::-webkit-scrollbar-thumb:hover {
     background-color: #818cf8;
+}
+
+/* ============================================================
+   FIX CHO CÁC THIẾT BỊ CÓ TỈ LỆ MÀN HÌNH KHÁC NHAU
+   ============================================================ */
+
+/* Đảm bảo body cho phép scroll */
+html,
+body {
+    height: auto;
+    min-height: 100%;
+    min-height: 100dvh;
+    /* Dynamic viewport height for mobile */
+}
+
+body {
+    display: flex;
+    flex-direction: column;
+}
+
+/* Main container phải có thể scroll */
+#app-container {
+    flex: 1 1 auto;
+    min-height: 0;
+    /* Quan trọng cho flexbox scroll */
+    overflow-y: auto;
+    overflow-x: hidden;
+    -webkit-overflow-scrolling: touch;
+    /* Smooth scroll iOS */
+}
+
+/* Đảm bảo content trong views có đủ padding bottom */
+#app-container>div {
+    padding-bottom: 100px;
+    /* Đủ không gian cho footer và safe area */
+    padding-bottom: calc(100px + env(safe-area-inset-bottom, 0px));
+}
+
+/* Template containers nên scroll được */
+.view-enter {
+    overflow-y: auto !important;
+    -webkit-overflow-scrolling: touch;
+}
+
+/* Safe area cho các thiết bị có notch/home indicator */
+@supports (padding-bottom: env(safe-area-inset-bottom)) {
+    .safe-bottom {
+        padding-bottom: env(safe-area-inset-bottom);
+    }
+
+    .safe-top {
+        padding-top: env(safe-area-inset-top);
+    }
+
+    .pb-safe {
+        padding-bottom: max(1.5rem, env(safe-area-inset-bottom));
+    }
+}
+
+/* Fix header để không bị che bởi status bar trên iPhone */
+header.fixed {
+    top: 0;
+    top: env(safe-area-inset-top, 0);
+}
+
+/* Fix cho màn hình rất ngắn (laptop cũ 4:3, etc) */
+@media screen and (max-height: 600px) {
+    #app-container {
+        padding-top: 56px !important;
+    }
+
+    header.fixed {
+        height: 56px !important;
+    }
+
+    #app-container>div {
+        padding-bottom: 80px;
+    }
+}
+
+/* Fix cho màn hình rất dài (điện thoại hiện đại) */
+@media screen and (min-aspect-ratio: 9/18) {
+    #app-container>div {
+        padding-bottom: 140px;
+        padding-bottom: calc(140px + env(safe-area-inset-bottom, 0px));
+    }
+}
+
+/* Đảm bảo home view scroll được trên tất cả thiết bị */
+#library-container {
+    padding-bottom: 60px;
+}
+
+/* Fix cho set-detail view */
+.max-w-md.md\:max-w-2xl {
+    padding-bottom: 80px;
 }
