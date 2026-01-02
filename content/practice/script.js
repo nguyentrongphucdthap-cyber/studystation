@@ -1506,7 +1506,74 @@ const app = {
                 return match ? match[1] : null;
             };
 
-            const videoId = getYouTubeId(explanation.video);
+            // Extract Google Drive file ID
+            const getGoogleDriveId = (url) => {
+                if (!url) return null;
+                // Match patterns:
+                // - https://drive.google.com/file/d/FILE_ID/view
+                // - https://drive.google.com/open?id=FILE_ID
+                // - https://drive.google.com/uc?id=FILE_ID
+                const patterns = [
+                    /drive\.google\.com\/file\/d\/([a-zA-Z0-9_-]+)/,
+                    /drive\.google\.com\/open\?id=([a-zA-Z0-9_-]+)/,
+                    /drive\.google\.com\/uc\?id=([a-zA-Z0-9_-]+)/
+                ];
+                for (const pattern of patterns) {
+                    const match = url.match(pattern);
+                    if (match) return match[1];
+                }
+                return null;
+            };
+
+            const youtubeId = getYouTubeId(explanation.video);
+            const driveId = getGoogleDriveId(explanation.video);
+
+            // Generate video HTML based on platform
+            let videoHtml = '';
+            if (youtubeId) {
+                // YouTube embed
+                videoHtml = `
+                    <div class="aspect-video max-w-lg rounded-lg overflow-hidden shadow-sm">
+                        <iframe 
+                            class="w-full h-full" 
+                            src="https://www.youtube.com/embed/${youtubeId}" 
+                            title="Video lời giải" 
+                            frameborder="0" 
+                            allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture" 
+                            allowfullscreen>
+                        </iframe>
+                    </div>
+                `;
+            } else if (driveId) {
+                // Google Drive embed
+                videoHtml = `
+                    <div class="aspect-video max-w-lg rounded-lg overflow-hidden shadow-sm bg-slate-100 dark:bg-slate-700">
+                        <iframe 
+                            class="w-full h-full" 
+                            src="https://drive.google.com/file/d/${driveId}/preview" 
+                            title="Video lời giải (Google Drive)" 
+                            frameborder="0" 
+                            allow="autoplay; encrypted-media" 
+                            allowfullscreen>
+                        </iframe>
+                    </div>
+                    <p class="text-xs text-slate-400 mt-1 flex items-center gap-1">
+                        <svg class="w-3 h-3" viewBox="0 0 24 24" fill="currentColor"><path d="M12 2L2 7l10 5 10-5-10-5zM2 17l10 5 10-5M2 12l10 5 10-5"/></svg>
+                        Video từ Google Drive
+                    </p>
+                `;
+            } else if (explanation.video) {
+                // Fallback: link to external video
+                videoHtml = `
+                    <a href="${explanation.video}" target="_blank" class="inline-flex items-center gap-2 text-orange-600 hover:text-orange-700 dark:text-orange-400 text-sm font-medium">
+                        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M14.752 11.168l-3.197-2.132A1 1 0 0010 9.87v4.263a1 1 0 001.555.832l3.197-2.132a1 1 0 000-1.664z"/>
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/>
+                        </svg>
+                        Xem video lời giải
+                    </a>
+                `;
+            }
 
             const explanationHtml = `
                 <div class="explanation-section mt-4 p-4 bg-gradient-to-r from-orange-50 to-amber-50 dark:from-orange-900/20 dark:to-amber-900/20 border border-orange-200 dark:border-orange-800 rounded-xl">
@@ -1518,18 +1585,7 @@ const app = {
                     </div>
                     ${explanation.text ? `<p class="text-slate-700 dark:text-slate-300 text-sm leading-relaxed mb-3 whitespace-pre-wrap">${this.escapeHtml(explanation.text.replace(/\\female/g, '\\venus').replace(/\\male/g, '\\mars'))}</p>` : ''}
                     ${explanation.image ? `<img src="${explanation.image}" class="max-w-full md:max-w-lg rounded-lg border border-orange-200 dark:border-orange-700 shadow-sm mb-3 cursor-pointer hover:shadow-lg transition-shadow" alt="Hình ảnh lời giải" onclick="openLightbox('${explanation.image}')" onerror="this.style.display='none'">` : ''}
-                    ${videoId ? `
-                        <div class="aspect-video max-w-lg rounded-lg overflow-hidden shadow-sm">
-                            <iframe 
-                                class="w-full h-full" 
-                                src="https://www.youtube.com/embed/${videoId}" 
-                                title="Video lời giải" 
-                                frameborder="0" 
-                                allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture" 
-                                allowfullscreen>
-                            </iframe>
-                        </div>
-                    ` : (explanation.video ? `<a href="${explanation.video}" target="_blank" class="inline-flex items-center gap-2 text-orange-600 hover:text-orange-700 dark:text-orange-400 text-sm font-medium"><svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M14.752 11.168l-3.197-2.132A1 1 0 0010 9.87v4.263a1 1 0 001.555.832l3.197-2.132a1 1 0 000-1.664z"/><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>Xem video lời giải</a>` : '')}
+                    ${videoHtml}
                 </div>
             `;
             el.insertAdjacentHTML('beforeend', explanationHtml);
