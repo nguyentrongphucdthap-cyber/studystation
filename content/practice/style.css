@@ -532,6 +532,8 @@ html {
 body {
     height: auto !important;
     min-height: 100vh;
+    min-height: calc(var(--vh, 1vh) * 100);
+    /* Fallback for iOS Safari */
     min-height: 100dvh;
     display: flex;
     flex-direction: column;
@@ -549,8 +551,8 @@ body {
     position: relative;
 }
 
-/* Content trong app container */
-#app-container>div {
+/* Content trong app container - KHÔNG bao gồm fixed elements */
+#app-container>div:not(#mobile-footer):not(#mobile-palette):not([class*="fixed"]) {
     min-height: 100%;
     height: auto !important;
     overflow-y: visible;
@@ -588,14 +590,16 @@ body {
         overflow: visible !important;
     }
 
-    #app-container>div {
+    /* Chỉ target container view chính, không phải fixed elements */
+    #app-container>div:not([id*="mobile"]):not([id*="palette"]) {
         height: auto !important;
         min-height: 100%;
         overflow-y: visible !important;
         padding-bottom: 100px;
     }
 
-    #app-container>div>.flex {
+    /* Container flex trong taking-exam view */
+    #app-container>div>.flex.min-h-full:not(#mobile-footer) {
         height: auto !important;
         min-height: 100%;
     }
@@ -618,6 +622,105 @@ body {
         overflow-y: visible !important;
         padding-bottom: 80px;
     }
+
+    /* QUAN TRỌNG: Bảo vệ mobile footer khỏi bị stretch */
+    #mobile-footer {
+        height: auto !important;
+        min-height: auto !important;
+        max-height: none;
+        flex: 0 0 auto !important;
+        position: fixed !important;
+        bottom: 0 !important;
+        left: 0 !important;
+        right: 0 !important;
+        padding: 12px !important;
+        z-index: 40 !important;
+    }
+
+    /* Buttons trong mobile footer giữ kích thước bình thường */
+    #mobile-footer button {
+        height: auto !important;
+        min-height: auto !important;
+        flex: none;
+        padding: 12px 16px !important;
+    }
+
+    #mobile-footer button.flex-1 {
+        flex: 1 1 0% !important;
+    }
+}
+
+/* ============================================
+   MOBILE FOOTER - PROTECTION (CRITICAL)
+   Đặt NGOÀI media query để áp dụng mọi lúc
+   ============================================ */
+#mobile-footer,
+div#mobile-footer,
+[id="mobile-footer"] {
+    display: flex !important;
+    flex-direction: row !important;
+    align-items: center !important;
+    position: fixed !important;
+    bottom: 0 !important;
+    left: 0 !important;
+    right: 0 !important;
+    top: auto !important;
+    height: auto !important;
+    min-height: unset !important;
+    max-height: 80px !important;
+    width: 100% !important;
+    padding: 12px !important;
+    margin: 0 !important;
+    z-index: 40 !important;
+    flex-grow: 0 !important;
+    flex-shrink: 0 !important;
+    flex-basis: auto !important;
+    overflow: visible !important;
+}
+
+#mobile-footer>button,
+div#mobile-footer>button {
+    height: auto !important;
+    min-height: unset !important;
+    max-height: 48px !important;
+    flex-grow: 0 !important;
+    flex-shrink: 0 !important;
+    padding: 12px 16px !important;
+}
+
+#mobile-footer>button.flex-1,
+div#mobile-footer>button.flex-1 {
+    flex-grow: 1 !important;
+    flex-shrink: 1 !important;
+}
+
+/* ============================================
+   CRITICAL FIX: Prevent buttons from stretching vertically
+   ============================================ */
+#mobile-footer,
+div#mobile-footer,
+[id="mobile-footer"] {
+    /* Override any flex-direction issues */
+    flex-direction: row !important;
+    align-items: center !important;
+    justify-content: stretch !important;
+    /* Fixed height for the footer bar itself */
+    height: 64px !important;
+    max-height: 64px !important;
+    min-height: 64px !important;
+    /* Ensure proper box model */
+    box-sizing: border-box !important;
+}
+
+#mobile-footer>*,
+div#mobile-footer>* {
+    /* All direct children should NOT stretch vertically */
+    align-self: center !important;
+    height: auto !important;
+    max-height: 48px !important;
+    min-height: unset !important;
+    flex-grow: 0 !important;
+    flex-shrink: 0 !important;
 }
 
 /* Safe area cho các thiết bị có notch/home indicator */
@@ -637,7 +740,7 @@ body {
 
 /* Fix cho màn hình rất ngắn */
 @media screen and (max-height: 600px) {
-    #app-container>div {
+    #app-container>div:not(#mobile-footer):not(#mobile-palette) {
         padding-bottom: 100px;
     }
 
