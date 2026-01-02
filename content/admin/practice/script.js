@@ -446,8 +446,7 @@ function parseRawTextToQuestions(text) {
 }
 
 /**
- * Parse multiple choice question
- */
+ * Parse multiple choice question  */
 function parseMultipleChoice(content) {
     // Extract Explanation if exists
     let explanationText = '';
@@ -730,8 +729,14 @@ function hideEditor() {
  * Trigger MathJax to render math/chemistry symbols
  */
 function renderMath() {
-    if (window.MathJax) {
-        window.MathJax.typesetPromise();
+    if (window.MathJax && window.MathJax.typesetPromise) {
+        try {
+            window.MathJax.typesetPromise().catch(err => {
+                console.warn('MathJax render error:', err);
+            });
+        } catch (err) {
+            console.warn('MathJax error:', err);
+        }
     }
 }
 
@@ -832,7 +837,7 @@ function createPart1QuestionHTML(q, idx) {
                                 <input type="radio" name="correct-${uniqueQId}" value="${i}" ${correctIdx === i ? 'checked' : ''} class="q-correct sr-only">
                                 <div class="option-content flex items-center gap-3 p-3 border-2 rounded-xl transition-all ${correctIdx === i ? 'border-emerald-500 bg-emerald-50' : 'border-gray-200 hover:border-blue-300 hover:bg-blue-50'}">
                                     <span class="option-badge w-7 h-7 rounded-lg flex items-center justify-center text-sm font-bold shrink-0 transition-colors ${correctIdx === i ? 'bg-emerald-500 text-white' : 'bg-gray-100 text-gray-600 group-hover:bg-blue-100 group-hover:text-blue-600'}">${String.fromCharCode(65 + i)}</span>
-                                    <input type="text" class="q-option flex-1 bg-transparent border-0 text-sm focus:ring-0 outline-none placeholder-gray-400" placeholder="Nhập đáp án ${String.fromCharCode(65 + i)}..." value="${escapeAttr(opt)}" onclick="event.stopPropagation()">
+                                    <input type="text" class="q-option flex-1 bg-transparent border-0 text-sm focus:ring-0 outline-none placeholder-gray-400" placeholder="Nhập đáp án ${String.fromCharCode(65 + i)}..." value="${escapeAttr(opt)}" onclick="event.stopPropagation()" onmousedown="event.stopPropagation()">
                                     <svg class="option-check w-5 h-5 text-emerald-500 shrink-0 ${correctIdx === i ? '' : 'hidden'}" fill="currentColor" viewBox="0 0 20 20"><path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clip-rule="evenodd"/></svg>
                                 </div>
                             </label>
@@ -1116,33 +1121,48 @@ function bindQuestionEvents(part) {
     if (part === 1) {
         container.querySelectorAll('.q-correct').forEach(radio => {
             radio.addEventListener('change', (e) => {
-                const checkedRadio = e.target;
-                const questionBlock = checkedRadio.closest('.question-block');
+                try {
+                    const checkedRadio = e.target;
+                    const questionBlock = checkedRadio.closest('.question-block');
+                    if (!questionBlock) return;
 
-                // Reset all options in this question
-                questionBlock.querySelectorAll('.option-content').forEach(card => {
-                    card.classList.remove('border-emerald-500', 'bg-emerald-50');
-                    card.classList.add('border-gray-200', 'hover:border-blue-300', 'hover:bg-blue-50');
+                    // Reset all options in this question
+                    questionBlock.querySelectorAll('.option-content').forEach(card => {
+                        if (!card) return;
+                        card.classList.remove('border-emerald-500', 'bg-emerald-50');
+                        card.classList.add('border-gray-200', 'hover:border-blue-300', 'hover:bg-blue-50');
 
-                    const badge = card.querySelector('.option-badge');
-                    badge.classList.remove('bg-emerald-500', 'text-white');
-                    badge.classList.add('bg-gray-100', 'text-gray-600', 'group-hover:bg-blue-100', 'group-hover:text-blue-600');
+                        const badge = card.querySelector('.option-badge');
+                        if (badge) {
+                            badge.classList.remove('bg-emerald-500', 'text-white');
+                            badge.classList.add('bg-gray-100', 'text-gray-600', 'group-hover:bg-blue-100', 'group-hover:text-blue-600');
+                        }
 
-                    const check = card.querySelector('.option-check');
-                    if (check) check.classList.add('hidden');
-                });
+                        const check = card.querySelector('.option-check');
+                        if (check) check.classList.add('hidden');
+                    });
 
-                // Set selected option
-                const selectedCard = checkedRadio.closest('.option-card').querySelector('.option-content');
-                selectedCard.classList.remove('border-gray-200', 'hover:border-blue-300', 'hover:bg-blue-50');
-                selectedCard.classList.add('border-emerald-500', 'bg-emerald-50');
+                    // Set selected option
+                    const optionCard = checkedRadio.closest('.option-card');
+                    if (!optionCard) return;
 
-                const selectedBadge = selectedCard.querySelector('.option-badge');
-                selectedBadge.classList.remove('bg-gray-100', 'text-gray-600', 'group-hover:bg-blue-100', 'group-hover:text-blue-600');
-                selectedBadge.classList.add('bg-emerald-500', 'text-white');
+                    const selectedCard = optionCard.querySelector('.option-content');
+                    if (!selectedCard) return;
 
-                const selectedCheck = selectedCard.querySelector('.option-check');
-                if (selectedCheck) selectedCheck.classList.remove('hidden');
+                    selectedCard.classList.remove('border-gray-200', 'hover:border-blue-300', 'hover:bg-blue-50');
+                    selectedCard.classList.add('border-emerald-500', 'bg-emerald-50');
+
+                    const selectedBadge = selectedCard.querySelector('.option-badge');
+                    if (selectedBadge) {
+                        selectedBadge.classList.remove('bg-gray-100', 'text-gray-600', 'group-hover:bg-blue-100', 'group-hover:text-blue-600');
+                        selectedBadge.classList.add('bg-emerald-500', 'text-white');
+                    }
+
+                    const selectedCheck = selectedCard.querySelector('.option-check');
+                    if (selectedCheck) selectedCheck.classList.remove('hidden');
+                } catch (err) {
+                    console.error('Error in radio change handler:', err);
+                }
             });
         });
     }
