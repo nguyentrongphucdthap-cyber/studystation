@@ -364,7 +364,6 @@
                 </div>
             </div>
 
-            <!-- Tab: Practice Logs (Super-Admin only) -->
             <div id="content-practice-logs" class="tab-content">
                 <div class="bg-white rounded-2xl border overflow-hidden">
                     <div class="p-4 border-b bg-indigo-50 flex items-center justify-between">
@@ -381,11 +380,12 @@
                                     <th class="px-4 py-3 text-left font-semibold text-gray-600">Người dùng</th>
                                     <th class="px-4 py-3 text-left font-semibold text-gray-600">Bài thi</th>
                                     <th class="px-4 py-3 text-left font-semibold text-gray-600">Môn</th>
+                                    <th class="px-4 py-3 text-center font-semibold text-gray-600">Điểm</th>
                                 </tr>
                             </thead>
                             <tbody id="practice-logs-table-body" class="divide-y divide-gray-100">
                                 <tr>
-                                    <td colspan="4" class="px-4 py-6 text-center text-gray-400">Đang tải...</td>
+                                    <td colspan="5" class="px-4 py-6 text-center text-gray-400">Đang tải...</td>
                                 </tr>
                             </tbody>
                         </table>
@@ -578,11 +578,11 @@
 
         // Load Practice Logs (Super-Admin only)
         async function loadPracticeLogs() {
-            refs.practiceLogsTableBody.innerHTML = `<tr><td colspan="4" class="px-4 py-6 text-center text-gray-400">Đang tải...</td></tr>`;
+            refs.practiceLogsTableBody.innerHTML = `<tr><td colspan="5" class="px-4 py-6 text-center text-gray-400">Đang tải...</td></tr>`;
             try {
                 const logs = await getAllPracticeLogs();
                 if (logs.length === 0) {
-                    refs.practiceLogsTableBody.innerHTML = `<tr><td colspan="4" class="px-4 py-6 text-center text-gray-400">Chưa có lịch sử làm bài</td></tr>`;
+                    refs.practiceLogsTableBody.innerHTML = `<tr><td colspan="5" class="px-4 py-6 text-center text-gray-400">Chưa có lịch sử làm bài</td></tr>`;
                     return;
                 }
 
@@ -594,6 +594,25 @@
 
                 refs.practiceLogsTableBody.innerHTML = logs.map(log => {
                     const subjectName = subjectNames[log.subjectId] || log.subjectId || '--';
+
+                    // Score styling
+                    let scoreHtml = '<span class="text-gray-400">--</span>';
+                    if (log.score !== undefined && log.score !== null) {
+                        const score = parseFloat(log.score);
+                        let scoreBg, scoreColor;
+                        if (score >= 8) {
+                            scoreBg = 'bg-emerald-100';
+                            scoreColor = 'text-emerald-700';
+                        } else if (score >= 5) {
+                            scoreBg = 'bg-blue-100';
+                            scoreColor = 'text-blue-700';
+                        } else {
+                            scoreBg = 'bg-red-100';
+                            scoreColor = 'text-red-700';
+                        }
+                        scoreHtml = `<span class="px-2 py-1 ${scoreBg} ${scoreColor} text-xs font-bold rounded-full">${score.toFixed(1)}</span>`;
+                    }
+
                     return `<tr class="hover:bg-gray-50">
                         <td class="px-4 py-3 text-gray-500 text-xs">${formatVietnamTime(log.timestamp)}</td>
                         <td class="px-4 py-3">
@@ -607,10 +626,11 @@
                         </td>
                         <td class="px-4 py-3"><span class="font-medium text-gray-800">${log.examTitle || '--'}</span></td>
                         <td class="px-4 py-3"><span class="px-2 py-1 bg-blue-100 text-blue-700 text-xs font-bold rounded">${subjectName}</span></td>
+                        <td class="px-4 py-3 text-center">${scoreHtml}</td>
                     </tr>`;
                 }).join('');
             } catch (e) {
-                refs.practiceLogsTableBody.innerHTML = `<tr><td colspan="4" class="px-4 py-6 text-center text-red-500">Lỗi: ${e.message}</td></tr>`;
+                refs.practiceLogsTableBody.innerHTML = `<tr><td colspan="5" class="px-4 py-6 text-center text-red-500">Lỗi: ${e.message}</td></tr>`;
             }
         }
 
