@@ -844,15 +844,18 @@
                 </div>
             </div>
         </div>
-        <!-- Mobile Footer -->
+        <!-- Mobile Footer - OUTSIDE of flex container -->
         <div id="mobile-footer"
-            class="lg:hidden fixed bottom-0 left-0 right-0 bg-white/90 dark:bg-slate-800/90 backdrop-blur border-t border-slate-200 dark:border-slate-700 p-3 z-40 flex gap-3 shadow-[0_-4px_20px_rgba(0,0,0,0.05)]">
+            class="lg:hidden fixed bottom-0 left-0 right-0 bg-white/90 dark:bg-slate-800/90 backdrop-blur border-t border-slate-200 dark:border-slate-700 p-3 z-40 flex flex-row items-center gap-3 shadow-[0_-4px_20px_rgba(0,0,0,0.05)]"
+            style="height: 64px !important; max-height: 64px !important; min-height: 64px !important; flex-direction: row !important; align-items: center !important; top: auto !important;">
             <button onclick="document.getElementById('mobile-palette').classList.remove('hidden')"
-                class="px-4 py-3 bg-slate-100 dark:bg-slate-700 text-slate-700 dark:text-slate-200 rounded-xl font-bold flex items-center gap-2">
+                class="shrink-0 px-4 py-3 bg-slate-100 dark:bg-slate-700 text-slate-700 dark:text-slate-200 rounded-xl font-bold flex items-center gap-2"
+                style="height: 44px !important; max-height: 44px !important; align-self: center !important;">
                 Mục lục
             </button>
             <button onclick="app.submitExam()"
-                class="flex-1 bg-blue-600 text-white font-bold py-3 px-4 rounded-xl shadow-lg shadow-blue-600/20">
+                class="flex-1 bg-blue-600 text-white font-bold py-3 px-4 rounded-xl shadow-lg shadow-blue-600/20"
+                style="height: 44px !important; max-height: 44px !important; align-self: center !important;">
                 Nộp bài
             </button>
         </div>
