@@ -345,7 +345,8 @@
 
     <!-- 3. Learn View (Multiple Choice) -->
     <template id="tpl-learn">
-        <div class="w-full h-full flex flex-col items-center py-2 view-enter relative max-w-xl mx-auto">
+        <div class="w-full min-h-full flex flex-col items-center py-2 view-enter relative max-w-xl mx-auto"
+            style="padding-bottom: 80px;">
             <!-- Header -->
             <div class="w-full flex items-center justify-between mb-6">
                 <button onclick="showView('set-detail')"
@@ -384,7 +385,8 @@
 
     <!-- 4. Flashcard View -->
     <template id="tpl-flashcard">
-        <div class="w-full h-full flex flex-col items-center justify-between py-2 view-enter relative">
+        <div class="w-full min-h-full flex flex-col items-center justify-between py-2 view-enter relative"
+            style="padding-bottom: 80px;">
             <div class="w-full max-w-md flex items-center justify-between mb-2">
                 <button onclick="showView('set-detail')"
                     class="p-3 text-slate-400 hover:text-slate-700 dark:hover:text-slate-200 transition-colors btn-press rounded-full">
@@ -472,7 +474,7 @@
 
     <!-- 5. Matching View -->
     <template id="tpl-matching">
-        <div class="w-full flex flex-col h-full view-enter">
+        <div class="w-full flex flex-col min-h-full view-enter" style="padding-bottom: 60px;">
             <div class="flex items-center justify-between mb-4">
                 <button onclick="showView('set-detail')"
                     class="flex items-center gap-2 text-slate-500 dark:text-slate-400 hover:text-indigo-600 dark:hover:text-indigo-400 transition-colors btn-press px-2 py-1 rounded-lg">
@@ -501,7 +503,7 @@
 
     <!-- 6. Result View -->
     <template id="tpl-result">
-        <div class="w-full h-full flex flex-col items-center justify-center px-4">
+        <div class="w-full min-h-full flex flex-col items-center justify-center px-4" style="padding-bottom: 60px;">
             <div
                 class="bg-white dark:bg-dark-card p-8 md:p-10 rounded-3xl shadow-xl border border-slate-100 dark:border-slate-700 text-center max-w-sm w-full mx-auto view-enter">
                 <div
@@ -855,6 +857,17 @@
                 console.error('[Vocab Module] window.initVocabApp not found!');
             }
         }, 1000);
+
+        // Mobile viewport height fix for iOS Safari
+        (function () {
+            function setVH() {
+                const vh = window.innerHeight * 0.01;
+                document.documentElement.style.setProperty('--vh', `${vh}px`);
+            }
+            setVH();
+            window.addEventListener('resize', setVH);
+            window.addEventListener('orientationchange', () => setTimeout(setVH, 100));
+        })();
     </script>
 </body>
 
