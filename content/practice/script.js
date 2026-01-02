@@ -1036,8 +1036,19 @@ const app = {
                             ${attemptInfo}
                         </div>
                     </div>
-                    <div class="shrink-0 hidden md:block opacity-0 group-hover:opacity-100 transition-opacity">
-                         <svg class="w-5 h-5 text-blue-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"/></svg>
+                    <div class="shrink-0 flex items-center gap-2">
+                        <button onclick="event.stopPropagation(); app.showHistoryModal('${exam.id}', '${exam.title.replace(/'/g, "\\'")}')" 
+                            class="w-8 h-8 md:w-9 md:h-9 rounded-lg bg-indigo-50 dark:bg-indigo-900/30 text-indigo-600 dark:text-indigo-400 flex items-center justify-center hover:bg-indigo-100 dark:hover:bg-indigo-900/50 transition-colors" 
+                            title="Xem lịch sử làm bài">
+                            <svg class="w-4 h-4 md:w-5 md:h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h5"></path>
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4.93 4.93A10 10 0 1021 12"></path>
+                            </svg>
+                        </button>
+                        <div class="hidden md:block opacity-0 group-hover:opacity-100 transition-opacity">
+                             <svg class="w-5 h-5 text-blue-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"/></svg>
+                        </div>
                     </div>
                 </div>
             `;
@@ -1439,6 +1450,27 @@ const app = {
 
         // Update Statistics
         this.updateStats(this.currentExam.meta.id, finalScore, durationSeconds);
+
+        // Store exam result for the current session (for review)
+        this.examResult = {
+            examId: this.currentExam.meta.id,
+            examTitle: this.currentExam.meta.title,
+            subjectId: this.currentExam.subId,
+            score: finalScore,
+            correctCount,
+            totalQuestions,
+            wrongCount,
+            durationSeconds,
+            answers: { ...this.answers },
+            examData: this.currentExam.data
+        };
+
+        // Save result to Firebase for history
+        if (window.firebaseExams?.savePracticeResult) {
+            window.firebaseExams.savePracticeResult(this.examResult)
+                .then(() => console.log('[Practice] Result saved to Firebase'))
+                .catch(err => console.error('[Practice] Failed to save result:', err));
+        }
 
         // Show Result
         const minutes = Math.floor(durationSeconds / 60);
@@ -1884,6 +1916,211 @@ const app = {
         const div = document.createElement('div');
         div.textContent = text;
         return div.innerHTML;
+    },
+
+    // ============================================================
+    // PRACTICE HISTORY
+    // ============================================================
+
+    async showHistoryModal(examId, examTitle) {
+        const modal = document.getElementById('history-modal');
+        const titleEl = document.getElementById('history-exam-title');
+        const listEl = document.getElementById('history-list');
+
+        if (!modal) return;
+
+        modal.classList.remove('hidden');
+        titleEl.textContent = examTitle;
+        listEl.innerHTML = '<div class="text-center text-slate-400 py-8"><div class="w-6 h-6 border-2 border-indigo-500 border-t-transparent rounded-full animate-spin mx-auto mb-2"></div>Đang tải...</div>';
+
+        try {
+            if (!window.firebaseExams?.getPracticeHistory) {
+                listEl.innerHTML = '<div class="text-center text-slate-400 py-8">Chức năng không khả dụng</div>';
+                return;
+            }
+
+            const history = await window.firebaseExams.getPracticeHistory(examId);
+
+            if (!history || history.length === 0) {
+                listEl.innerHTML = `
+                    <div class="text-center py-8">
+                        <svg class="w-12 h-12 mx-auto mb-3 text-slate-300 dark:text-slate-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+                        </svg>
+                        <p class="text-slate-500 dark:text-slate-400 font-medium">Chưa có lịch sử làm bài</p>
+                        <p class="text-sm text-slate-400 dark:text-slate-500 mt-1">Bắt đầu làm bài thi để xem lịch sử tại đây</p>
+                    </div>
+                `;
+                return;
+            }
+
+            listEl.innerHTML = history.map((item, index) => {
+                const date = new Date(item.timestamp);
+                const dateStr = date.toLocaleDateString('vi-VN');
+                const timeStr = date.toLocaleTimeString('vi-VN', { hour: '2-digit', minute: '2-digit' });
+                const durationMins = Math.floor(item.durationSeconds / 60);
+                const durationSecs = item.durationSeconds % 60;
+                const scoreColor = item.score >= 8 ? 'text-emerald-600 dark:text-emerald-400'
+                    : item.score >= 5 ? 'text-blue-600 dark:text-blue-400'
+                        : 'text-red-600 dark:text-red-400';
+                const scoreBg = item.score >= 8 ? 'bg-emerald-50 dark:bg-emerald-900/30'
+                    : item.score >= 5 ? 'bg-blue-50 dark:bg-blue-900/30'
+                        : 'bg-red-50 dark:bg-red-900/30';
+
+                return `
+                    <div class="bg-slate-50 dark:bg-slate-700/50 rounded-xl p-4 border border-slate-200 dark:border-slate-600 hover:border-indigo-300 dark:hover:border-indigo-500 transition-colors">
+                        <div class="flex items-center justify-between gap-3">
+                            <div class="flex items-center gap-3">
+                                <div class="w-10 h-10 ${scoreBg} rounded-xl flex items-center justify-center shrink-0">
+                                    <span class="font-bold ${scoreColor}">${item.score.toFixed(1)}</span>
+                                </div>
+                                <div>
+                                    <div class="flex items-center gap-2 text-sm font-medium text-slate-700 dark:text-slate-200">
+                                        <span>${dateStr}</span>
+                                        <span class="text-slate-400">•</span>
+                                        <span>${timeStr}</span>
+                                    </div>
+                                    <div class="flex items-center gap-3 mt-1 text-xs text-slate-500 dark:text-slate-400">
+                                        <span class="flex items-center gap-1">
+                                            <svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>
+                                            ${item.correctCount}/${item.totalQuestions} đúng
+                                        </span>
+                                        <span class="flex items-center gap-1">
+                                            <svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>
+                                            ${durationMins}:${durationSecs.toString().padStart(2, '0')}
+                                        </span>
+                                    </div>
+                                </div>
+                            </div>
+                            <button onclick="app.reviewFromHistory('${item.id}')" 
+                                class="w-9 h-9 rounded-lg bg-indigo-100 dark:bg-indigo-900/50 text-indigo-600 dark:text-indigo-400 flex items-center justify-center hover:bg-indigo-200 dark:hover:bg-indigo-900 transition-colors shrink-0"
+                                title="Xem lại bài làm">
+                                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h5"></path>
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4.93 4.93A10 10 0 1021 12"></path>
+                                </svg>
+                            </button>
+                        </div>
+                    </div>
+                `;
+            }).join('');
+
+            // Store history for review
+            this.historyCache = history;
+
+        } catch (error) {
+            console.error('[History] Failed to load:', error);
+            listEl.innerHTML = `<div class="text-center text-red-500 py-8">Lỗi tải lịch sử: ${error.message}</div>`;
+        }
+    },
+
+    closeHistoryModal() {
+        const modal = document.getElementById('history-modal');
+        if (modal) modal.classList.add('hidden');
+    },
+
+    async reviewFromHistory(historyId) {
+        // Find the history item
+        const item = this.historyCache?.find(h => h.id === historyId);
+        if (!item || !item.examData) {
+            alert('Không thể xem lại bài làm này. Dữ liệu không khả dụng.');
+            return;
+        }
+
+        // Close the history modal
+        this.closeHistoryModal();
+
+        // Set up for review
+        this.currentExam = {
+            meta: { id: item.examId, title: item.examTitle },
+            data: item.examData,
+            subId: item.subjectId
+        };
+        this.answers = item.answers || {};
+        this.isReviewMode = true;
+
+        // Render review
+        this.renderTemplate('tpl-taking-exam');
+        document.getElementById('desktop-palette-sidebar').classList.add('hidden');
+        document.getElementById('mobile-footer').classList.add('hidden');
+        document.getElementById('review-controls').classList.remove('hidden');
+
+        this.renderQuestions(this.currentExam.data);
+        this.renderMath();
+
+        // Apply review styling (reuse existing review logic)
+        const data = this.currentExam.data;
+
+        const setStatus = (uniqueId, isCorrect) => {
+            const el = document.getElementById(`q-${uniqueId}`);
+            if (!el) return;
+            el.dataset.status = isCorrect ? 'correct' : 'wrong';
+            el.classList.add(isCorrect ? 'border-green-200' : 'border-red-200');
+            if (isCorrect) el.classList.add('dark:border-green-900');
+            else el.classList.add('dark:border-red-900');
+        };
+
+        // Part 1
+        data.part1.forEach(q => {
+            const uniqueId = `1_${q.id}`;
+            const userVal = this.answers[uniqueId]?.val;
+            const isCorrect = userVal == q.correct;
+            setStatus(uniqueId, isCorrect);
+
+            const inputs = document.querySelectorAll(`input[name="q_${uniqueId}"]`);
+            inputs.forEach(inp => {
+                const val = parseInt(inp.value);
+                const wrapper = inp.nextElementSibling;
+                if (val === q.correct) wrapper.classList.add('review-correct');
+                if (val === userVal && val !== q.correct) wrapper.classList.add('review-wrong');
+                if (val === userVal) inp.checked = true;
+            });
+        });
+
+        // Part 2
+        data.part2.forEach(q => {
+            const uniqueId = `2_${q.id}`;
+            const userSub = this.answers[uniqueId]?.sub || {};
+            let fullyCorrect = true;
+            q.subQuestions.forEach(sub => {
+                const userAns = userSub[sub.id];
+                const row = document.querySelector(`#q-${uniqueId} .sub-question-row[data-sub="${sub.id}"]`);
+                if (!row) return;
+                if (userAns !== sub.correct) {
+                    fullyCorrect = false;
+                    row.classList.add('bg-red-50', 'dark:bg-red-900/10');
+                } else {
+                    row.classList.add('bg-green-50', 'dark:bg-green-900/10');
+                }
+                const btns = row.querySelectorAll('.tf-btn');
+                if (userAns === true) btns[0].classList.add(sub.correct === true ? 'selected-true' : 'selected-false');
+                if (userAns === false) btns[1].classList.add(sub.correct === false ? 'selected-true' : 'selected-false');
+                const correctBtn = sub.correct ? btns[0] : btns[1];
+                correctBtn.classList.add('review-correct-answer');
+                if (userAns !== sub.correct && userAns !== undefined) {
+                    const wrongBtn = userAns ? btns[0] : btns[1];
+                    wrongBtn.classList.add('review-wrong-answer');
+                }
+            });
+            setStatus(uniqueId, fullyCorrect);
+        });
+
+        // Part 3
+        data.part3.forEach(q => {
+            const uniqueId = `3_${q.id}`;
+            const userVal = String(this.answers[uniqueId]?.val || "").trim().toLowerCase();
+            const correctVal = String(q.correct).trim().toLowerCase();
+            const isCorrect = userVal === correctVal;
+            setStatus(uniqueId, isCorrect);
+
+            const inp = document.getElementById(`input-${uniqueId}`);
+            if (inp) {
+                inp.value = this.answers[uniqueId]?.val || "";
+                if (isCorrect) inp.classList.add('border-green-500', 'bg-green-50');
+                else inp.classList.add('border-red-500', 'bg-red-50');
+            }
+        });
     }
 };
 
