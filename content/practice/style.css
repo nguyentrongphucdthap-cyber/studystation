@@ -516,3 +516,89 @@ html.dark input[type=range]::-webkit-slider-runnable-track {
         padding-bottom: calc(0.75rem + env(safe-area-inset-bottom)) !important;
     }
 }
+
+/* ============================================================
+   FIX CHO CÁC THIẾT BỊ CÓ TỈ LỆ MÀN HÌNH KHÁC NHAU
+   ============================================================ */
+
+/* Đảm bảo body cho phép scroll */
+html, body {
+    height: auto;
+    min-height: 100%;
+    min-height: 100dvh; /* Dynamic viewport height for mobile */
+}
+
+body {
+    display: flex;
+    flex-direction: column;
+}
+
+/* Main container phải có thể scroll */
+#app-container {
+    flex: 1 1 auto;
+    min-height: 0; /* Quan trọng cho flexbox scroll */
+    overflow-y: auto;
+    overflow-x: hidden;
+    -webkit-overflow-scrolling: touch; /* Smooth scroll iOS */
+}
+
+/* Đảm bảo content trong views có đủ padding bottom */
+#app-container > div {
+    padding-bottom: 100px; /* Đủ không gian cho footer và safe area */
+    padding-bottom: calc(100px + env(safe-area-inset-bottom, 0px));
+}
+
+/* Template content nên scroll được */
+.h-full.overflow-y-auto {
+    height: auto;
+    min-height: 100%;
+    overflow-y: auto !important;
+}
+
+/* Fix cho taking exam view */
+#questions-container {
+    overflow-y: auto !important;
+    -webkit-overflow-scrolling: touch;
+    padding-bottom: 120px !important;
+    padding-bottom: calc(120px + env(safe-area-inset-bottom, 0px)) !important;
+}
+
+/* Fix cho exam list view */
+#exam-grid {
+    padding-bottom: 60px;
+}
+
+/* Safe area cho các thiết bị có notch/home indicator */
+@supports (padding-bottom: env(safe-area-inset-bottom)) {
+    .safe-bottom {
+        padding-bottom: env(safe-area-inset-bottom);
+    }
+    
+    .pb-safe {
+        padding-bottom: max(1rem, env(safe-area-inset-bottom));
+    }
+}
+
+/* Fix cho màn hình rất ngắn (laptop cũ 4:3, etc) */
+@media screen and (max-height: 600px) {
+    #app-container > div {
+        padding-bottom: 80px;
+    }
+    
+    .glass-header {
+        height: 56px !important;
+    }
+    
+    /* Giảm spacer */
+    .h-16.shrink-0 {
+        height: 56px !important;
+    }
+}
+
+/* Fix cho màn hình rất dài (điện thoại hiện đại) */
+@media screen and (min-aspect-ratio: 9/18) {
+    #app-container > div {
+        padding-bottom: 140px;
+        padding-bottom: calc(140px + env(safe-area-inset-bottom, 0px));
+    }
+}
