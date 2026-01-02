@@ -518,54 +518,106 @@ html.dark input[type=range]::-webkit-slider-runnable-track {
 }
 
 /* ============================================================
-   FIX CHO CÁC THIẾT BỊ CÓ TỈ LỆ MÀN HÌNH KHÁC NHAU
+   FIX CHO CÁC THIẾT BỊ CÓ TỈ LỆ MÀN HÌNH KHÁC NHAU (v2)
    ============================================================ */
 
-/* Đảm bảo body cho phép scroll */
-html, body {
-    height: auto;
+/* QUAN TRỌNG: Bỏ height constraint trên html/body */
+html {
+    height: auto !important;
     min-height: 100%;
-    min-height: 100dvh; /* Dynamic viewport height for mobile */
+    overflow-x: hidden;
+    overflow-y: auto !important;
 }
 
 body {
+    height: auto !important;
+    min-height: 100vh;
+    min-height: 100dvh;
     display: flex;
     flex-direction: column;
+    overflow-x: hidden;
+    overflow-y: visible !important;
 }
 
-/* Main container phải có thể scroll */
+/* Main container - KHÔNG dùng overflow hidden */
 #app-container {
     flex: 1 1 auto;
-    min-height: 0; /* Quan trọng cho flexbox scroll */
-    overflow-y: auto;
+    min-height: 0;
+    height: auto !important;
+    overflow-y: visible;
     overflow-x: hidden;
-    -webkit-overflow-scrolling: touch; /* Smooth scroll iOS */
+    position: relative;
 }
 
-/* Đảm bảo content trong views có đủ padding bottom */
-#app-container > div {
-    padding-bottom: 100px; /* Đủ không gian cho footer và safe area */
-    padding-bottom: calc(100px + env(safe-area-inset-bottom, 0px));
-}
-
-/* Template content nên scroll được */
-.h-full.overflow-y-auto {
-    height: auto;
+/* Content trong app container */
+#app-container>div {
     min-height: 100%;
-    overflow-y: auto !important;
+    height: auto !important;
+    overflow-y: visible;
 }
 
-/* Fix cho taking exam view */
+/* Questions container - phải scroll được */
 #questions-container {
     overflow-y: auto !important;
+    overflow-x: hidden;
     -webkit-overflow-scrolling: touch;
-    padding-bottom: 120px !important;
-    padding-bottom: calc(120px + env(safe-area-inset-bottom, 0px)) !important;
+    height: auto !important;
+    min-height: 100%;
+    max-height: none !important;
 }
 
-/* Fix cho exam list view */
-#exam-grid {
-    padding-bottom: 60px;
+/* Content area trong questions */
+#questions-container>.content-area {
+    padding-bottom: 140px !important;
+}
+
+/* Mobile-specific fixes */
+@media screen and (max-width: 1024px) {
+
+    html,
+    body {
+        height: auto !important;
+        overflow-y: auto !important;
+        position: relative;
+    }
+
+    #app-container {
+        height: auto !important;
+        min-height: calc(100vh - 64px);
+        min-height: calc(100dvh - 64px);
+        overflow: visible !important;
+    }
+
+    #app-container>div {
+        height: auto !important;
+        min-height: 100%;
+        overflow-y: visible !important;
+        padding-bottom: 100px;
+    }
+
+    #app-container>div>.flex {
+        height: auto !important;
+        min-height: 100%;
+    }
+
+    #questions-container {
+        height: auto !important;
+        min-height: calc(100vh - 64px);
+        overflow-y: scroll !important;
+        -webkit-overflow-scrolling: touch;
+    }
+
+    #questions-container>.content-area {
+        padding-bottom: calc(140px + env(safe-area-inset-bottom, 0px)) !important;
+    }
+
+    .animate-enter.overflow-y-auto,
+    .min-h-full.overflow-y-auto {
+        height: auto !important;
+        min-height: 100%;
+        overflow-y: visible !important;
+        padding-bottom: 80px;
+    }
 }
 
 /* Safe area cho các thiết bị có notch/home indicator */
@@ -573,32 +625,34 @@ body {
     .safe-bottom {
         padding-bottom: env(safe-area-inset-bottom);
     }
-    
+
     .pb-safe {
         padding-bottom: max(1rem, env(safe-area-inset-bottom));
     }
+
+    #mobile-footer {
+        padding-bottom: calc(12px + env(safe-area-inset-bottom)) !important;
+    }
 }
 
-/* Fix cho màn hình rất ngắn (laptop cũ 4:3, etc) */
+/* Fix cho màn hình rất ngắn */
 @media screen and (max-height: 600px) {
-    #app-container > div {
-        padding-bottom: 80px;
+    #app-container>div {
+        padding-bottom: 100px;
     }
-    
+
     .glass-header {
         height: 56px !important;
     }
-    
-    /* Giảm spacer */
+
     .h-16.shrink-0 {
         height: 56px !important;
     }
 }
 
-/* Fix cho màn hình rất dài (điện thoại hiện đại) */
-@media screen and (min-aspect-ratio: 9/18) {
-    #app-container > div {
-        padding-bottom: 140px;
-        padding-bottom: calc(140px + env(safe-area-inset-bottom, 0px));
+/* Fix cho màn hình rất dài */
+@media screen and (min-aspect-ratio: 9/19) {
+    #questions-container>.content-area {
+        padding-bottom: calc(160px + env(safe-area-inset-bottom, 0px)) !important;
     }
 }
