@@ -549,17 +549,36 @@ export async function logPracticeAttempt(examId, examTitle, subjectId) {
 }
 
 /**
- * Lấy tất cả practice logs (chỉ Super-Admin)
+ * Lấy tất cả practice logs (Super-Admin: tất cả, Admin: chỉ học sinh họ thêm)
  * @returns {Promise<Array>} - Danh sách logs
  */
 export async function getAllPracticeLogs() {
-    if (!checkIsSuperAdmin()) {
-        throw new Error('Không có quyền truy cập. Cần quyền Super-Admin để xem Practice Logs.');
+    const isSuperAdminUser = checkIsSuperAdmin();
+    const isAdminUser = checkIsAdmin();
+
+    if (!isSuperAdminUser && !isAdminUser) {
+        throw new Error('Không có quyền truy cập. Cần quyền Admin để xem Practice Logs.');
     }
 
     const logsCol = collection(db, 'practice_logs');
     const snapshot = await getDocs(logsCol);
-    const logs = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+    let logs = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+
+    // Nếu là Admin (không phải Super-Admin), lọc chỉ lấy logs của học sinh họ thêm
+    if (!isSuperAdminUser && isAdminUser) {
+        const currentEmail = auth.currentUser?.email;
+        if (!currentEmail) return [];
+
+        // Lấy danh sách học sinh mà admin này đã thêm
+        const usersCol = collection(db, 'allowed_users');
+        const usersSnapshot = await getDocs(usersCol);
+        const myStudentEmails = usersSnapshot.docs
+            .filter(doc => doc.data().addedBy === currentEmail)
+            .map(doc => doc.id); // doc.id là email
+
+        // Lọc logs chỉ lấy của học sinh trong danh sách
+        logs = logs.filter(log => myStudentEmails.includes(log.userEmail));
+    }
 
     // Sắp xếp theo thời gian mới nhất
     logs.sort((a, b) => new Date(b.timestamp) - new Date(a.timestamp));
