@@ -10,7 +10,7 @@
 
 import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-app.js";
 import { getAuth, signInWithPopup, GoogleAuthProvider, signOut, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-auth.js";
-import { getFirestore, doc, getDoc, updateDoc, onSnapshot, collection, getDocs, addDoc, deleteDoc, setDoc, increment } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js";
+import { getFirestore, doc, getDoc, updateDoc, onSnapshot, collection, getDocs, addDoc, deleteDoc, setDoc, increment, query, where } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js";
 import { getDatabase, ref, set, onValue, onDisconnect, serverTimestamp, remove, get } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-database.js";
 
 // ============================================================
@@ -565,6 +565,106 @@ export async function getAllPracticeLogs() {
     logs.sort((a, b) => new Date(b.timestamp) - new Date(a.timestamp));
 
     return logs;
+}
+
+/**
+ * Lưu kết quả làm bài Practice
+ * @param {Object} result - Kết quả bài thi
+ * @returns {Promise<string>} - ID của document đã lưu
+ */
+export async function savePracticeResult(result) {
+    try {
+        const user = auth.currentUser;
+        if (!user) {
+            console.warn('[savePracticeResult] No user logged in');
+            return null;
+        }
+
+        const historyCol = collection(db, 'practice_history');
+        const docRef = await addDoc(historyCol, {
+            examId: result.examId,
+            examTitle: result.examTitle,
+            subjectId: result.subjectId,
+            userEmail: user.email,
+            userName: user.displayName || user.email.split('@')[0],
+            userId: user.uid,
+            score: result.score,
+            correctCount: result.correctCount,
+            totalQuestions: result.totalQuestions,
+            durationSeconds: result.durationSeconds,
+            answers: result.answers || {},
+            examData: result.examData || null, // Lưu data đề thi để xem lại
+            timestamp: new Date().toISOString()
+        });
+
+        console.log('[savePracticeResult] Result saved with ID:', docRef.id);
+
+        // Cập nhật practice_logs với điểm số nếu có log tương ứng
+        // Tìm log gần nhất của user cho exam này và cập nhật điểm
+        try {
+            const logsCol = collection(db, 'practice_logs');
+            const q = query(logsCol,
+                where('examId', '==', result.examId),
+                where('userEmail', '==', user.email)
+            );
+            const snapshot = await getDocs(q);
+            if (!snapshot.empty) {
+                // Lấy log mới nhất (sắp xếp theo timestamp)
+                const logs = snapshot.docs.map(d => ({ id: d.id, ...d.data() }));
+                logs.sort((a, b) => new Date(b.timestamp) - new Date(a.timestamp));
+                const latestLog = logs[0];
+
+                // Chỉ cập nhật nếu log chưa có điểm
+                if (latestLog && !latestLog.score) {
+                    await updateDoc(doc(db, 'practice_logs', latestLog.id), {
+                        score: result.score,
+                        correctCount: result.correctCount,
+                        totalQuestions: result.totalQuestions,
+                        durationSeconds: result.durationSeconds
+                    });
+                    console.log('[savePracticeResult] Updated practice_log with score');
+                }
+            }
+        } catch (e) {
+            console.warn('[savePracticeResult] Could not update practice_log:', e);
+        }
+
+        return docRef.id;
+    } catch (error) {
+        console.error('[savePracticeResult] FAILED:', error);
+        return null;
+    }
+}
+
+/**
+ * Lấy lịch sử làm bài của người dùng hiện tại cho một bài thi cụ thể
+ * @param {string} examId - ID của bài thi
+ * @returns {Promise<Array>} - Danh sách lịch sử
+ */
+export async function getPracticeHistory(examId) {
+    try {
+        const user = auth.currentUser;
+        if (!user) {
+            console.warn('[getPracticeHistory] No user logged in');
+            return [];
+        }
+
+        const historyCol = collection(db, 'practice_history');
+        const q = query(historyCol,
+            where('examId', '==', examId),
+            where('userId', '==', user.uid)
+        );
+        const snapshot = await getDocs(q);
+        const history = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+
+        // Sắp xếp theo thời gian mới nhất
+        history.sort((a, b) => new Date(b.timestamp) - new Date(a.timestamp));
+
+        return history;
+    } catch (error) {
+        console.error('[getPracticeHistory] FAILED:', error);
+        return [];
+    }
 }
 
 /**
