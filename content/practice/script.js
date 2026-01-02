@@ -803,6 +803,26 @@ const app = {
 
     async loadSubjects() {
         try {
+            // Check session cache first (5 minute expiry)
+            const CACHE_KEY = 'studyStation_examCache';
+            const CACHE_EXPIRY = 5 * 60 * 1000; // 5 minutes
+
+            try {
+                const cached = sessionStorage.getItem(CACHE_KEY);
+                if (cached) {
+                    const { subjects, examContentDB, timestamp } = JSON.parse(cached);
+                    if (Date.now() - timestamp < CACHE_EXPIRY) {
+                        console.log('Loaded exams from cache');
+                        this.subjects = subjects;
+                        this.examContentDB = examContentDB;
+                        this.subjectLoadError = Object.keys(this.subjects).length ? null : 'Chưa có bài thi nào.';
+                        return;
+                    }
+                }
+            } catch (cacheErr) {
+                console.warn('Cache read error:', cacheErr);
+            }
+
             // Try Firebase first (if available)
             if (window.firebaseExams && typeof window.firebaseExams.getAllExams === 'function') {
                 try {
@@ -866,6 +886,19 @@ const app = {
                         });
 
                         this.subjectLoadError = Object.keys(this.subjects).length ? null : 'Chưa có bài thi nào. Admin có thể thêm bài thi mới.';
+
+                        // Save to session cache for faster subsequent loads
+                        try {
+                            sessionStorage.setItem(CACHE_KEY, JSON.stringify({
+                                subjects: this.subjects,
+                                examContentDB: this.examContentDB,
+                                timestamp: Date.now()
+                            }));
+                            console.log('Saved exams to cache');
+                        } catch (saveErr) {
+                            console.warn('Cache save error:', saveErr);
+                        }
+
                         return;
                     }
                 } catch (fbError) {
