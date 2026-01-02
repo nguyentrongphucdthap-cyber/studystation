@@ -190,45 +190,95 @@ html.dark .music-scroll::-webkit-scrollbar-thumb:hover {
 }
 
 /* ============================================================
-   FIX CHO CÁC THIẾT BỊ CÓ TỈ LỆ MÀN HÌNH KHÁC NHAU
+   FIX CHO CÁC THIẾT BỊ CÓ TỈ LỆ MÀN HÌNH KHÁC NHAU (v2)
    ============================================================ */
 
-/* Đảm bảo body cho phép scroll */
-html,
-body {
-    height: auto;
+/* QUAN TRỌNG: Bỏ height constraint trên html/body */
+html {
+    height: auto !important;
     min-height: 100%;
-    min-height: 100dvh;
-    /* Dynamic viewport height for mobile */
+    overflow-x: hidden;
+    overflow-y: auto !important;
 }
 
 body {
+    height: auto !important;
+    min-height: 100vh;
+    min-height: calc(var(--vh, 1vh) * 100);
+    /* Fallback for iOS Safari */
+    min-height: 100dvh;
     display: flex;
     flex-direction: column;
+    overflow-x: hidden;
+    overflow-y: visible !important;
 }
 
-/* Main container phải có thể scroll */
+/* Main container - KHÔNG dùng overflow hidden */
 #app-container {
     flex: 1 1 auto;
     min-height: 0;
-    /* Quan trọng cho flexbox scroll */
-    overflow-y: auto;
+    height: auto !important;
+    overflow-y: visible;
     overflow-x: hidden;
-    -webkit-overflow-scrolling: touch;
-    /* Smooth scroll iOS */
+    position: relative;
+    justify-content: flex-start !important;
 }
 
-/* Đảm bảo content trong views có đủ padding bottom */
+/* Content trong app container */
 #app-container>div {
+    min-height: 100%;
+    height: auto !important;
+    overflow-y: visible;
     padding-bottom: 100px;
-    /* Đủ không gian cho footer và safe area */
-    padding-bottom: calc(100px + env(safe-area-inset-bottom, 0px));
 }
 
-/* Template containers nên scroll được */
+/* View enter animation class */
 .view-enter {
-    overflow-y: auto !important;
-    -webkit-overflow-scrolling: touch;
+    overflow-y: visible !important;
+    height: auto !important;
+    min-height: 100%;
+}
+
+/* Mobile-specific fixes */
+@media screen and (max-width: 1024px) {
+
+    html,
+    body {
+        height: auto !important;
+        overflow-y: auto !important;
+        position: relative;
+    }
+
+    #app-container {
+        height: auto !important;
+        min-height: calc(100vh - 80px);
+        min-height: calc(100dvh - 80px);
+        overflow: visible !important;
+        padding-top: 0;
+    }
+
+    #app-container>div {
+        height: auto !important;
+        min-height: 100%;
+        overflow-y: visible !important;
+        padding-bottom: 120px;
+    }
+
+    #library-container {
+        padding-bottom: 80px;
+    }
+
+    .view-enter.overflow-y-auto,
+    .w-full.max-w-md {
+        height: auto !important;
+        min-height: 100%;
+        overflow-y: visible !important;
+        padding-bottom: 100px;
+    }
+
+    .perspective-1000 {
+        overflow: visible !important;
+    }
 }
 
 /* Safe area cho các thiết bị có notch/home indicator */
@@ -244,6 +294,10 @@ body {
     .pb-safe {
         padding-bottom: max(1.5rem, env(safe-area-inset-bottom));
     }
+
+    #app-container>div {
+        padding-bottom: calc(100px + env(safe-area-inset-bottom, 0px));
+    }
 }
 
 /* Fix header để không bị che bởi status bar trên iPhone */
@@ -252,7 +306,7 @@ header.fixed {
     top: env(safe-area-inset-top, 0);
 }
 
-/* Fix cho màn hình rất ngắn (laptop cũ 4:3, etc) */
+/* Fix cho màn hình rất ngắn */
 @media screen and (max-height: 600px) {
     #app-container {
         padding-top: 56px !important;
@@ -267,20 +321,18 @@ header.fixed {
     }
 }
 
-/* Fix cho màn hình rất dài (điện thoại hiện đại) */
-@media screen and (min-aspect-ratio: 9/18) {
+/* Fix cho màn hình rất dài */
+@media screen and (min-aspect-ratio: 9/19) {
     #app-container>div {
-        padding-bottom: 140px;
-        padding-bottom: calc(140px + env(safe-area-inset-bottom, 0px));
+        padding-bottom: 160px;
+        padding-bottom: calc(160px + env(safe-area-inset-bottom, 0px));
     }
 }
 
-/* Đảm bảo home view scroll được trên tất cả thiết bị */
 #library-container {
-    padding-bottom: 60px;
+    padding-bottom: 80px;
 }
 
-/* Fix cho set-detail view */
 .max-w-md.md\:max-w-2xl {
-    padding-bottom: 80px;
+    padding-bottom: 100px;
 }
