@@ -549,12 +549,14 @@ export async function logPracticeAttempt(examId, examTitle, subjectId) {
 }
 
 /**
- * Lấy tất cả practice logs (Super-Admin: tất cả, Admin: chỉ học sinh họ thêm)
+ * Lấy tất cả practice logs (Super-Admin: tất cả, Admin: của mình + học sinh họ thêm)
  * @returns {Promise<Array>} - Danh sách logs
  */
 export async function getAllPracticeLogs() {
     const isSuperAdminUser = checkIsSuperAdmin();
     const isAdminUser = checkIsAdmin();
+
+    console.log('[getAllPracticeLogs] isSuperAdmin:', isSuperAdminUser, 'isAdmin:', isAdminUser);
 
     if (!isSuperAdminUser && !isAdminUser) {
         throw new Error('Không có quyền truy cập. Cần quyền Admin để xem Practice Logs.');
@@ -564,20 +566,37 @@ export async function getAllPracticeLogs() {
     const snapshot = await getDocs(logsCol);
     let logs = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
 
-    // Nếu là Admin (không phải Super-Admin), lọc chỉ lấy logs của học sinh họ thêm
+    console.log('[getAllPracticeLogs] Total logs in DB:', logs.length);
+
+    // Nếu là Admin (không phải Super-Admin), lọc lấy logs của mình + học sinh họ thêm
     if (!isSuperAdminUser && isAdminUser) {
-        const currentEmail = auth.currentUser?.email;
+        const currentEmail = auth.currentUser?.email?.toLowerCase();
         if (!currentEmail) return [];
+
+        console.log('[getAllPracticeLogs] Admin email:', currentEmail);
 
         // Lấy danh sách học sinh mà admin này đã thêm
         const usersCol = collection(db, 'allowed_users');
         const usersSnapshot = await getDocs(usersCol);
         const myStudentEmails = usersSnapshot.docs
-            .filter(doc => doc.data().addedBy === currentEmail)
-            .map(doc => doc.id); // doc.id là email
+            .filter(doc => {
+                const addedBy = doc.data().addedBy?.toLowerCase();
+                return addedBy === currentEmail;
+            })
+            .map(doc => doc.id.toLowerCase()); // doc.id là email
 
-        // Lọc logs chỉ lấy của học sinh trong danh sách
-        logs = logs.filter(log => myStudentEmails.includes(log.userEmail));
+        // Thêm email của chính admin vào danh sách để họ xem được logs của mình
+        const allowedEmails = [...myStudentEmails, currentEmail];
+
+        console.log('[getAllPracticeLogs] Allowed emails (students + self):', allowedEmails);
+
+        // Lọc logs
+        logs = logs.filter(log => {
+            const logEmail = log.userEmail?.toLowerCase();
+            return allowedEmails.includes(logEmail);
+        });
+
+        console.log('[getAllPracticeLogs] Filtered logs count:', logs.length);
     }
 
     // Sắp xếp theo thời gian mới nhất
