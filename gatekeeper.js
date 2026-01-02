@@ -1,10 +1,11 @@
 /**
- * GATEKEEPER.JS - HỆ THỐNG BẢO VỆ TẬP TRUNG (FINAL VERSION)
+ * GATEKEEPER.JS - HỆ THỐNG BẢO VỆ TẬP TRUNG (FINAL VERSION v2)
  * Tính năng: 
  * 1. Đăng nhập Google & Whitelist Check.
- * 2. Chống đăng nhập cùng lúc (Session Management).
- * 3. Phân quyền Admin/User dựa trên chuỗi role (VD: "admin/user").
- * 4. Tự động cập nhật quyền & đá session theo thời gian thực.
+ * 2. Cho phép đăng nhập cùng tài khoản trên nhiều thiết bị.
+ * 3. Chỉ 1 thiết bị được hoạt động tại 1 thời điểm (đá session cũ khi đăng nhập mới).
+ * 4. Phân quyền Admin/User dựa trên chuỗi role (VD: "admin/user").
+ * 5. Tự động cập nhật quyền & xử lý offline tốt hơn.
  */
 
 import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-app.js";
@@ -183,7 +184,24 @@ export function initGatekeeper(mode = 'protected') {
         try {
             // 1. Kiểm tra Whitelist & Lấy dữ liệu
             const userRef = doc(db, 'allowed_users', user.email);
-            const docSnap = await getDoc(userRef);
+            let docSnap;
+
+            try {
+                docSnap = await getDoc(userRef);
+            } catch (fetchError) {
+                // Xử lý lỗi offline - không đá user ra
+                if (fetchError.message?.includes('offline') || fetchError.code === 'unavailable') {
+                    console.warn('[Gatekeeper] Offline mode - allowing cached access');
+                    // Nếu đã có session local, cho phép tiếp tục
+                    const localSession = localStorage.getItem(SESSION_ID_KEY);
+                    if (localSession && isProtected) {
+                        unlockUI(loadingEl);
+                        startPresence();
+                        return;
+                    }
+                }
+                throw fetchError;
+            }
 
             if (!docSnap.exists()) {
                 throw new Error("Email của bạn không nằm trong danh sách cho phép (Whitelist).");
@@ -218,34 +236,26 @@ export function initGatekeeper(mode = 'protected') {
 
             } else if (isProtected) {
                 // --- TRANG NỘI DUNG ---
+                // V2: Cho phép đăng nhập nhiều thiết bị, chỉ đá khi có đăng nhập MỚI
 
-                // A. Kiểm tra Entry Token (ngăn vào bằng cách paste link trực tiếp mà chưa qua login)
-                // Lưu ý: Nếu user refresh trang (F5), token có thể mất hoặc hết hạn. 
-                // Có thể bỏ qua check này nếu muốn cho phép F5 thoải mái, nhưng check session ID là bắt buộc.
-                // Ở đây ta cho phép F5 bằng cách check Session ID là chủ yếu.
-
-                // B. Kiểm tra Session ID (Chống đá)
                 const localSession = localStorage.getItem(SESSION_ID_KEY);
 
-                if (serverSession !== localSession) {
-                    throw new Error("Tài khoản đã đăng nhập ở nơi khác.");
+                // Nếu chưa có local session, tạo mới và sync
+                if (!localSession) {
+                    // User đã login trên thiết bị khác, lưu session đó vào local
+                    if (serverSession) {
+                        localStorage.setItem(SESSION_ID_KEY, serverSession);
+                    }
                 }
 
-                // C. Thiết lập Real-time Listener (Giám sát liên tục)
-                setupRealtimeMonitor(userRef, localSession);
+                // Thiết lập Real-time Listener để giám sát đăng nhập mới
+                // Chỉ đá khi phát hiện session MỚI HƠN (timestamp lớn hơn)
+                setupRealtimeMonitor(userRef, localStorage.getItem(SESSION_ID_KEY));
 
-                // D. Mở khóa giao diện
-                if (loadingEl) {
-                    // Fade out hiệu ứng loading
-                    loadingEl.style.opacity = '0';
-                    setTimeout(() => {
-                        loadingEl.style.display = 'none';
-                        document.body.style.overflow = '';
-                    }, 500);
-                }
+                // Mở khóa giao diện
+                unlockUI(loadingEl);
 
-                // E. Tự động bắt đầu Presence Tracking
-                // Gọi ở đây để đảm bảo user đã authenticated và trên tất cả protected pages
+                // Tự động bắt đầu Presence Tracking
                 startPresence();
             }
 
@@ -254,6 +264,17 @@ export function initGatekeeper(mode = 'protected') {
             handleAuthError(error, isProtected);
         }
     });
+}
+
+// Helper: Mở khóa giao diện
+function unlockUI(loadingEl) {
+    if (loadingEl) {
+        loadingEl.style.opacity = '0';
+        setTimeout(() => {
+            loadingEl.style.display = 'none';
+            document.body.style.overflow = '';
+        }, 500);
+    }
 }
 
 // ============================================================
@@ -276,6 +297,29 @@ function handleNotLoggedIn(isProtected, loadingEl) {
 }
 
 function handleAuthError(error, isProtected) {
+    // Xử lý đặc biệt cho lỗi offline - không đá user
+    const isOfflineError = error.message?.includes('offline') ||
+        error.message?.includes('network') ||
+        error.code === 'unavailable';
+
+    if (isOfflineError) {
+        console.warn('[Gatekeeper] Offline error detected, not logging out');
+        // Hiển thị thông báo nhẹ nhàng hơn
+        const loadingEl = document.getElementById('gatekeeper-loading');
+        if (loadingEl) {
+            loadingEl.innerHTML = `
+                <div style="text-align:center;padding:20px">
+                    <div style="font-size:48px;margin-bottom:16px">📶</div>
+                    <div style="font-weight:600;font-size:18px;margin-bottom:8px">Mất kết nối mạng</div>
+                    <div style="color:#94a3b8;font-size:14px">Đang thử kết nối lại...</div>
+                </div>
+            `;
+        }
+        // Thử lại sau 3 giây
+        setTimeout(() => window.location.reload(), 3000);
+        return;
+    }
+
     signOut(auth);
     clearStorage();
 
@@ -304,17 +348,29 @@ function showErrorUI(msg) {
 }
 
 // Giám sát thời gian thực: Session & Role
+// V2: Chỉ đá khi có session MỚI HƠN (timestamp lớn hơn)
 function setupRealtimeMonitor(userRef, currentLocalSession) {
     onSnapshot(userRef, (snap) => {
         if (!snap.exists()) return; // User bị xóa khỏi whitelist
 
         const data = snap.data();
+        const serverSession = data.current_session_id;
 
-        // 1. Check Session (Chống đá)
-        if (data.current_session_id !== currentLocalSession) {
-            alert("⚠️ Phát hiện đăng nhập mới!\n\nTài khoản của bạn vừa đăng nhập ở thiết bị khác. Phiên này sẽ kết thúc.");
-            logoutUser(); // Tự động logout và chuyển về trang chủ
-            return;
+        // 1. Check Session - Chỉ đá nếu server session MỚI HƠN local session
+        // Session ID là timestamp (Date.now()), nên số lớn hơn = mới hơn
+        if (serverSession && currentLocalSession) {
+            const serverTime = parseInt(serverSession, 10);
+            const localTime = parseInt(currentLocalSession, 10);
+
+            // Chỉ đá nếu có đăng nhập MỚI HƠN (server session > local session)
+            if (!isNaN(serverTime) && !isNaN(localTime) && serverTime > localTime) {
+                console.log('[Gatekeeper] Newer session detected:', { serverTime, localTime });
+
+                // Cập nhật local session và thông báo
+                alert("⚠️ Phát hiện đăng nhập mới!\n\nTài khoản của bạn vừa đăng nhập ở thiết bị khác. Phiên này sẽ kết thúc.");
+                logoutUser();
+                return;
+            }
         }
 
         // 2. Check Role Update (Cập nhật quyền ngay lập tức)
@@ -324,10 +380,12 @@ function setupRealtimeMonitor(userRef, currentLocalSession) {
         if (newRole !== oldRole) {
             console.log("Role updated from server:", newRole);
             setUserRole(newRole);
-            // Reload nhẹ để UI cập nhật theo quyền mới
-            // Hoặc có thể dispatch CustomEvent để frontend tự xử lý mà không cần reload
             window.location.reload();
         }
+    }, (error) => {
+        // Xử lý lỗi realtime listener (offline)
+        console.warn('[Gatekeeper] Realtime listener error:', error.message);
+        // Không làm gì cả - user vẫn được dùng bình thường
     });
 }
 
