@@ -871,8 +871,22 @@ function createPart1QuestionHTML(q, idx) {
                                 </div>
                             </div>
                             <div>
-                                <label class="text-xs text-gray-500 mb-1 block">🎬 Link video lời giải (YouTube)</label>
-                                <input type="text" class="q-explanation-video w-full px-3 py-2 border border-gray-200 rounded-lg text-sm focus:ring-2 focus:ring-orange-500 outline-none" placeholder="https://youtube.com/watch?v=..." value="${explanation.video || ''}">
+                                <label class="text-xs text-gray-500 mb-1 block">🎬 Video lời giải (YouTube hoặc Google Drive)</label>
+                                <div class="flex gap-2">
+                                    <input type="text" class="q-explanation-video flex-1 px-3 py-2 border border-gray-200 rounded-lg text-sm focus:ring-2 focus:ring-orange-500 outline-none" placeholder="https://youtube.com/... hoặc https://drive.google.com/..." value="${explanation.video || ''}">
+                                    <input type="file" class="q-explanation-video-file hidden" accept="video/*">
+                                    <button type="button" class="btn-upload-video px-3 py-2 bg-red-500 text-white text-sm font-semibold rounded-lg hover:bg-red-600 transition-colors flex items-center gap-1" title="Upload video lên Google Drive">
+                                        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 10l4.553-2.276A1 1 0 0121 8.618v6.764a1 1 0 01-1.447.894L15 14M5 18h8a2 2 0 002-2V8a2 2 0 00-2-2H5a2 2 0 00-2 2v8a2 2 0 002 2z"/></svg>
+                                        Upload
+                                    </button>
+                                </div>
+                                <div class="q-video-preview mt-2 ${explanation.video ? '' : 'hidden'}">
+                                    ${explanation.video ? `<p class="text-xs text-green-600">✓ Video đã được thêm</p>` : ''}
+                                </div>
+                                <div class="q-video-loading hidden mt-2 flex items-center gap-2 text-red-600 text-sm">
+                                    <div class="w-4 h-4 border-2 border-red-200 border-t-red-600 rounded-full spinner"></div>
+                                    <span class="q-video-progress">Đang upload...</span>
+                                </div>
                             </div>
                         </div>
                     </details>
@@ -966,8 +980,22 @@ function createPart2QuestionHTML(q, idx) {
                                 </div>
                             </div>
                             <div>
-                                <label class="text-xs text-gray-500 mb-1 block">🎬 Link video lời giải (YouTube)</label>
-                                <input type="text" class="q-explanation-video w-full px-3 py-2 border border-gray-200 rounded-lg text-sm focus:ring-2 focus:ring-orange-500 outline-none" placeholder="https://youtube.com/watch?v=..." value="${explanation.video || ''}">
+                                <label class="text-xs text-gray-500 mb-1 block">🎬 Video lời giải (YouTube hoặc Google Drive)</label>
+                                <div class="flex gap-2">
+                                    <input type="text" class="q-explanation-video flex-1 px-3 py-2 border border-gray-200 rounded-lg text-sm focus:ring-2 focus:ring-orange-500 outline-none" placeholder="https://youtube.com/... hoặc https://drive.google.com/..." value="${explanation.video || ''}">
+                                    <input type="file" class="q-explanation-video-file hidden" accept="video/*">
+                                    <button type="button" class="btn-upload-video px-3 py-2 bg-red-500 text-white text-sm font-semibold rounded-lg hover:bg-red-600 transition-colors flex items-center gap-1" title="Upload video lên Google Drive">
+                                        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 10l4.553-2.276A1 1 0 0121 8.618v6.764a1 1 0 01-1.447.894L15 14M5 18h8a2 2 0 002-2V8a2 2 0 00-2-2H5a2 2 0 00-2 2v8a2 2 0 002 2z"/></svg>
+                                        Upload
+                                    </button>
+                                </div>
+                                <div class="q-video-preview mt-2 ${explanation.video ? '' : 'hidden'}">
+                                    ${explanation.video ? `<p class="text-xs text-green-600">✓ Video đã được thêm</p>` : ''}
+                                </div>
+                                <div class="q-video-loading hidden mt-2 flex items-center gap-2 text-red-600 text-sm">
+                                    <div class="w-4 h-4 border-2 border-red-200 border-t-red-600 rounded-full spinner"></div>
+                                    <span class="q-video-progress">Đang upload...</span>
+                                </div>
                             </div>
                         </div>
                     </details>
@@ -1046,8 +1074,22 @@ function createPart3QuestionHTML(q, idx) {
                                 </div>
                             </div>
                             <div>
-                                <label class="text-xs text-gray-500 mb-1 block">🎬 Link video lời giải (YouTube)</label>
-                                <input type="text" class="q-explanation-video w-full px-3 py-2 border border-gray-200 rounded-lg text-sm focus:ring-2 focus:ring-orange-500 outline-none" placeholder="https://youtube.com/watch?v=..." value="${explanation.video || ''}">
+                                <label class="text-xs text-gray-500 mb-1 block">🎬 Video lời giải (YouTube hoặc Google Drive)</label>
+                                <div class="flex gap-2">
+                                    <input type="text" class="q-explanation-video flex-1 px-3 py-2 border border-gray-200 rounded-lg text-sm focus:ring-2 focus:ring-orange-500 outline-none" placeholder="https://youtube.com/... hoặc https://drive.google.com/..." value="${explanation.video || ''}">
+                                    <input type="file" class="q-explanation-video-file hidden" accept="video/*">
+                                    <button type="button" class="btn-upload-video px-3 py-2 bg-red-500 text-white text-sm font-semibold rounded-lg hover:bg-red-600 transition-colors flex items-center gap-1" title="Upload video lên Google Drive">
+                                        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 10l4.553-2.276A1 1 0 0121 8.618v6.764a1 1 0 01-1.447.894L15 14M5 18h8a2 2 0 002-2V8a2 2 0 00-2-2H5a2 2 0 00-2 2v8a2 2 0 002 2z"/></svg>
+                                        Upload
+                                    </button>
+                                </div>
+                                <div class="q-video-preview mt-2 ${explanation.video ? '' : 'hidden'}">
+                                    ${explanation.video ? `<p class="text-xs text-green-600">✓ Video đã được thêm</p>` : ''}
+                                </div>
+                                <div class="q-video-loading hidden mt-2 flex items-center gap-2 text-red-600 text-sm">
+                                    <div class="w-4 h-4 border-2 border-red-200 border-t-red-600 rounded-full spinner"></div>
+                                    <span class="q-video-progress">Đang upload...</span>
+                                </div>
                             </div>
                         </div>
                     </details>
@@ -1250,6 +1292,106 @@ function bindQuestionEvents(part) {
             } else {
                 previewContainer.classList.add('hidden');
                 previewContainer.innerHTML = '';
+            }
+        });
+    });
+
+    // Video upload handlers (Google Drive)
+    container.querySelectorAll('.btn-upload-video').forEach(btn => {
+        btn.addEventListener('click', async () => {
+            // Check if Google Drive is configured
+            if (!window.googleDriveUploader) {
+                showToast('Google Drive chưa được cấu hình. Vui lòng xem file GOOGLE_DRIVE_SETUP.md', 'error');
+                return;
+            }
+
+            if (!window.googleDriveUploader.isConfigured()) {
+                showToast('Vui lòng cấu hình Google Drive API trong file google-drive-config.js', 'error');
+                return;
+            }
+
+            const block = btn.closest('.question-block');
+            const fileInput = block.querySelector('.q-explanation-video-file');
+            fileInput.click();
+        });
+    });
+
+    container.querySelectorAll('.q-explanation-video-file').forEach(input => {
+        input.addEventListener('change', async (e) => {
+            const file = e.target.files[0];
+            if (!file) return;
+
+            // Validate file type
+            if (!file.type.startsWith('video/')) {
+                showToast('Vui lòng chọn file video', 'error');
+                return;
+            }
+
+            // Validate file size (max 500MB)
+            const maxSize = 500 * 1024 * 1024;
+            if (file.size > maxSize) {
+                showToast('File quá lớn (tối đa 500MB)', 'error');
+                return;
+            }
+
+            const block = input.closest('.question-block');
+            const urlInput = block.querySelector('.q-explanation-video');
+            const previewContainer = block.querySelector('.q-video-preview');
+            const loadingContainer = block.querySelector('.q-video-loading');
+            const progressSpan = loadingContainer?.querySelector('.q-video-progress');
+            const uploadBtn = block.querySelector('.btn-upload-video');
+
+            // Show loading state
+            if (loadingContainer) loadingContainer.classList.remove('hidden');
+            uploadBtn.disabled = true;
+            uploadBtn.classList.add('opacity-50', 'cursor-not-allowed');
+
+            try {
+                // Upload to Google Drive
+                const result = await window.googleDriveUploader.uploadVideo(file, (percent) => {
+                    if (progressSpan) {
+                        progressSpan.textContent = `Đang upload... ${percent}%`;
+                    }
+                });
+
+                // Set the video link
+                urlInput.value = result.link;
+
+                // Update preview
+                if (previewContainer) {
+                    previewContainer.innerHTML = `<p class="text-xs text-green-600">✓ Video đã được upload: ${file.name}</p>`;
+                    previewContainer.classList.remove('hidden');
+                }
+
+                showToast('Upload video thành công!');
+            } catch (error) {
+                console.error('Video upload failed:', error);
+                showToast('Upload thất bại: ' + error.message, 'error');
+            } finally {
+                // Hide loading state
+                if (loadingContainer) loadingContainer.classList.add('hidden');
+                uploadBtn.disabled = false;
+                uploadBtn.classList.remove('opacity-50', 'cursor-not-allowed');
+                input.value = ''; // Reset file input
+            }
+        });
+    });
+
+    // Update video preview when URL is manually entered
+    container.querySelectorAll('.q-explanation-video').forEach(input => {
+        input.addEventListener('change', (e) => {
+            const block = input.closest('.question-block');
+            const previewContainer = block.querySelector('.q-video-preview');
+            const url = e.target.value.trim();
+
+            if (previewContainer) {
+                if (url) {
+                    previewContainer.innerHTML = `<p class="text-xs text-green-600">✓ Video đã được thêm</p>`;
+                    previewContainer.classList.remove('hidden');
+                } else {
+                    previewContainer.classList.add('hidden');
+                    previewContainer.innerHTML = '';
+                }
             }
         });
     });
