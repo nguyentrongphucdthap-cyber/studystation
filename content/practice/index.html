@@ -95,7 +95,7 @@
 </head>
 
 <body
-    class="h-screen flex flex-col overflow-hidden text-slate-800 dark:text-slate-100 dark:bg-slate-900 transition-colors duration-300">
+    class="min-h-screen flex flex-col overflow-x-hidden text-slate-800 dark:text-slate-100 dark:bg-slate-900 transition-colors duration-300">
 
     <div id="gatekeeper-loading"
         style="position:fixed;top:0;left:0;width:100%;height:100%;background:#0f172a;display:none;justify-content:center;align-items:center;color:#ffffff;z-index:9999">
@@ -688,7 +688,8 @@
     <div class="h-16 shrink-0 bg-slate-50 dark:bg-slate-900"></div>
 
     <!-- Main Content Area -->
-    <main id="app-container" class="flex-1 overflow-hidden relative bg-slate-50 dark:bg-slate-900">
+    <main id="app-container" class="flex-1 overflow-y-auto overflow-x-hidden relative bg-slate-50 dark:bg-slate-900"
+        style="min-height: 0;">
         <!-- Views will be injected here -->
     </main>
 
