@@ -1307,9 +1307,27 @@
         // Initialize Gatekeeper (presence tracking is started automatically inside)
         initGatekeeper('protected');
 
-        // Initialize App after Firebase is ready
+        // Wait for Firebase auth to be ready, then initialize app
+        // This prevents the "slow first load" issue
+        const waitForAuth = () => {
+            return new Promise((resolve) => {
+                // Check if firebaseExams is ready
+                if (window.firebaseExams && typeof window.firebaseExams.getAllExams === 'function') {
+                    resolve();
+                } else {
+                    // Wait a bit and resolve anyway (fallback to local files)
+                    setTimeout(resolve, 100);
+                }
+            });
+        };
+
+        // Initialize Music player immediately (no Firebase dependency)
         if (window.musicPlayer) window.musicPlayer.init();
-        if (window.app) window.app.init();
+
+        // Wait for auth then initialize app
+        waitForAuth().then(() => {
+            if (window.app) window.app.init();
+        });
 
         // Mobile viewport height fix for iOS Safari
         (function () {
