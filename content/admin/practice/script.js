@@ -685,7 +685,22 @@ function showEditor(examId) {
                 refs.examAuthor.value = exam.author || '';
             }
 
-            renderQuestionsPart1(exam.part1 || []);
+            // Normalize part1 correct answers (convert letter to number if needed)
+            const letterToNumber = { 'A': 0, 'B': 1, 'C': 2, 'D': 3 };
+            const normalizedPart1 = (exam.part1 || []).map(q => {
+                const normalized = { ...q };
+                if (normalized.correct !== undefined && normalized.correct !== null) {
+                    if (typeof normalized.correct === 'string') {
+                        const letter = normalized.correct.toUpperCase().trim();
+                        normalized.correct = letterToNumber[letter] ?? (parseInt(letter) || 0);
+                    }
+                } else {
+                    normalized.correct = 0;
+                }
+                return normalized;
+            });
+
+            renderQuestionsPart1(normalizedPart1);
             renderQuestionsPart2(exam.part2 || []);
             renderQuestionsPart3(exam.part3 || []);
         }
@@ -789,7 +804,23 @@ function renderQuestionsPart3(questions) {
 
 function createPart1QuestionHTML(q, idx) {
     const options = q.options || ['', '', '', ''];
-    const correctIdx = q.correct ?? 0;
+
+    // Handle correct answer - support both number (0,1,2,3) and letter (A,B,C,D) formats
+    let correctIdx = 0;
+    if (q.correct !== undefined && q.correct !== null) {
+        if (typeof q.correct === 'number') {
+            correctIdx = q.correct;
+        } else if (typeof q.correct === 'string') {
+            // Convert letter to number: A=0, B=1, C=2, D=3
+            const letter = q.correct.toUpperCase().trim();
+            if (letter === 'A') correctIdx = 0;
+            else if (letter === 'B') correctIdx = 1;
+            else if (letter === 'C') correctIdx = 2;
+            else if (letter === 'D') correctIdx = 3;
+            else correctIdx = parseInt(letter) || 0;
+        }
+    }
+
     const imageUrl = q.image || '';
     const explanation = q.explanation || {};
     // Use unique question ID for radio button name to prevent conflicts
@@ -1671,6 +1702,20 @@ async function handleJsonImport(file) {
         examData.part1 = examData.part1 || [];
         examData.part2 = examData.part2 || [];
         examData.part3 = examData.part3 || [];
+
+        // Normalize part1 correct answers (convert letter to number if needed)
+        const letterToNumber = { 'A': 0, 'B': 1, 'C': 2, 'D': 3 };
+        examData.part1 = examData.part1.map(q => {
+            if (q.correct !== undefined && q.correct !== null) {
+                if (typeof q.correct === 'string') {
+                    const letter = q.correct.toUpperCase().trim();
+                    q.correct = letterToNumber[letter] ?? (parseInt(letter) || 0);
+                }
+            } else {
+                q.correct = 0;
+            }
+            return q;
+        });
 
         // Create exam in Firebase
         const newId = await createExam(examData);
