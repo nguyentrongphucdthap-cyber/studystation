@@ -933,6 +933,20 @@ html.dark .step-action-bar {
     box-shadow: 0 -4px 20px rgba(0, 0, 0, 0.25);
 }
 
+/* Ensure step action buttons display correctly */
+#step-skip-btn,
+#step-check-btn,
+#step-next-btn {
+    display: flex !important;
+    align-items: center !important;
+    justify-content: center !important;
+}
+
+#step-check-btn.hidden,
+#step-next-btn.hidden {
+    display: none !important;
+}
+
 /* Step action buttons container */
 .step-action-buttons {
     display: flex;
