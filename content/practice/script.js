@@ -2317,78 +2317,12 @@ const app = {
         // Update total count
         document.getElementById('step-total').textContent = questionQueue.length;
 
-        // Setup floating action bar scroll behavior
-        this.setupStepActionBarScroll();
+
+
 
         // Render first question
         this.renderStepQuestion();
         this.startTimer(examMeta.time * 60);
-    },
-
-    // Setup scroll behavior for floating action bar
-    setupStepActionBarScroll() {
-        const actionBar = document.querySelector('.step-action-bar');
-        const questionContainer = document.getElementById('step-question-container');
-
-        if (!actionBar || !questionContainer) return;
-
-        let lastScrollTop = 0;
-        let hideTimeout = null;
-        let isUserInteracting = false;
-
-        // Initially visible
-        actionBar.classList.add('bar-visible');
-        actionBar.classList.remove('bar-hidden');
-
-        const showBar = () => {
-            actionBar.classList.remove('bar-hidden');
-            actionBar.classList.add('bar-visible');
-        };
-
-        const hideBar = () => {
-            if (!isUserInteracting) {
-                actionBar.classList.add('bar-hidden');
-                actionBar.classList.remove('bar-visible');
-            }
-        };
-
-        // Handle scroll
-        const handleScroll = () => {
-            const currentScroll = questionContainer.scrollTop;
-            const maxScroll = questionContainer.scrollHeight - questionContainer.clientHeight;
-
-            // Always show at top or bottom
-            if (currentScroll <= 50 || currentScroll >= maxScroll - 50) {
-                showBar();
-                return;
-            }
-
-            // Scrolling down - hide
-            if (currentScroll > lastScrollTop + 10) {
-                hideBar();
-            }
-            // Scrolling up - show
-            else if (currentScroll < lastScrollTop - 10) {
-                showBar();
-            }
-
-            lastScrollTop = currentScroll;
-
-            // Auto-show after stopping scroll
-            clearTimeout(hideTimeout);
-            hideTimeout = setTimeout(showBar, 1500);
-        };
-
-        questionContainer.addEventListener('scroll', handleScroll, { passive: true });
-
-        // Show bar on touch/mouse interaction with action area
-        actionBar.addEventListener('mouseenter', () => { isUserInteracting = true; showBar(); });
-        actionBar.addEventListener('mouseleave', () => { isUserInteracting = false; });
-        actionBar.addEventListener('touchstart', () => { isUserInteracting = true; showBar(); }, { passive: true });
-        actionBar.addEventListener('touchend', () => { setTimeout(() => { isUserInteracting = false; }, 500); }, { passive: true });
-
-        // Show bar when tapping anywhere on screen (mobile)
-        questionContainer.addEventListener('click', showBar);
     },
 
     // Render current step question
