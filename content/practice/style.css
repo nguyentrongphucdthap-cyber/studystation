@@ -901,36 +901,36 @@ html.dark .sidebar-footer {
     line-height: 1.75;
 }
 
-/* Step action bar - always fixed at bottom */
+/* Step action bar - styled like mobile-footer (always visible, fixed) */
 .step-action-bar {
-    position: fixed;
-    bottom: 0;
-    left: 0;
-    right: 0;
-    z-index: 40;
+    display: flex !important;
+    flex-direction: row !important;
+    align-items: center !important;
+    position: fixed !important;
+    bottom: 0 !important;
+    left: 0 !important;
+    right: 0 !important;
+    height: 64px !important;
+    max-height: 64px !important;
+    min-height: 64px !important;
+    width: 100% !important;
+    padding: 12px !important;
+    padding-bottom: calc(12px + env(safe-area-inset-bottom, 0px)) !important;
+    margin: 0 !important;
+    z-index: 40 !important;
     background: rgba(255, 255, 255, 0.98);
     backdrop-filter: blur(12px);
     -webkit-backdrop-filter: blur(12px);
-    border-top: 1px solid rgba(226, 232, 240, 0.8);
-    padding: 12px 16px;
-    padding-bottom: calc(12px + env(safe-area-inset-bottom, 0px));
+    border-top: 1px solid #e2e8f0;
     box-shadow: 0 -4px 20px rgba(0, 0, 0, 0.08);
+    box-sizing: border-box !important;
+    gap: 12px;
 }
 
 html.dark .step-action-bar {
     background: rgba(30, 41, 59, 0.98);
-    border-top-color: rgba(71, 85, 105, 0.6);
+    border-top-color: #334155;
     box-shadow: 0 -4px 20px rgba(0, 0, 0, 0.25);
-}
-
-/* Ensure the flex container inside action bar displays properly */
-.step-action-bar>div {
-    display: flex !important;
-    align-items: center !important;
-    gap: 12px !important;
-    width: 100%;
-    max-width: 48rem;
-    margin: 0 auto;
 }
 
 /* Step action buttons container */
@@ -939,7 +939,7 @@ html.dark .step-action-bar {
     align-items: center;
     gap: 12px;
     width: 100%;
-    max-width: 48rem;
+    max-width: 600px;
     margin: 0 auto;
 }
 
@@ -1218,17 +1218,10 @@ html.dark .exam-mode-btn.mode-stepbystep {
 
     .step-question-area {
         padding: 12px;
-        padding-bottom: 100px !important;
+        padding-bottom: 80px !important;
     }
 
-    .step-action-bar {
-        bottom: 12px;
-        left: 12px;
-        right: 12px;
-        border-radius: 16px;
-        padding: 10px 12px;
-    }
-
+    /* Keep action bar fixed like mobile-footer */
     .step-skip-btn {
         padding: 10px 14px;
         min-height: 44px;
@@ -1236,7 +1229,7 @@ html.dark .exam-mode-btn.mode-stepbystep {
 
     .step-skip-btn span {
         display: none;
-        /* Hide text on mobile */
+        /* Hide text on mobile - only show icon */
     }
 
     .step-main-btn {
