@@ -2399,8 +2399,8 @@ const app = {
         // Hide feedback
         document.getElementById('step-feedback').classList.add('hidden');
 
-        // Reset buttons - only show check button for Part 3 (short answer)
-        if (q.type === 'part3') {
+        // Reset buttons - show check button for Part 2 and Part 3 (Part 1 auto-checks on click)
+        if (q.type === 'part2' || q.type === 'part3') {
             document.getElementById('step-check-btn').classList.remove('hidden');
         } else {
             document.getElementById('step-check-btn').classList.add('hidden');
@@ -2507,37 +2507,116 @@ const app = {
         }
     },
 
-    // Select T/F for Part 2 - auto check on click
+    // Select T/F for Part 2 - just select, don't check yet
     stepSelectTF(subIndex, isTrue, btnEl) {
-        // Check if this sub-question was already answered correctly
-        if (this.stepMode.tfCorrect && this.stepMode.tfCorrect[subIndex]) return;
+        // If already checked and this sub was correct, don't allow change
+        if (this.stepMode.isChecked) return;
 
-        const q = this.stepMode.currentQuestion;
-        if (!q) return;
-
-        const subQuestions = q.data.subQuestions || [];
-        const correctAnswer = subQuestions[subIndex]?.correct === true || subQuestions[subIndex]?.correct === 'true';
-        const isCorrect = (isTrue === correctAnswer);
-
-        // Clear previous selection for this sub-question
+        // Clear previous selection for this sub-question only
         const container = document.getElementById(`step-tf-btns-${subIndex}`);
         container.querySelectorAll('.step-tf-btn').forEach(b => {
             b.classList.remove('step-tf-selected-true', 'step-tf-selected-false', 'step-tf-correct', 'step-tf-wrong');
         });
 
-        // Initialize tfCorrect tracker if needed
-        if (!this.stepMode.tfCorrect) this.stepMode.tfCorrect = {};
+        // Highlight selected button
+        btnEl.classList.add(isTrue ? 'step-tf-selected-true' : 'step-tf-selected-false');
 
-        if (isCorrect) {
-            // Correct - show green
-            btnEl.classList.add('step-tf-correct');
-            this.stepMode.tfAnswers[subIndex] = isTrue;
-            this.stepMode.tfCorrect[subIndex] = true;
+        // Store the answer
+        this.stepMode.tfAnswers[subIndex] = isTrue;
+    },
 
-            // Check if all sub-questions are answered correctly
-            const allCorrect = subQuestions.every((_, i) => this.stepMode.tfCorrect[i]);
+    // Check answer - used for Part 2 (T/F) and Part 3 (short answer)
+    stepCheckAnswer() {
+        const q = this.stepMode.currentQuestion;
+        if (!q || this.stepMode.isChecked) return;
+
+        // Part 2 - True/False
+        if (q.type === 'part2') {
+            const subQuestions = q.data.subQuestions || [];
+            const totalSubs = subQuestions.length;
+            const answeredSubs = Object.keys(this.stepMode.tfAnswers).length;
+
+            // Check if all sub-questions are answered
+            if (answeredSubs < totalSubs) {
+                // Shake unanswered sub-questions
+                subQuestions.forEach((_, i) => {
+                    if (this.stepMode.tfAnswers[i] === undefined) {
+                        const container = document.getElementById(`step-tf-btns-${i}`);
+                        if (container) {
+                            container.classList.add('animate-shake');
+                            setTimeout(() => container.classList.remove('animate-shake'), 500);
+                        }
+                    }
+                });
+                return;
+            }
+
+            // Check each sub-question and show results
+            let allCorrect = true;
+            subQuestions.forEach((sub, i) => {
+                const userAns = this.stepMode.tfAnswers[i];
+                const correctAns = sub.correct === true || sub.correct === 'true';
+                const isSubCorrect = userAns === correctAns;
+
+                const container = document.getElementById(`step-tf-btns-${i}`);
+                const btns = container.querySelectorAll('.step-tf-btn');
+
+                // Remove selection styling
+                btns.forEach(b => b.classList.remove('step-tf-selected-true', 'step-tf-selected-false'));
+
+                if (isSubCorrect) {
+                    // Show correct in green
+                    (userAns ? btns[0] : btns[1]).classList.add('step-tf-correct');
+                } else {
+                    // Show user's wrong answer in red
+                    (userAns ? btns[0] : btns[1]).classList.add('step-tf-wrong');
+                    allCorrect = false;
+                }
+            });
+
+            this.stepMode.isChecked = true;
 
             if (allCorrect) {
+                // All correct - show next button
+                this.stepMode.isCorrect = true;
+                this.stepMode.correctCount++;
+                document.getElementById('step-correct-count').textContent = this.stepMode.correctCount;
+                document.getElementById('step-check-btn').classList.add('hidden');
+                document.getElementById('step-next-btn').classList.remove('hidden');
+                document.getElementById('step-skip-btn').disabled = true;
+            } else {
+                // Some wrong - allow retry after delay
+                setTimeout(() => {
+                    this.stepMode.isChecked = false;
+                    // Reset TF buttons styling
+                    document.querySelectorAll('.step-tf-btn').forEach(b => {
+                        b.classList.remove('step-tf-correct', 'step-tf-wrong');
+                    });
+                    // Clear answers
+                    this.stepMode.tfAnswers = {};
+                }, 1500);
+            }
+            return;
+        }
+
+        // Part 3 - Short Answer
+        if (q.type === 'part3') {
+            const input = document.getElementById('step-short-input');
+            const userVal = input.value.trim().toLowerCase();
+            const correctVal = String(q.data.correct).trim().toLowerCase();
+
+            if (!userVal) {
+                input.classList.add('animate-shake');
+                setTimeout(() => input.classList.remove('animate-shake'), 500);
+                return;
+            }
+
+            const isCorrect = userVal === correctVal;
+
+            if (isCorrect) {
+                input.classList.remove('border-slate-200', 'dark:border-slate-600');
+                input.classList.add('border-emerald-500', 'bg-emerald-50', 'dark:bg-emerald-900/20');
+
                 this.stepMode.isChecked = true;
                 this.stepMode.isCorrect = true;
                 this.stepMode.correctCount++;
@@ -2546,63 +2625,17 @@ const app = {
                 document.getElementById('step-check-btn').classList.add('hidden');
                 document.getElementById('step-next-btn').classList.remove('hidden');
                 document.getElementById('step-skip-btn').disabled = true;
+            } else {
+                input.classList.remove('border-slate-200', 'dark:border-slate-600');
+                input.classList.add('border-red-500', 'bg-red-50', 'dark:bg-red-900/20');
+
+                setTimeout(() => {
+                    input.classList.remove('border-red-500', 'bg-red-50', 'dark:bg-red-900/20');
+                    input.classList.add('border-slate-200', 'dark:border-slate-600');
+                    input.value = '';
+                    input.focus();
+                }, 1000);
             }
-        } else {
-            // Wrong - show red and allow retry
-            btnEl.classList.add('step-tf-wrong');
-
-            setTimeout(() => {
-                btnEl.classList.remove('step-tf-wrong');
-            }, 1000);
-        }
-    },
-
-    // Check answer - only used for Part 3 (short answer) now
-    stepCheckAnswer() {
-        const q = this.stepMode.currentQuestion;
-        if (!q || this.stepMode.isChecked) return;
-
-        // Only handle Part 3 here (Part 1 and Part 2 auto-check on click)
-        if (q.type !== 'part3') return;
-
-        const input = document.getElementById('step-short-input');
-        const userVal = input.value.trim().toLowerCase();
-        const correctVal = String(q.data.correct).trim().toLowerCase();
-
-        if (!userVal) {
-            // Briefly shake the input to indicate empty
-            input.classList.add('animate-shake');
-            setTimeout(() => input.classList.remove('animate-shake'), 500);
-            return;
-        }
-
-        const isCorrect = userVal === correctVal;
-
-        if (isCorrect) {
-            // Correct - show green
-            input.classList.remove('border-slate-200', 'dark:border-slate-600');
-            input.classList.add('border-emerald-500', 'bg-emerald-50', 'dark:bg-emerald-900/20');
-
-            this.stepMode.isChecked = true;
-            this.stepMode.isCorrect = true;
-            this.stepMode.correctCount++;
-
-            document.getElementById('step-correct-count').textContent = this.stepMode.correctCount;
-            document.getElementById('step-check-btn').classList.add('hidden');
-            document.getElementById('step-next-btn').classList.remove('hidden');
-            document.getElementById('step-skip-btn').disabled = true;
-        } else {
-            // Wrong - show red and allow retry
-            input.classList.remove('border-slate-200', 'dark:border-slate-600');
-            input.classList.add('border-red-500', 'bg-red-50', 'dark:bg-red-900/20');
-
-            // Reset after short delay for retry
-            setTimeout(() => {
-                input.classList.remove('border-red-500', 'bg-red-50', 'dark:bg-red-900/20');
-                input.classList.add('border-slate-200', 'dark:border-slate-600');
-                input.value = '';
-                input.focus();
-            }, 1000);
         }
     },
 
