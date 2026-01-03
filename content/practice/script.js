@@ -484,6 +484,23 @@ const app = {
     // Statistics State
     stats: { attempts: {}, totalTime: 0 },
 
+    // Step-by-Step Mode State
+    stepMode: {
+        active: false,           // Is step mode active
+        currentIndex: 0,         // Current question index in queue
+        questionQueue: [],       // Flattened list of all questions
+        correctCount: 0,         // Number of correct answers
+        skippedCount: 0,         // Number of skipped questions
+        currentQuestion: null,   // Current question object
+        selectedAnswer: null,    // Selected answer for current question
+        tfAnswers: {},           // For Part 2 T/F sub-questions
+        isChecked: false,        // Has current answer been checked
+        isCorrect: false         // Is current answer correct
+    },
+
+    // Pending exam for mode selection
+    pendingExam: { subId: null, examId: null, title: null },
+
     async init() {
         // Check if first visit - show theme selector modal
         const hasSelectedTheme = localStorage.getItem('studyStation_themeSelected');
@@ -1045,7 +1062,7 @@ const app = {
         sub.exams.forEach((exam, index) => {
             const el = document.createElement('div');
             el.className = 'exam-card bg-white dark:bg-slate-800 p-4 md:p-6 rounded-2xl border border-slate-200 dark:border-slate-700 shadow-sm hover:border-blue-300 dark:hover:border-blue-500 hover:shadow-md transition-all cursor-pointer group';
-            el.onclick = () => this.startExam(subId, exam.id);
+            el.onclick = () => this.showExamModeModal(subId, exam.id, exam.title);
 
             const createdDate = exam.createdAt
                 ? `<span class="text-[10px] md:text-xs text-slate-400 dark:text-slate-500 flex items-center"><svg class="w-3 h-3 mr-1 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"/></svg>${new Date(exam.createdAt).toLocaleDateString('vi-VN')}</span>`
@@ -1092,6 +1109,27 @@ const app = {
     renderMath() {
         if (window.MathJax) {
             window.MathJax.typesetPromise();
+        }
+    },
+
+    // Show exam mode selection modal
+    showExamModeModal(subId, examId, title) {
+        this.pendingExam = { subId, examId, title };
+        document.getElementById('mode-modal-exam-title').textContent = title;
+        document.getElementById('exam-mode-modal').classList.remove('hidden');
+    },
+
+    // Handle mode selection
+    confirmExamMode(mode) {
+        document.getElementById('exam-mode-modal').classList.add('hidden');
+
+        const { subId, examId } = this.pendingExam;
+        if (!subId || !examId) return;
+
+        if (mode === 'classic') {
+            this.startExam(subId, examId);
+        } else if (mode === 'stepbystep') {
+            this.startStepMode(subId, examId);
         }
     },
 
@@ -1185,6 +1223,24 @@ const app = {
             text = String(text)
                 .replace(/\\female/g, '\\venus')
                 .replace(/\\male/g, '\\mars');
+
+            // Auto-wrap common LaTeX symbols that are not inside math delimiters
+            // Pattern: detect ^\circ not inside \( \) or $ $
+            // Wrap numbers followed by ^\circ with math delimiters
+            text = text.replace(/(\d+(?:[,\.]\d+)?)\s*\^\s*\\circ\s*([A-Z])?/g, (match, num, unit) => {
+                if (unit) {
+                    return `\\(${num}^\\circ\\text{${unit}}\\)`;
+                }
+                return `\\(${num}^\\circ\\)`;
+            });
+
+            // Also handle standalone ^\circ (without number)
+            text = text.replace(/(?<![\\$(])\^\s*\\circ\s*([A-Z])?(?![\\)$])/g, (match, unit) => {
+                if (unit) {
+                    return `\\(^\\circ\\text{${unit}}\\)`;
+                }
+                return `\\(^\\circ\\)`;
+            });
 
             // 1. Safe Escape using DOM (browser handles all edge cases perfectly)
             const div = document.createElement('div');
@@ -2154,6 +2210,477 @@ const app = {
                 else inp.classList.add('border-red-500', 'bg-red-50');
             }
         });
+    },
+
+    // ============================================================
+    // STEP-BY-STEP MODE METHODS
+    // Chế độ làm từng câu một - phải trả lời đúng mới qua câu tiếp
+    // ============================================================
+
+    // Start Step-by-Step Mode
+    startStepMode(subId, examId) {
+        const subject = this.subjects[subId];
+        if (!subject) { alert('Không tìm thấy môn học này.'); return; }
+        const examMeta = subject.exams.find(e => e.id === examId);
+        const originalData = this.examContentDB[examId];
+
+        if (!examMeta || !originalData) { alert('Không tìm thấy dữ liệu bài thi.'); return; }
+
+        // Deep copy
+        const examData = JSON.parse(JSON.stringify(originalData));
+
+        // Shuffle helper
+        const shuffle = (array) => {
+            for (let i = array.length - 1; i > 0; i--) {
+                const j = Math.floor(Math.random() * (i + 1));
+                [array[i], array[j]] = [array[j], array[i]];
+            }
+            return array;
+        };
+
+        // Build question queue (flatten all parts)
+        const questionQueue = [];
+
+        // Part 1 - Multiple Choice
+        if (examData.part1) {
+            shuffle(examData.part1);
+            examData.part1.forEach((q, idx) => {
+                // Shuffle options
+                const optionObjs = (q.options || []).map((opt, i) => ({
+                    text: opt,
+                    isCorrect: i === (q.correct ?? 0)
+                }));
+                shuffle(optionObjs);
+                q.options = optionObjs.map(o => o.text);
+                q.correct = optionObjs.findIndex(o => o.isCorrect);
+
+                questionQueue.push({
+                    type: 'part1',
+                    partLabel: 'Phần I: Trắc nghiệm',
+                    typeLabel: 'Trắc nghiệm',
+                    data: q,
+                    index: idx + 1
+                });
+            });
+        }
+
+        // Part 2 - True/False
+        if (examData.part2) {
+            shuffle(examData.part2);
+            examData.part2.forEach((q, idx) => {
+                if (q.subQuestions) shuffle(q.subQuestions);
+                questionQueue.push({
+                    type: 'part2',
+                    partLabel: 'Phần II: Đúng/Sai',
+                    typeLabel: 'Đúng / Sai',
+                    data: q,
+                    index: idx + 1
+                });
+            });
+        }
+
+        // Part 3 - Short Answer
+        if (examData.part3) {
+            shuffle(examData.part3);
+            examData.part3.forEach((q, idx) => {
+                questionQueue.push({
+                    type: 'part3',
+                    partLabel: 'Phần III: Trả lời ngắn',
+                    typeLabel: 'Trả lời ngắn',
+                    data: q,
+                    index: idx + 1
+                });
+            });
+        }
+
+        // Initialize step mode state
+        this.stepMode = {
+            active: true,
+            currentIndex: 0,
+            questionQueue: questionQueue,
+            correctCount: 0,
+            skippedCount: 0,
+            currentQuestion: null,
+            selectedAnswer: null,
+            tfAnswers: {},
+            isChecked: false,
+            isCorrect: false
+        };
+
+        this.currentExam = { meta: examMeta, data: examData, subId: subId };
+        this.startTime = new Date();
+        this.timerEl.classList.remove('hidden');
+
+        // Render step-by-step template
+        this.renderTemplate('tpl-step-by-step');
+
+        // Update total count
+        document.getElementById('step-total').textContent = questionQueue.length;
+
+        // Render first question
+        this.renderStepQuestion();
+        this.startTimer(examMeta.time * 60);
+    },
+
+    // Render current step question
+    renderStepQuestion() {
+        const { currentIndex, questionQueue } = this.stepMode;
+
+        if (currentIndex >= questionQueue.length) {
+            this.showStepResult();
+            return;
+        }
+
+        const q = questionQueue[currentIndex];
+        this.stepMode.currentQuestion = q;
+        this.stepMode.selectedAnswer = null;
+        this.stepMode.tfAnswers = {};
+        this.stepMode.tfCorrect = {};  // Reset T/F correct tracker
+        this.stepMode.isChecked = false;
+        this.stepMode.isCorrect = false;
+
+        // Update progress
+        document.getElementById('step-current').textContent = currentIndex + 1;
+        document.getElementById('step-correct-count').textContent = this.stepMode.correctCount;
+        document.getElementById('step-skipped-count').textContent = this.stepMode.skippedCount;
+
+        const progress = ((currentIndex) / questionQueue.length) * 100;
+        document.getElementById('step-progress-bar').style.width = progress + '%';
+
+        // Update type badge
+        document.getElementById('step-question-type-badge').textContent = q.typeLabel;
+        document.getElementById('step-question-part').textContent = q.partLabel;
+
+        // Helper: format text with MathJax support
+        const formatText = (text) => {
+            if (!text) return '';
+            const el = document.createElement('span');
+            el.textContent = text;
+            let escaped = el.innerHTML;
+            // Handle degree symbols
+            escaped = escaped.replace(/(\d*)°C/g, '\\($1^\\circ C\\)');
+            escaped = escaped.replace(/(\d*)°F/g, '\\($1^\\circ F\\)');
+            escaped = escaped.replace(/(\d*)°/g, '\\($1^\\circ\\)');
+            return escaped;
+        };
+
+        // Render question text
+        document.getElementById('step-question-text').innerHTML = formatText(q.data.text);
+
+        // Handle image
+        const imgContainer = document.getElementById('step-question-image');
+        if (q.data.image) {
+            imgContainer.classList.remove('hidden');
+            imgContainer.querySelector('img').src = q.data.image;
+        } else {
+            imgContainer.classList.add('hidden');
+        }
+
+        // Hide all answer containers first
+        document.getElementById('step-options-container').classList.remove('hidden');
+        document.getElementById('step-options-container').innerHTML = '';
+        document.getElementById('step-subquestions-container').classList.add('hidden');
+        document.getElementById('step-short-answer-container').classList.add('hidden');
+
+        // Render based on question type
+        if (q.type === 'part1') {
+            this.renderStepPart1(q.data);
+        } else if (q.type === 'part2') {
+            document.getElementById('step-options-container').classList.add('hidden');
+            document.getElementById('step-subquestions-container').classList.remove('hidden');
+            this.renderStepPart2(q.data);
+        } else if (q.type === 'part3') {
+            document.getElementById('step-options-container').classList.add('hidden');
+            document.getElementById('step-short-answer-container').classList.remove('hidden');
+            document.getElementById('step-short-input').value = '';
+            document.getElementById('step-short-input').focus();
+        }
+
+        // Hide feedback
+        document.getElementById('step-feedback').classList.add('hidden');
+
+        // Reset buttons - only show check button for Part 3 (short answer)
+        if (q.type === 'part3') {
+            document.getElementById('step-check-btn').classList.remove('hidden');
+        } else {
+            document.getElementById('step-check-btn').classList.add('hidden');
+        }
+        document.getElementById('step-next-btn').classList.add('hidden');
+        document.getElementById('step-skip-btn').disabled = false;
+
+        // Render MathJax
+        this.renderMath();
+
+        // Scroll to top
+        document.getElementById('step-question-container').scrollTop = 0;
+    },
+
+    // Render Part 1 options
+    renderStepPart1(q) {
+        const container = document.getElementById('step-options-container');
+        container.innerHTML = '';
+
+        const labels = ['A', 'B', 'C', 'D'];
+        (q.options || []).forEach((opt, i) => {
+            const btn = document.createElement('button');
+            btn.className = 'step-option flex items-start gap-3';
+            btn.innerHTML = `
+                <span class="w-8 h-8 shrink-0 rounded-lg bg-slate-100 dark:bg-slate-700 flex items-center justify-center font-bold text-slate-600 dark:text-slate-300">${labels[i]}</span>
+                <span class="dynamic-text text-slate-700 dark:text-slate-200 pt-1">${this.stepFormatText(opt)}</span>
+            `;
+            btn.onclick = () => this.stepSelectOption(i, btn);
+            container.appendChild(btn);
+        });
+    },
+
+    // Render Part 2 sub-questions
+    renderStepPart2(q) {
+        const container = document.getElementById('step-subquestions-container');
+        container.innerHTML = '';
+
+        (q.subQuestions || []).forEach((sub, i) => {
+            const row = document.createElement('div');
+            row.className = 'p-4 bg-slate-50 dark:bg-slate-700/50 rounded-xl';
+            row.innerHTML = `
+                <p class="dynamic-text text-slate-700 dark:text-slate-200 mb-3">${String.fromCharCode(97 + i)}) ${this.stepFormatText(sub.text)}</p>
+                <div class="flex gap-2" id="step-tf-btns-${i}">
+                    <button class="step-tf-btn" onclick="app.stepSelectTF(${i}, true, this)">Đúng</button>
+                    <button class="step-tf-btn" onclick="app.stepSelectTF(${i}, false, this)">Sai</button>
+                </div>
+            `;
+            container.appendChild(row);
+        });
+    },
+
+    // Helper: Format text for step mode
+    stepFormatText(text) {
+        if (!text) return '';
+        const el = document.createElement('span');
+        el.textContent = text;
+        let escaped = el.innerHTML;
+        escaped = escaped.replace(/(\d*)°C/g, '\\($1^\\circ C\\)');
+        escaped = escaped.replace(/(\d*)°F/g, '\\($1^\\circ F\\)');
+        escaped = escaped.replace(/(\d*)°/g, '\\($1^\\circ\\)');
+        return escaped;
+    },
+
+    // Select option for Part 1 - auto check on click
+    stepSelectOption(index, btnEl) {
+        if (this.stepMode.isChecked) return;
+
+        const q = this.stepMode.currentQuestion;
+        if (!q) return;
+
+        // Remove previous selection
+        document.querySelectorAll('#step-options-container .step-option').forEach(b => {
+            b.classList.remove('step-option-selected', 'step-option-correct', 'step-option-wrong');
+        });
+
+        this.stepMode.selectedAnswer = index;
+        this.stepMode.isChecked = true;
+
+        const isCorrect = index === q.data.correct;
+
+        if (isCorrect) {
+            // Correct - show green
+            btnEl.classList.add('step-option-correct');
+            this.stepMode.isCorrect = true;
+            this.stepMode.correctCount++;
+
+            // Update count and show next button
+            document.getElementById('step-correct-count').textContent = this.stepMode.correctCount;
+            document.getElementById('step-check-btn').classList.add('hidden');
+            document.getElementById('step-next-btn').classList.remove('hidden');
+            document.getElementById('step-skip-btn').disabled = true;
+        } else {
+            // Wrong - only show red on selected, don't reveal correct answer
+            btnEl.classList.add('step-option-wrong');
+            this.stepMode.isCorrect = false;
+
+            // Allow retry after a short delay
+            setTimeout(() => {
+                if (!this.stepMode.isCorrect) {
+                    btnEl.classList.remove('step-option-wrong');
+                    this.stepMode.isChecked = false;
+                }
+            }, 1000);
+        }
+    },
+
+    // Select T/F for Part 2 - auto check on click
+    stepSelectTF(subIndex, isTrue, btnEl) {
+        // Check if this sub-question was already answered correctly
+        if (this.stepMode.tfCorrect && this.stepMode.tfCorrect[subIndex]) return;
+
+        const q = this.stepMode.currentQuestion;
+        if (!q) return;
+
+        const subQuestions = q.data.subQuestions || [];
+        const correctAnswer = subQuestions[subIndex]?.correct === true || subQuestions[subIndex]?.correct === 'true';
+        const isCorrect = (isTrue === correctAnswer);
+
+        // Clear previous selection for this sub-question
+        const container = document.getElementById(`step-tf-btns-${subIndex}`);
+        container.querySelectorAll('.step-tf-btn').forEach(b => {
+            b.classList.remove('step-tf-selected-true', 'step-tf-selected-false', 'step-tf-correct', 'step-tf-wrong');
+        });
+
+        // Initialize tfCorrect tracker if needed
+        if (!this.stepMode.tfCorrect) this.stepMode.tfCorrect = {};
+
+        if (isCorrect) {
+            // Correct - show green
+            btnEl.classList.add('step-tf-correct');
+            this.stepMode.tfAnswers[subIndex] = isTrue;
+            this.stepMode.tfCorrect[subIndex] = true;
+
+            // Check if all sub-questions are answered correctly
+            const allCorrect = subQuestions.every((_, i) => this.stepMode.tfCorrect[i]);
+
+            if (allCorrect) {
+                this.stepMode.isChecked = true;
+                this.stepMode.isCorrect = true;
+                this.stepMode.correctCount++;
+
+                document.getElementById('step-correct-count').textContent = this.stepMode.correctCount;
+                document.getElementById('step-check-btn').classList.add('hidden');
+                document.getElementById('step-next-btn').classList.remove('hidden');
+                document.getElementById('step-skip-btn').disabled = true;
+            }
+        } else {
+            // Wrong - show red and allow retry
+            btnEl.classList.add('step-tf-wrong');
+
+            setTimeout(() => {
+                btnEl.classList.remove('step-tf-wrong');
+            }, 1000);
+        }
+    },
+
+    // Check answer - only used for Part 3 (short answer) now
+    stepCheckAnswer() {
+        const q = this.stepMode.currentQuestion;
+        if (!q || this.stepMode.isChecked) return;
+
+        // Only handle Part 3 here (Part 1 and Part 2 auto-check on click)
+        if (q.type !== 'part3') return;
+
+        const input = document.getElementById('step-short-input');
+        const userVal = input.value.trim().toLowerCase();
+        const correctVal = String(q.data.correct).trim().toLowerCase();
+
+        if (!userVal) {
+            // Briefly shake the input to indicate empty
+            input.classList.add('animate-shake');
+            setTimeout(() => input.classList.remove('animate-shake'), 500);
+            return;
+        }
+
+        const isCorrect = userVal === correctVal;
+
+        if (isCorrect) {
+            // Correct - show green
+            input.classList.remove('border-slate-200', 'dark:border-slate-600');
+            input.classList.add('border-emerald-500', 'bg-emerald-50', 'dark:bg-emerald-900/20');
+
+            this.stepMode.isChecked = true;
+            this.stepMode.isCorrect = true;
+            this.stepMode.correctCount++;
+
+            document.getElementById('step-correct-count').textContent = this.stepMode.correctCount;
+            document.getElementById('step-check-btn').classList.add('hidden');
+            document.getElementById('step-next-btn').classList.remove('hidden');
+            document.getElementById('step-skip-btn').disabled = true;
+        } else {
+            // Wrong - show red and allow retry
+            input.classList.remove('border-slate-200', 'dark:border-slate-600');
+            input.classList.add('border-red-500', 'bg-red-50', 'dark:bg-red-900/20');
+
+            // Reset after short delay for retry
+            setTimeout(() => {
+                input.classList.remove('border-red-500', 'bg-red-50', 'dark:bg-red-900/20');
+                input.classList.add('border-slate-200', 'dark:border-slate-600');
+                input.value = '';
+                input.focus();
+            }, 1000);
+        }
+    },
+
+    // Show feedback message
+    showStepFeedback(isCorrect, title, message) {
+        const feedback = document.getElementById('step-feedback');
+        const icon = document.getElementById('step-feedback-icon');
+        const titleEl = document.getElementById('step-feedback-title');
+        const messageEl = document.getElementById('step-feedback-message');
+
+        feedback.classList.remove('hidden', 'feedback-correct', 'feedback-wrong');
+        feedback.classList.add(isCorrect ? 'feedback-correct' : 'feedback-wrong');
+
+        icon.innerHTML = isCorrect
+            ? '<svg class="w-6 h-6 text-emerald-600" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"/></svg>'
+            : '<svg class="w-6 h-6 text-red-600" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/></svg>';
+        icon.className = `shrink-0 w-10 h-10 rounded-full flex items-center justify-center ${isCorrect ? 'bg-emerald-100 dark:bg-emerald-900/30' : 'bg-red-100 dark:bg-red-900/30'}`;
+
+        titleEl.textContent = title;
+        titleEl.className = `font-bold text-lg mb-1 ${isCorrect ? 'text-emerald-700 dark:text-emerald-400' : 'text-red-700 dark:text-red-400'}`;
+
+        messageEl.textContent = message;
+        messageEl.className = `text-sm ${isCorrect ? 'text-emerald-600 dark:text-emerald-300' : 'text-red-600 dark:text-red-300'}`;
+    },
+
+    // Go to next question
+    stepNextQuestion() {
+        this.stepMode.currentIndex++;
+        this.renderStepQuestion();
+    },
+
+    // Skip current question
+    stepSkipQuestion() {
+        if (this.stepMode.isChecked) return;
+
+        this.stepMode.skippedCount++;
+        document.getElementById('step-skipped-count').textContent = this.stepMode.skippedCount;
+
+        this.stepMode.currentIndex++;
+        this.renderStepQuestion();
+    },
+
+    // Exit step mode
+    exitStepMode() {
+        if (confirm('Bạn có chắc muốn thoát chế độ từng câu? Tiến trình sẽ không được lưu.')) {
+            this.stopTimer();
+            this.stepMode.active = false;
+            this.timerEl.classList.add('hidden');
+            this.goHome();
+        }
+    },
+
+    // Show step mode result
+    showStepResult() {
+        this.stopTimer();
+        this.stepMode.active = false;
+        this.timerEl.classList.add('hidden');
+
+        const { correctCount, skippedCount, questionQueue } = this.stepMode;
+        const total = questionQueue.length;
+        const score = ((correctCount / total) * 10).toFixed(1);
+
+        this.renderTemplate('tpl-result');
+
+        // Calculate time
+        const duration = Math.floor((new Date() - this.startTime) / 1000);
+        const minutes = Math.floor(duration / 60);
+        const seconds = duration % 60;
+
+        document.getElementById('result-subject-name').textContent = `${this.currentExam.meta.title} (Chế độ Từng Câu)`;
+        document.getElementById('score-display').textContent = score;
+        document.getElementById('result-time').textContent = `${minutes}:${seconds.toString().padStart(2, '0')}`;
+        document.getElementById('result-correct').textContent = `${correctCount}/${total}`;
+        document.getElementById('result-wrong').textContent = `${total - correctCount - skippedCount}/${total}`;
+
+        // Update average bar
+        const avgBar = document.getElementById('stat-avg-bar');
+        if (avgBar) avgBar.style.width = (score * 10) + '%';
     }
 };
 
