@@ -865,3 +865,216 @@ html.dark .sidebar-footer {
         display: none !important;
     }
 }
+
+/* ============================================================
+   STEP-BY-STEP MODE STYLES
+   Chế độ làm từng câu một
+   ============================================================ */
+
+/* Main wrapper */
+.step-mode-wrapper {
+    display: flex;
+    flex-direction: column;
+    min-height: calc(100vh - 64px);
+    height: calc(100vh - 64px);
+}
+
+/* Progress header */
+.step-progress-header {
+    flex-shrink: 0;
+    z-index: 10;
+}
+
+/* Question area */
+.step-question-area {
+    flex: 1;
+    overflow-y: auto;
+    padding-bottom: 100px !important;
+    -webkit-overflow-scrolling: touch;
+}
+
+/* Step action bar */
+.step-action-bar {
+    flex-shrink: 0;
+    padding-bottom: calc(12px + env(safe-area-inset-bottom, 0px));
+}
+
+/* Step option styling */
+.step-option {
+    display: block;
+    width: 100%;
+    padding: 1rem;
+    border-radius: 0.75rem;
+    border: 2px solid #e2e8f0;
+    background: white;
+    text-align: left;
+    transition: all 0.2s ease;
+    cursor: pointer;
+}
+
+html.dark .step-option {
+    border-color: #475569;
+    background: #1e293b;
+}
+
+.step-option:hover:not(:disabled):not(.step-option-correct):not(.step-option-wrong) {
+    border-color: #3b82f6;
+    background: #eff6ff;
+}
+
+html.dark .step-option:hover:not(:disabled):not(.step-option-correct):not(.step-option-wrong) {
+    border-color: #3b82f6;
+    background: rgba(59, 130, 246, 0.1);
+}
+
+.step-option.step-option-selected {
+    border-color: #3b82f6;
+    background: #eff6ff;
+    box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.2);
+}
+
+html.dark .step-option.step-option-selected {
+    background: rgba(59, 130, 246, 0.15);
+}
+
+.step-option.step-option-correct {
+    border-color: #10b981 !important;
+    background: #d1fae5 !important;
+    color: #065f46 !important;
+}
+
+html.dark .step-option.step-option-correct {
+    background: rgba(16, 185, 129, 0.2) !important;
+    color: #d1fae5 !important;
+}
+
+.step-option.step-option-wrong {
+    border-color: #ef4444 !important;
+    background: #fee2e2 !important;
+    color: #991b1b !important;
+}
+
+html.dark .step-option.step-option-wrong {
+    background: rgba(239, 68, 68, 0.2) !important;
+    color: #fee2e2 !important;
+}
+
+/* Feedback box styling */
+#step-feedback.feedback-correct {
+    border-color: #10b981;
+    background: #ecfdf5;
+}
+
+html.dark #step-feedback.feedback-correct {
+    background: rgba(16, 185, 129, 0.1);
+}
+
+#step-feedback.feedback-wrong {
+    border-color: #ef4444;
+    background: #fef2f2;
+}
+
+html.dark #step-feedback.feedback-wrong {
+    background: rgba(239, 68, 68, 0.1);
+}
+
+/* TF button in step mode */
+.step-tf-btn {
+    flex: 1;
+    padding: 0.75rem 1rem;
+    border-radius: 0.75rem;
+    border: 2px solid #e2e8f0;
+    background: white;
+    font-weight: 600;
+    transition: all 0.2s ease;
+    cursor: pointer;
+}
+
+html.dark .step-tf-btn {
+    border-color: #475569;
+    background: #1e293b;
+    color: #e2e8f0;
+}
+
+.step-tf-btn:hover:not(:disabled):not(.step-tf-correct):not(.step-tf-wrong) {
+    border-color: #3b82f6;
+}
+
+.step-tf-btn.step-tf-selected-true {
+    background: #2563eb;
+    border-color: #2563eb;
+    color: white;
+}
+
+.step-tf-btn.step-tf-selected-false {
+    background: #ef4444;
+    border-color: #ef4444;
+    color: white;
+}
+
+.step-tf-btn.step-tf-correct {
+    background: #10b981 !important;
+    border-color: #10b981 !important;
+    color: white !important;
+}
+
+.step-tf-btn.step-tf-wrong {
+    background: #ef4444 !important;
+    border-color: #ef4444 !important;
+    color: white !important;
+}
+
+/* Exam mode selector buttons */
+.exam-mode-selector {
+    display: flex;
+    gap: 0.5rem;
+    margin-top: 1rem;
+}
+
+.exam-mode-btn {
+    flex: 1;
+    padding: 0.75rem 1rem;
+    border-radius: 0.75rem;
+    border: 2px solid #e2e8f0;
+    background: white;
+    font-weight: 600;
+    font-size: 0.875rem;
+    transition: all 0.2s ease;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 0.5rem;
+}
+
+html.dark .exam-mode-btn {
+    border-color: #475569;
+    background: #1e293b;
+    color: #e2e8f0;
+}
+
+.exam-mode-btn:hover {
+    border-color: #3b82f6;
+}
+
+.exam-mode-btn.mode-classic {
+    border-color: #3b82f6;
+    background: #eff6ff;
+    color: #2563eb;
+}
+
+html.dark .exam-mode-btn.mode-classic {
+    background: rgba(59, 130, 246, 0.15);
+    color: #60a5fa;
+}
+
+.exam-mode-btn.mode-stepbystep {
+    border-color: #8b5cf6;
+    background: #f5f3ff;
+    color: #7c3aed;
+}
+
+html.dark .exam-mode-btn.mode-stepbystep {
+    background: rgba(139, 92, 246, 0.15);
+    color: #a78bfa;
+}
