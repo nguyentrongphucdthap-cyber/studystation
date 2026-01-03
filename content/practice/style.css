@@ -889,7 +889,8 @@ html.dark .sidebar-footer {
 .step-question-area {
     flex: 1;
     overflow-y: auto;
-    padding-bottom: 100px !important;
+    padding-bottom: 80px !important;
+    /* Reduced for less scrolling */
     -webkit-overflow-scrolling: touch;
 }
 
