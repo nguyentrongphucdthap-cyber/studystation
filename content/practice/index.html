@@ -806,8 +806,10 @@
 
     <!-- 3. Taking Exam View -->
     <template id="tpl-taking-exam">
-        <div class="flex min-h-full animate-enter relative" style="height: auto; min-height: 100%;">
-            <div class="flex-1 overflow-y-auto bg-slate-50 dark:bg-slate-900 px-3 py-6 lg:px-12 scroll-smooth custom-scrollbar"
+        <!-- Main wrapper - full height with flex - NO transform/animation here -->
+        <div class="taking-exam-wrapper">
+            <!-- Questions area - scrolls independently, animation applied here -->
+            <div class="questions-scroll-area animate-enter bg-slate-50 dark:bg-slate-900 px-3 py-6 lg:px-12 scroll-smooth custom-scrollbar"
                 id="questions-container">
                 <div class="content-area mx-auto"
                     style="padding-bottom: calc(120px + env(safe-area-inset-bottom, 20px));">
@@ -875,24 +877,22 @@
                 </div>
             </div>
 
-            <!-- Desktop Sidebar -->
-            <div id="desktop-palette-sidebar"
-                class="hidden lg:flex w-64 bg-white dark:bg-slate-800 border-l border-slate-100 dark:border-slate-700 flex-col shrink-0 shadow-[-4px_0_20px_rgba(0,0,0,0.02)] z-10">
-                <div class="p-4 border-b border-slate-50 dark:border-slate-700">
+            <!-- Desktop Sidebar - FIXED position with own scroll -->
+            <aside id="desktop-palette-sidebar" class="desktop-sidebar-fixed hidden lg:flex">
+                <div class="sidebar-header">
                     <h3 class="font-bold text-slate-800 dark:text-white text-base">Mục lục câu hỏi</h3>
                     <p class="text-xs text-slate-400 mt-0.5">Trạng thái làm bài</p>
                 </div>
-                <div class="flex-1 overflow-y-auto p-4 custom-scrollbar">
+                <div class="sidebar-content custom-scrollbar">
                     <div id="question-palette" class="grid grid-cols-4 gap-2"></div>
                 </div>
-                <div id="submit-btn-container"
-                    class="p-6 border-t border-slate-50 dark:border-slate-700 bg-slate-50/50 dark:bg-slate-800">
+                <div id="submit-btn-container" class="sidebar-footer">
                     <button onclick="app.submitExam()"
                         class="w-full bg-blue-600 hover:bg-blue-700 active:scale-[0.98] text-white font-bold py-3.5 px-4 rounded-xl transition-all shadow-lg shadow-blue-600/20 flex items-center justify-center gap-2">
                         <span>Nộp bài thi</span>
                     </button>
                 </div>
-            </div>
+            </aside>
         </div>
         <!-- Mobile Footer - OUTSIDE of flex container -->
         <div id="mobile-footer"
