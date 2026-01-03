@@ -893,10 +893,132 @@ html.dark .sidebar-footer {
     -webkit-overflow-scrolling: touch;
 }
 
-/* Step action bar */
+/* Question text - bold by default */
+#step-question-text {
+    font-weight: 600;
+    font-size: 1.125rem;
+    line-height: 1.75;
+}
+
+/* Step action bar - fixed at bottom */
 .step-action-bar {
-    flex-shrink: 0;
+    position: fixed;
+    bottom: 0;
+    left: 0;
+    right: 0;
+    z-index: 40;
+    background: rgba(255, 255, 255, 0.95);
+    backdrop-filter: blur(8px);
+    -webkit-backdrop-filter: blur(8px);
+    border-top: 1px solid #e2e8f0;
+    padding: 12px 16px;
     padding-bottom: calc(12px + env(safe-area-inset-bottom, 0px));
+}
+
+html.dark .step-action-bar {
+    background: rgba(30, 41, 59, 0.95);
+    border-top-color: #334155;
+}
+
+/* Ensure the flex container inside action bar displays properly */
+.step-action-bar>div {
+    display: flex !important;
+    align-items: center !important;
+    gap: 12px !important;
+    width: 100%;
+    max-width: 48rem;
+    margin: 0 auto;
+}
+
+/* Step action buttons container */
+.step-action-buttons {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    width: 100%;
+    max-width: 48rem;
+    margin: 0 auto;
+}
+
+/* Skip button */
+.step-skip-btn {
+    flex-shrink: 0;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+    padding: 12px 16px;
+    background: #f1f5f9;
+    color: #475569;
+    border: none;
+    border-radius: 12px;
+    font-weight: 700;
+    font-size: 14px;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    min-height: 48px;
+}
+
+html.dark .step-skip-btn {
+    background: #334155;
+    color: #cbd5e1;
+}
+
+.step-skip-btn:hover {
+    background: #e2e8f0;
+}
+
+html.dark .step-skip-btn:hover {
+    background: #475569;
+}
+
+.step-skip-btn:disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+}
+
+/* Main action button (check/next) */
+.step-main-btn {
+    flex: 1;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+    padding: 12px 20px;
+    border: none;
+    border-radius: 12px;
+    font-weight: 700;
+    font-size: 16px;
+    color: white;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    min-height: 48px;
+}
+
+.step-main-btn.hidden {
+    display: none !important;
+}
+
+/* Check button */
+.step-check-btn {
+    background: linear-gradient(135deg, #3b82f6, #2563eb);
+    box-shadow: 0 4px 14px rgba(59, 130, 246, 0.35);
+}
+
+.step-check-btn:hover {
+    background: linear-gradient(135deg, #2563eb, #1d4ed8);
+    transform: translateY(-1px);
+}
+
+/* Next button */
+.step-next-btn {
+    background: linear-gradient(135deg, #10b981, #059669);
+    box-shadow: 0 4px 14px rgba(16, 185, 129, 0.35);
+}
+
+.step-next-btn:hover {
+    background: linear-gradient(135deg, #059669, #047857);
+    transform: translateY(-1px);
 }
 
 /* Step option styling */
@@ -1006,9 +1128,10 @@ html.dark .step-tf-btn {
     color: white;
 }
 
+/* Both true and false selection use the same blue color to avoid confusion */
 .step-tf-btn.step-tf-selected-false {
-    background: #ef4444;
-    border-color: #ef4444;
+    background: #2563eb;
+    border-color: #2563eb;
     color: white;
 }
 
