@@ -1015,7 +1015,8 @@
 
     <!-- 3b. Step-by-Step Mode View -->
     <template id="tpl-step-by-step">
-        <div class="step-mode-wrapper animate-enter">
+        <!-- Wrapper WITHOUT animate-enter to avoid transform breaking fixed positioning -->
+        <div class="step-mode-wrapper">
             <!-- Progress Header -->
             <div
                 class="step-progress-header bg-white dark:bg-slate-800 border-b border-slate-200 dark:border-slate-700 px-4 py-3">
@@ -1060,8 +1061,8 @@
                 </div>
             </div>
 
-            <!-- Question Display Area -->
-            <div class="step-question-area flex-1 overflow-y-auto px-4 py-6 lg:px-8 bg-slate-50 dark:bg-slate-900"
+            <!-- Question Display Area - animate-enter moved here -->
+            <div class="step-question-area animate-enter flex-1 overflow-y-auto px-4 py-6 lg:px-8 bg-slate-50 dark:bg-slate-900"
                 id="step-question-container">
                 <div class="max-w-3xl mx-auto">
                     <!-- Question Card -->
@@ -1114,33 +1115,35 @@
                 </div>
             </div>
 
-            <!-- Bottom Action Bar -->
-            <div
-                class="step-action-bar fixed bottom-0 left-0 right-0 bg-white/95 dark:bg-slate-800/95 backdrop-blur border-t border-slate-200 dark:border-slate-700 px-4 py-3 z-40">
-                <div class="max-w-3xl mx-auto flex items-center gap-3">
-                    <button onclick="app.stepSkipQuestion()" id="step-skip-btn"
-                        class="shrink-0 px-4 py-3 bg-slate-100 dark:bg-slate-700 text-slate-600 dark:text-slate-300 rounded-xl font-bold hover:bg-slate-200 dark:hover:bg-slate-600 transition-colors flex items-center gap-2">
-                        <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-                                d="M13 5l7 7-7 7M5 5l7 7-7 7" />
-                        </svg>
-                        <span class="hidden sm:inline">Bỏ qua</span>
-                    </button>
-                    <button onclick="app.stepCheckAnswer()" id="step-check-btn"
-                        class="flex-1 py-3 px-4 bg-blue-600 hover:bg-blue-700 text-white font-bold rounded-xl shadow-lg shadow-blue-500/25 transition-all flex items-center justify-center gap-2">
-                        <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7" />
-                        </svg>
-                        Kiểm tra
-                    </button>
-                    <button onclick="app.stepNextQuestion()" id="step-next-btn"
-                        class="hidden flex-1 py-3 px-4 bg-emerald-600 hover:bg-emerald-700 text-white font-bold rounded-xl shadow-lg shadow-emerald-500/25 transition-all flex items-center justify-center gap-2">
-                        <span>Tiếp theo</span>
-                        <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7" />
-                        </svg>
-                    </button>
-                </div>
+            <!-- Bottom Action Bar - styled like mobile-footer -->
+            <div id="step-action-bar"
+                class="fixed bottom-0 left-0 right-0 bg-white/90 dark:bg-slate-800/90 backdrop-blur border-t border-slate-200 dark:border-slate-700 p-3 z-40 flex flex-row items-center gap-3 shadow-[0_-4px_20px_rgba(0,0,0,0.05)]"
+                style="height: 64px !important; max-height: 64px !important; min-height: 64px !important; flex-direction: row !important; align-items: center !important; top: auto !important;">
+                <button onclick="app.stepSkipQuestion()" id="step-skip-btn"
+                    class="shrink-0 px-4 py-3 bg-slate-100 dark:bg-slate-700 text-slate-700 dark:text-slate-200 rounded-xl font-bold flex items-center gap-2"
+                    style="height: 44px !important; max-height: 44px !important; align-self: center !important;">
+                    <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                            d="M13 5l7 7-7 7M5 5l7 7-7 7" />
+                    </svg>
+                    <span class="hidden sm:inline">Bỏ qua</span>
+                </button>
+                <button onclick="app.stepCheckAnswer()" id="step-check-btn"
+                    class="flex-1 bg-blue-600 text-white font-bold py-3 px-4 rounded-xl shadow-lg shadow-blue-600/20 flex items-center justify-center gap-2"
+                    style="height: 44px !important; max-height: 44px !important; align-self: center !important;">
+                    <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7" />
+                    </svg>
+                    <span>Kiểm tra</span>
+                </button>
+                <button onclick="app.stepNextQuestion()" id="step-next-btn"
+                    class="hidden flex-1 bg-emerald-600 text-white font-bold py-3 px-4 rounded-xl shadow-lg shadow-emerald-600/20 items-center justify-center gap-2"
+                    style="height: 44px !important; max-height: 44px !important; align-self: center !important;">
+                    <span>Tiếp theo</span>
+                    <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7" />
+                    </svg>
+                </button>
             </div>
         </div>
     </template>
