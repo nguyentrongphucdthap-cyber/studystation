@@ -1441,6 +1441,18 @@ const app = {
                 return `\\(${num}^\\circ\\)`;
             });
 
+            // Fix common temperature patterns where unit is outside delimiter
+            // Pattern: \(117°\)C or \(117^\circ\)C → \(117^\circ\text{C}\)
+            text = text.replace(/\\?\((\d+(?:[,\.]\d+)?)[°^\\circ]+\\?\)\s*([CFKcfk])/g, (match, num, unit) => {
+                return `\\(${num}^\\circ\\text{${unit.toUpperCase()}}\\)`;
+            });
+
+            // Handle Unicode degree symbol followed by unit outside any delimiter
+            // Pattern: 117°C (plain text) → \(117^\circ\text{C}\)
+            text = text.replace(/(^|[^\\$\(])(\d+(?:[,\.]\d+)?)\s*°\s*([CFKcfk])(?![\\$\)])/g, (match, prefix, num, unit) => {
+                return `${prefix}\\(${num}^\\circ\\text{${unit.toUpperCase()}}\\)`;
+            });
+
             // Also handle standalone ^\circ (without number)
             text = text.replace(/(?<![\\$(])\^\s*\\circ\s*([A-Z])?(?![\\)$])/g, (match, unit) => {
                 if (unit) {
@@ -2594,10 +2606,19 @@ const app = {
                 return `\\(^\\circ\\)`;
             });
 
-            // Handle degree symbols: °C, °F, °
-            text = text.replace(/(\d*)°C/g, '\\($1^\\circ C\\)');
-            text = text.replace(/(\d*)°F/g, '\\($1^\\circ F\\)');
-            text = text.replace(/(\d*)°/g, '\\($1^\\circ\\)');
+            // Fix common temperature patterns where unit is outside delimiter
+            // Pattern: \(117°\)C or \(117^\circ\)C → \(117^\circ\text{C}\)
+            text = text.replace(/\\?\((\d+(?:[,\.]\d+)?)[°^\\circ]+\\?\)\s*([CFKcfk])/g, (match, num, unit) => {
+                return `\\(${num}^\\circ\\text{${unit.toUpperCase()}}\\)`;
+            });
+
+            // Handle degree symbols: °C, °F, ° (only if not already in delimiter)
+            text = text.replace(/(^|[^\\$\(])(\d+)°([CFKcfk])(?![\\$\)])/g, (match, prefix, num, unit) => {
+                return `${prefix}\\(${num}^\\circ\\text{${unit.toUpperCase()}}\\)`;
+            });
+            text = text.replace(/(^|[^\\$\(])(\d+)°(?![CFKcfk\\$\)])/g, (match, prefix, num) => {
+                return `${prefix}\\(${num}^\\circ\\)`;
+            });
 
             // 1. Safe Escape using DOM (browser handles all edge cases perfectly)
             const div = document.createElement('div');
