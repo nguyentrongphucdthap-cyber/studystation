@@ -1495,6 +1495,11 @@ const app = {
         const renderQ = (q, index, type) => {
             globalQIndex++;
             const displayId = globalQIndex;
+
+            // Debug: Log question image
+            if (q.image) {
+                console.log(`[Classic Mode] Q${displayId} has image:`, q.image);
+            }
             const div = document.createElement('div');
             const uniqueId = `${type}_${q.id}`;
             div.id = `q-${uniqueId}`;
