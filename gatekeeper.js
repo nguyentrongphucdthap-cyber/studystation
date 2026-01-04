@@ -1,11 +1,12 @@
 /**
- * GATEKEEPER.JS - HỆ THỐNG BẢO VỆ TẬP TRUNG (FINAL VERSION v2)
+ * GATEKEEPER.JS - HỆ THỐNG BẢO VỆ TẬP TRUNG (VERSION v3)
  * Tính năng: 
  * 1. Đăng nhập Google & Whitelist Check.
- * 2. Cho phép đăng nhập cùng tài khoản trên nhiều thiết bị.
- * 3. Chỉ 1 thiết bị được hoạt động tại 1 thời điểm (đá session cũ khi đăng nhập mới).
- * 4. Phân quyền Admin/User dựa trên chuỗi role (VD: "admin/user").
- * 5. Tự động cập nhật quyền & xử lý offline tốt hơn.
+ * 2. Cho phép đăng nhập cùng tài khoản trên nhiều thiết bị KHÁC LOẠI.
+ * 3. Cho phép 1 desktop + 1 mobile cùng lúc (không cho 2 desktop hoặc 2 mobile).
+ * 4. Khi bị kick, chỉ redirect về login, KHÔNG logout tài khoản.
+ * 5. Phân quyền Admin/User dựa trên chuỗi role (VD: "admin/user").
+ * 6. Tự động cập nhật quyền & xử lý offline tốt hơn.
  */
 
 import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-app.js";
@@ -39,7 +40,33 @@ const provider = new GoogleAuthProvider();
 const ENTRY_TOKEN_KEY = 'gatekeeper_entry_token'; // Token để đảm bảo user đi từ trang login
 const USER_ROLE_KEY = 'gatekeeper_user_role';     // Lưu role hiện tại
 const SESSION_ID_KEY = 'gatekeeper_session_id';   // Session ID duy nhất của tab này
+const DEVICE_TYPE_KEY = 'gatekeeper_device_type'; // Loại thiết bị (desktop/mobile)
 const DEFAULT_ROLE = 'user';
+
+// --- Helper: Detect Device Type ---
+// Phân loại thành 2 nhóm: "desktop" và "mobile"
+// PC/Laptop/Mac = desktop, iOS/Android/Tablet = mobile
+function getDeviceType() {
+    const ua = navigator.userAgent || navigator.vendor || window.opera;
+
+    // Check for mobile devices
+    const isMobile = /android|webos|iphone|ipad|ipod|blackberry|iemobile|opera mini|mobile|tablet/i.test(ua);
+
+    // Check for tablet specifically (still considered mobile for our purposes)
+    const isTablet = /ipad|tablet|playbook|silk/i.test(ua);
+
+    return (isMobile || isTablet) ? 'mobile' : 'desktop';
+}
+
+// Lấy device type đã lưu hoặc detect mới
+function getCurrentDeviceType() {
+    let deviceType = localStorage.getItem(DEVICE_TYPE_KEY);
+    if (!deviceType) {
+        deviceType = getDeviceType();
+        localStorage.setItem(DEVICE_TYPE_KEY, deviceType);
+    }
+    return deviceType;
+}
 
 // --- Helper: Quản lý Entry Token (Chống vào thẳng link mà không login) ---
 function setEntryToken() {
@@ -68,6 +95,7 @@ function clearStorage() {
         sessionStorage.removeItem(ENTRY_TOKEN_KEY);
         sessionStorage.removeItem(USER_ROLE_KEY);
         localStorage.removeItem(SESSION_ID_KEY);
+        localStorage.removeItem(DEVICE_TYPE_KEY);
     } catch { }
 }
 
@@ -217,18 +245,27 @@ export function initGatekeeper(mode = 'protected') {
             // 2. Xử lý theo từng trang
             if (mode === 'login') {
                 // --- TRANG LOGIN ---
-                // Tạo session mới -> Update Firestore -> Redirect vào trong
+                // V3: Lưu session theo device type (desktop/mobile)
+                // Cho phép 1 desktop + 1 mobile cùng lúc, nhưng không cho 2 cùng loại
                 const newSessionID = Date.now().toString();
+                const deviceType = getCurrentDeviceType();
+
+                // Cấu trúc sessions mới: { desktop: "timestamp", mobile: "timestamp" }
+                const sessionsUpdate = {};
+                sessionsUpdate[`sessions.${deviceType}`] = newSessionID;
 
                 await updateDoc(userRef, {
-                    current_session_id: newSessionID,
+                    ...sessionsUpdate,
+                    current_session_id: newSessionID, // Giữ lại để tương thích ngược
                     last_login: new Date().toISOString(),
+                    last_device_type: deviceType,
                     display_name: user.displayName || '',
                     photo_url: user.photoURL || '',
                     login_count: increment(1)
                 });
 
                 localStorage.setItem(SESSION_ID_KEY, newSessionID);
+                localStorage.setItem(DEVICE_TYPE_KEY, deviceType);
                 setEntryToken(); // Cấp vé vào cửa
 
                 // Chuyển hướng
@@ -236,21 +273,29 @@ export function initGatekeeper(mode = 'protected') {
 
             } else if (isProtected) {
                 // --- TRANG NỘI DUNG ---
-                // V2: Cho phép đăng nhập nhiều thiết bị, chỉ đá khi có đăng nhập MỚI
+                // V3: Cho phép 1 desktop + 1 mobile cùng lúc
+                // Chỉ kick nếu có session MỚI HƠN trên CÙNG LOẠI thiết bị
 
                 const localSession = localStorage.getItem(SESSION_ID_KEY);
+                const deviceType = getCurrentDeviceType();
 
-                // Nếu chưa có local session, tạo mới và sync
+                // Lấy session từ server theo device type
+                const sessions = userData.sessions || {};
+                const serverSessionForDevice = sessions[deviceType];
+
+                // Nếu chưa có local session, sync từ server
                 if (!localSession) {
-                    // User đã login trên thiết bị khác, lưu session đó vào local
-                    if (serverSession) {
+                    if (serverSessionForDevice) {
+                        localStorage.setItem(SESSION_ID_KEY, serverSessionForDevice);
+                    } else if (serverSession) {
+                        // Fallback: dùng current_session_id cũ
                         localStorage.setItem(SESSION_ID_KEY, serverSession);
                     }
                 }
 
                 // Thiết lập Real-time Listener để giám sát đăng nhập mới
-                // Chỉ đá khi phát hiện session MỚI HƠN (timestamp lớn hơn)
-                setupRealtimeMonitor(userRef, localStorage.getItem(SESSION_ID_KEY));
+                // V3: Chỉ kick nếu có session MỚI HƠN trên CÙNG LOẠI thiết bị
+                setupRealtimeMonitor(userRef, localStorage.getItem(SESSION_ID_KEY), deviceType);
 
                 // Mở khóa giao diện
                 unlockUI(loadingEl);
@@ -348,27 +393,45 @@ function showErrorUI(msg) {
 }
 
 // Giám sát thời gian thực: Session & Role
-// V2: Chỉ đá khi có session MỚI HƠN (timestamp lớn hơn)
-function setupRealtimeMonitor(userRef, currentLocalSession) {
+// V3: Chỉ kick nếu có session MỚI HƠN trên CÙNG LOẠI thiết bị
+// Cho phép: 1 desktop + 1 mobile cùng lúc
+// Không cho phép: 2 desktop hoặc 2 mobile cùng lúc
+function setupRealtimeMonitor(userRef, currentLocalSession, currentDeviceType) {
     onSnapshot(userRef, (snap) => {
         if (!snap.exists()) return; // User bị xóa khỏi whitelist
 
         const data = snap.data();
-        const serverSession = data.current_session_id;
+        const sessions = data.sessions || {};
 
-        // 1. Check Session - Chỉ đá nếu server session MỚI HƠN local session
-        // Session ID là timestamp (Date.now()), nên số lớn hơn = mới hơn
+        // Lấy session của CÙNG LOẠI thiết bị từ server
+        const serverSessionForDevice = sessions[currentDeviceType];
+
+        // Fallback: nếu chưa có sessions mới, dùng current_session_id cũ
+        const serverSession = serverSessionForDevice || data.current_session_id;
+
+        // 1. Check Session - Chỉ kick nếu có session MỚI HƠN trên CÙNG LOẠI thiết bị
         if (serverSession && currentLocalSession) {
             const serverTime = parseInt(serverSession, 10);
             const localTime = parseInt(currentLocalSession, 10);
 
-            // Chỉ đá nếu có đăng nhập MỚI HƠN (server session > local session)
+            // Chỉ kick nếu có đăng nhập MỚI HƠN trên CÙNG LOẠI thiết bị
             if (!isNaN(serverTime) && !isNaN(localTime) && serverTime > localTime) {
-                console.log('[Gatekeeper] Newer session detected:', { serverTime, localTime });
+                console.log('[Gatekeeper] Newer session detected on same device type:', {
+                    deviceType: currentDeviceType,
+                    serverTime,
+                    localTime
+                });
 
-                // Cập nhật local session và thông báo
-                alert("⚠️ Phát hiện đăng nhập mới!\n\nTài khoản của bạn vừa đăng nhập ở thiết bị khác. Phiên này sẽ kết thúc.");
-                logoutUser();
+                // KHÔNG logout (không xóa tài khoản), chỉ kick ra trang login
+                // User vẫn đăng nhập, chỉ bị chặn sử dụng ở tab này
+                alert(`⚠️ Phát hiện đăng nhập mới trên ${currentDeviceType === 'desktop' ? 'máy tính' : 'điện thoại'} khác!\n\nPhiên này sẽ tạm dừng. Bạn có thể đăng nhập lại để tiếp tục.`);
+
+                // Chỉ xóa session local, không logout Firebase
+                localStorage.removeItem(SESSION_ID_KEY);
+                sessionStorage.removeItem(ENTRY_TOKEN_KEY);
+
+                // Redirect về trang login (không logout)
+                window.location.href = toUrl('index.html');
                 return;
             }
         }
