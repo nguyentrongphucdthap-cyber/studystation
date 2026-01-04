@@ -132,7 +132,15 @@ window.customDialog = {
                 }
 
                 button.onclick = () => {
-                    this.close();
+                    // Clear callback first to prevent double resolve
+                    this._resolveCallback = null;
+                    // Close dialog
+                    const dlg = document.getElementById('custom-dialog');
+                    if (dlg) {
+                        dlg.classList.remove('show');
+                        document.body.style.overflow = '';
+                    }
+                    // Resolve with button action
                     resolve(btn.action);
                 };
                 actionsEl.appendChild(button);
@@ -145,13 +153,14 @@ window.customDialog = {
         });
     },
 
-    // Close dialog
+    // Close dialog (called by backdrop click)
     close() {
         const dialog = document.getElementById('custom-dialog');
         if (dialog) {
             dialog.classList.remove('show');
             document.body.style.overflow = '';
         }
+        // Only resolve if callback still exists (not already resolved by button)
         if (this._resolveCallback) {
             this._resolveCallback('cancel');
             this._resolveCallback = null;
@@ -2609,20 +2618,15 @@ const app = {
             return safe;
         };
 
-        // Render question text
-        document.getElementById('step-question-text').innerHTML = formatText(q.data.text);
-
-        // Handle image - support both 'image' and 'imageUrl' fields
-        const imgContainer = document.getElementById('step-question-image');
+        // Render question text + image (giống classic mode)
         const imgSrc = q.data.image || q.data.imageUrl || null;
+        const imageHtml = imgSrc ? `<img src="${imgSrc}" class="mt-3 max-w-full md:max-w-md rounded-xl border border-slate-200 dark:border-slate-600 shadow-sm cursor-pointer hover:opacity-90 hover:shadow-lg transition-all" alt="Hình minh họa câu hỏi" title="Nhấn để xem ảnh lớn" onclick="openLightbox('${imgSrc}')" onerror="this.style.display='none'">` : '';
 
-        if (imgSrc && imgSrc.trim() !== '') {
-            imgContainer.classList.remove('hidden');
-            const imgEl = imgContainer.querySelector('img');
-            imgEl.src = imgSrc;
-            imgEl.alt = 'Hình minh họa câu hỏi';
-            console.log('[Step Mode] Image loaded:', imgSrc);
-        } else {
+        document.getElementById('step-question-text').innerHTML = formatText(q.data.text) + imageHtml;
+
+        // Hide the separate image container (we're now using inline image)
+        const imgContainer = document.getElementById('step-question-image');
+        if (imgContainer) {
             imgContainer.classList.add('hidden');
         }
 
