@@ -1172,8 +1172,10 @@
                             <div id="step-question-text" class="dynamic-text text-slate-800 dark:text-slate-200 mb-4">
                             </div>
                             <div id="step-question-image" class="hidden mb-4">
-                                <img src="" alt=""
-                                    class="max-w-full h-auto rounded-xl border border-slate-200 dark:border-slate-700">
+                                <img src="" alt="Question image"
+                                    class="max-w-full md:max-w-md h-auto rounded-xl border border-slate-200 dark:border-slate-700 shadow-sm cursor-pointer hover:opacity-90 hover:shadow-lg transition-all"
+                                    title="Nhấn để xem ảnh lớn" onclick="openLightbox(this.src)"
+                                    onerror="this.parentElement.classList.add('hidden')">
                             </div>
 
                             <!-- Answer Options (for Part 1) -->
