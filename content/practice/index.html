@@ -405,6 +405,41 @@
                             class="toggle-label block overflow-hidden h-6 rounded-full bg-slate-300 cursor-pointer transition-colors duration-300"></label>
                     </div>
                 </div>
+
+                <!-- Default Exam Mode Selector -->
+                <div class="p-4 rounded-xl bg-slate-50 dark:bg-slate-700/50">
+                    <div class="flex items-center gap-3 mb-3">
+                        <div
+                            class="p-2 bg-violet-100 dark:bg-violet-900 rounded-lg text-violet-600 dark:text-violet-400">
+                            <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24"
+                                stroke="currentColor">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                    d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2" />
+                            </svg>
+                        </div>
+                        <div>
+                            <span class="font-medium text-slate-700 dark:text-slate-200">Chế độ làm bài mặc định</span>
+                            <p id="default-mode-desc" class="text-xs text-slate-400">Luôn hỏi khi bắt đầu</p>
+                        </div>
+                    </div>
+                    <div class="grid grid-cols-3 gap-2">
+                        <button onclick="app.setDefaultExamMode('ask')" id="settings-mode-ask"
+                            class="mode-btn p-2 rounded-lg border-2 border-blue-500 bg-blue-50 dark:bg-blue-900/30 transition-all text-center">
+                            <span class="block text-lg">❓</span>
+                            <span class="text-[10px] text-slate-600 dark:text-slate-300 font-medium">Luôn hỏi</span>
+                        </button>
+                        <button onclick="app.setDefaultExamMode('classic')" id="settings-mode-classic"
+                            class="mode-btn p-2 rounded-lg border-2 border-slate-200 dark:border-slate-600 bg-white dark:bg-slate-800 hover:border-blue-400 transition-all text-center">
+                            <span class="block text-lg">📝</span>
+                            <span class="text-[10px] text-slate-600 dark:text-slate-300 font-medium">Cổ điển</span>
+                        </button>
+                        <button onclick="app.setDefaultExamMode('stepbystep')" id="settings-mode-stepbystep"
+                            class="mode-btn p-2 rounded-lg border-2 border-slate-200 dark:border-slate-600 bg-white dark:bg-slate-800 hover:border-purple-400 transition-all text-center">
+                            <span class="block text-lg">👆</span>
+                            <span class="text-[10px] text-slate-600 dark:text-slate-300 font-medium">Từng câu</span>
+                        </button>
+                    </div>
+                </div>
             </div>
 
             <div class="mt-6 pt-4 border-t border-slate-100 dark:border-slate-700 text-center text-xs text-slate-400">
@@ -620,6 +655,14 @@
 
             <!-- Footer -->
             <div class="p-4 border-t border-slate-100 dark:border-slate-700 bg-slate-50 dark:bg-slate-800/50">
+                <!-- Remember checkbox -->
+                <label class="flex items-center gap-3 mb-3 cursor-pointer group">
+                    <input type="checkbox" id="remember-mode-checkbox"
+                        class="w-5 h-5 rounded border-2 border-slate-300 dark:border-slate-600 text-blue-600 focus:ring-blue-500 focus:ring-offset-0 cursor-pointer">
+                    <span
+                        class="text-sm text-slate-600 dark:text-slate-300 group-hover:text-slate-800 dark:group-hover:text-white transition-colors">Không
+                        hỏi lại nữa (lưu làm mặc định)</span>
+                </label>
                 <button onclick="document.getElementById('exam-mode-modal').classList.add('hidden')"
                     class="w-full py-3 px-4 rounded-xl border border-slate-200 dark:border-slate-600 text-slate-600 dark:text-slate-300 font-bold hover:bg-slate-100 dark:hover:bg-slate-700 transition-colors">
                     Hủy
@@ -1119,6 +1162,15 @@
             <div id="step-action-bar"
                 class="fixed bottom-0 left-0 right-0 bg-white/90 dark:bg-slate-800/90 backdrop-blur border-t border-slate-200 dark:border-slate-700 p-3 z-40 flex flex-row items-center gap-3 shadow-[0_-4px_20px_rgba(0,0,0,0.05)]"
                 style="height: 64px !important; max-height: 64px !important; min-height: 64px !important; flex-direction: row !important; align-items: center !important; top: auto !important;">
+                <!-- Back Button -->
+                <button onclick="app.stepPrevQuestion()" id="step-back-btn"
+                    class="hidden shrink-0 px-3 py-3 bg-slate-100 dark:bg-slate-700 text-slate-600 dark:text-slate-300 rounded-xl font-bold flex items-center gap-1 hover:bg-slate-200 dark:hover:bg-slate-600 transition-colors"
+                    style="height: 44px !important; max-height: 44px !important; align-self: center !important;">
+                    <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7" />
+                    </svg>
+                    <span class="hidden sm:inline">Quay lại</span>
+                </button>
                 <button onclick="app.stepSkipQuestion()" id="step-skip-btn"
                     class="shrink-0 px-4 py-3 bg-slate-100 dark:bg-slate-700 text-slate-700 dark:text-slate-200 rounded-xl font-bold flex items-center gap-2"
                     style="height: 44px !important; max-height: 44px !important; align-self: center !important;">
