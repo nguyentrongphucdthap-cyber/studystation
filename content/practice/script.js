@@ -2511,6 +2511,16 @@ const app = {
         document.getElementById('step-next-btn').classList.add('hidden');
         document.getElementById('step-skip-btn').disabled = false;
 
+        // Show/hide back button based on position
+        const backBtn = document.getElementById('step-back-btn');
+        if (backBtn) {
+            if (currentIndex > 0) {
+                backBtn.classList.remove('hidden');
+            } else {
+                backBtn.classList.add('hidden');
+            }
+        }
+
         // Render MathJax
         this.renderMath();
 
@@ -2635,6 +2645,19 @@ const app = {
             document.getElementById('step-check-btn').classList.add('hidden');
             document.getElementById('step-next-btn').classList.remove('hidden');
             document.getElementById('step-skip-btn').disabled = true;
+
+            // Show back button if not at first question
+            if (this.stepMode.currentIndex > 0) {
+                document.getElementById('step-back-btn')?.classList.remove('hidden');
+            }
+
+            // Auto advance to next question after 1.25s
+            setTimeout(() => {
+                // Only advance if still on the same question and it was correct
+                if (this.stepMode.isCorrect && this.stepMode.isChecked) {
+                    this.stepNextQuestion();
+                }
+            }, 1250);
         } else {
             // Wrong - only show red on selected, don't reveal correct answer
             btnEl.classList.add('step-option-wrong');
@@ -2808,6 +2831,19 @@ const app = {
     stepNextQuestion() {
         this.stepMode.currentIndex++;
         this.renderStepQuestion();
+    },
+
+    // Go to previous question
+    stepPrevQuestion() {
+        if (this.stepMode.currentIndex > 0) {
+            this.stepMode.currentIndex--;
+            // Reset state for re-viewing
+            this.stepMode.isChecked = false;
+            this.stepMode.isCorrect = false;
+            this.stepMode.selectedAnswer = null;
+            this.stepMode.tfAnswers = {};
+            this.renderStepQuestion();
+        }
     },
 
     // Skip current question
