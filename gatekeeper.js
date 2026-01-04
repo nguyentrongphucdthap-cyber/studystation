@@ -1,1662 +1,1793 @@
-<!DOCTYPE html>
-<html lang="vi" class="">
+/**
+ * GATEKEEPER.JS - HỆ THỐNG BẢO VỆ TẬP TRUNG (VERSION v3)
+ * Tính năng: 
+ * 1. Đăng nhập Google & Whitelist Check.
+ * 2. Cho phép đăng nhập cùng tài khoản trên nhiều thiết bị KHÁC LOẠI.
+ * 3. Cho phép 1 desktop + 1 mobile cùng lúc (không cho 2 desktop hoặc 2 mobile).
+ * 4. Khi bị kick, chỉ redirect về login, KHÔNG logout tài khoản.
+ * 5. Phân quyền Admin/User dựa trên chuỗi role (VD: "admin/user").
+ * 6. Tự động cập nhật quyền & xử lý offline tốt hơn.
+ */
 
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>StudyStation Practice</title>
+import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-app.js";
+import { getAuth, signInWithPopup, GoogleAuthProvider, signOut, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-auth.js";
+import { getFirestore, doc, getDoc, updateDoc, onSnapshot, collection, getDocs, addDoc, deleteDoc, setDoc, increment, query, where } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js";
+import { getDatabase, ref, set, onValue, onDisconnect, serverTimestamp, remove, get } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-database.js";
 
-    <!-- Tailwind CSS (CDN) -->
-    <script src="https://cdn.tailwindcss.com"></script>
+// ============================================================
+// 1. CẤU HÌNH FIREBASE
+// ============================================================
+const firebaseConfig = {
+    apiKey: "AIzaSyBdSnR-z6CJWzDH-WxdG-0rNX58srJrb8A",
+    authDomain: "studystation-auth.firebaseapp.com",
+    databaseURL: "https://studystation-auth-default-rtdb.asia-southeast1.firebasedatabase.app",
+    projectId: "studystation-auth",
+    storageBucket: "studystation-auth.firebasestorage.app",
+    messagingSenderId: "293717187040",
+    appId: "1:293717187040:web:8bca14e98046b1c98cb385"
+};
 
-    <!-- Fonts -->
-    <link rel="preconnect" href="https://fonts.googleapis.com">
-    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link
-        href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;500;600;700;800&family=Be+Vietnam+Pro:wght@400;500;600&family=Roboto:wght@300;400;500;700&display=swap"
-        rel="stylesheet">
+const app = initializeApp(firebaseConfig);
+const auth = getAuth(app);
+const db = getFirestore(app);
+const rtdb = getDatabase(app); // Realtime Database for presence
+const provider = new GoogleAuthProvider();
 
-    <!-- Custom CSS -->
-    <link rel="stylesheet" href="style.css">
+// ============================================================
+// 2. CONSTANTS & STORAGE HELPERS
+// ============================================================
 
-    <!-- MathJax Configuration (Cần đặt trước khi load script MathJax) -->
-    <script>
-        window.MathJax = {
-            tex: {
-                inlineMath: [['$', '$'], ['\\(', '\\)']],
-                displayMath: [['$$', '$$'], ['\\[', '\\]']],
-                packages: { '[+]': ['mhchem'] }
-            },
-            loader: { load: ['[tex]/mhchem'] },
-            svg: { fontCache: 'global' },
-            startup: { typeset: false }
-        };
-    </script>
-    <script id="MathJax-script" async src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-mml-chtml.js"></script>
-    <style>
-        .music-section summary {
-            list-style: none;
-            cursor: pointer;
+const ENTRY_TOKEN_KEY = 'gatekeeper_entry_token'; // Token để đảm bảo user đi từ trang login
+const USER_ROLE_KEY = 'gatekeeper_user_role';     // Lưu role hiện tại
+const SESSION_ID_KEY = 'gatekeeper_session_id';   // Session ID duy nhất của tab này
+const DEVICE_TYPE_KEY = 'gatekeeper_device_type'; // Loại thiết bị (desktop/mobile)
+const DEFAULT_ROLE = 'user';
+
+// --- Helper: Detect Device Type ---
+// Phân loại thành 2 nhóm: "desktop" và "mobile"
+// PC/Laptop/Mac = desktop, iOS/Android/Tablet = mobile
+function getDeviceType() {
+    const ua = navigator.userAgent || navigator.vendor || window.opera;
+
+    // Check for mobile devices
+    const isMobile = /android|webos|iphone|ipad|ipod|blackberry|iemobile|opera mini|mobile|tablet/i.test(ua);
+
+    // Check for tablet specifically (still considered mobile for our purposes)
+    const isTablet = /ipad|tablet|playbook|silk/i.test(ua);
+
+    return (isMobile || isTablet) ? 'mobile' : 'desktop';
+}
+
+// Lấy device type đã lưu hoặc detect mới
+function getCurrentDeviceType() {
+    let deviceType = localStorage.getItem(DEVICE_TYPE_KEY);
+    if (!deviceType) {
+        deviceType = getDeviceType();
+        localStorage.setItem(DEVICE_TYPE_KEY, deviceType);
+    }
+    return deviceType;
+}
+
+// --- Helper: Quản lý Entry Token (Chống vào thẳng link mà không login) ---
+function setEntryToken() {
+    try {
+        const token = { ts: Date.now(), val: Math.random().toString(36).slice(2) };
+        sessionStorage.setItem(ENTRY_TOKEN_KEY, JSON.stringify(token));
+    } catch { }
+}
+
+function hasValidEntryToken(maxAgeMs = 300000) { // Token có hạn 5 phút
+    try {
+        const raw = sessionStorage.getItem(ENTRY_TOKEN_KEY);
+        if (!raw) return false;
+        const data = JSON.parse(raw);
+        return typeof data?.ts === 'number' && (Date.now() - data.ts) <= maxAgeMs;
+    } catch { return false; }
+}
+
+// --- Helper: Quản lý Role ---
+function setUserRole(role) {
+    try { sessionStorage.setItem(USER_ROLE_KEY, role || DEFAULT_ROLE); } catch { }
+}
+
+function clearStorage() {
+    try {
+        sessionStorage.removeItem(ENTRY_TOKEN_KEY);
+        sessionStorage.removeItem(USER_ROLE_KEY);
+        localStorage.removeItem(SESSION_ID_KEY);
+        localStorage.removeItem(DEVICE_TYPE_KEY);
+    } catch { }
+}
+
+// --- Helper: Điều hướng URL ---
+function getProjectRoot() {
+    try {
+        const parts = location.pathname.split('/').filter(Boolean);
+        // Logic: Nếu đang ở /content/subfolder/ file thì root là /content/
+        // Nếu file cấu trúc đơn giản, trả về root domain
+        return parts.length > 0 && parts[0] === 'content' ? '/' : '/';
+    } catch { return '/'; }
+}
+
+function toUrl(path) {
+    // Xử lý đường dẫn tương đối để chạy đúng trên cả localhost và hosting
+    // Giả sử gatekeeper nằm cùng cấp với index.html gốc
+    return path.startsWith('/') ? path : '/' + path;
+}
+
+// ============================================================
+// 3. CÁC HÀM EXPORT CHO FRONTEND
+// ============================================================
+
+/**
+ * Đăng nhập bằng Google Popup
+ */
+export async function loginWithGoogle() {
+    try {
+        await signInWithPopup(auth, provider);
+        // Sau khi popup đóng, onAuthStateChanged sẽ tự chạy logic tiếp theo
+    } catch (error) {
+        console.error("Login Error:", error);
+        showErrorUI(error.message || 'Đăng nhập thất bại.');
+    }
+}
+
+/**
+ * Đăng xuất an toàn
+ */
+export async function logoutUser() {
+    try {
+        await signOut(auth);
+        clearStorage();
+        window.location.href = toUrl('index.html');
+    } catch (e) {
+        console.error("Logout Error:", e);
+    }
+}
+
+/**
+ * Lắng nghe thay đổi User (dùng để update UI tên, avatar...)
+ */
+export function onUserChange(cb) {
+    return onAuthStateChanged(auth, (user) => {
+        if (typeof cb === 'function') cb(user);
+    });
+}
+
+/**
+ * Lấy Role hiện tại từ SessionStorage
+ * @returns {string} Ví dụ: "admin/user" hoặc "user"
+ */
+export function getCurrentUserRole() {
+    try { return sessionStorage.getItem(USER_ROLE_KEY) || DEFAULT_ROLE; } catch { return DEFAULT_ROLE; }
+}
+
+/**
+ * Kiểm tra xem User có quyền Admin không
+ * Logic: Role string chứa từ khóa "admin" (không phân biệt hoa thường)
+ * @returns {boolean}
+ */
+export function checkIsAdmin() {
+    const role = getCurrentUserRole().toLowerCase();
+    return role.includes('admin');
+}
+
+/**
+ * Kiểm tra xem User có quyền Super-Admin không
+ * Logic: Role string chứa từ khóa "super-admin" (không phân biệt hoa thường)
+ * Super-admin có toàn bộ quyền admin + quyền quản lý học sinh
+ * @returns {boolean}
+ */
+export function checkIsSuperAdmin() {
+    const role = getCurrentUserRole().toLowerCase();
+    return role.includes('super-admin');
+}
+
+// ============================================================
+// 4. LOGIC CỐT LÕI (INIT GATEKEEPER)
+// ============================================================
+
+/**
+ * Khởi tạo Gatekeeper
+ * @param {string} mode - 'login' (trang chủ) hoặc 'protected' (trang nội dung)
+ */
+export function initGatekeeper(mode = 'protected') {
+    const isProtected = mode === 'protected';
+    const loadingEl = document.getElementById('gatekeeper-loading');
+
+    // Hiển thị loading ngay lập tức nếu là trang bảo vệ
+    if (isProtected && loadingEl) {
+        loadingEl.style.display = 'flex';
+        document.body.style.overflow = 'hidden'; // Chặn cuộn khi đang load
+    }
+
+    onAuthStateChanged(auth, async (user) => {
+        // Reset role tạm thời để tránh cached sai
+        if (!user) {
+            handleNotLoggedIn(isProtected, loadingEl);
+            return;
         }
 
-        .music-section summary::-webkit-details-marker {
-            display: none;
-        }
-
-        .music-section summary span.toggle-icon {
-            transition: transform 0.2s ease;
-        }
-
-        .music-section[open] summary span.toggle-icon {
-            transform: rotate(90deg);
-        }
-
-        #music-panel input[type="range"] {
-            -webkit-appearance: none;
-            appearance: none;
-            background: linear-gradient(90deg, #2563eb, #38bdf8);
-            height: 4px;
-            border-radius: 999px;
-        }
-
-        #music-panel input[type="range"]::-webkit-slider-thumb {
-            -webkit-appearance: none;
-            width: 16px;
-            height: 16px;
-            border-radius: 50%;
-            background: #ffffff;
-            border: 2px solid #2563eb;
-            box-shadow: 0 2px 6px rgba(37, 99, 235, 0.35);
-        }
-
-        #music-panel input[type="range"]::-moz-range-thumb {
-            width: 16px;
-            height: 16px;
-            border-radius: 50%;
-            background: #ffffff;
-            border: 2px solid #2563eb;
-            box-shadow: 0 2px 6px rgba(37, 99, 235, 0.35);
-        }
-
-        @media (max-width: 768px) {
-            #music-panel {
-                top: 50% !important;
-                left: 50% !important;
-                right: auto !important;
-                bottom: auto !important;
-                width: calc(100% - 2rem);
-                max-width: 420px;
-                transform: translate(-50%, -50%);
-                border-radius: 1.25rem;
-                padding-bottom: 1.25rem;
-            }
-        }
-    </style>
-</head>
-
-<body
-    class="min-h-screen flex flex-col overflow-x-hidden text-slate-800 dark:text-slate-100 dark:bg-slate-900 transition-colors duration-300">
-
-    <div id="gatekeeper-loading"
-        style="position:fixed;top:0;left:0;width:100%;height:100%;background:#0f172a;display:none;justify-content:center;align-items:center;color:#ffffff;z-index:9999">
-        <div style="display:flex;flex-direction:column;align-items:center;gap:10px">
-            <img src="../../favicon.png" alt="StudyStation" style="width:56px;height:56px;border-radius:12px">
-            <div style="font-weight:700;font-size:18px">StudyStation</div>
-            <div class="w-7 h-7 border-2 border-white/20 border-t-blue-400 rounded-full animate-spin"></div>
-        </div>
-    </div>
-
-    <!-- Custom Dialog Modal -->
-    <div id="custom-dialog" class="fixed inset-0 z-[9998] hidden items-center justify-center p-4">
-        <!-- Backdrop -->
-        <div class="absolute inset-0 bg-slate-900/60 backdrop-blur-sm" onclick="window.customDialog?.close()"></div>
-        <!-- Dialog Box -->
-        <div
-            class="relative bg-white dark:bg-slate-800 rounded-2xl shadow-2xl max-w-md w-full overflow-hidden animate-dialog-enter">
-            <!-- Icon Header -->
-            <div id="dialog-icon-container" class="flex justify-center pt-6 pb-2">
-                <div id="dialog-icon" class="w-16 h-16 rounded-full flex items-center justify-center">
-                    <!-- Icon will be injected here -->
-                </div>
-            </div>
-            <!-- Content -->
-            <div class="px-6 pb-4 text-center">
-                <h3 id="dialog-title" class="text-xl font-bold text-slate-900 dark:text-white mb-2"></h3>
-                <p id="dialog-message" class="text-slate-500 dark:text-slate-400 text-sm leading-relaxed"></p>
-            </div>
-            <!-- Actions -->
-            <div id="dialog-actions" class="flex gap-3 p-4 pt-2 border-t border-slate-100 dark:border-slate-700">
-                <!-- Buttons will be injected here -->
-            </div>
-        </div>
-    </div>
-
-    <style>
-        @keyframes dialogEnter {
-            from {
-                opacity: 0;
-                transform: scale(0.95) translateY(10px);
-            }
-
-            to {
-                opacity: 1;
-                transform: scale(1) translateY(0);
-            }
-        }
-
-        .animate-dialog-enter {
-            animation: dialogEnter 0.2s ease-out forwards;
-        }
-
-        #custom-dialog.show {
-            display: flex !important;
-        }
-    </style>
-
-    <!-- Header -->
-    <header class="h-16 glass-header fixed w-full top-0 z-30 flex items-center justify-between px-4 lg:px-10">
-        <div class="flex items-center gap-3 cursor-pointer group" onclick="app.goHome()">
-            <div
-                class="w-9 h-9 bg-gradient-to-br from-blue-600 to-indigo-600 rounded-xl flex items-center justify-center text-white font-bold text-lg shadow-glow transition-transform group-hover:scale-105">
-                S</div>
-            <h1
-                class="text-lg font-bold tracking-tight text-slate-800 dark:text-white group-hover:text-primary transition-colors">
-                StudyStation</h1>
-        </div>
-        <div class="flex items-center gap-2">
-            <div id="exam-timer"
-                class="hidden font-mono text-base lg:text-lg font-bold text-blue-600 dark:text-blue-400 bg-blue-50/80 dark:bg-blue-900/30 backdrop-blur px-3 py-1 lg:px-4 lg:py-1.5 rounded-lg border border-blue-100 dark:border-blue-800 shadow-sm mr-2">
-                45:00
-            </div>
-
-            <!-- Music Button -->
-            <button id="music-toggle-btn"
-                class="p-2 rounded-full hover:bg-slate-100 dark:hover:bg-slate-800 text-slate-500 dark:text-slate-400 transition-colors relative"
-                title="Âm nhạc học tập">
-                <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24"
-                    stroke="currentColor">
-                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 19V6l12-2v13" />
-                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-                        d="M6 19a3 3 0 106-0 3 3 0 00-6 0zM15 17a3 3 0 106 0 3 3 0 00-6 0z" />
-                </svg>
-                <span id="music-badge"
-                    class="hidden absolute -top-1 -right-1 w-2 h-2 bg-emerald-500 rounded-full animate-ping"></span>
-            </button>
-
-            <!-- Stats Button -->
-            <button onclick="app.toggleStats()"
-                class="p-2 rounded-full hover:bg-slate-100 dark:hover:bg-slate-800 text-slate-500 dark:text-slate-400 transition-colors"
-                title="Thống kê">
-                <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24"
-                    stroke="currentColor">
-                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-                        d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z" />
-                </svg>
-            </button>
-
-            <!-- Settings Button -->
-            <button onclick="app.toggleSettings()"
-                class="p-2 rounded-full hover:bg-slate-100 dark:hover:bg-slate-800 text-slate-500 dark:text-slate-400 transition-colors"
-                title="Cài đặt">
-                <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24"
-                    stroke="currentColor">
-                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-                        d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z" />
-                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-                        d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
-                </svg>
-            </button>
-        </div>
-    </header>
-
-    <!-- Stats Modal -->
-    <div id="stats-modal"
-        class="hidden fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm animate-fade-in p-4">
-        <div
-            class="bg-white dark:bg-slate-800 w-full max-w-md rounded-2xl p-6 shadow-2xl transform transition-all border border-slate-100 dark:border-slate-700">
-            <div class="flex justify-between items-center mb-6">
-                <h3 class="text-xl font-bold text-slate-800 dark:text-white">Thống kê học tập</h3>
-                <button onclick="app.toggleStats()"
-                    class="text-slate-400 hover:text-slate-600 dark:hover:text-slate-200">
-                    <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24"
-                        stroke="currentColor">
-                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-                            d="M6 18L18 6M6 6l12 12" />
-                    </svg>
-                </button>
-            </div>
-
-            <div class="grid grid-cols-2 gap-4 mb-6">
-                <div
-                    class="bg-blue-50 dark:bg-blue-900/20 p-4 rounded-xl text-center border border-blue-100 dark:border-blue-800">
-                    <div class="text-3xl font-bold text-blue-600 dark:text-blue-400 mb-1" id="stat-exams">0</div>
-                    <div class="text-xs text-slate-500 dark:text-slate-400 font-medium uppercase">Bài thi hoàn thành
-                    </div>
-                </div>
-                <div
-                    class="bg-purple-50 dark:bg-purple-900/20 p-4 rounded-xl text-center border border-purple-100 dark:border-purple-800">
-                    <div class="text-3xl font-bold text-purple-600 dark:text-purple-400 mb-1" id="stat-time">0h</div>
-                    <div class="text-xs text-slate-500 dark:text-slate-400 font-medium uppercase">Thời gian học</div>
-                </div>
-            </div>
-
-            <div class="bg-slate-50 dark:bg-slate-700/50 p-5 rounded-xl border border-slate-100 dark:border-slate-700">
-                <div class="flex justify-between items-end mb-2">
-                    <span class="text-sm font-bold text-slate-600 dark:text-slate-300">Điểm trung bình tổng</span>
-                    <span class="text-2xl font-bold text-emerald-600 dark:text-emerald-400" id="stat-avg">0.0</span>
-                </div>
-                <div class="w-full bg-slate-200 dark:bg-slate-600 rounded-full h-2.5 mb-1">
-                    <div class="bg-emerald-500 h-2.5 rounded-full transition-all duration-1000" id="stat-avg-bar"
-                        style="width: 0%"></div>
-                </div>
-                <p class="text-xs text-slate-400 italic text-right">*Chỉ tính 3 lần thi đầu tiên của mỗi bài</p>
-            </div>
-        </div>
-    </div>
-
-    <!-- Settings Modal -->
-    <div id="settings-modal"
-        class="hidden fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm animate-fade-in p-4">
-        <div
-            class="bg-white dark:bg-slate-800 w-full max-w-md rounded-2xl p-6 shadow-2xl transform transition-all border border-slate-100 dark:border-slate-700">
-            <div class="flex justify-between items-center mb-6">
-                <h3 class="text-xl font-bold text-slate-800 dark:text-white">Cài đặt</h3>
-                <button onclick="app.toggleSettings()"
-                    class="text-slate-400 hover:text-slate-600 dark:hover:text-slate-200">
-                    <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24"
-                        stroke="currentColor">
-                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-                            d="M6 18L18 6M6 6l12 12" />
-                    </svg>
-                </button>
-            </div>
-
-            <div class="space-y-4 max-h-[60vh] overflow-y-auto custom-scrollbar pr-1">
-                <!-- Dark Mode Toggle -->
-                <div class="flex items-center justify-between p-4 rounded-xl bg-slate-50 dark:bg-slate-700/50">
-                    <div class="flex items-center gap-3">
-                        <div
-                            class="p-2 bg-indigo-100 dark:bg-indigo-900 rounded-lg text-indigo-600 dark:text-indigo-400">
-                            <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24"
-                                stroke="currentColor">
-                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-                                    d="M20.354 15.354A9 9 0 018.646 3.646 9.003 9.003 0 0012 21a9.003 9.003 0 008.354-5.646z" />
-                            </svg>
-                        </div>
-                        <span class="font-medium text-slate-700 dark:text-slate-200">Giao diện tối</span>
-                    </div>
-                    <div
-                        class="relative inline-block w-12 mr-2 align-middle select-none transition duration-200 ease-in">
-                        <input type="checkbox" name="toggle" id="dark-mode-toggle"
-                            class="toggle-checkbox absolute block w-6 h-6 rounded-full bg-white border-4 border-slate-300 appearance-none cursor-pointer transition-all duration-300" />
-                        <label for="dark-mode-toggle"
-                            class="toggle-label block overflow-hidden h-6 rounded-full bg-slate-300 cursor-pointer transition-colors duration-300"></label>
-                    </div>
-                </div>
-
-                <!-- Font Size Slider -->
-                <div class="p-4 rounded-xl bg-slate-50 dark:bg-slate-700/50">
-                    <div class="flex justify-between items-center mb-3">
-                        <div class="flex items-center gap-3">
-                            <div class="p-2 bg-blue-100 dark:bg-blue-900 rounded-lg text-blue-600 dark:text-blue-400">
-                                <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24"
-                                    stroke="currentColor">
-                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-                                        d="M4 6h16M4 12h16M4 18h7" />
-                                </svg>
-                            </div>
-                            <span class="font-medium text-slate-700 dark:text-slate-200">Cỡ chữ</span>
-                        </div>
-                        <span id="font-size-display"
-                            class="text-sm font-bold text-blue-600 dark:text-blue-400">16px</span>
-                    </div>
-                    <div class="flex items-center gap-3">
-                        <span class="text-xs font-bold text-slate-400 shrink-0">12</span>
-                        <input type="range" id="font-size-slider" min="12" max="28" step="2" value="16" class="w-full">
-                        <span class="text-xs font-bold text-slate-400 shrink-0">28</span>
-                    </div>
-                </div>
-
-                <!-- Line Height Slider -->
-                <div class="p-4 rounded-xl bg-slate-50 dark:bg-slate-700/50">
-                    <div class="flex justify-between items-center mb-3">
-                        <div class="flex items-center gap-3">
-                            <div class="p-2 bg-teal-100 dark:bg-teal-900 rounded-lg text-teal-600 dark:text-teal-400">
-                                <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24"
-                                    stroke="currentColor">
-                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-                                        d="M4 6h16M4 10h16M4 14h16M4 18h16" />
-                                </svg>
-                            </div>
-                            <span class="font-medium text-slate-700 dark:text-slate-200">Khoảng cách dòng</span>
-                        </div>
-                        <span id="line-height-display"
-                            class="text-sm font-bold text-teal-600 dark:text-teal-400">1.6</span>
-                    </div>
-                    <div class="flex items-center gap-3">
-                        <span class="text-xs font-bold text-slate-400 shrink-0">1.4</span>
-                        <input type="range" id="line-height-slider" min="1.4" max="2.2" step="0.1" value="1.6"
-                            class="w-full">
-                        <span class="text-xs font-bold text-slate-400 shrink-0">2.2</span>
-                    </div>
-                </div>
-
-                <!-- UI Scale Slider -->
-                <div class="p-4 rounded-xl bg-slate-50 dark:bg-slate-700/50">
-                    <div class="flex justify-between items-center mb-3">
-                        <div class="flex items-center gap-3">
-                            <div
-                                class="p-2 bg-purple-100 dark:bg-purple-900 rounded-lg text-purple-600 dark:text-purple-400">
-                                <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24"
-                                    stroke="currentColor">
-                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-                                        d="M4 8V4m0 0h4M4 4l5 5m11-1V4m0 0h-4m4 0l-5 5M4 16v4m0 0h4m-4 0l5-5m11 5v-4m0 4h-4m4 0l-5-5" />
-                                </svg>
-                            </div>
-                            <span class="font-medium text-slate-700 dark:text-slate-200">Tỷ lệ giao diện</span>
-                        </div>
-                        <span id="ui-scale-display"
-                            class="text-sm font-bold text-purple-600 dark:text-purple-400">100%</span>
-                    </div>
-                    <div class="flex items-center gap-3">
-                        <span class="text-xs font-bold text-slate-400 shrink-0">80%</span>
-                        <input type="range" id="ui-scale-slider" min="80" max="120" step="5" value="100" class="w-full">
-                        <span class="text-xs font-bold text-slate-400 shrink-0">120%</span>
-                    </div>
-                </div>
-
-                <!-- Content Width Slider -->
-                <div class="p-4 rounded-xl bg-slate-50 dark:bg-slate-700/50">
-                    <div class="flex justify-between items-center mb-3">
-                        <div class="flex items-center gap-3">
-                            <div
-                                class="p-2 bg-orange-100 dark:bg-orange-900 rounded-lg text-orange-600 dark:text-orange-400">
-                                <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24"
-                                    stroke="currentColor">
-                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-                                        d="M8 9l4-4 4 4m0 6l-4 4-4-4" />
-                                </svg>
-                            </div>
-                            <span class="font-medium text-slate-700 dark:text-slate-200">Độ rộng nội dung</span>
-                        </div>
-                        <span id="content-width-display"
-                            class="text-sm font-bold text-orange-600 dark:text-orange-400">768px</span>
-                    </div>
-                    <div class="flex items-center gap-3">
-                        <span class="text-xs font-bold text-slate-400 shrink-0">600</span>
-                        <input type="range" id="content-width-slider" min="600" max="1200" step="50" value="768"
-                            class="w-full">
-                        <span class="text-xs font-bold text-slate-400 shrink-0">1200</span>
-                    </div>
-                    <p class="text-xs text-slate-400 mt-2">Điều chỉnh chiều ngang khu vực làm bài</p>
-                </div>
-
-                <!-- Font Family Selector -->
-                <div class="p-4 rounded-xl bg-slate-50 dark:bg-slate-700/50">
-                    <div class="flex justify-between items-center mb-3">
-                        <div class="flex items-center gap-3">
-                            <div class="p-2 bg-rose-100 dark:bg-rose-900 rounded-lg text-rose-600 dark:text-rose-400">
-                                <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24"
-                                    stroke="currentColor">
-                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-                                        d="M11 5H9a2 2 0 00-2 2v12l4-4 4 4V7a2 2 0 00-2-2h-2M11 5V1m0 4h4" />
-                                </svg>
-                            </div>
-                            <span class="font-medium text-slate-700 dark:text-slate-200">Phông chữ</span>
-                        </div>
-                        <span id="font-family-display" class="text-sm font-bold text-rose-600 dark:text-rose-400">Hiện
-                            đại</span>
-                    </div>
-                    <div class="grid grid-cols-3 gap-2">
-                        <button onclick="app.setFontFamily('classic')" id="settings-font-classic"
-                            class="font-family-btn p-2 rounded-lg border-2 border-slate-200 dark:border-slate-600 bg-white dark:bg-slate-800 hover:border-emerald-400 transition-all text-center">
-                            <span class="block text-lg text-slate-700 dark:text-slate-200"
-                                style="font-family: 'Roboto', sans-serif;">Aa</span>
-                            <span class="text-[10px] text-slate-500 dark:text-slate-400">Cổ điển</span>
-                        </button>
-                        <button onclick="app.setFontFamily('basic')" id="settings-font-basic"
-                            class="font-family-btn p-2 rounded-lg border-2 border-slate-200 dark:border-slate-600 bg-white dark:bg-slate-800 hover:border-amber-400 transition-all text-center">
-                            <span class="block text-lg text-slate-700 dark:text-slate-200"
-                                style="font-family: 'Times New Roman', serif;">Aa</span>
-                            <span class="text-[10px] text-slate-500 dark:text-slate-400">Cơ bản</span>
-                        </button>
-                        <button onclick="app.setFontFamily('modern')" id="settings-font-modern"
-                            class="font-family-btn p-2 rounded-lg border-2 border-blue-500 bg-blue-50 dark:bg-blue-900/30 transition-all text-center">
-                            <span class="block text-lg text-slate-700 dark:text-slate-200"
-                                style="font-family: 'Plus Jakarta Sans', sans-serif;">Aa</span>
-                            <span class="text-[10px] text-slate-500 dark:text-slate-400">Hiện đại</span>
-                        </button>
-                    </div>
-                </div>
-
-                <!-- Answer Layout Toggle -->
-                <div class="flex items-center justify-between p-4 rounded-xl bg-slate-50 dark:bg-slate-700/50">
-                    <div class="flex items-center gap-3">
-                        <div class="p-2 bg-cyan-100 dark:bg-cyan-900 rounded-lg text-cyan-600 dark:text-cyan-400">
-                            <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24"
-                                stroke="currentColor">
-                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-                                    d="M4 6h16M4 10h16M4 14h16M4 18h16" />
-                            </svg>
-                        </div>
-                        <div>
-                            <span class="font-medium text-slate-700 dark:text-slate-200">Đáp án theo cột dọc</span>
-                            <p class="text-xs text-slate-400">1 cột thay vì 2 cột</p>
-                        </div>
-                    </div>
-                    <div
-                        class="relative inline-block w-12 mr-2 align-middle select-none transition duration-200 ease-in">
-                        <input type="checkbox" name="toggle" id="answer-layout-toggle"
-                            class="toggle-checkbox absolute block w-6 h-6 rounded-full bg-white border-4 border-slate-300 appearance-none cursor-pointer transition-all duration-300" />
-                        <label for="answer-layout-toggle"
-                            class="toggle-label block overflow-hidden h-6 rounded-full bg-slate-300 cursor-pointer transition-colors duration-300"></label>
-                    </div>
-                </div>
-
-                <!-- Default Exam Mode Selector -->
-                <div class="p-4 rounded-xl bg-slate-50 dark:bg-slate-700/50">
-                    <div class="flex items-center gap-3 mb-3">
-                        <div
-                            class="p-2 bg-violet-100 dark:bg-violet-900 rounded-lg text-violet-600 dark:text-violet-400">
-                            <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24"
-                                stroke="currentColor">
-                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-                                    d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2" />
-                            </svg>
-                        </div>
-                        <div>
-                            <span class="font-medium text-slate-700 dark:text-slate-200">Chế độ làm bài mặc định</span>
-                            <p id="default-mode-desc" class="text-xs text-slate-400">Luôn hỏi khi bắt đầu</p>
-                        </div>
-                    </div>
-                    <div class="grid grid-cols-3 gap-2">
-                        <button onclick="app.setDefaultExamMode('ask')" id="settings-mode-ask"
-                            class="mode-btn p-2 rounded-lg border-2 border-blue-500 bg-blue-50 dark:bg-blue-900/30 transition-all text-center">
-                            <span class="block text-lg">❓</span>
-                            <span class="text-[10px] text-slate-600 dark:text-slate-300 font-medium">Luôn hỏi</span>
-                        </button>
-                        <button onclick="app.setDefaultExamMode('classic')" id="settings-mode-classic"
-                            class="mode-btn p-2 rounded-lg border-2 border-slate-200 dark:border-slate-600 bg-white dark:bg-slate-800 hover:border-blue-400 transition-all text-center">
-                            <span class="block text-lg">📝</span>
-                            <span class="text-[10px] text-slate-600 dark:text-slate-300 font-medium">Cổ điển</span>
-                        </button>
-                        <button onclick="app.setDefaultExamMode('stepbystep')" id="settings-mode-stepbystep"
-                            class="mode-btn p-2 rounded-lg border-2 border-slate-200 dark:border-slate-600 bg-white dark:bg-slate-800 hover:border-purple-400 transition-all text-center">
-                            <span class="block text-lg">👆</span>
-                            <span class="text-[10px] text-slate-600 dark:text-slate-300 font-medium">Từng câu</span>
-                        </button>
-                    </div>
-                </div>
-            </div>
-
-            <div class="mt-6 pt-4 border-t border-slate-100 dark:border-slate-700 text-center text-xs text-slate-400">
-                StudyStation Practice v1.8 • Phát triển bởi: <span
-                    class="font-bold text-slate-500 dark:text-slate-300">Trọng Phúc</span>
-            </div>
-        </div>
-    </div>
-
-    <div id="music-overlay" class="hidden fixed inset-0 z-30 bg-slate-900/60 backdrop-blur-sm"></div>
-
-    <!-- Music Player Panel -->
-    <div id="music-panel"
-        class="hidden fixed z-40 md:bottom-4 md:right-4 bottom-0 left-0 right-0 md:left-auto w-full md:w-auto md:max-w-md bg-white dark:bg-slate-900/95 border-t md:border border-slate-200 dark:border-slate-700 md:rounded-2xl rounded-t-3xl shadow-2xl p-4 md:p-5 space-y-3 md:space-y-4 transition-all max-h-[80vh] overflow-y-auto">
-        <div class="flex items-start justify-between gap-4">
-            <div>
-                <p class="text-xs font-semibold text-slate-400 uppercase">Đang phát</p>
-                <h3 id="music-current-title" class="text-lg font-bold text-slate-900 dark:text-white">Chưa chọn bài hát
-                </h3>
-                <p id="music-current-source" class="text-sm text-slate-500 dark:text-slate-400">Thêm bài hát để bắt đầu
-                </p>
-            </div>
-            <div class="flex gap-2">
-                <button id="music-hide-btn"
-                    class="px-3 py-1.5 text-xs font-semibold rounded-lg border border-slate-200 dark:border-slate-700 text-slate-500 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-800">Thu
-                    gọn</button>
-                <button id="music-stop-btn"
-                    class="px-3 py-1.5 text-xs font-semibold rounded-lg border border-rose-200 text-rose-500 hover:bg-rose-50 dark:border-rose-500 dark:text-rose-300 dark:hover:bg-rose-900/20">Tắt</button>
-            </div>
-        </div>
-        <div
-            class="bg-slate-900/90 rounded-2xl overflow-hidden h-44 md:h-auto md:aspect-video flex items-center justify-center">
-            <div id="music-player" class="w-full h-full"></div>
-            <div id="music-player-placeholder"
-                class="w-full h-full flex items-center justify-center flex-col text-white text-sm gap-2">
-                <svg xmlns="http://www.w3.org/2000/svg" class="h-10 w-10 text-white/80" fill="none" viewBox="0 0 24 24"
-                    stroke="currentColor">
-                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 19V6l12-2v13" />
-                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-                        d="M6 19a3 3 0 106-0 3 3 0 00-6 0zM15 17a3 3 0 106 0 3 3 0 00-6 0z" />
-                </svg>
-                <p>Chọn bài hát để khởi tạo trình phát</p>
-            </div>
-        </div>
-        <div class="flex items-center justify-between gap-2 md:gap-3">
-            <button id="music-prev-btn"
-                class="control-button w-10 h-10 md:w-11 md:h-11 rounded-full border border-slate-200 dark:border-slate-700 text-slate-600 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800 flex items-center justify-center">
-                <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24"
-                    stroke="currentColor">
-                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-                        d="M11 19l-7-7 7-7m9 14V5l-7 7 7 7z" />
-                </svg>
-            </button>
-            <button id="music-play-btn"
-                class="main-play-button flex-1 py-2.5 md:py-3 rounded-2xl bg-blue-600 hover:bg-blue-700 text-white font-semibold flex items-center justify-center gap-2 shadow-blue-500/20 shadow">
-                <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="currentColor" viewBox="0 0 24 24">
-                    <path d="M5 3l14 9-14 9V3z" />
-                </svg>
-                <span>Phát</span>
-            </button>
-            <button id="music-next-btn"
-                class="control-button w-10 h-10 md:w-11 md:h-11 rounded-full border border-slate-200 dark:border-slate-700 text-slate-600 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800 flex items-center justify-center">
-                <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24"
-                    stroke="currentColor">
-                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-                        d="M13 5l7 7-7 7M5 5v14l7-7-7-7z" />
-                </svg>
-            </button>
-        </div>
-        <div class="flex items-center gap-3 text-xs font-semibold text-slate-500 dark:text-slate-400">
-            <div class="flex items-center gap-1 text-slate-400">
-                <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24"
-                    stroke="currentColor">
-                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-                        d="M11 5l-7 7 7 7m0-14v14m4-10h4m0 0l2-2m-2 2l2 2" />
-                </svg>
-                <span>Âm lượng</span>
-            </div>
-            <input id="music-volume" type="range" min="0" max="100" value="70" class="flex-1 accent-blue-600">
-            <span id="music-volume-label" class="text-[11px] font-bold text-slate-600 dark:text-slate-300">70%</span>
-        </div>
-        <details
-            class="music-section rounded-xl border border-slate-200 dark:border-slate-700 bg-slate-50/60 dark:bg-slate-800/40 px-4 py-3"
-            open>
-            <summary
-                class="flex items-center justify-between text-xs font-semibold text-slate-500 dark:text-slate-300 uppercase tracking-wide">
-                Thêm bài hát
-                <span class="toggle-icon text-lg text-slate-400">›</span>
-            </summary>
-            <div class="music-section-content mt-3 space-y-2">
-                <form id="music-add-form" class="space-y-2">
-                    <div class="flex flex-col gap-2 sm:flex-row">
-                        <input id="music-link-input" type="url" placeholder="Dán link YouTube..."
-                            class="flex-1 px-3 py-2 rounded-xl border border-slate-200 dark:border-slate-700 bg-white/80 dark:bg-slate-800/80 text-sm focus:ring-2 focus:ring-blue-500 outline-none">
-                        <button type="submit"
-                            class="px-4 py-2 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white font-semibold text-sm whitespace-nowrap">Thêm</button>
-                    </div>
-                    <p id="music-feedback" class="text-xs text-slate-500 dark:text-slate-400"></p>
-                </form>
-            </div>
-        </details>
-        <details
-            class="music-section rounded-xl border border-slate-200 dark:border-slate-700 bg-slate-50/60 dark:bg-slate-800/40 px-4 py-3"
-            open>
-            <summary
-                class="flex items-center justify-between text-xs font-semibold text-slate-500 dark:text-slate-300 uppercase tracking-wide">
-                Danh sách phát
-                <span class="toggle-icon text-lg text-slate-400">›</span>
-            </summary>
-            <div class="music-section-content mt-3 space-y-2">
-                <div class="flex items-center justify-between text-[11px] font-semibold text-slate-400">
-                    <span>Quản lý nhanh</span>
-                    <button id="music-reset-btn" class="underline underline-offset-2 hover:text-blue-500">Khôi phục mặc
-                        định</button>
-                </div>
-                <div id="music-track-list" class="max-h-40 overflow-y-auto custom-scrollbar space-y-2 pr-1"></div>
-            </div>
-        </details>
-    </div>
-    <div id="music-mini-player"
-        class="hidden fixed z-30 bottom-3 left-3 right-3 md:left-auto md:right-4 md:bottom-4 md:w-64 bg-white/95 dark:bg-slate-900/95 border border-slate-200 dark:border-slate-700 rounded-2xl shadow-lg p-2.5 flex items-center gap-3 backdrop-blur">
-        <button id="music-mini-play"
-            class="w-9 h-9 rounded-full border border-slate-200 dark:border-slate-600 flex items-center justify-center text-slate-600 dark:text-slate-200">
-            <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="currentColor" viewBox="0 0 24 24">
-                <path d="M5 3l14 9-14 9V3z" />
-            </svg>
-        </button>
-        <div class="flex-1 min-w-0">
-            <p class="text-[11px] uppercase font-semibold text-slate-400">Âm nhạc học tập</p>
-            <p id="music-mini-title" class="text-sm font-semibold text-slate-800 dark:text-slate-100 truncate">Chưa chọn
-                bài hát</p>
-        </div>
-        <div class="flex gap-1">
-            <button id="music-mini-open"
-                class="px-2.5 py-1 text-xs font-semibold rounded-lg bg-blue-600 text-white">Mở</button>
-            <button id="music-mini-close"
-                class="px-2 py-1 text-xs font-semibold rounded-lg border border-slate-200 dark:border-slate-600 text-slate-500 dark:text-slate-300">✕</button>
-        </div>
-    </div>
-
-    <!-- Exam Mode Selection Modal -->
-    <div id="exam-mode-modal"
-        class="hidden fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm animate-fade-in p-4">
-        <div
-            class="bg-white dark:bg-slate-800 w-full max-w-md rounded-2xl shadow-2xl transform transition-all border border-slate-100 dark:border-slate-700 overflow-hidden">
-            <!-- Header -->
-            <div
-                class="p-5 border-b border-slate-100 dark:border-slate-700 bg-gradient-to-r from-blue-50 to-indigo-50 dark:from-blue-900/20 dark:to-indigo-900/20">
-                <div class="flex items-center gap-3">
-                    <div class="w-12 h-12 rounded-xl bg-blue-100 dark:bg-blue-900/50 flex items-center justify-center">
-                        <svg class="w-6 h-6 text-blue-600 dark:text-blue-400" fill="none" stroke="currentColor"
-                            viewBox="0 0 24 24">
-                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-                                d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-6 9l2 2 4-4" />
-                        </svg>
-                    </div>
-                    <div>
-                        <h3 class="font-bold text-lg text-slate-900 dark:text-white">Chọn chế độ làm bài</h3>
-                        <p id="mode-modal-exam-title"
-                            class="text-sm text-slate-500 dark:text-slate-400 truncate max-w-[250px]"></p>
-                    </div>
-                </div>
-            </div>
-
-            <!-- Content -->
-            <div class="p-5 space-y-3">
-                <!-- Classic Mode -->
-                <button onclick="app.confirmExamMode('classic')"
-                    class="w-full p-4 rounded-xl border-2 border-slate-200 dark:border-slate-600 bg-white dark:bg-slate-700/50 hover:border-blue-400 dark:hover:border-blue-500 hover:bg-blue-50/50 dark:hover:bg-blue-900/20 transition-all group text-left">
-                    <div class="flex items-start gap-4">
-                        <div
-                            class="w-12 h-12 shrink-0 rounded-xl bg-blue-100 dark:bg-blue-900/50 flex items-center justify-center group-hover:scale-110 transition-transform">
-                            <svg class="w-6 h-6 text-blue-600 dark:text-blue-400" fill="none" stroke="currentColor"
-                                viewBox="0 0 24 24">
-                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-                                    d="M4 6h16M4 10h16M4 14h16M4 18h16" />
-                            </svg>
-                        </div>
-                        <div class="flex-1">
-                            <h4
-                                class="font-bold text-slate-800 dark:text-white mb-1 group-hover:text-blue-600 dark:group-hover:text-blue-400 transition-colors">
-                                Chế độ Cổ điển</h4>
-                            <p class="text-sm text-slate-500 dark:text-slate-400">Hiển thị tất cả câu hỏi, làm tự do và
-                                nộp bài khi xong.</p>
-                        </div>
-                    </div>
-                </button>
-
-                <!-- Step-by-Step Mode -->
-                <button onclick="app.confirmExamMode('stepbystep')"
-                    class="w-full p-4 rounded-xl border-2 border-slate-200 dark:border-slate-600 bg-white dark:bg-slate-700/50 hover:border-purple-400 dark:hover:border-purple-500 hover:bg-purple-50/50 dark:hover:bg-purple-900/20 transition-all group text-left">
-                    <div class="flex items-start gap-4">
-                        <div
-                            class="w-12 h-12 shrink-0 rounded-xl bg-purple-100 dark:bg-purple-900/50 flex items-center justify-center group-hover:scale-110 transition-transform">
-                            <svg class="w-6 h-6 text-purple-600 dark:text-purple-400" fill="none" stroke="currentColor"
-                                viewBox="0 0 24 24">
-                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-                                    d="M9 5l7 7-7 7" />
-                            </svg>
-                        </div>
-                        <div class="flex-1">
-                            <h4
-                                class="font-bold text-slate-800 dark:text-white mb-1 group-hover:text-purple-600 dark:group-hover:text-purple-400 transition-colors">
-                                Chế độ Từng Câu</h4>
-                            <p class="text-sm text-slate-500 dark:text-slate-400">Từng câu một, phải trả lời đúng mới
-                                qua câu tiếp theo. Có thể bỏ qua.</p>
-                            <span
-                                class="inline-block mt-2 text-xs font-semibold px-2 py-0.5 rounded-full bg-purple-100 dark:bg-purple-900/50 text-purple-600 dark:text-purple-400">MỚI</span>
-                        </div>
-                    </div>
-                </button>
-            </div>
-
-            <!-- Footer -->
-            <div class="p-4 border-t border-slate-100 dark:border-slate-700 bg-slate-50 dark:bg-slate-800/50">
-                <!-- Remember checkbox -->
-                <label class="flex items-center gap-3 mb-3 cursor-pointer group">
-                    <input type="checkbox" id="remember-mode-checkbox"
-                        class="w-5 h-5 rounded border-2 border-slate-300 dark:border-slate-600 text-blue-600 focus:ring-blue-500 focus:ring-offset-0 cursor-pointer">
-                    <span
-                        class="text-sm text-slate-600 dark:text-slate-300 group-hover:text-slate-800 dark:group-hover:text-white transition-colors">Không
-                        hỏi lại nữa (lưu làm mặc định)</span>
-                </label>
-                <button onclick="document.getElementById('exam-mode-modal').classList.add('hidden')"
-                    class="w-full py-3 px-4 rounded-xl border border-slate-200 dark:border-slate-600 text-slate-600 dark:text-slate-300 font-bold hover:bg-slate-100 dark:hover:bg-slate-700 transition-colors">
-                    Hủy
-                </button>
-            </div>
-        </div>
-    </div>
-
-    <!-- Submit Confirmation Modal -->
-    <div id="submit-confirm-modal"
-        class="hidden fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm animate-fade-in p-4">
-        <div
-            class="bg-white dark:bg-slate-800 w-full max-w-sm rounded-2xl p-6 shadow-2xl transform transition-all border border-slate-100 dark:border-slate-700 text-center">
-            <div
-                class="w-16 h-16 bg-blue-50 dark:bg-blue-900/30 rounded-full flex items-center justify-center mx-auto mb-4 text-blue-600 dark:text-blue-400">
-                <svg xmlns="http://www.w3.org/2000/svg" class="h-8 w-8" fill="none" viewBox="0 0 24 24"
-                    stroke="currentColor">
-                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-                        d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
-                </svg>
-            </div>
-            <h3 class="text-xl font-bold text-slate-900 dark:text-white mb-2">Nộp bài thi?</h3>
-            <p class="text-slate-500 dark:text-slate-400 mb-6">Bạn có chắc chắn muốn nộp bài không? Thời gian làm bài sẽ
-                dừng lại.</p>
-            <div class="flex gap-3">
-                <button onclick="document.getElementById('submit-confirm-modal').classList.add('hidden')"
-                    class="flex-1 py-3 px-4 rounded-xl border border-slate-200 dark:border-slate-600 text-slate-600 dark:text-slate-300 font-bold hover:bg-slate-50 dark:hover:bg-slate-700">Quay
-                    lại</button>
-                <button onclick="app.confirmSubmit()"
-                    class="flex-1 py-3 px-4 rounded-xl bg-blue-600 text-white font-bold hover:bg-blue-700 shadow-lg shadow-blue-500/30">Nộp
-                    bài</button>
-            </div>
-        </div>
-    </div>
-
-    <!-- Practice History Modal -->
-    <div id="history-modal"
-        class="hidden fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm animate-fade-in p-4">
-        <div
-            class="bg-white dark:bg-slate-800 w-full max-w-lg rounded-2xl shadow-2xl transform transition-all border border-slate-100 dark:border-slate-700 overflow-hidden">
-            <!-- Header -->
-            <div
-                class="p-4 border-b border-slate-200 dark:border-slate-700 bg-gradient-to-r from-indigo-50 to-purple-50 dark:from-indigo-900/30 dark:to-purple-900/30">
-                <div class="flex items-center justify-between">
-                    <div class="flex items-center gap-3">
-                        <div
-                            class="w-10 h-10 bg-indigo-100 dark:bg-indigo-900/50 rounded-xl flex items-center justify-center">
-                            <svg class="w-5 h-5 text-indigo-600 dark:text-indigo-400" fill="none" stroke="currentColor"
-                                viewBox="0 0 24 24">
-                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-                                    d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"></path>
-                            </svg>
-                        </div>
-                        <div>
-                            <h3 class="text-lg font-bold text-slate-900 dark:text-white">Lịch sử làm bài</h3>
-                            <p id="history-exam-title"
-                                class="text-sm text-slate-500 dark:text-slate-400 truncate max-w-[200px]"></p>
-                        </div>
-                    </div>
-                    <button onclick="app.closeHistoryModal()"
-                        class="text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 p-2 hover:bg-slate-100 dark:hover:bg-slate-700 rounded-lg transition-colors">
-                        <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-                                d="M6 18L18 6M6 6l12 12"></path>
-                        </svg>
-                    </button>
-                </div>
-            </div>
-            <!-- Content -->
-            <div class="max-h-[60vh] overflow-y-auto custom-scrollbar">
-                <div id="history-list" class="p-4 space-y-3">
-                    <!-- History items will be rendered here -->
-                    <div class="text-center text-slate-400 py-8">Đang tải...</div>
-                </div>
-            </div>
-            <!-- Footer -->
-            <div class="p-4 border-t border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-900/50">
-                <button onclick="app.closeHistoryModal()"
-                    class="w-full py-2.5 px-4 rounded-xl border border-slate-200 dark:border-slate-600 text-slate-600 dark:text-slate-300 font-bold hover:bg-slate-100 dark:hover:bg-slate-700 transition-colors">
-                    Đóng
-                </button>
-            </div>
-        </div>
-    </div>
-
-    <!-- Theme Selector Modal (First Visit) -->
-    <div id="theme-selector-modal"
-        class="hidden fixed inset-0 z-[9998] flex items-center justify-center bg-gradient-to-br from-slate-900/95 via-blue-900/90 to-indigo-900/95 backdrop-blur-sm p-4 overflow-y-auto">
-        <div
-            class="bg-white w-full max-w-lg rounded-3xl p-6 md:p-8 shadow-2xl transform transition-all border border-slate-100 text-center animate-fade-in my-4">
-            <!-- Icon -->
-            <div
-                class="w-16 h-16 md:w-20 md:h-20 mx-auto mb-4 md:mb-6 rounded-2xl bg-gradient-to-br from-blue-500 to-indigo-600 flex items-center justify-center shadow-lg shadow-blue-500/30">
-                <svg xmlns="http://www.w3.org/2000/svg" class="h-8 w-8 md:h-10 md:w-10 text-white" fill="none"
-                    viewBox="0 0 24 24" stroke="currentColor">
-                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-                        d="M7 21a4 4 0 01-4-4V5a2 2 0 012-2h4a2 2 0 012 2v12a4 4 0 01-4 4zm0 0h12a2 2 0 002-2v-4a2 2 0 00-2-2h-2.343M11 7.343l1.657-1.657a2 2 0 012.828 0l2.829 2.829a2 2 0 010 2.828l-8.486 8.485M7 17h.01" />
-                </svg>
-            </div>
-
-            <!-- Title -->
-            <h3 class="text-xl md:text-2xl font-bold text-slate-900 mb-2">Chào mừng bạn đến StudyStation!</h3>
-            <p class="text-slate-500 mb-6">Hãy tùy chỉnh giao diện theo ý thích:</p>
-
-            <!-- Theme Selection -->
-            <div class="mb-6">
-                <h4 class="text-sm font-bold text-slate-600 uppercase tracking-wider mb-3">Chế độ hiển thị</h4>
-                <div class="grid grid-cols-2 gap-3">
-                    <!-- Light Mode Option -->
-                    <button onclick="app.previewTheme('light')" id="theme-btn-light"
-                        class="theme-option group relative p-4 rounded-xl border-2 border-slate-200 bg-slate-50 hover:border-blue-400 hover:bg-blue-50 transition-all duration-300 cursor-pointer">
-                        <div
-                            class="w-10 h-10 mx-auto mb-2 rounded-lg bg-white border border-slate-200 flex items-center justify-center group-hover:scale-110 transition-transform shadow-sm">
-                            <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 text-amber-500" fill="none"
-                                viewBox="0 0 24 24" stroke="currentColor">
-                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-                                    d="M12 3v1m0 16v1m9-9h-1M4 12H3m15.364 6.364l-.707-.707M6.343 6.343l-.707-.707m12.728 0l-.707.707M6.343 17.657l-.707.707M16 12a4 4 0 11-8 0 4 4 0 018 0z" />
-                            </svg>
-                        </div>
-                        <div class="font-bold text-slate-800 text-sm">Sáng</div>
-                    </button>
-
-                    <!-- Dark Mode Option -->
-                    <button onclick="app.previewTheme('dark')" id="theme-btn-dark"
-                        class="theme-option group relative p-4 rounded-xl border-2 border-slate-600 bg-slate-700 hover:border-indigo-500 hover:bg-slate-600 transition-all duration-300 cursor-pointer">
-                        <div
-                            class="w-10 h-10 mx-auto mb-2 rounded-lg bg-slate-800 border border-slate-500 flex items-center justify-center group-hover:scale-110 transition-transform shadow-sm">
-                            <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 text-indigo-400" fill="none"
-                                viewBox="0 0 24 24" stroke="currentColor">
-                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-                                    d="M20.354 15.354A9 9 0 018.646 3.646 9.003 9.003 0 0012 21a9.003 9.003 0 008.354-5.646z" />
-                            </svg>
-                        </div>
-                        <div class="font-bold text-white text-sm">Tối</div>
-                    </button>
-                </div>
-            </div>
-
-            <!-- Font Selection -->
-            <div class="mb-6">
-                <h4 class="text-sm font-bold text-slate-600 uppercase tracking-wider mb-3">Phông chữ</h4>
-                <div class="grid grid-cols-3 gap-2">
-                    <!-- Classic Font - Roboto -->
-                    <button onclick="app.previewFont('classic')" id="font-btn-classic"
-                        class="font-option group relative p-3 rounded-xl border-2 border-slate-200 bg-white hover:border-emerald-400 hover:bg-emerald-50 transition-all duration-300 cursor-pointer">
-                        <div class="text-xl font-medium text-slate-700 mb-1" style="font-family: 'Roboto', sans-serif;">
-                            Aa</div>
-                        <div class="font-bold text-slate-600 text-xs">Cổ điển</div>
-                        <div class="text-[10px] text-slate-400">Roboto</div>
-                    </button>
-
-                    <!-- Basic Font - Times New Roman -->
-                    <button onclick="app.previewFont('basic')" id="font-btn-basic"
-                        class="font-option group relative p-3 rounded-xl border-2 border-slate-200 bg-white hover:border-amber-400 hover:bg-amber-50 transition-all duration-300 cursor-pointer">
-                        <div class="text-xl font-medium text-slate-700 mb-1"
-                            style="font-family: 'Times New Roman', serif;">Aa</div>
-                        <div class="font-bold text-slate-600 text-xs">Cơ bản</div>
-                        <div class="text-[10px] text-slate-400">Times New Roman</div>
-                    </button>
-
-                    <!-- Modern Font - Plus Jakarta Sans -->
-                    <button onclick="app.previewFont('modern')" id="font-btn-modern"
-                        class="font-option group relative p-3 rounded-xl border-2 border-blue-400 bg-blue-50 transition-all duration-300 cursor-pointer">
-                        <div class="text-xl font-medium text-slate-700 mb-1"
-                            style="font-family: 'Plus Jakarta Sans', sans-serif;">Aa</div>
-                        <div class="font-bold text-slate-600 text-xs">Hiện đại</div>
-                        <div class="text-[10px] text-slate-400">Plus Jakarta Sans</div>
-                    </button>
-                </div>
-            </div>
-
-            <!-- Preview Text -->
-            <div class="mb-6 p-4 rounded-xl bg-slate-100 border border-slate-200">
-                <p class="text-xs text-slate-400 uppercase tracking-wider mb-2">Xem trước</p>
-                <p id="font-preview-text" class="text-slate-700 text-base leading-relaxed">
-                    Đây là văn bản mẫu để bạn xem trước phông chữ. The quick brown fox jumps over the lazy dog.
-                </p>
-            </div>
-
-            <!-- Confirm Button -->
-            <button onclick="app.confirmSettings()"
-                class="w-full py-3 px-4 rounded-xl bg-gradient-to-r from-blue-600 to-indigo-600 text-white font-bold hover:from-blue-700 hover:to-indigo-700 shadow-lg shadow-blue-500/30 transition-all duration-300">
-                Xác nhận & Bắt đầu
-            </button>
-
-            <!-- Note -->
-            <p class="text-xs text-slate-400 mt-4">
-                <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4 inline mr-1" fill="none" viewBox="0 0 24 24"
-                    stroke="currentColor">
-                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-                        d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
-                </svg>
-                Bạn có thể thay đổi sau trong phần Cài đặt
-            </p>
-        </div>
-    </div>
-
-    <!-- Spacer for fixed header -->
-    <div class="h-16 shrink-0 bg-slate-50 dark:bg-slate-900"></div>
-
-    <!-- Main Content Area -->
-    <main id="app-container" class="flex-1 overflow-y-auto overflow-x-hidden relative bg-slate-50 dark:bg-slate-900"
-        style="min-height: 0;">
-        <!-- Views will be injected here -->
-    </main>
-
-    <!-- Templates -->
-
-    <!-- 1. Home View -->
-    <template id="tpl-home">
-        <div class="min-h-full overflow-y-auto px-4 py-6 lg:px-10 animate-enter custom-scrollbar scroll-smooth"
-            style="padding-bottom: 100px;">
-            <div class="max-w-6xl mx-auto">
-                <div
-                    class="flex flex-col md:flex-row items-center justify-between bg-white dark:bg-slate-800 rounded-2xl p-6 border border-slate-200 dark:border-slate-700 shadow-sm mb-8 gap-4">
-                    <div>
-                        <h2 class="text-xl md:text-2xl font-bold text-slate-900 dark:text-white mb-1">
-                            Ôn thi THPT QG 2025
-                        </h2>
-                        <p class="text-slate-500 dark:text-slate-400 text-sm">
-                            Cấu trúc đề mới nhất. Tích hợp công thức Toán/Lý/Hóa.
-                        </p>
-                    </div>
-                    <button
-                        class="bg-blue-600 hover:bg-blue-700 text-white px-5 py-2.5 rounded-xl font-semibold text-sm transition-colors shadow-lg shadow-blue-500/20 whitespace-nowrap w-full md:w-auto">
-                        Bắt đầu ngay
-                    </button>
-                </div>
-                <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 md:gap-6"></div>
-            </div>
-        </div>
-    </template>
-
-    <!-- 2. Exam List View -->
-    <template id="tpl-exam-list">
-        <div class="min-h-full overflow-y-auto px-4 py-6 lg:px-10 animate-enter custom-scrollbar"
-            style="padding-bottom: 100px;">
-            <div class="max-w-4xl mx-auto">
-                <button onclick="app.goHome()"
-                    class="group flex items-center text-slate-500 dark:text-slate-400 hover:text-blue-600 dark:hover:text-blue-400 mb-6 transition-colors font-medium text-sm">
-                    <div
-                        class="w-8 h-8 rounded-full bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 flex items-center justify-center mr-3 group-hover:border-blue-200 group-hover:bg-blue-50 dark:group-hover:bg-slate-700 transition-all">
-                        <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24"
-                            stroke="currentColor">
-                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7" />
-                        </svg>
-                    </div>
-                    Quay lại chọn môn
-                </button>
-                <div
-                    class="bg-white dark:bg-slate-800 rounded-3xl p-6 shadow-soft border border-slate-100 dark:border-slate-700 mb-6 flex items-center gap-6">
-                    <div id="subject-icon-large" class="p-4 bg-slate-50 dark:bg-slate-700/50 rounded-2xl"></div>
-                    <div>
-                        <h2 id="subject-title"
-                            class="text-2xl md:text-3xl font-bold text-slate-900 dark:text-white mb-1"></h2>
-                        <p class="text-slate-500 dark:text-slate-400 text-sm md:text-base">Danh sách đề thi thử chọn lọc
-                        </p>
-                    </div>
-                </div>
-                <div class="space-y-4">
-                    <h3 class="text-sm font-bold text-slate-400 uppercase tracking-wider ml-2">Các đề thi có sẵn</h3>
-                    <div id="exam-grid" class="grid grid-cols-1 gap-4"></div>
-                </div>
-            </div>
-        </div>
-    </template>
-
-    <!-- 3. Taking Exam View -->
-    <template id="tpl-taking-exam">
-        <!-- Main wrapper - full height with flex - NO transform/animation here -->
-        <div class="taking-exam-wrapper">
-            <!-- Questions area - scrolls independently, animation applied here -->
-            <div class="questions-scroll-area animate-enter bg-slate-50 dark:bg-slate-900 px-3 py-6 lg:px-12 scroll-smooth custom-scrollbar"
-                id="questions-container">
-                <div class="content-area mx-auto"
-                    style="padding-bottom: calc(120px + env(safe-area-inset-bottom, 20px));">
-                    <!-- Review Controls -->
-                    <div id="review-controls"
-                        class="hidden mb-6 sticky top-0 z-20 bg-white/90 dark:bg-slate-800/90 backdrop-blur p-3 rounded-xl border border-slate-200 dark:border-slate-700 shadow-sm flex flex-col sm:flex-row gap-3 items-center justify-between">
-                        <div class="flex gap-2 overflow-x-auto no-scrollbar w-full sm:w-auto pb-1 sm:pb-0">
-                            <button onclick="app.filterReview('all')"
-                                class="whitespace-nowrap px-3 py-1.5 rounded-lg text-sm font-bold bg-slate-100 dark:bg-slate-700 text-slate-600 dark:text-slate-300 hover:bg-slate-200 dark:hover:bg-slate-600 transition-colors filter-btn active"
-                                data-filter="all">Tất cả</button>
-                            <button onclick="app.filterReview('wrong')"
-                                class="whitespace-nowrap px-3 py-1.5 rounded-lg text-sm font-bold bg-red-50 dark:bg-red-900/30 text-red-600 dark:text-red-400 hover:bg-red-100 dark:hover:bg-red-900/50 transition-colors filter-btn"
-                                data-filter="wrong">Câu Sai</button>
-                            <button onclick="app.filterReview('correct')"
-                                class="whitespace-nowrap px-3 py-1.5 rounded-lg text-sm font-bold bg-green-50 dark:bg-green-900/30 text-green-600 dark:text-green-400 hover:bg-green-100 dark:hover:bg-green-900/50 transition-colors filter-btn"
-                                data-filter="correct">Câu Đúng</button>
-                        </div>
-                        <button onclick="app.goHome()"
-                            class="w-full sm:w-auto text-sm font-medium text-blue-600 hover:underline text-center sm:text-right">Thoát</button>
-                    </div>
-
-                    <div class="space-y-8">
-                        <div id="part-1-container">
-                            <div class="flex items-center gap-3 mb-4">
-                                <div class="h-6 w-1 bg-blue-600 rounded-full"></div>
-                                <div>
-                                    <h3
-                                        class="font-bold text-slate-800 dark:text-white text-base md:text-lg uppercase tracking-tight">
-                                        Phần I: Trắc nghiệm</h3>
-                                    <p class="text-xs md:text-sm text-slate-500 dark:text-slate-400">Chọn 01 phương án
-                                        đúng nhất.</p>
-                                </div>
-                            </div>
-                            <div id="part-1-questions" class="space-y-4 md:space-y-6"></div>
-                        </div>
-                        <div id="part-2-container">
-                            <hr class="border-slate-200 dark:border-slate-700 my-6">
-                            <div class="flex items-center gap-3 mb-4">
-                                <div class="h-6 w-1 bg-indigo-600 rounded-full"></div>
-                                <div>
-                                    <h3
-                                        class="font-bold text-slate-800 dark:text-white text-base md:text-lg uppercase tracking-tight">
-                                        Phần II: Đúng / Sai</h3>
-                                    <p class="text-xs md:text-sm text-slate-500 dark:text-slate-400">Quyết định tính
-                                        Đúng/Sai.</p>
-                                </div>
-                            </div>
-                            <div id="part-2-questions" class="space-y-6"></div>
-                        </div>
-                        <div id="part-3-container">
-                            <hr class="border-slate-200 dark:border-slate-700 my-6">
-                            <div class="flex items-center gap-3 mb-4">
-                                <div class="h-6 w-1 bg-emerald-600 rounded-full"></div>
-                                <div>
-                                    <h3
-                                        class="font-bold text-slate-800 dark:text-white text-base md:text-lg uppercase tracking-tight">
-                                        Phần III: Trả lời ngắn</h3>
-                                    <p class="text-xs md:text-sm text-slate-500 dark:text-slate-400">Điền đáp án chính
-                                        xác.</p>
-                                </div>
-                            </div>
-                            <div id="part-3-questions" class="space-y-4 md:space-y-6"></div>
-                        </div>
-                    </div>
-                </div>
-            </div>
-
-            <!-- Desktop Sidebar - FIXED position with own scroll -->
-            <aside id="desktop-palette-sidebar" class="desktop-sidebar-fixed hidden lg:flex">
-                <div class="sidebar-header">
-                    <h3 class="font-bold text-slate-800 dark:text-white text-base">Mục lục câu hỏi</h3>
-                    <p class="text-xs text-slate-400 mt-0.5">Trạng thái làm bài</p>
-                </div>
-                <div class="sidebar-content custom-scrollbar">
-                    <div id="question-palette" class="grid grid-cols-4 gap-2"></div>
-                </div>
-                <div id="submit-btn-container" class="sidebar-footer">
-                    <button onclick="app.submitExam()"
-                        class="w-full bg-blue-600 hover:bg-blue-700 active:scale-[0.98] text-white font-bold py-3.5 px-4 rounded-xl transition-all shadow-lg shadow-blue-600/20 flex items-center justify-center gap-2">
-                        <span>Nộp bài thi</span>
-                    </button>
-                </div>
-            </aside>
-        </div>
-        <!-- Mobile Footer - OUTSIDE of flex container -->
-        <div id="mobile-footer"
-            class="lg:hidden fixed bottom-0 left-0 right-0 bg-white/90 dark:bg-slate-800/90 backdrop-blur border-t border-slate-200 dark:border-slate-700 p-3 z-40 flex flex-row items-center gap-3 shadow-[0_-4px_20px_rgba(0,0,0,0.05)]"
-            style="height: 64px !important; max-height: 64px !important; min-height: 64px !important; flex-direction: row !important; align-items: center !important; top: auto !important;">
-            <button onclick="document.getElementById('mobile-palette').classList.remove('hidden')"
-                class="shrink-0 px-4 py-3 bg-slate-100 dark:bg-slate-700 text-slate-700 dark:text-slate-200 rounded-xl font-bold flex items-center gap-2"
-                style="height: 44px !important; max-height: 44px !important; align-self: center !important;">
-                Mục lục
-            </button>
-            <button onclick="app.submitExam()"
-                class="flex-1 bg-blue-600 text-white font-bold py-3 px-4 rounded-xl shadow-lg shadow-blue-600/20"
-                style="height: 44px !important; max-height: 44px !important; align-self: center !important;">
-                Nộp bài
-            </button>
-        </div>
-        <!-- Mobile Palette Modal -->
-        <div id="mobile-palette"
-            class="hidden fixed inset-0 bg-slate-900/40 backdrop-blur-sm z-50 flex items-end animate-fade-in">
-            <div
-                class="bg-white dark:bg-slate-800 w-full rounded-t-3xl p-5 max-h-[80vh] overflow-y-auto custom-scrollbar pb-10">
-                <div class="flex justify-between items-center mb-6">
-                    <h3 class="font-bold text-lg text-slate-900 dark:text-white">Danh sách câu hỏi</h3>
-                    <button onclick="document.getElementById('mobile-palette').classList.add('hidden')"
-                        class="p-2 bg-slate-100 dark:bg-slate-700 rounded-full text-slate-500">
-                        <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24"
-                            stroke="currentColor">
-                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-                                d="M6 18L18 6M6 6l12 12" />
-                        </svg>
-                    </button>
-                </div>
-                <div id="mobile-palette-grid" class="grid grid-cols-5 gap-3"></div>
-            </div>
-        </div>
-    </template>
-
-    <!-- 3b. Step-by-Step Mode View -->
-    <template id="tpl-step-by-step">
-        <!-- Wrapper WITHOUT animate-enter to avoid transform breaking fixed positioning -->
-        <div class="step-mode-wrapper">
-            <!-- Progress Header -->
-            <div
-                class="step-progress-header bg-white dark:bg-slate-800 border-b border-slate-200 dark:border-slate-700 px-4 py-3">
-                <div class="max-w-3xl mx-auto">
-                    <div class="flex items-center justify-between mb-2">
-                        <div class="flex items-center gap-3">
-                            <button onclick="app.exitStepMode()"
-                                class="p-2 hover:bg-slate-100 dark:hover:bg-slate-700 rounded-lg transition-colors"
-                                title="Thoát">
-                                <svg class="w-5 h-5 text-slate-500" fill="none" stroke="currentColor"
-                                    viewBox="0 0 24 24">
-                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-                                        d="M6 18L18 6M6 6l12 12" />
-                                </svg>
-                            </button>
-                            <div>
-                                <h3 class="font-bold text-slate-900 dark:text-white text-sm">Chế độ Từng Câu</h3>
-                                <p class="text-xs text-slate-500 dark:text-slate-400">Phải trả lời đúng mới được qua câu
-                                    tiếp theo</p>
-                            </div>
-                        </div>
-                        <div class="flex items-center gap-2">
-                            <span id="step-current" class="text-lg font-bold text-blue-600 dark:text-blue-400">1</span>
-                            <span class="text-slate-400">/</span>
-                            <span id="step-total"
-                                class="text-lg font-medium text-slate-500 dark:text-slate-400">0</span>
-                        </div>
-                    </div>
-                    <div class="w-full bg-slate-200 dark:bg-slate-700 rounded-full h-2 overflow-hidden">
-                        <div id="step-progress-bar"
-                            class="bg-gradient-to-r from-blue-500 to-indigo-500 h-2 rounded-full transition-all duration-500"
-                            style="width: 0%"></div>
-                    </div>
-                    <div class="flex justify-between mt-2 text-xs">
-                        <span class="text-emerald-600 dark:text-emerald-400 font-medium">
-                            <span id="step-correct-count">0</span> đúng
-                        </span>
-                        <span class="text-amber-600 dark:text-amber-400 font-medium">
-                            <span id="step-skipped-count">0</span> bỏ qua
-                        </span>
-                    </div>
-                </div>
-            </div>
-
-            <!-- Question Display Area - animate-enter moved here -->
-            <div class="step-question-area animate-enter flex-1 overflow-y-auto px-4 py-6 lg:px-8 bg-slate-50 dark:bg-slate-900"
-                id="step-question-container">
-                <div class="max-w-3xl mx-auto">
-                    <!-- Question Card -->
-                    <div id="step-question-card"
-                        class="bg-white dark:bg-slate-800 rounded-2xl border border-slate-200 dark:border-slate-700 shadow-sm overflow-hidden">
-                        <!-- Question Type Badge -->
-                        <div
-                            class="px-4 py-2 bg-slate-50 dark:bg-slate-700/50 border-b border-slate-100 dark:border-slate-700 flex items-center justify-between">
-                            <span id="step-question-type-badge"
-                                class="text-xs font-bold uppercase tracking-wider text-blue-600 dark:text-blue-400">Trắc
-                                nghiệm</span>
-                            <span id="step-question-part" class="text-xs text-slate-400">Phần I</span>
-                        </div>
-
-                        <!-- Question Content -->
-                        <div class="p-5">
-                            <div id="step-question-text" class="dynamic-text text-slate-800 dark:text-slate-200 mb-4">
-                            </div>
-                            <div id="step-question-image" class="hidden mb-4">
-                                <img src="" alt=""
-                                    class="max-w-full h-auto rounded-xl border border-slate-200 dark:border-slate-700">
-                            </div>
-
-                            <!-- Answer Options (for Part 1) -->
-                            <div id="step-options-container" class="space-y-3"></div>
-
-                            <!-- Sub-questions (for Part 2) -->
-                            <div id="step-subquestions-container" class="space-y-4 hidden"></div>
-
-                            <!-- Short Answer (for Part 3) -->
-                            <div id="step-short-answer-container" class="hidden">
-                                <input type="text" id="step-short-input"
-                                    class="w-full px-4 py-3 rounded-xl border-2 border-slate-200 dark:border-slate-600 bg-white dark:bg-slate-700 text-slate-800 dark:text-slate-200 text-lg font-medium focus:border-blue-500 focus:ring-2 focus:ring-blue-200 dark:focus:ring-blue-800 outline-none transition-all"
-                                    placeholder="Nhập đáp án của bạn..." autocomplete="off">
-                            </div>
-                        </div>
-                    </div>
-
-                    <!-- Feedback Message -->
-                    <div id="step-feedback" class="hidden mt-4 p-4 rounded-xl border-2 animate-fade-in">
-                        <div class="flex items-start gap-3">
-                            <div id="step-feedback-icon"
-                                class="shrink-0 w-10 h-10 rounded-full flex items-center justify-center"></div>
-                            <div class="flex-1">
-                                <h4 id="step-feedback-title" class="font-bold text-lg mb-1"></h4>
-                                <p id="step-feedback-message" class="text-sm"></p>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-            </div>
-
-            <!-- Bottom Action Bar - styled like mobile-footer -->
-            <div id="step-action-bar"
-                class="fixed bottom-0 left-0 right-0 bg-white/90 dark:bg-slate-800/90 backdrop-blur border-t border-slate-200 dark:border-slate-700 p-3 z-40 flex flex-row items-center gap-3 shadow-[0_-4px_20px_rgba(0,0,0,0.05)]"
-                style="height: 64px !important; max-height: 64px !important; min-height: 64px !important; flex-direction: row !important; align-items: center !important; top: auto !important;">
-                <!-- Back Button -->
-                <button onclick="app.stepPrevQuestion()" id="step-back-btn"
-                    class="hidden shrink-0 px-3 py-3 bg-slate-100 dark:bg-slate-700 text-slate-600 dark:text-slate-300 rounded-xl font-bold flex items-center gap-1 hover:bg-slate-200 dark:hover:bg-slate-600 transition-colors"
-                    style="height: 44px !important; max-height: 44px !important; align-self: center !important;">
-                    <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7" />
-                    </svg>
-                    <span class="hidden sm:inline">Quay lại</span>
-                </button>
-                <button onclick="app.stepSkipQuestion()" id="step-skip-btn"
-                    class="shrink-0 px-4 py-3 bg-slate-100 dark:bg-slate-700 text-slate-700 dark:text-slate-200 rounded-xl font-bold flex items-center gap-2"
-                    style="height: 44px !important; max-height: 44px !important; align-self: center !important;">
-                    <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-                            d="M13 5l7 7-7 7M5 5l7 7-7 7" />
-                    </svg>
-                    <span class="hidden sm:inline">Bỏ qua</span>
-                </button>
-                <button onclick="app.stepCheckAnswer()" id="step-check-btn"
-                    class="flex-1 bg-blue-600 text-white font-bold py-3 px-4 rounded-xl shadow-lg shadow-blue-600/20 flex items-center justify-center gap-2"
-                    style="height: 44px !important; max-height: 44px !important; align-self: center !important;">
-                    <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7" />
-                    </svg>
-                    <span>Kiểm tra</span>
-                </button>
-                <button onclick="app.stepNextQuestion()" id="step-next-btn"
-                    class="hidden flex-1 bg-emerald-600 text-white font-bold py-3 px-4 rounded-xl shadow-lg shadow-emerald-600/20 items-center justify-center gap-2"
-                    style="height: 44px !important; max-height: 44px !important; align-self: center !important;">
-                    <span>Tiếp theo</span>
-                    <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7" />
-                    </svg>
-                </button>
-            </div>
-        </div>
-    </template>
-
-    <!-- 4. Result View -->
-    <template id="tpl-result">
-        <div class="min-h-full overflow-y-auto p-4 lg:p-8 animate-enter flex items-center justify-center bg-slate-50 dark:bg-slate-900 custom-scrollbar"
-            style="padding-bottom: 60px;">
-            <div
-                class="bg-white dark:bg-slate-800 w-full max-w-2xl rounded-3xl shadow-soft border border-slate-100 dark:border-slate-700 overflow-hidden relative">
-                <div class="absolute top-0 left-0 w-full h-40 bg-gradient-to-br from-blue-600 to-indigo-700"></div>
-                <div class="relative pt-10 pb-6 px-6 text-center text-white">
-                    <h2 class="text-2xl md:text-3xl font-bold mb-1">Kết quả bài thi</h2>
-                    <p id="result-subject-name" class="opacity-90 font-medium text-blue-100 text-sm md:text-base"></p>
-                </div>
-
-                <div class="relative px-6 pb-8">
-                    <div class="flex flex-col items-center justify-center -mt-10 mb-6">
-                        <div
-                            class="w-32 h-32 md:w-40 md:h-40 rounded-full bg-white dark:bg-slate-800 p-2 shadow-xl mb-4 transition-colors">
-                            <div
-                                class="w-full h-full rounded-full border-8 border-blue-50 dark:border-slate-700 flex flex-col items-center justify-center">
-                                <span id="score-display"
-                                    class="text-4xl md:text-5xl font-extrabold text-slate-800 dark:text-white tracking-tighter"></span>
-                                <span
-                                    class="text-[10px] md:text-xs font-bold text-slate-400 uppercase tracking-widest mt-1">Thang
-                                    điểm 10</span>
-                            </div>
-                        </div>
-                    </div>
-
-                    <div class="grid grid-cols-1 sm:grid-cols-3 gap-3 sm:gap-4 mb-6 sm:mb-8">
-                        <div
-                            class="bg-slate-50 dark:bg-slate-700 p-4 rounded-2xl border border-slate-100 dark:border-slate-600 text-center flex sm:block items-center justify-between sm:justify-center">
-                            <div class="text-xs font-bold text-slate-400 uppercase mb-0 sm:mb-2">Thời gian</div>
-                            <div id="result-time" class="font-bold text-lg text-slate-700 dark:text-slate-200"></div>
-                        </div>
-                        <div
-                            class="bg-green-50 dark:bg-green-900/20 p-4 rounded-2xl border border-green-100 dark:border-green-900/30 text-center flex sm:block items-center justify-between sm:justify-center">
-                            <div class="text-xs font-bold text-green-600 dark:text-green-400 uppercase mb-0 sm:mb-2">Số
-                                câu đúng</div>
-                            <div id="result-correct" class="font-bold text-lg text-green-700 dark:text-green-300"></div>
-                        </div>
-                        <div
-                            class="bg-red-50 dark:bg-red-900/20 p-4 rounded-2xl border border-red-100 dark:border-red-900/30 text-center flex sm:block items-center justify-between sm:justify-center">
-                            <div class="text-xs font-bold text-red-600 dark:text-red-400 uppercase mb-0 sm:mb-2">Số câu
-                                sai</div>
-                            <div id="result-wrong" class="font-bold text-lg text-red-700 dark:text-red-300"></div>
-                        </div>
-                    </div>
-
-                    <div class="flex flex-col sm:flex-row gap-3">
-                        <button onclick="app.goHome()"
-                            class="flex-1 py-3.5 px-6 border border-slate-200 dark:border-slate-600 rounded-xl text-slate-600 dark:text-slate-200 font-bold hover:bg-slate-50 dark:hover:bg-slate-700 transition-colors text-sm md:text-base">
-                            Về trang chủ
-                        </button>
-                        <button onclick="app.reviewExam()"
-                            class="flex-1 py-3.5 px-6 bg-slate-900 dark:bg-slate-100 rounded-xl text-white dark:text-slate-900 font-bold hover:bg-slate-800 dark:hover:bg-slate-200 transition-colors shadow-lg shadow-slate-200 dark:shadow-none text-sm md:text-base">
-                            Xem chi tiết & Lời giải
-                        </button>
-                    </div>
-
-                    <!-- Feedback Section -->
-                    <div class="mt-8 pt-6 border-t border-slate-200 dark:border-slate-700">
-                        <div class="flex items-center gap-2 mb-4">
-                            <svg class="w-5 h-5 text-purple-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-                                    d="M7 8h10M7 12h4m1 8l-4-4H5a2 2 0 01-2-2V6a2 2 0 012-2h14a2 2 0 012 2v8a2 2 0 01-2 2h-3l-4 4z" />
-                            </svg>
-                            <h3 class="font-bold text-slate-800 dark:text-white text-lg">Góp ý về đề thi</h3>
-                        </div>
-
-                        <!-- Add Comment Form -->
-                        <div class="bg-slate-50 dark:bg-slate-700/50 rounded-xl p-4 mb-4">
-                            <textarea id="feedback-input" maxlength="256" rows="2"
-                                class="w-full px-4 py-3 border border-slate-200 dark:border-slate-600 rounded-xl text-sm focus:ring-2 focus:ring-purple-500 focus:border-purple-500 outline-none resize-none bg-white dark:bg-slate-800 dark:text-white"
-                                placeholder="Góp ý về câu hỏi, đáp án... (tối đa 256 ký tự)"></textarea>
-                            <div class="flex items-center justify-between mt-2">
-                                <span id="feedback-char-count" class="text-xs text-slate-400">0/256</span>
-                                <button onclick="app.submitFeedback()"
-                                    class="px-4 py-2 bg-purple-600 hover:bg-purple-700 text-white text-sm font-semibold rounded-lg transition-colors flex items-center gap-2">
-                                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-                                            d="M12 19l9 2-9-18-9 18 9-2zm0 0v-8" />
-                                    </svg>
-                                    Gửi góp ý
-                                </button>
-                            </div>
-                        </div>
-
-                        <!-- Comments List -->
-                        <div id="feedback-list" class="space-y-4">
-                            <div class="text-center text-slate-400 text-sm py-4">
-                                <div
-                                    class="w-8 h-8 border-2 border-slate-200 dark:border-slate-600 border-t-purple-500 rounded-full spinner mx-auto mb-2">
-                                </div>
-                                Đang tải góp ý...
-                            </div>
-                        </div>
-                    </div>
-                </div>
-            </div>
-        </div>
-    </template>
-
-    <!-- Image Lightbox Modal -->
-    <div id="image-lightbox"
-        class="fixed inset-0 z-[100] hidden items-center justify-center bg-black/90 backdrop-blur-sm">
-        <!-- Controls -->
-        <div class="absolute top-4 right-4 flex items-center gap-2 z-20">
-            <button id="btn-zoom-in" class="p-2 bg-white/10 hover:bg-white/20 rounded-lg text-white transition-colors"
-                title="Phóng to (+)">
-                <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-                        d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0zM10 7v6m3-3H7" />
-                </svg>
-            </button>
-            <button id="btn-zoom-out" class="p-2 bg-white/10 hover:bg-white/20 rounded-lg text-white transition-colors"
-                title="Thu nhỏ (-)">
-                <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-                        d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0zM7 10h6" />
-                </svg>
-            </button>
-            <button id="btn-zoom-reset"
-                class="p-2 bg-white/10 hover:bg-white/20 rounded-lg text-white transition-colors" title="Reset (0)">
-                <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-                        d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
-                </svg>
-            </button>
-            <button id="btn-lightbox-close"
-                class="p-2 bg-white/10 hover:bg-white/20 rounded-lg text-white transition-colors" title="Đóng (Esc)">
-                <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
-                </svg>
-            </button>
-        </div>
-        <!-- Zoom level indicator -->
-        <div id="zoom-indicator"
-            class="absolute bottom-4 left-1/2 -translate-x-1/2 px-3 py-1.5 bg-black/60 text-white text-sm rounded-full z-20 flex items-center gap-2">
-            <span id="zoom-percent">100%</span>
-            <span class="text-white/50 text-xs">Scroll/Kéo để di chuyển</span>
-        </div>
-        <!-- Image container - full screen for dragging -->
-        <div id="lightbox-container" class="absolute inset-0 overflow-hidden cursor-grab active:cursor-grabbing">
-            <img id="lightbox-image" src="" alt="Full size image" class="absolute select-none pointer-events-none"
-                draggable="false">
-        </div>
-    </div>
-
-    <script>
-        // Image Lightbox with Pan & Zoom
-        const lightboxState = {
-            zoom: 1,
-            minZoom: 0.5,
-            maxZoom: 6,
-            x: 0,
-            y: 0,
-            isDragging: false,
-            startX: 0,
-            startY: 0,
-            imgWidth: 0,
-            imgHeight: 0
-        };
-
-        function openLightbox(imgSrc) {
-            const lightbox = document.getElementById('image-lightbox');
-            const img = document.getElementById('lightbox-image');
-            if (!lightbox || !img) return;
-
-            // Reset state
-            lightboxState.zoom = 1;
-            lightboxState.x = 0;
-            lightboxState.y = 0;
-
-            img.src = imgSrc;
-            img.onload = () => {
-                lightboxState.imgWidth = img.naturalWidth;
-                lightboxState.imgHeight = img.naturalHeight;
-                centerImage();
-                updateTransform();
-            };
-
-            lightbox.classList.remove('hidden');
-            lightbox.classList.add('flex');
-            document.body.style.overflow = 'hidden';
-        }
-
-        function closeLightbox() {
-            const lightbox = document.getElementById('image-lightbox');
-            if (lightbox) {
-                lightbox.classList.add('hidden');
-                lightbox.classList.remove('flex');
-                document.body.style.overflow = '';
-            }
-        }
-
-        function centerImage() {
-            const container = document.getElementById('lightbox-container');
-            if (!container) return;
-            const rect = container.getBoundingClientRect();
-            lightboxState.x = rect.width / 2;
-            lightboxState.y = rect.height / 2;
-        }
-
-        function updateTransform() {
-            const img = document.getElementById('lightbox-image');
-            const indicator = document.getElementById('zoom-percent');
-            if (img) {
-                const w = lightboxState.imgWidth * lightboxState.zoom;
-                const h = lightboxState.imgHeight * lightboxState.zoom;
-                img.style.width = w + 'px';
-                img.style.height = h + 'px';
-                img.style.left = (lightboxState.x - w / 2) + 'px';
-                img.style.top = (lightboxState.y - h / 2) + 'px';
-            }
-            if (indicator) {
-                indicator.textContent = Math.round(lightboxState.zoom * 100) + '%';
-            }
-        }
-
-        function zoomTo(newZoom, centerX, centerY) {
-            const container = document.getElementById('lightbox-container');
-            if (!container) return;
-
-            const rect = container.getBoundingClientRect();
-            const cx = centerX !== undefined ? centerX : rect.width / 2;
-            const cy = centerY !== undefined ? centerY : rect.height / 2;
-
-            const oldZoom = lightboxState.zoom;
-            lightboxState.zoom = Math.max(lightboxState.minZoom, Math.min(lightboxState.maxZoom, newZoom));
-
-            // Adjust position to zoom toward cursor
-            const ratio = lightboxState.zoom / oldZoom;
-            lightboxState.x = cx - (cx - lightboxState.x) * ratio;
-            lightboxState.y = cy - (cy - lightboxState.y) * ratio;
-
-            updateTransform();
-        }
-
-        // Button handlers
-        document.getElementById('btn-zoom-in')?.addEventListener('click', () => zoomTo(lightboxState.zoom + 0.5));
-        document.getElementById('btn-zoom-out')?.addEventListener('click', () => zoomTo(lightboxState.zoom - 0.5));
-        document.getElementById('btn-zoom-reset')?.addEventListener('click', () => {
-            lightboxState.zoom = 1;
-            centerImage();
-            updateTransform();
-        });
-        document.getElementById('btn-lightbox-close')?.addEventListener('click', closeLightbox);
-
-        // Click backdrop to close
-        document.getElementById('image-lightbox')?.addEventListener('click', (e) => {
-            if (e.target.id === 'image-lightbox' || e.target.id === 'lightbox-container') {
-                if (!lightboxState.isDragging) closeLightbox();
-            }
-        });
-
-        // Mouse drag to pan
-        const container = document.getElementById('lightbox-container');
-        if (container) {
-            container.addEventListener('mousedown', (e) => {
-                lightboxState.isDragging = true;
-                lightboxState.startX = e.clientX - lightboxState.x;
-                lightboxState.startY = e.clientY - lightboxState.y;
-                container.style.cursor = 'grabbing';
-            });
-
-            container.addEventListener('mousemove', (e) => {
-                if (!lightboxState.isDragging) return;
-                e.preventDefault();
-                lightboxState.x = e.clientX - lightboxState.startX;
-                lightboxState.y = e.clientY - lightboxState.startY;
-                updateTransform();
-            });
-
-            container.addEventListener('mouseup', () => {
-                lightboxState.isDragging = false;
-                container.style.cursor = 'grab';
-            });
-
-            container.addEventListener('mouseleave', () => {
-                lightboxState.isDragging = false;
-                container.style.cursor = 'grab';
-            });
-
-            // Touch support for mobile
-            container.addEventListener('touchstart', (e) => {
-                if (e.touches.length === 1) {
-                    lightboxState.isDragging = true;
-                    lightboxState.startX = e.touches[0].clientX - lightboxState.x;
-                    lightboxState.startY = e.touches[0].clientY - lightboxState.y;
+        // --- NGƯỜI DÙNG ĐÃ ĐĂNG NHẬP FIREBASE ---
+        try {
+            // 1. Kiểm tra Whitelist & Lấy dữ liệu
+            const userRef = doc(db, 'allowed_users', user.email);
+            let docSnap;
+
+            try {
+                docSnap = await getDoc(userRef);
+            } catch (fetchError) {
+                // Xử lý lỗi offline - không đá user ra
+                if (fetchError.message?.includes('offline') || fetchError.code === 'unavailable') {
+                    console.warn('[Gatekeeper] Offline mode - allowing cached access');
+                    // Nếu đã có session local, cho phép tiếp tục
+                    const localSession = localStorage.getItem(SESSION_ID_KEY);
+                    if (localSession && isProtected) {
+                        unlockUI(loadingEl);
+                        startPresence();
+                        return;
+                    }
                 }
-            }, { passive: true });
+                throw fetchError;
+            }
 
-            container.addEventListener('touchmove', (e) => {
-                if (!lightboxState.isDragging || e.touches.length !== 1) return;
-                lightboxState.x = e.touches[0].clientX - lightboxState.startX;
-                lightboxState.y = e.touches[0].clientY - lightboxState.startY;
-                updateTransform();
-            }, { passive: true });
+            if (!docSnap.exists()) {
+                throw new Error("Email của bạn không nằm trong danh sách cho phép (Whitelist).");
+            }
 
-            container.addEventListener('touchend', () => {
-                lightboxState.isDragging = false;
-            });
+            const userData = docSnap.data();
+            const serverSession = userData.current_session_id;
+            const serverRole = userData.role || DEFAULT_ROLE;
+
+            // Lưu Role mới nhất vào Session
+            setUserRole(serverRole);
+
+            // 2. Xử lý theo từng trang
+            if (mode === 'login') {
+                // --- TRANG LOGIN ---
+                // V3: Lưu session theo device type (desktop/mobile)
+                // Cho phép 1 desktop + 1 mobile cùng lúc, nhưng không cho 2 cùng loại
+                const newSessionID = Date.now().toString();
+                const deviceType = getCurrentDeviceType();
+
+                // Cấu trúc sessions mới: { desktop: "timestamp", mobile: "timestamp" }
+                const sessionsUpdate = {};
+                sessionsUpdate[`sessions.${deviceType}`] = newSessionID;
+
+                await updateDoc(userRef, {
+                    ...sessionsUpdate,
+                    current_session_id: newSessionID, // Giữ lại để tương thích ngược
+                    last_login: new Date().toISOString(),
+                    last_device_type: deviceType,
+                    display_name: user.displayName || '',
+                    photo_url: user.photoURL || '',
+                    login_count: increment(1)
+                });
+
+                localStorage.setItem(SESSION_ID_KEY, newSessionID);
+                localStorage.setItem(DEVICE_TYPE_KEY, deviceType);
+                setEntryToken(); // Cấp vé vào cửa
+
+                // Chuyển hướng
+                window.location.href = toUrl('content/index.html');
+
+            } else if (isProtected) {
+                // --- TRANG NỘI DUNG ---
+                // V3: Cho phép 1 desktop + 1 mobile cùng lúc
+                // Chỉ kick nếu có session MỚI HƠN trên CÙNG LOẠI thiết bị
+
+                const localSession = localStorage.getItem(SESSION_ID_KEY);
+                const deviceType = getCurrentDeviceType();
+
+                // Lấy session từ server theo device type
+                const sessions = userData.sessions || {};
+                const serverSessionForDevice = sessions[deviceType];
+
+                // Nếu chưa có local session, sync từ server
+                if (!localSession) {
+                    if (serverSessionForDevice) {
+                        localStorage.setItem(SESSION_ID_KEY, serverSessionForDevice);
+                    } else if (serverSession) {
+                        // Fallback: dùng current_session_id cũ
+                        localStorage.setItem(SESSION_ID_KEY, serverSession);
+                    }
+                }
+
+                // Thiết lập Real-time Listener để giám sát đăng nhập mới
+                // V3: Chỉ kick nếu có session MỚI HƠN trên CÙNG LOẠI thiết bị
+                setupRealtimeMonitor(userRef, localStorage.getItem(SESSION_ID_KEY), deviceType);
+
+                // Mở khóa giao diện
+                unlockUI(loadingEl);
+
+                // Tự động bắt đầu Presence Tracking
+                startPresence();
+            }
+
+        } catch (error) {
+            console.error("Gatekeeper Check Failed:", error);
+            handleAuthError(error, isProtected);
+        }
+    });
+}
+
+// Helper: Mở khóa giao diện
+function unlockUI(loadingEl) {
+    if (loadingEl) {
+        loadingEl.style.opacity = '0';
+        setTimeout(() => {
+            loadingEl.style.display = 'none';
+            document.body.style.overflow = '';
+        }, 500);
+    }
+}
+
+// ============================================================
+// 5. CÁC HÀM XỬ LÝ PHỤ TRỢ (INTERNAL)
+// ============================================================
+
+function handleNotLoggedIn(isProtected, loadingEl) {
+    clearStorage();
+    if (isProtected) {
+        // Nếu là trang bảo vệ mà chưa login -> Đá về trang chủ
+        window.location.href = toUrl('index.html');
+    } else {
+        // Nếu là trang login -> Hiển thị form login
+        const vLogin = document.getElementById('view-login');
+        const vLoading = document.getElementById('view-loading');
+
+        if (vLoading) vLoading.classList.add('hidden');
+        if (vLogin) vLogin.classList.remove('hidden');
+    }
+}
+
+function handleAuthError(error, isProtected) {
+    // Xử lý đặc biệt cho lỗi offline - không đá user
+    const isOfflineError = error.message?.includes('offline') ||
+        error.message?.includes('network') ||
+        error.code === 'unavailable';
+
+    if (isOfflineError) {
+        console.warn('[Gatekeeper] Offline error detected, not logging out');
+        // Hiển thị thông báo nhẹ nhàng hơn
+        const loadingEl = document.getElementById('gatekeeper-loading');
+        if (loadingEl) {
+            loadingEl.innerHTML = `
+                <div style="text-align:center;padding:20px">
+                    <div style="font-size:48px;margin-bottom:16px">📶</div>
+                    <div style="font-weight:600;font-size:18px;margin-bottom:8px">Mất kết nối mạng</div>
+                    <div style="color:#94a3b8;font-size:14px">Đang thử kết nối lại...</div>
+                </div>
+            `;
+        }
+        // Thử lại sau 3 giây
+        setTimeout(() => window.location.reload(), 3000);
+        return;
+    }
+
+    signOut(auth);
+    clearStorage();
+
+    if (isProtected) {
+        alert("Lỗi xác thực: " + error.message);
+        window.location.href = toUrl('index.html');
+    } else {
+        showErrorUI(error.message);
+    }
+}
+
+function showErrorUI(msg) {
+    const el = document.getElementById('loginError');
+    const vLoading = document.getElementById('view-loading');
+    const vLogin = document.getElementById('view-login');
+
+    if (vLoading) vLoading.classList.add('hidden');
+    if (vLogin) vLogin.classList.remove('hidden');
+
+    if (el) {
+        el.textContent = msg;
+        el.style.display = 'block';
+    } else {
+        alert(msg);
+    }
+}
+
+// Hiển thị modal đẹp khi bị kick session
+function showSessionKickModal(deviceType) {
+    const deviceName = deviceType === 'desktop' ? 'máy tính' : 'điện thoại';
+
+    // Tạo modal HTML
+    const modalHTML = `
+        <div id="session-kick-modal" style="
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: rgba(15, 23, 42, 0.8);
+            backdrop-filter: blur(4px);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            z-index: 99999;
+            padding: 1rem;
+        ">
+            <div style="
+                background: white;
+                border-radius: 1.5rem;
+                max-width: 400px;
+                width: 100%;
+                overflow: hidden;
+                box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.25);
+                animation: modalEnter 0.3s ease-out;
+            ">
+                <style>
+                    @keyframes modalEnter {
+                        from { opacity: 0; transform: scale(0.95) translateY(20px); }
+                        to { opacity: 1; transform: scale(1) translateY(0); }
+                    }
+                </style>
+                
+                <!-- Icon -->
+                <div style="display: flex; justify-content: center; padding-top: 2rem; padding-bottom: 0.5rem;">
+                    <div style="
+                        width: 5rem;
+                        height: 5rem;
+                        border-radius: 50%;
+                        background: linear-gradient(135deg, #fef3c7, #fde68a);
+                        display: flex;
+                        align-items: center;
+                        justify-content: center;
+                    ">
+                        <svg style="width: 2.5rem; height: 2.5rem; color: #f59e0b;" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"/>
+                        </svg>
+                    </div>
+                </div>
+                
+                <!-- Content -->
+                <div style="padding: 1rem 1.5rem; text-align: center;">
+                    <h3 style="font-size: 1.25rem; font-weight: 700; color: #1e293b; margin-bottom: 0.5rem;">
+                        Phát hiện đăng nhập mới
+                    </h3>
+                    <p style="color: #64748b; font-size: 0.875rem; line-height: 1.5;">
+                        Tài khoản của bạn vừa đăng nhập trên <strong style="color: #0284c7;">${deviceName}</strong> khác. 
+                        Phiên làm việc này sẽ tạm dừng.
+                    </p>
+                </div>
+                
+                <!-- Action -->
+                <div style="padding: 1rem 1.5rem; border-top: 1px solid #e2e8f0;">
+                    <button onclick="window.location.href='${toUrl('index.html')}'" style="
+                        width: 100%;
+                        padding: 0.875rem 1rem;
+                        background: linear-gradient(135deg, #2563eb, #4f46e5);
+                        color: white;
+                        font-weight: 700;
+                        font-size: 0.9375rem;
+                        border: none;
+                        border-radius: 0.75rem;
+                        cursor: pointer;
+                        display: flex;
+                        align-items: center;
+                        justify-content: center;
+                        gap: 0.5rem;
+                        box-shadow: 0 4px 14px 0 rgba(37, 99, 235, 0.3);
+                        transition: all 0.2s;
+                    " onmouseover="this.style.transform='translateY(-1px)'" onmouseout="this.style.transform='translateY(0)'">
+                        <svg style="width: 1.25rem; height: 1.25rem;" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 16l-4-4m0 0l4-4m-4 4h14m-5 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h7a3 3 0 013 3v1"/>
+                        </svg>
+                        Đăng nhập lại
+                    </button>
+                </div>
+            </div>
+        </div>
+    `;
+
+    // Thêm modal vào body
+    document.body.insertAdjacentHTML('beforeend', modalHTML);
+}
+
+// Giám sát thời gian thực: Session & Role
+// V3: Chỉ kick nếu có session MỚI HƠN trên CÙNG LOẠI thiết bị
+// Cho phép: 1 desktop + 1 mobile cùng lúc
+// Không cho phép: 2 desktop hoặc 2 mobile cùng lúc
+function setupRealtimeMonitor(userRef, currentLocalSession, currentDeviceType) {
+    onSnapshot(userRef, (snap) => {
+        if (!snap.exists()) return; // User bị xóa khỏi whitelist
+
+        const data = snap.data();
+        const sessions = data.sessions || {};
+
+        // Lấy session của CÙNG LOẠI thiết bị từ server
+        const serverSessionForDevice = sessions[currentDeviceType];
+
+        // Fallback: nếu chưa có sessions mới, dùng current_session_id cũ
+        const serverSession = serverSessionForDevice || data.current_session_id;
+
+        // 1. Check Session - Chỉ kick nếu có session MỚI HƠN trên CÙNG LOẠI thiết bị
+        if (serverSession && currentLocalSession) {
+            const serverTime = parseInt(serverSession, 10);
+            const localTime = parseInt(currentLocalSession, 10);
+
+            // Chỉ kick nếu có đăng nhập MỚI HƠN trên CÙNG LOẠI thiết bị
+            if (!isNaN(serverTime) && !isNaN(localTime) && serverTime > localTime) {
+                console.log('[Gatekeeper] Newer session detected on same device type:', {
+                    deviceType: currentDeviceType,
+                    serverTime,
+                    localTime
+                });
+
+                // KHÔNG logout (không xóa tài khoản), chỉ kick ra trang login
+                // User vẫn đăng nhập, chỉ bị chặn sử dụng ở tab này
+
+                // Hiển thị modal đẹp thay vì alert()
+                showSessionKickModal(currentDeviceType);
+
+                // Chỉ xóa session local, không logout Firebase
+                localStorage.removeItem(SESSION_ID_KEY);
+                sessionStorage.removeItem(ENTRY_TOKEN_KEY);
+
+                return;
+            }
         }
 
-        // Scroll wheel zoom at cursor position
-        document.getElementById('image-lightbox')?.addEventListener('wheel', (e) => {
-            if (document.getElementById('image-lightbox').classList.contains('hidden')) return;
-            e.preventDefault();
-            const delta = e.deltaY > 0 ? -0.2 : 0.2;
-            const rect = document.getElementById('lightbox-container').getBoundingClientRect();
-            zoomTo(lightboxState.zoom + delta, e.clientX - rect.left, e.clientY - rect.top);
-        }, { passive: false });
+        // 2. Check Role Update (Cập nhật quyền ngay lập tức)
+        const newRole = data.role || DEFAULT_ROLE;
+        const oldRole = sessionStorage.getItem(USER_ROLE_KEY);
 
-        // Keyboard shortcuts
-        document.addEventListener('keydown', (e) => {
-            if (document.getElementById('image-lightbox')?.classList.contains('hidden')) return;
-            if (e.key === 'Escape') closeLightbox();
-            if (e.key === '+' || e.key === '=') zoomTo(lightboxState.zoom + 0.5);
-            if (e.key === '-') zoomTo(lightboxState.zoom - 0.5);
-            if (e.key === '0') { lightboxState.zoom = 1; centerImage(); updateTransform(); }
-        });
+        if (newRole !== oldRole) {
+            console.log("Role updated from server:", newRole);
+            setUserRole(newRole);
+            window.location.reload();
+        }
+    }, (error) => {
+        // Xử lý lỗi realtime listener (offline)
+        console.warn('[Gatekeeper] Realtime listener error:', error.message);
+        // Không làm gì cả - user vẫn được dùng bình thường
+    });
+}
 
-        // Double-click to toggle zoom
-        document.getElementById('lightbox-container')?.addEventListener('dblclick', (e) => {
-            const rect = e.currentTarget.getBoundingClientRect();
-            if (lightboxState.zoom > 1) {
-                lightboxState.zoom = 1;
-                centerImage();
-            } else {
-                zoomTo(2.5, e.clientX - rect.left, e.clientY - rect.top);
+// ============================================================
+// 6. FIRESTORE HELPERS (For Admin Panel)
+// ============================================================
+
+/**
+ * Export Firestore instance và các helper functions cho Admin Panel
+ */
+export { db, collection, getDocs, addDoc, deleteDoc, setDoc, doc, getDoc };
+
+/**
+ * Lấy tất cả exams từ Firestore
+ */
+export async function getAllExams() {
+    const examsCol = collection(db, 'exams');
+    const snapshot = await getDocs(examsCol);
+    return snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+}
+
+/**
+ * Lấy exams theo subject
+ */
+export async function getExamsBySubject(subjectId) {
+    const exams = await getAllExams();
+    return exams.filter(exam => exam.subjectId === subjectId);
+}
+
+/**
+ * Thêm exam mới với ID có cấu trúc: {subjectId}-{XXX}
+ * Ví dụ: vatli-001, toan-012, sinhhoc-023
+ * XXX là số thứ tự 3 chữ số, tự động tăng dựa trên số lượng exam hiện có
+ * Hoặc sử dụng customId nếu được cung cấp
+ */
+export async function createExam(examData, customId = null) {
+    let examId;
+
+    // Use custom ID if provided and valid, otherwise auto-generate
+    if (customId && /^[a-zA-Z0-9_-]+$/.test(customId)) {
+        examId = customId;
+    } else {
+        // Count existing exams for this subject to determine next number
+        const subjectId = examData.subjectId || 'exam';
+        const examsCol = collection(db, 'exams');
+        const snapshot = await getDocs(examsCol);
+
+        // Find the highest number for this subject
+        let maxNumber = 0;
+        snapshot.docs.forEach(doc => {
+            const id = doc.id;
+            // Match pattern like "subjectId-XXX" where XXX is a number
+            const pattern = new RegExp(`^${subjectId}-(\\d+)$`);
+            const match = id.match(pattern);
+            if (match) {
+                const num = parseInt(match[1], 10);
+                if (num > maxNumber) maxNumber = num;
             }
-            updateTransform();
         });
-    </script>
 
-    <!-- Main Logic -->
-    <script src="https://www.youtube.com/iframe_api"></script>
-    <script src="script.js"></script>
-    <script type="module">
-        import {
-            initGatekeeper,
-            getAllExams,
-            getSubjects,
-            logPracticeAttempt,
-            savePracticeResult,
-            getPracticeHistory,
-            getExamFeedbacks,
-            addFeedback,
-            addReply,
-            deleteFeedback,
-            markFeedbackFixed,
-            getCurrentUserInfo,
-            checkIsAdmin
-        } from "../../gatekeeper.js";
+        // Next number, padded to 3 digits
+        const nextNumber = String(maxNumber + 1).padStart(3, '0');
+        examId = `${subjectId}-${nextNumber}`;
+    }
 
-        // Make Firebase functions available globally for the app
-        window.firebaseExams = {
-            getAllExams,
-            getSubjects,
-            logPracticeAttempt,
-            savePracticeResult,
-            getPracticeHistory
-        };
+    // Generate exam code from title (for display)
+    const examCode = generateExamCode(examData.title);
+    const now = new Date();
 
-        // Make Feedback functions available globally
-        window.firebaseFeedback = {
-            getExamFeedbacks,
-            addFeedback,
-            addReply,
-            deleteFeedback,
-            markFeedbackFixed,
-            getCurrentUserInfo,
-            checkIsAdmin
-        };
+    const examRef = doc(db, 'exams', examId);
+    await setDoc(examRef, {
+        ...examData,
+        examCode: examCode,
+        createdAt: now.toISOString(),
+        updatedAt: now.toISOString()
+    });
+    return examId;
+}
 
-        // Initialize Gatekeeper (presence tracking is started automatically inside)
-        initGatekeeper('protected');
+/**
+ * Generate exam code from title
+ * E.g., "Đề thi THPT QG 2025 - Mã 001" -> "THPTQG2025_001"
+ */
+function generateExamCode(title) {
+    if (!title) return 'EXAM_' + Date.now();
+    return title
+        .normalize('NFD').replace(/[\u0300-\u036f]/g, '') // Remove diacritics
+        .replace(/[^a-zA-Z0-9]/g, '_') // Replace special chars
+        .replace(/_+/g, '_') // Remove multiple underscores
+        .replace(/^_|_$/g, '') // Trim underscores
+        .toUpperCase()
+        .substring(0, 30);
+}
 
-        // Wait for Firebase auth to be ready, then initialize app
-        // This prevents the "slow first load" issue
-        const waitForAuth = () => {
-            return new Promise((resolve) => {
-                // Check if firebaseExams is ready
-                if (window.firebaseExams && typeof window.firebaseExams.getAllExams === 'function') {
-                    resolve();
-                } else {
-                    // Wait a bit and resolve anyway (fallback to local files)
-                    setTimeout(resolve, 100);
+/**
+ * Cập nhật exam
+ */
+export async function updateExam(examId, examData) {
+    const examRef = doc(db, 'exams', examId);
+    await setDoc(examRef, {
+        ...examData,
+        updatedAt: new Date().toISOString()
+    }, { merge: true });
+}
+
+/**
+ * Xóa exam
+ */
+export async function deleteExam(examId) {
+    const examRef = doc(db, 'exams', examId);
+    await deleteDoc(examRef);
+}
+
+// ============================================================
+// 6b. PRACTICE LOGGING (Collection: practice_logs)
+// ============================================================
+
+/**
+ * Log khi user bắt đầu làm bài thi
+ * Lưu vào collection practice_logs và tăng attemptCount trong exam
+ * @param {string} examId - ID của bài thi
+ * @param {string} examTitle - Tên bài thi
+ * @param {string} subjectId - ID môn học
+ */
+export async function logPracticeAttempt(examId, examTitle, subjectId) {
+    console.log('[logPracticeAttempt] Starting...', { examId, examTitle, subjectId });
+    try {
+        const user = auth.currentUser;
+        if (!user) {
+            console.warn('[logPracticeAttempt] No user logged in');
+            return;
+        }
+        console.log('[logPracticeAttempt] User:', user.email);
+
+        // 1. Lưu log vào collection practice_logs
+        console.log('[logPracticeAttempt] Step 1: Adding to practice_logs...');
+        const logsCol = collection(db, 'practice_logs');
+        await addDoc(logsCol, {
+            examId: examId,
+            examTitle: examTitle,
+            subjectId: subjectId || '',
+            userEmail: user.email,
+            userName: user.displayName || user.email.split('@')[0],
+            timestamp: new Date().toISOString()
+        });
+        console.log('[logPracticeAttempt] Step 1: SUCCESS - Log added');
+
+        // 2. Tăng attemptCount trong exam document
+        console.log('[logPracticeAttempt] Step 2: Updating attemptCount for exam:', examId);
+        const examRef = doc(db, 'exams', examId);
+        await updateDoc(examRef, {
+            attemptCount: increment(1)
+        });
+        console.log('[logPracticeAttempt] Step 2: SUCCESS - attemptCount incremented');
+
+        console.log('[logPracticeAttempt] COMPLETED for:', examTitle);
+    } catch (error) {
+        console.error('[logPracticeAttempt] FAILED:', error.code, error.message);
+        // Không throw error để không ảnh hưởng đến trải nghiệm làm bài
+    }
+}
+
+/**
+ * Lấy tất cả practice logs (Super-Admin: tất cả, Admin: của mình + học sinh họ thêm)
+ * @returns {Promise<Array>} - Danh sách logs
+ */
+export async function getAllPracticeLogs() {
+    const isSuperAdminUser = checkIsSuperAdmin();
+    const isAdminUser = checkIsAdmin();
+
+    console.log('[getAllPracticeLogs] isSuperAdmin:', isSuperAdminUser, 'isAdmin:', isAdminUser);
+
+    if (!isSuperAdminUser && !isAdminUser) {
+        throw new Error('Không có quyền truy cập. Cần quyền Admin để xem Practice Logs.');
+    }
+
+    const logsCol = collection(db, 'practice_logs');
+    const snapshot = await getDocs(logsCol);
+    let logs = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+
+    console.log('[getAllPracticeLogs] Total logs in DB:', logs.length);
+
+    // Nếu là Admin (không phải Super-Admin), lọc lấy logs của mình + học sinh họ thêm
+    if (!isSuperAdminUser && isAdminUser) {
+        const currentEmail = auth.currentUser?.email?.toLowerCase();
+        if (!currentEmail) return [];
+
+        console.log('[getAllPracticeLogs] Admin email:', currentEmail);
+
+        // Lấy danh sách học sinh mà admin này đã thêm
+        const usersCol = collection(db, 'allowed_users');
+        const usersSnapshot = await getDocs(usersCol);
+        const myStudentEmails = usersSnapshot.docs
+            .filter(doc => {
+                const addedBy = doc.data().addedBy?.toLowerCase();
+                return addedBy === currentEmail;
+            })
+            .map(doc => doc.id.toLowerCase()); // doc.id là email
+
+        // Thêm email của chính admin vào danh sách để họ xem được logs của mình
+        const allowedEmails = [...myStudentEmails, currentEmail];
+
+        console.log('[getAllPracticeLogs] Allowed emails (students + self):', allowedEmails);
+
+        // Lọc logs
+        logs = logs.filter(log => {
+            const logEmail = log.userEmail?.toLowerCase();
+            return allowedEmails.includes(logEmail);
+        });
+
+        console.log('[getAllPracticeLogs] Filtered logs count:', logs.length);
+    }
+
+    // Sắp xếp theo thời gian mới nhất
+    logs.sort((a, b) => new Date(b.timestamp) - new Date(a.timestamp));
+
+    return logs;
+}
+
+/**
+ * Lưu kết quả làm bài Practice
+ * @param {Object} result - Kết quả bài thi
+ * @returns {Promise<string>} - ID của document đã lưu
+ */
+export async function savePracticeResult(result) {
+    try {
+        const user = auth.currentUser;
+        if (!user) {
+            console.warn('[savePracticeResult] No user logged in');
+            return null;
+        }
+
+        const historyCol = collection(db, 'practice_history');
+        const docRef = await addDoc(historyCol, {
+            examId: result.examId,
+            examTitle: result.examTitle,
+            subjectId: result.subjectId,
+            userEmail: user.email,
+            userName: user.displayName || user.email.split('@')[0],
+            userId: user.uid,
+            score: result.score,
+            correctCount: result.correctCount,
+            totalQuestions: result.totalQuestions,
+            durationSeconds: result.durationSeconds,
+            answers: result.answers || {},
+            examData: result.examData || null, // Lưu data đề thi để xem lại
+            timestamp: new Date().toISOString()
+        });
+
+        console.log('[savePracticeResult] Result saved with ID:', docRef.id);
+
+        // Cập nhật practice_logs với điểm số nếu có log tương ứng
+        // Tìm log gần nhất của user cho exam này và cập nhật điểm
+        try {
+            const logsCol = collection(db, 'practice_logs');
+            const q = query(logsCol,
+                where('examId', '==', result.examId),
+                where('userEmail', '==', user.email)
+            );
+            const snapshot = await getDocs(q);
+            if (!snapshot.empty) {
+                // Lấy log mới nhất (sắp xếp theo timestamp)
+                const logs = snapshot.docs.map(d => ({ id: d.id, ...d.data() }));
+                logs.sort((a, b) => new Date(b.timestamp) - new Date(a.timestamp));
+                const latestLog = logs[0];
+
+                // Chỉ cập nhật nếu log chưa có điểm
+                if (latestLog && !latestLog.score) {
+                    await updateDoc(doc(db, 'practice_logs', latestLog.id), {
+                        score: result.score,
+                        correctCount: result.correctCount,
+                        totalQuestions: result.totalQuestions,
+                        durationSeconds: result.durationSeconds
+                    });
+                    console.log('[savePracticeResult] Updated practice_log with score');
                 }
+            }
+        } catch (e) {
+            console.warn('[savePracticeResult] Could not update practice_log:', e);
+        }
+
+        return docRef.id;
+    } catch (error) {
+        console.error('[savePracticeResult] FAILED:', error);
+        return null;
+    }
+}
+
+/**
+ * Lấy lịch sử làm bài của người dùng hiện tại cho một bài thi cụ thể
+ * @param {string} examId - ID của bài thi
+ * @returns {Promise<Array>} - Danh sách lịch sử
+ */
+export async function getPracticeHistory(examId) {
+    try {
+        const user = auth.currentUser;
+        if (!user) {
+            console.warn('[getPracticeHistory] No user logged in');
+            return [];
+        }
+
+        const historyCol = collection(db, 'practice_history');
+        const q = query(historyCol,
+            where('examId', '==', examId),
+            where('userId', '==', user.uid)
+        );
+        const snapshot = await getDocs(q);
+        const history = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+
+        // Sắp xếp theo thời gian mới nhất
+        history.sort((a, b) => new Date(b.timestamp) - new Date(a.timestamp));
+
+        return history;
+    } catch (error) {
+        console.error('[getPracticeHistory] FAILED:', error);
+        return [];
+    }
+}
+
+/**
+ * Lấy danh sách subjects (hardcoded for now)
+ */
+export function getSubjects() {
+    return [
+        {
+            id: 'math',
+            name: 'Toán',
+            color: 'text-red-600',
+            bg: 'bg-red-50 dark:bg-red-900/30',
+            icon: '<svg xmlns="http://www.w3.org/2000/svg" class="h-8 w-8 text-red-600 dark:text-red-400" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 7h6m0 10v-3m-3 3h.01M9 17h.01M9 14h.01M12 14h.01M15 11h.01M12 11h.01M9 11h.01M7 21h10a2 2 0 002-2V5a2 2 0 00-2-2H7a2 2 0 00-2 2v14a2 2 0 002 2z" /></svg>'
+        },
+        {
+            id: 'chem',
+            name: 'Hóa học',
+            color: 'text-cyan-600',
+            bg: 'bg-cyan-50 dark:bg-cyan-900/30',
+            icon: '<svg xmlns="http://www.w3.org/2000/svg" class="h-8 w-8 text-cyan-600 dark:text-cyan-400" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19.428 15.428a2 2 0 00-1.022-.547l-2.387-.477a6 6 0 00-3.86.517l-.318.158a6 6 0 01-3.86.517L6.05 15.21a2 2 0 00-1.806.547M8 4h8l-1 1v5.172a2 2 0 00.586 1.414l5 5c1.26 1.26.367 3.414-1.415 3.414H4.828c-1.782 0-2.674-2.154-1.414-3.414l5-5A2 2 0 009 10.172V5L8 4z" /></svg>'
+        },
+        {
+            id: 'bio',
+            name: 'Sinh học',
+            color: 'text-emerald-600',
+            bg: 'bg-emerald-50 dark:bg-emerald-900/30',
+            icon: '<svg xmlns="http://www.w3.org/2000/svg" class="h-8 w-8 text-emerald-600 dark:text-emerald-400" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" /><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M2 12c0-4.418 3.582-8 8-8s8 3.582 8 8" /><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M22 12c0 4.418-3.582 8-8 8s-8-3.582-8-8" /><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 4v16" /><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 4v16" /></svg>'
+        },
+        {
+            id: 'history',
+            name: 'Lịch sử',
+            color: 'text-orange-600',
+            bg: 'bg-orange-50 dark:bg-orange-900/30',
+            icon: '<svg xmlns="http://www.w3.org/2000/svg" class="h-8 w-8 text-orange-600 dark:text-orange-400" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" /></svg>'
+        },
+        {
+            id: 'info',
+            name: 'Tin học',
+            color: 'text-purple-600',
+            bg: 'bg-purple-50 dark:bg-purple-900/30',
+            icon: '<svg xmlns="http://www.w3.org/2000/svg" class="h-8 w-8 text-purple-600 dark:text-purple-400" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9.75 17L9 20l-1 1h8l-1-1-.75-3M3 13h18M5 17h14a2 2 0 002-2V5a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z" /></svg>'
+        },
+        {
+            id: 'physics',
+            name: 'Vật lí',
+            color: 'text-blue-600',
+            bg: 'bg-blue-50 dark:bg-blue-900/30',
+            icon: '<svg xmlns="http://www.w3.org/2000/svg" class="h-8 w-8 text-blue-600 dark:text-blue-400" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19.428 15.428a2 2 0 00-1.022-.547l-2.387-.477a6 6 0 00-3.86.517l-.318.158a6 6 0 01-3.86.517L6.05 15.21a2 2 0 00-1.806.547M8 4h8l-1 1v5.172a2 2 0 00.586 1.414l5 5c1.26 1.26.367 3.414-1.415 3.414H4.828c-1.782 0-2.674-2.154-1.414-3.414l5-5A2 2 0 009 10.172V5L8 4z" /></svg>'
+        }
+    ];
+}
+
+// ============================================================
+// 7. E-TEST CRUD (Collection: etest_exams)
+// ============================================================
+
+/**
+ * Lấy tất cả E-test exams từ Firestore
+ */
+export async function getAllEtestExams() {
+    const examsCol = collection(db, 'etest_exams');
+    const snapshot = await getDocs(examsCol);
+    return snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+}
+
+/**
+ * Tạo E-test exam mới
+ */
+export async function createEtestExam(examData, customId = null) {
+    let examId;
+    if (customId && /^[a-zA-Z0-9_-]+$/.test(customId)) {
+        examId = customId;
+    } else {
+        const now = new Date();
+        const dateStr = now.toISOString().slice(0, 10).replace(/-/g, '');
+        const randomCode = Math.random().toString(36).substring(2, 8);
+        examId = `etest_${examData.subjectId}_${dateStr}_${randomCode}`;
+    }
+
+    const examRef = doc(db, 'etest_exams', examId);
+    await setDoc(examRef, {
+        ...examData,
+        createdAt: new Date().toISOString(),
+        updatedAt: new Date().toISOString()
+    });
+    return examId;
+}
+
+/**
+ * Cập nhật E-test exam
+ */
+export async function updateEtestExam(examId, examData) {
+    const examRef = doc(db, 'etest_exams', examId);
+    await setDoc(examRef, {
+        ...examData,
+        updatedAt: new Date().toISOString()
+    }, { merge: true });
+}
+
+/**
+ * Xóa E-test exam
+ * Note: Firebase deleteDoc doesn't throw on permission denied, so we verify after
+ */
+export async function deleteEtestExam(examId) {
+    console.log('[deleteEtestExam] Deleting exam:', examId);
+    if (!examId) {
+        throw new Error('examId không hợp lệ');
+    }
+
+    const examRef = doc(db, 'etest_exams', examId);
+
+    // Execute delete
+    await deleteDoc(examRef);
+
+    // Wait a moment for Firestore to sync
+    await new Promise(resolve => setTimeout(resolve, 500));
+
+    // Verify the document was actually deleted
+    const checkDoc = await getDoc(examRef);
+    if (checkDoc.exists()) {
+        console.error('[deleteEtestExam] Document still exists after delete - permission denied by Firestore rules');
+        throw new Error('Không có quyền xóa. Hãy kiểm tra Firestore Security Rules.');
+    }
+
+    console.log('[deleteEtestExam] Verified deleted:', examId);
+}
+
+// ============================================================
+// 8. VOCAB CRUD (Collection: vocab_sets)
+// ============================================================
+
+/**
+ * Lấy tất cả Vocab sets từ Firestore
+ */
+export async function getAllVocabSets() {
+    const vocabCol = collection(db, 'vocab_sets');
+    const snapshot = await getDocs(vocabCol);
+    return snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+}
+
+/**
+ * Tạo Vocab set mới
+ */
+export async function createVocabSet(vocabData, customId = null) {
+    let vocabId;
+    if (customId && /^[a-zA-Z0-9_-]+$/.test(customId)) {
+        vocabId = customId;
+    } else {
+        const now = new Date();
+        const dateStr = now.toISOString().slice(0, 10).replace(/-/g, '');
+        const randomCode = Math.random().toString(36).substring(2, 8);
+        vocabId = `vocab_${dateStr}_${randomCode}`;
+    }
+
+    const vocabRef = doc(db, 'vocab_sets', vocabId);
+    await setDoc(vocabRef, {
+        ...vocabData,
+        createdAt: new Date().toISOString(),
+        updatedAt: new Date().toISOString()
+    });
+    return vocabId;
+}
+
+/**
+ * Cập nhật Vocab set
+ */
+export async function updateVocabSet(vocabId, vocabData) {
+    const vocabRef = doc(db, 'vocab_sets', vocabId);
+    await setDoc(vocabRef, {
+        ...vocabData,
+        updatedAt: new Date().toISOString()
+    }, { merge: true });
+}
+
+/**
+ * Xóa Vocab set
+ */
+export async function deleteVocabSet(vocabId) {
+    const vocabRef = doc(db, 'vocab_sets', vocabId);
+    await deleteDoc(vocabRef);
+}
+
+// ============================================================
+// 9. ALLOWED USERS CRUD (Admin + Super-Admin)
+// ============================================================
+
+/**
+ * Helper: Get current user email from Firebase Auth
+ */
+function getCurrentUserEmail() {
+    return auth.currentUser?.email || 'unknown';
+}
+
+/**
+ * Helper: Log whitelist action to Firestore
+ */
+async function logWhitelistAction(action, targetEmail, targetRole) {
+    try {
+        const logsCol = collection(db, 'whitelist_logs');
+        await addDoc(logsCol, {
+            action: action,
+            target_email: targetEmail,
+            target_role: targetRole || 'user',
+            performed_by: getCurrentUserEmail(),
+            timestamp: new Date().toISOString()
+        });
+    } catch (error) {
+        console.error('Failed to log whitelist action:', error);
+    }
+}
+
+/**
+ * Lấy tất cả allowed_users (Admin hoặc Super-Admin)
+ * Document ID = email, có field role (ví dụ: "user", "admin", "super-admin")
+ */
+export async function getAllAllowedUsers() {
+    if (!checkIsAdmin()) {
+        throw new Error('Không có quyền truy cập. Cần quyền Admin để xem danh sách người dùng.');
+    }
+
+    const currentEmail = getCurrentUserEmail();
+    const usersCol = collection(db, 'allowed_users');
+    const snapshot = await getDocs(usersCol);
+    let users = snapshot.docs.map(doc => ({ id: doc.id, email: doc.id, ...doc.data() }));
+
+    // Nếu KHÔNG phải Super-Admin, chỉ trả về user do chính mình thêm
+    if (!checkIsSuperAdmin()) {
+        users = users.filter(user => user.addedBy === currentEmail);
+    }
+
+    return users;
+}
+
+/**
+ * Thêm user mới vào allowed_users (Admin hoặc Super-Admin)
+ * - Admin chỉ được thêm với role = 'user'
+ * - Super-Admin được thêm với bất kỳ role nào
+ * @param {string} email - Email của user (sẽ dùng làm document ID)
+ * @param {string} role - Role của user (ví dụ: "user", "admin", "super-admin")
+ */
+export async function addAllowedUser(email, role = 'user') {
+    if (!checkIsAdmin()) {
+        throw new Error('Không có quyền. Cần quyền Admin để thêm người dùng.');
+    }
+
+    // Admin (không phải Super-Admin) chỉ được thêm user với role = 'user'
+    if (!checkIsSuperAdmin() && role !== 'user') {
+        role = 'user'; // Force role = user cho Admin
+    }
+
+    if (!email || !email.includes('@')) {
+        throw new Error('Email không hợp lệ.');
+    }
+
+    const currentEmail = getCurrentUserEmail();
+    const userRef = doc(db, 'allowed_users', email);
+    await setDoc(userRef, {
+        role: role,
+        addedBy: currentEmail, // Lưu lại ai đã thêm user này
+        createdAt: new Date().toISOString(),
+        updatedAt: new Date().toISOString()
+    });
+
+    // Log action
+    await logWhitelistAction('add', email, role);
+
+    return email;
+}
+
+/**
+ * Cập nhật thông tin user (Super-Admin only)
+ * @param {string} email - Email của user (document ID)
+ * @param {object} userData - Dữ liệu cần cập nhật (ví dụ: { role: 'admin', name: '...' })
+ */
+export async function updateAllowedUser(email, userData) {
+    if (!checkIsSuperAdmin()) {
+        throw new Error('Không có quyền. Chỉ Super-Admin mới có thể cập nhật thông tin người dùng.');
+    }
+    const userRef = doc(db, 'allowed_users', email);
+    await setDoc(userRef, {
+        ...userData,
+        updatedAt: new Date().toISOString()
+    }, { merge: true });
+}
+
+/**
+ * Cập nhật user role (Super-Admin only)
+ * @param {string} email - Email của user
+ * @param {string} newRole - Role mới (ví dụ: "user", "admin", "super-admin")
+ */
+export async function updateUserRole(email, newRole) {
+    if (!checkIsSuperAdmin()) {
+        throw new Error('Không có quyền. Chỉ Super-Admin mới có thể thay đổi quyền người dùng.');
+    }
+    const userRef = doc(db, 'allowed_users', email);
+    await setDoc(userRef, {
+        role: newRole,
+        updatedAt: new Date().toISOString()
+    }, { merge: true });
+}
+
+/**
+ * Xóa user khỏi allowed_users (Admin hoặc Super-Admin)
+ * @param {string} email - Email của user cần xóa
+ */
+export async function deleteAllowedUser(email) {
+    if (!checkIsAdmin()) {
+        throw new Error('Không có quyền. Cần quyền Admin để xóa người dùng.');
+    }
+
+    const currentEmail = getCurrentUserEmail();
+    const userRef = doc(db, 'allowed_users', email);
+
+    // Get user data before delete
+    let targetRole = 'user';
+    let addedBy = null;
+    try {
+        const userDoc = await getDoc(userRef);
+        if (userDoc.exists()) {
+            const userData = userDoc.data();
+            targetRole = userData.role || 'user';
+            addedBy = userData.addedBy || null;
+        }
+    } catch (e) { /* ignore */ }
+
+    // Admin (không phải Super-Admin) chỉ được xóa user do chính họ thêm
+    if (!checkIsSuperAdmin() && addedBy !== currentEmail) {
+        throw new Error('Bạn chỉ có thể xóa người dùng do chính bạn thêm.');
+    }
+
+    await deleteDoc(userRef);
+
+    // Log action
+    await logWhitelistAction('delete', email, targetRole);
+}
+
+/**
+ * Lấy lịch sử whitelist logs (Admin hoặc Super-Admin)
+ * @param {number} limit - Số lượng logs tối đa (mặc định 50)
+ */
+export async function getWhitelistLogs(limit = 50) {
+    if (!checkIsAdmin()) {
+        throw new Error('Không có quyền truy cập logs.');
+    }
+
+    const currentEmail = getCurrentUserEmail();
+    const logsCol = collection(db, 'whitelist_logs');
+    const snapshot = await getDocs(logsCol);
+
+    // Get all logs
+    let logs = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+
+    // Nếu KHÔNG phải Super-Admin, chỉ trả về logs do chính mình thực hiện
+    if (!checkIsSuperAdmin()) {
+        logs = logs.filter(log => log.performed_by === currentEmail);
+    }
+
+    // Sort by timestamp descending and limit
+    logs.sort((a, b) => new Date(b.timestamp) - new Date(a.timestamp));
+    return logs.slice(0, limit);
+}
+
+// ============================================================
+// 10. USER ACTIVITY LOGS (Track user module access)
+// ============================================================
+
+/**
+ * Log khi user truy cập một module
+ * @param {string} moduleName - Tên module (VD: 'practice', 'etest', 'vocab', 'flashcard')
+ * @param {string} moduleLabel - Label hiển thị (VD: 'Bài Thi', 'E-test')
+ */
+export async function logUserActivity(moduleName, moduleLabel = '') {
+    const user = auth.currentUser;
+    if (!user) return; // Không log nếu chưa đăng nhập
+
+    try {
+        const logsCol = collection(db, 'user_activity_logs');
+        await addDoc(logsCol, {
+            userId: user.uid,
+            userEmail: user.email,
+            userName: user.displayName || user.email.split('@')[0],
+            userAvatar: user.photoURL || '',
+            module: moduleName,
+            moduleLabel: moduleLabel || moduleName,
+            timestamp: new Date().toISOString(),
+            userAgent: navigator.userAgent.substring(0, 150)
+        });
+    } catch (error) {
+        console.error('Failed to log user activity:', error);
+        // Không throw error để không ảnh hưởng UX
+    }
+}
+
+/**
+ * Lấy danh sách activity logs (Admin only)
+ * @param {number} limit - Số lượng logs tối đa (mặc định 100)
+ * @returns {Promise<Array>} - Mảng các activity log
+ */
+export async function getUserActivityLogs(limit = 100) {
+    if (!checkIsAdmin()) {
+        throw new Error('Không có quyền truy cập activity logs.');
+    }
+
+    const currentEmail = getCurrentUserEmail();
+    const logsCol = collection(db, 'user_activity_logs');
+    const snapshot = await getDocs(logsCol);
+
+    // Get all logs
+    let logs = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+
+    // Nếu KHÔNG phải Super-Admin, chỉ trả về logs của user do mình thêm
+    if (!checkIsSuperAdmin()) {
+        // Lấy danh sách user do admin này thêm
+        const usersCol = collection(db, 'allowed_users');
+        const usersSnapshot = await getDocs(usersCol);
+        const myUsers = usersSnapshot.docs
+            .filter(doc => doc.data().addedBy === currentEmail)
+            .map(doc => doc.id); // email là doc ID
+
+        logs = logs.filter(log => myUsers.includes(log.userEmail));
+    }
+
+    // Sort by timestamp descending and limit
+    logs.sort((a, b) => new Date(b.timestamp) - new Date(a.timestamp));
+    return logs.slice(0, limit);
+}
+
+/**
+ * Lấy thống kê activity (Admin only)
+ * @returns {Promise<Object>} - Thống kê gồm: totalAccess, moduleStats, recentUsers
+ */
+export async function getActivityStats() {
+    if (!checkIsAdmin()) {
+        throw new Error('Không có quyền truy cập thống kê.');
+    }
+
+    const logs = await getUserActivityLogs(500);
+
+    // Thống kê theo module
+    const moduleStats = {};
+    logs.forEach(log => {
+        const mod = log.module || 'unknown';
+        if (!moduleStats[mod]) {
+            moduleStats[mod] = { count: 0, label: log.moduleLabel || mod };
+        }
+        moduleStats[mod].count++;
+    });
+
+    // Thống kê theo user (unique users)
+    const uniqueUsers = new Set(logs.map(log => log.userEmail));
+
+    // Recent unique users (last 10)
+    const seenUsers = new Set();
+    const recentUsers = [];
+    for (const log of logs) {
+        if (!seenUsers.has(log.userEmail) && recentUsers.length < 10) {
+            seenUsers.add(log.userEmail);
+            recentUsers.push({
+                email: log.userEmail,
+                name: log.userName,
+                avatar: log.userAvatar,
+                lastModule: log.moduleLabel || log.module,
+                lastAccess: log.timestamp
             });
-        };
+        }
+    }
 
-        // Initialize Music player immediately (no Firebase dependency)
-        if (window.musicPlayer) window.musicPlayer.init();
+    return {
+        totalAccess: logs.length,
+        uniqueUsers: uniqueUsers.size,
+        moduleStats: moduleStats,
+        recentUsers: recentUsers
+    };
+}
 
-        // Wait for auth then initialize app
-        waitForAuth().then(() => {
-            if (window.app) window.app.init();
+// ============================================================
+// 11. NOTIFICATIONS CRUD
+// ============================================================
+
+/**
+ * Lấy tất cả thông báo (Public - không cần quyền đặc biệt)
+ * Sắp xếp theo createdAt mới nhất
+ */
+export async function getAllNotifications() {
+    const notifCol = collection(db, 'notifications');
+    const snapshot = await getDocs(notifCol);
+    const notifications = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+    // Sort by createdAt descending
+    notifications.sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt));
+    return notifications;
+}
+
+/**
+ * Tạo thông báo mới (Admin only)
+ * @param {object} data - { title, content, author, isNew }
+ */
+export async function createNotification(data) {
+    if (!checkIsAdmin()) {
+        throw new Error('Không có quyền. Cần quyền Admin để tạo thông báo.');
+    }
+    const notifCol = collection(db, 'notifications');
+    const docRef = await addDoc(notifCol, {
+        title: data.title || '',
+        content: data.content || '',
+        author: data.author || '',
+        isNew: data.isNew !== undefined ? data.isNew : true,
+        createdAt: new Date().toISOString()
+    });
+    return docRef.id;
+}
+
+/**
+ * Cập nhật thông báo (Admin only)
+ * @param {string} notifId - ID của thông báo
+ * @param {object} data - Dữ liệu cần cập nhật
+ */
+export async function updateNotification(notifId, data) {
+    if (!checkIsAdmin()) {
+        throw new Error('Không có quyền. Cần quyền Admin để cập nhật thông báo.');
+    }
+    const notifRef = doc(db, 'notifications', notifId);
+    await setDoc(notifRef, {
+        ...data,
+        updatedAt: new Date().toISOString()
+    }, { merge: true });
+}
+
+/**
+ * Xóa thông báo (Admin only)
+ * @param {string} notifId - ID của thông báo cần xóa
+ */
+export async function deleteNotification(notifId) {
+    if (!checkIsAdmin()) {
+        throw new Error('Không có quyền. Cần quyền Admin để xóa thông báo.');
+    }
+    const notifRef = doc(db, 'notifications', notifId);
+    await deleteDoc(notifRef);
+}
+
+// ============================================================
+// 10. EXAM FEEDBACK SYSTEM
+// ============================================================
+
+/**
+ * Get all feedbacks for an exam
+ * @param {string} examId - ID of the exam
+ * @returns {Promise<Array>} - Array of feedback objects
+ */
+export async function getExamFeedbacks(examId) {
+    const feedbacksCol = collection(db, 'feedbacks', examId, 'comments');
+    const snapshot = await getDocs(feedbacksCol);
+    const feedbacks = snapshot.docs.map(doc => ({
+        id: doc.id,
+        ...doc.data()
+    }));
+    // Sort by createdAt descending (newest first)
+    feedbacks.sort((a, b) => {
+        if (a.createdAt && b.createdAt) return b.createdAt.localeCompare(a.createdAt);
+        return 0;
+    });
+    return feedbacks;
+}
+
+/**
+ * Add a new feedback comment
+ * @param {string} examId - ID of the exam
+ * @param {string} content - Comment content (max 256 chars)
+ * @returns {Promise<string>} - ID of the new comment
+ */
+export async function addFeedback(examId, content) {
+    const user = auth.currentUser;
+    if (!user) throw new Error('Bạn cần đăng nhập để bình luận.');
+
+    if (!content || content.trim().length === 0) {
+        throw new Error('Nội dung bình luận không được để trống.');
+    }
+    if (content.length > 256) {
+        throw new Error('Bình luận tối đa 256 ký tự.');
+    }
+
+    const feedbacksCol = collection(db, 'feedbacks', examId, 'comments');
+    const docRef = await addDoc(feedbacksCol, {
+        userId: user.uid,
+        userEmail: user.email,
+        userName: user.displayName || user.email.split('@')[0],
+        userAvatar: user.photoURL || '',
+        content: content.trim(),
+        createdAt: new Date().toISOString(),
+        isFixed: false,
+        fixedBy: null,
+        fixedAt: null,
+        replies: []
+    });
+    return docRef.id;
+}
+
+/**
+ * Add a reply to a feedback comment
+ * @param {string} examId - ID of the exam
+ * @param {string} commentId - ID of the parent comment
+ * @param {string} content - Reply content (max 256 chars)
+ */
+export async function addReply(examId, commentId, content) {
+    const user = auth.currentUser;
+    if (!user) throw new Error('Bạn cần đăng nhập để trả lời.');
+
+    if (!content || content.trim().length === 0) {
+        throw new Error('Nội dung trả lời không được để trống.');
+    }
+    if (content.length > 256) {
+        throw new Error('Trả lời tối đa 256 ký tự.');
+    }
+
+    const commentRef = doc(db, 'feedbacks', examId, 'comments', commentId);
+    const commentSnap = await getDoc(commentRef);
+
+    if (!commentSnap.exists()) {
+        throw new Error('Bình luận không tồn tại.');
+    }
+
+    const currentReplies = commentSnap.data().replies || [];
+    const newReply = {
+        id: Date.now().toString() + Math.random().toString(36).substr(2, 9),
+        userId: user.uid,
+        userEmail: user.email,
+        userName: user.displayName || user.email.split('@')[0],
+        userAvatar: user.photoURL || '',
+        content: content.trim(),
+        createdAt: new Date().toISOString()
+    };
+
+    await updateDoc(commentRef, {
+        replies: [...currentReplies, newReply]
+    });
+}
+
+/**
+ * Delete a feedback comment (user's own or admin)
+ * @param {string} examId - ID of the exam
+ * @param {string} commentId - ID of the comment to delete
+ */
+export async function deleteFeedback(examId, commentId) {
+    const user = auth.currentUser;
+    if (!user) throw new Error('Bạn cần đăng nhập.');
+
+    const commentRef = doc(db, 'feedbacks', examId, 'comments', commentId);
+    const commentSnap = await getDoc(commentRef);
+
+    if (!commentSnap.exists()) {
+        throw new Error('Bình luận không tồn tại.');
+    }
+
+    const commentData = commentSnap.data();
+
+    // Allow delete if user is admin OR is the comment owner
+    if (!checkIsAdmin() && commentData.userId !== user.uid) {
+        throw new Error('Bạn chỉ có thể xóa bình luận của mình.');
+    }
+
+    await deleteDoc(commentRef);
+}
+
+/**
+ * Mark a feedback as fixed (Admin only)
+ * @param {string} examId - ID of the exam
+ * @param {string} commentId - ID of the comment to mark
+ */
+export async function markFeedbackFixed(examId, commentId) {
+    if (!checkIsAdmin()) {
+        throw new Error('Cần quyền Admin để đánh dấu đã sửa.');
+    }
+
+    const user = auth.currentUser;
+    const commentRef = doc(db, 'feedbacks', examId, 'comments', commentId);
+
+    await updateDoc(commentRef, {
+        isFixed: true,
+        fixedBy: user.email,
+        fixedAt: new Date().toISOString()
+    });
+}
+
+/**
+ * Get current user info for feedback display
+ * @returns {object|null} - User info or null if not logged in
+ */
+export function getCurrentUserInfo() {
+    const user = auth.currentUser;
+    if (!user) return null;
+    return {
+        uid: user.uid,
+        email: user.email,
+        displayName: user.displayName || user.email.split('@')[0],
+        photoURL: user.photoURL || ''
+    };
+}
+
+// ============================================================
+// 11. PRESENCE TRACKING (Online Users) - Using Firebase Realtime Database
+// ============================================================
+// This uses Firebase RTDB for accurate presence tracking with onDisconnect()
+// which automatically removes the user when they close the tab/browser or lose connection.
+
+let presenceRef = null;
+let connectedRef = null;
+let unsubscribeConnected = null;
+
+/**
+ * Start presence tracking using Firebase Realtime Database
+ * Uses onDisconnect() for automatic cleanup when client goes offline
+ */
+export async function startPresence() {
+    const user = auth.currentUser;
+    if (!user) {
+        console.log('[Presence] No user, skipping presence tracking');
+        return;
+    }
+
+    // Prevent duplicate listeners if already started
+    if (presenceRef) {
+        console.log('[Presence] Already tracking, skipping duplicate start');
+        return;
+    }
+
+    console.log('[Presence] Starting presence tracking for:', user.email);
+
+    try {
+        // Reference to this user's presence in RTDB
+        presenceRef = ref(rtdb, `presence/${user.uid}`);
+
+        // Reference to .info/connected to detect connection state
+        connectedRef = ref(rtdb, '.info/connected');
+
+        // Listen for connection state changes
+        unsubscribeConnected = onValue(connectedRef, async (snapshot) => {
+            console.log('[Presence] Connection state:', snapshot.val());
+            if (snapshot.val() === true) {
+                // We're connected (or reconnected)
+                console.log('[Presence] Connected! Setting up onDisconnect and presence data...');
+
+                // Set up onDisconnect FIRST - this will run on server when client disconnects
+                await onDisconnect(presenceRef).remove();
+
+                // Now set our presence data
+                await set(presenceRef, {
+                    oderId: user.uid,
+                    userEmail: user.email,
+                    userName: user.displayName || user.email.split('@')[0],
+                    lastSeen: new Date().toISOString(),
+                    connectedAt: new Date().toISOString(),
+                    userAgent: navigator.userAgent.substring(0, 100)
+                });
+
+                console.log('[Presence] Presence data set successfully!');
+            }
         });
 
-        // Mobile viewport height fix for iOS Safari
-        (function () {
-            function setVH() {
-                const vh = window.innerHeight * 0.01;
-                document.documentElement.style.setProperty('--vh', `${vh}px`);
-            }
-            setVH();
-            window.addEventListener('resize', setVH);
-            window.addEventListener('orientationchange', () => setTimeout(setVH, 100));
-        })();
-    </script>
-</body>
+        // Also update lastSeen periodically for "last activity" tracking
+        // This is optional but useful to see if user is actively using the app
+        startHeartbeat();
 
-</html>
+    } catch (e) {
+        console.error('[Presence] Start failed:', e);
+    }
+}
+
+// Heartbeat to update lastSeen (doesn't affect online status, just activity)
+let heartbeatInterval = null;
+
+function startHeartbeat() {
+    if (heartbeatInterval) clearInterval(heartbeatInterval);
+
+    heartbeatInterval = setInterval(async () => {
+        const user = auth.currentUser;
+        if (user && presenceRef) {
+            try {
+                await set(presenceRef, {
+                    oderId: user.uid,
+                    userEmail: user.email,
+                    userName: user.displayName || user.email.split('@')[0],
+                    lastSeen: new Date().toISOString(),
+                    userAgent: navigator.userAgent.substring(0, 100)
+                });
+            } catch (e) {
+                // Ignore heartbeat errors
+            }
+        }
+    }, 60000); // Every 60 seconds for activity tracking
+}
+
+/**
+ * Stop presence tracking - call this on logout
+ */
+export async function stopPresence() {
+    // Clear heartbeat
+    if (heartbeatInterval) {
+        clearInterval(heartbeatInterval);
+        heartbeatInterval = null;
+    }
+
+    // Unsubscribe from connection listener
+    if (unsubscribeConnected) {
+        unsubscribeConnected();
+        unsubscribeConnected = null;
+    }
+
+    // Remove presence from RTDB
+    if (presenceRef) {
+        try {
+            await remove(presenceRef);
+        } catch (e) {
+            // Ignore errors on cleanup
+        }
+        presenceRef = null;
+    }
+}
+
+/**
+ * Get count of online users from Realtime Database
+ * @returns {Promise<number>} - Number of online users
+ */
+export async function getOnlineUsersCount() {
+    try {
+        const presenceListRef = ref(rtdb, 'presence');
+        const snapshot = await get(presenceListRef);
+
+        if (!snapshot.exists()) return 0;
+
+        return Object.keys(snapshot.val()).length;
+    } catch (e) {
+        console.warn('Failed to get online users count:', e);
+        return 0;
+    }
+}
+
+/**
+ * Subscribe to online users count updates (real-time from RTDB)
+ * @param {function} callback - Function to call with updated count
+ * @returns {function} - Unsubscribe function
+ */
+export function subscribeToOnlineUsers(callback) {
+    const presenceListRef = ref(rtdb, 'presence');
+
+    const unsubscribe = onValue(presenceListRef, (snapshot) => {
+        if (!snapshot.exists()) {
+            callback(0);
+            return;
+        }
+        callback(Object.keys(snapshot.val()).length);
+    });
+
+    // Return unsubscribe function
+    return unsubscribe;
+}
+
+/**
+ * Clean up old presence records - NOT NEEDED with RTDB onDisconnect
+ * Keeping for backwards compatibility but it's a no-op now
+ */
+export async function cleanupOldPresence() {
+    // No longer needed - onDisconnect handles this automatically
+    console.log('cleanupOldPresence: Using RTDB onDisconnect, cleanup is automatic');
+}
+
+/**
+ * Get list of online users with details from Realtime Database
+ * @returns {Promise<Array>} - Array of online user objects
+ */
+export async function getOnlineUsersList() {
+    try {
+        const presenceListRef = ref(rtdb, 'presence');
+        const snapshot = await get(presenceListRef);
+
+        if (!snapshot.exists()) return [];
+
+        const data = snapshot.val();
+        const onlineUsers = Object.entries(data).map(([oderId, userData]) => ({
+            oderId: userData.oderId || oderId,
+            email: userData.userEmail || '',
+            name: userData.userName || userData.userEmail?.split('@')[0] || 'Unknown',
+            lastSeen: userData.lastSeen,
+            connectedAt: userData.connectedAt,
+            userAgent: userData.userAgent || ''
+        }));
+
+        // Sort by name
+        onlineUsers.sort((a, b) => a.name.localeCompare(b.name));
+
+        return onlineUsers;
+    } catch (e) {
+        console.warn('Failed to get online users list:', e);
+        return [];
+    }
+}
+
+/**
+ * Subscribe to online users list updates (real-time from RTDB)
+ * @param {function} callback - Function to call with updated list
+ * @returns {function} - Unsubscribe function
+ */
+export function subscribeToOnlineUsersList(callback) {
+    const presenceListRef = ref(rtdb, 'presence');
+
+    const unsubscribe = onValue(presenceListRef, (snapshot) => {
+        if (!snapshot.exists()) {
+            callback([]);
+            return;
+        }
+
+        const data = snapshot.val();
+        const onlineUsers = Object.entries(data).map(([oderId, userData]) => ({
+            oderId: userData.oderId || oderId,
+            email: userData.userEmail || '',
+            name: userData.userName || userData.userEmail?.split('@')[0] || 'Unknown',
+            lastSeen: userData.lastSeen,
+            connectedAt: userData.connectedAt,
+            userAgent: userData.userAgent || ''
+        }));
+
+        // Sort by name
+        onlineUsers.sort((a, b) => a.name.localeCompare(b.name));
+
+        callback(onlineUsers);
+    });
+
+    // Return unsubscribe function
+    return unsubscribe;
+}
