@@ -2540,6 +2540,11 @@ const app = {
         this.stepMode.isChecked = false;
         this.stepMode.isCorrect = false;
 
+        // Debug: Log question data structure
+        console.log('[Step Mode] Question data:', q.data);
+        console.log('[Step Mode] Has image field:', q.data.image);
+        console.log('[Step Mode] Has imageUrl field:', q.data.imageUrl);
+
         // Update progress
         document.getElementById('step-current').textContent = currentIndex + 1;
         document.getElementById('step-correct-count').textContent = this.stepMode.correctCount;
@@ -2607,11 +2612,16 @@ const app = {
         // Render question text
         document.getElementById('step-question-text').innerHTML = formatText(q.data.text);
 
-        // Handle image
+        // Handle image - support both 'image' and 'imageUrl' fields
         const imgContainer = document.getElementById('step-question-image');
-        if (q.data.image) {
+        const imgSrc = q.data.image || q.data.imageUrl || null;
+
+        if (imgSrc && imgSrc.trim() !== '') {
             imgContainer.classList.remove('hidden');
-            imgContainer.querySelector('img').src = q.data.image;
+            const imgEl = imgContainer.querySelector('img');
+            imgEl.src = imgSrc;
+            imgEl.alt = 'Hình minh họa câu hỏi';
+            console.log('[Step Mode] Image loaded:', imgSrc);
         } else {
             imgContainer.classList.add('hidden');
         }
