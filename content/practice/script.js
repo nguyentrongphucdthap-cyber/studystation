@@ -816,6 +816,10 @@ const app = {
         const fontFamily = localStorage.getItem('studyStation_fontFamily') || 'modern';
         this.applyFontFamily(fontFamily);
         this.updateFontFamilyUI(fontFamily);
+
+        // Default Exam Mode (default: ask)
+        const defaultExamMode = localStorage.getItem('studyStation_defaultExamMode') || 'ask';
+        this.updateDefaultModeUI(defaultExamMode);
     },
 
     async loadSubjects() {
@@ -1115,13 +1119,34 @@ const app = {
     // Show exam mode selection modal
     showExamModeModal(subId, examId, title) {
         this.pendingExam = { subId, examId, title };
+
+        // Check if user has set a default mode (not 'ask')
+        const defaultMode = localStorage.getItem('studyStation_defaultExamMode') || 'ask';
+
+        if (defaultMode !== 'ask') {
+            // Automatically use the default mode without showing modal
+            this.confirmExamMode(defaultMode);
+            return;
+        }
+
+        // Show modal for user to choose
         document.getElementById('mode-modal-exam-title').textContent = title;
+        // Reset checkbox state
+        const checkbox = document.getElementById('remember-mode-checkbox');
+        if (checkbox) checkbox.checked = false;
         document.getElementById('exam-mode-modal').classList.remove('hidden');
     },
 
     // Handle mode selection
     confirmExamMode(mode) {
         document.getElementById('exam-mode-modal').classList.add('hidden');
+
+        // Check if user wants to remember this choice
+        const rememberCheckbox = document.getElementById('remember-mode-checkbox');
+        if (rememberCheckbox && rememberCheckbox.checked) {
+            localStorage.setItem('studyStation_defaultExamMode', mode);
+            this.updateDefaultModeUI(mode);
+        }
 
         const { subId, examId } = this.pendingExam;
         if (!subId || !examId) return;
@@ -1132,6 +1157,42 @@ const app = {
             this.startStepMode(subId, examId);
         }
     },
+
+    // Set default exam mode from settings
+    setDefaultExamMode(mode) {
+        localStorage.setItem('studyStation_defaultExamMode', mode);
+        this.updateDefaultModeUI(mode);
+    },
+
+    // Update UI to reflect current default mode
+    updateDefaultModeUI(mode) {
+        // Update buttons
+        const buttons = ['ask', 'classic', 'stepbystep'];
+        buttons.forEach(m => {
+            const btn = document.getElementById(`settings-mode-${m}`);
+            if (btn) {
+                if (m === mode) {
+                    btn.classList.add('border-blue-500', 'bg-blue-50', 'dark:bg-blue-900/30');
+                    btn.classList.remove('border-slate-200', 'dark:border-slate-600', 'bg-white', 'dark:bg-slate-800');
+                } else {
+                    btn.classList.remove('border-blue-500', 'bg-blue-50', 'dark:bg-blue-900/30');
+                    btn.classList.add('border-slate-200', 'dark:border-slate-600', 'bg-white', 'dark:bg-slate-800');
+                }
+            }
+        });
+
+        // Update description text
+        const descEl = document.getElementById('default-mode-desc');
+        if (descEl) {
+            const modeNames = {
+                'ask': 'Luôn hỏi khi bắt đầu',
+                'classic': 'Tự động vào Chế độ Cổ điển',
+                'stepbystep': 'Tự động vào Chế độ Từng Câu'
+            };
+            descEl.textContent = modeNames[mode] || modeNames['ask'];
+        }
+    },
+
 
     startExam(subId, examId) {
         const subject = this.subjects[subId];
@@ -2354,17 +2415,56 @@ const app = {
         document.getElementById('step-question-type-badge').textContent = q.typeLabel;
         document.getElementById('step-question-part').textContent = q.partLabel;
 
-        // Helper: format text with MathJax support
-        const formatText = (text) => {
-            if (!text) return '';
-            const el = document.createElement('span');
-            el.textContent = text;
-            let escaped = el.innerHTML;
-            // Handle degree symbols
-            escaped = escaped.replace(/(\d*)°C/g, '\\($1^\\circ C\\)');
-            escaped = escaped.replace(/(\d*)°F/g, '\\($1^\\circ F\\)');
-            escaped = escaped.replace(/(\d*)°/g, '\\($1^\\circ\\)');
-            return escaped;
+        // Helper: format text with MathJax support (same as classic mode)
+        const formatText = (text, restoreBold = false) => {
+            if (text === null || text === undefined) return '';
+
+            // Fix non-standard LaTeX commands for MathJax
+            // Converts \female -> \venus and \male -> \mars
+            text = String(text)
+                .replace(/\\female/g, '\\venus')
+                .replace(/\\male/g, '\\mars');
+
+            // Auto-wrap common LaTeX symbols that are not inside math delimiters
+            // Pattern: detect ^\circ not inside \( \) or $ $
+            // Wrap numbers followed by ^\circ with math delimiters
+            text = text.replace(/(\d+(?:[,\.]\d+)?)\s*\^\s*\\circ\s*([A-Z])?/g, (match, num, unit) => {
+                if (unit) {
+                    return `\\(${num}^\\circ\\text{${unit}}\\)`;
+                }
+                return `\\(${num}^\\circ\\)`;
+            });
+
+            // Also handle standalone ^\circ (without number)
+            text = text.replace(/(?<![\\$(])\^\s*\\circ\s*([A-Z])?(?![\\)$])/g, (match, unit) => {
+                if (unit) {
+                    return `\\(^\\circ\\text{${unit}}\\)`;
+                }
+                return `\\(^\\circ\\)`;
+            });
+
+            // Handle degree symbols: °C, °F, °
+            text = text.replace(/(\d*)°C/g, '\\($1^\\circ C\\)');
+            text = text.replace(/(\d*)°F/g, '\\($1^\\circ F\\)');
+            text = text.replace(/(\d*)°/g, '\\($1^\\circ\\)');
+
+            // 1. Safe Escape using DOM (browser handles all edge cases perfectly)
+            const div = document.createElement('div');
+            div.textContent = String(text);
+            let safe = div.innerHTML;
+
+            // 2. Convert newlines to <br> for proper line breaks
+            safe = safe.replace(/\\n/g, '<br>');  // Literal \n from JSON
+            safe = safe.replace(/\n/g, '<br>');   // Actual newline characters
+
+            // 3. Restore <b>/<strong> as blue bold (only for question text)
+            if (restoreBold) {
+                safe = safe.replace(/&lt;(b|strong)&gt;([\s\S]*?)&lt;\/\1&gt;/gi, (match, tag, content) => {
+                    return `<${tag} class="font-bold text-blue-600 dark:text-blue-400">${content}</${tag}>`;
+                });
+            }
+
+            return safe;
         };
 
         // Render question text
@@ -2455,16 +2555,56 @@ const app = {
         });
     },
 
-    // Helper: Format text for step mode
-    stepFormatText(text) {
-        if (!text) return '';
-        const el = document.createElement('span');
-        el.textContent = text;
-        let escaped = el.innerHTML;
-        escaped = escaped.replace(/(\d*)°C/g, '\\($1^\\circ C\\)');
-        escaped = escaped.replace(/(\d*)°F/g, '\\($1^\\circ F\\)');
-        escaped = escaped.replace(/(\d*)°/g, '\\($1^\\circ\\)');
-        return escaped;
+    // Helper: Format text for step mode (same as classic mode)
+    stepFormatText(text, restoreBold = false) {
+        if (text === null || text === undefined) return '';
+
+        // Fix non-standard LaTeX commands for MathJax
+        // Converts \female -> \venus and \male -> \mars
+        text = String(text)
+            .replace(/\\female/g, '\\venus')
+            .replace(/\\male/g, '\\mars');
+
+        // Auto-wrap common LaTeX symbols that are not inside math delimiters
+        // Pattern: detect ^\circ not inside \( \) or $ $
+        // Wrap numbers followed by ^\circ with math delimiters
+        text = text.replace(/(\d+(?:[,\.]\d+)?)\s*\^\s*\\circ\s*([A-Z])?/g, (match, num, unit) => {
+            if (unit) {
+                return `\\(${num}^\\circ\\text{${unit}}\\)`;
+            }
+            return `\\(${num}^\\circ\\)`;
+        });
+
+        // Also handle standalone ^\circ (without number)
+        text = text.replace(/(?<![\\$(])\^\s*\\circ\s*([A-Z])?(?![\\)$])/g, (match, unit) => {
+            if (unit) {
+                return `\\(^\\circ\\text{${unit}}\\)`;
+            }
+            return `\\(^\\circ\\)`;
+        });
+
+        // Handle degree symbols: °C, °F, °
+        text = text.replace(/(\d*)°C/g, '\\($1^\\circ C\\)');
+        text = text.replace(/(\d*)°F/g, '\\($1^\\circ F\\)');
+        text = text.replace(/(\d*)°/g, '\\($1^\\circ\\)');
+
+        // 1. Safe Escape using DOM (browser handles all edge cases perfectly)
+        const div = document.createElement('div');
+        div.textContent = String(text);
+        let safe = div.innerHTML;
+
+        // 2. Convert newlines to <br> for proper line breaks
+        safe = safe.replace(/\\n/g, '<br>');  // Literal \n from JSON
+        safe = safe.replace(/\n/g, '<br>');   // Actual newline characters
+
+        // 3. Restore <b>/<strong> as blue bold (only for question text)
+        if (restoreBold) {
+            safe = safe.replace(/&lt;(b|strong)&gt;([\s\S]*?)&lt;\/\1&gt;/gi, (match, tag, content) => {
+                return `<${tag} class="font-bold text-blue-600 dark:text-blue-400">${content}</${tag}>`;
+            });
+        }
+
+        return safe;
     },
 
     // Select option for Part 1 - auto check on click
