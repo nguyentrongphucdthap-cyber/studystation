@@ -1240,18 +1240,31 @@ const app = {
         mindmap: [
             { title: 'Bài 6', description: 'Sơ đồ tóm tắt bài 6', url: 'https://drive.google.com/file/d/1I3A-D0X-8IHb5-Il6cLzm6CVqCwrSRre/view?usp=sharing', type: 'image' },
             { title: 'Bài 7', description: 'Sơ đồ tóm tắt bài 7', url: 'https://drive.google.com/file/d/1diaYd2DzdyYQtq2iPg_ZNlwX79VPSv6D/view?usp=sharing', type: 'image' },
+            { title: 'Bài 8', description: 'Sơ đồ tóm tắt bài 8', url: 'https://drive.google.com/file/d/1ie05WiTQK5KZ7zb3acOijw3mY1pZz6Kq/view?usp=drive_link', type: 'image' },
+            { title: 'Bài 9', description: 'Sơ đồ tóm tắt bài 9', url: 'https://drive.google.com/file/d/1pjyO4CigBwyoA2Zh9GC_qIFD8ojsGZwP/view?usp=drive_link', type: 'image' },
+            { title: 'Lịch Sử Thế Giới', description: 'Sơ đồ tóm tắt bài Lịch Sử Thế Giới', url: 'https://drive.google.com/file/d/1wmArICVIo4RW_V_aXw0EFIKav9Cc8Hh_/view?usp=drive_link', type: 'image' },
         ],
         video: [
             { title: 'Bài 6', description: 'Video tóm tắt bài 6', url: 'https://drive.google.com/file/d/1px7-vb0t34wSZnTOc-XoxgyoB4-LdPT3/view?usp=sharing', duration: '5:23' },
             { title: 'Bài 7', description: 'Video tóm tắt bài 7', url: 'https://drive.google.com/file/d/1VKCkwMlWpWDsTpTxDODkm5Li01DI3sh-/view?usp=sharing', duration: '5:23' },
+            { title: 'Bài 8', description: 'Video tóm tắt bài 6', url: 'https://drive.google.com/file/d/1BK0-3rorj6ztEUBVkp3zFk5-8dH-1TUo/view?usp=drive_link', duration: '5:23' },
+            { title: 'Bài 9', description: 'Video tóm tắt bài 7', url: 'https://drive.google.com/file/d/13-fegzCKZ4j2QASwN4YKshpy_-AMEWYN/view?usp=drive_link', duration: '6:01' },
+            { title: 'Lịch Sử Thế Giới', description: 'Video tóm tắt bài Lịch Sử Thế Giới', url: 'https://drive.google.com/file/d/1GPZ6XdJ3aawgfyoq5_SbWJ1EwBL9XHDC/view?usp=drive_link', duration: '5:23' },
         ],
         presentation: [
             { title: 'Bài 6', description: 'Slide PowerPoint đầy đủ', url: 'https://drive.google.com/file/d/15IyF6LZHtcFyaAbP_klOCD1J_dEOgNGI/view?usp=sharing', slides: 14 },
             { title: 'Bài 7', description: 'Slide PowerPoint đầy đủ', url: 'https://drive.google.com/file/d/1YBRknRcM3sfAsLGnT-CVTdrMPnR_7Y38/view?usp=sharing', slides: 14 },
+            { title: 'Bài 8', description: 'Slide PowerPoint đầy đủ', url: 'https://drive.google.com/file/d/1obkoSJ_7N6Xo920sL55zW3AxIpacVUBS/view?usp=drive_link', slides: 14 },
+            { title: 'Bài 9', description: 'Slide PowerPoint đầy đủ', url: 'https://drive.google.com/file/d/1yuAH6Wg-6H92D2kj-nFfnhOVwQTeD5hS/view?usp=drive_link', slides: 11 },
+            { title: 'Lịch Sử Thế Giới', description: 'Slide PowerPoint đầy đủ', url: 'https://drive.google.com/file/d/1tZW6slmE7ySdfBT8KttPx7Gjp8V7Ynh0/view?usp=drive_link', slides: 13 },
         ],
         podcast: [
             { title: 'Bài 6', description: 'Podcast dễ nghe', url: 'https://drive.google.com/file/d/1yEbp5Kncbmb9z09zk-xRg6nRznbXhxwa/view?usp=drive_link', duration: '11:22' },
             { title: 'Bài 7', description: 'Podcast dễ nghe', url: 'https://drive.google.com/file/d/14vQLSPkQwLKt6mLprDiRuVVKuG-O5MNu/view?usp=sharing', duration: '11:22' },
+            { title: 'Bài 8', description: 'Podcast dễ nghe', url: 'https://drive.google.com/file/d/1PHSXG3yXzsM5C85o9DeMD1yXRtjwqi8x/view?usp=drive_link', duration: '11:22' },
+            { title: 'Bài 9', description: 'Podcast dễ nghe', url: 'https://drive.google.com/file/d/1iINlWPta7iyzc44hdpWkoMPtu3QaKK6x/view?usp=drive_link', duration: '12:47' },
+            { title: 'Lịch Sử Thế Giới', description: 'Podcast dễ nghe', url: 'https://drive.google.com/file/d/1phUKo8xsH8behopTANsLbq5d_QB8dgtv/view?usp=drive_link', duration: '11:22' },
+
         ]
     },
 
