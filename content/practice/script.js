@@ -1024,7 +1024,8 @@ const app = {
                                     examCode: exam.examCode || '',
                                     createdAt: exam.createdAt || '',
                                     author: exam.author || '',
-                                    attemptCount: exam.attemptCount || 0
+                                    attemptCount: exam.attemptCount || 0,
+                                    tags: exam.tags || []
                                 });
                                 this.examContentDB[exam.id] = {
                                     id: exam.id,
@@ -1200,16 +1201,185 @@ const app = {
     goSubject(subId) {
         const sub = this.subjects[subId];
         if (!sub) { alert('Không tìm thấy môn học này.'); return; }
+
+        // Store current subject for filtering
+        this.currentSubjectId = subId;
+        this.examSearchQuery = '';
+        this.examFilterTags = [];
+
         this.renderTemplate('tpl-exam-list');
         this.container.querySelector('#subject-title').innerText = sub.name;
         this.container.querySelector('#subject-icon-large').innerHTML = sub.icon;
         this.container.querySelector('#subject-icon-large').className = `p-4 rounded-2xl ${sub.bg}`;
+
+        // Collect all unique tags from exams in this subject
+        const allTags = new Set();
+        sub.exams.forEach(exam => {
+            (exam.tags || []).forEach(tag => allTags.add(tag));
+        });
+
+        // Setup filter UI
+        this.setupExamFilters(Array.from(allTags));
+
+        // Render exam list
+        this.renderExamList(sub.exams);
+    },
+
+    // Setup filter event listeners
+    setupExamFilters(availableTags) {
+        const searchInput = this.container.querySelector('#exam-search-input');
+        const tagFilterSection = this.container.querySelector('#tag-filter-section');
+        const tagFilterChips = this.container.querySelector('#tag-filter-chips');
+        const activeFilters = this.container.querySelector('#active-filters');
+        const clearFiltersBtn = this.container.querySelector('#clear-filters-btn');
+
+        // Search input event
+        if (searchInput) {
+            searchInput.addEventListener('input', (e) => {
+                this.examSearchQuery = e.target.value.toLowerCase().trim();
+                this.applyExamFilters();
+            });
+        }
+
+        // Render tag filter chips if there are tags
+        if (availableTags.length > 0 && tagFilterSection && tagFilterChips) {
+            tagFilterSection.classList.remove('hidden');
+            tagFilterChips.innerHTML = availableTags.map(tag => `
+                <button type="button" class="tag-filter-chip px-3 py-1.5 text-xs font-medium rounded-full border-2 border-slate-200 dark:border-slate-600 bg-white dark:bg-slate-700 text-slate-600 dark:text-slate-300 hover:border-blue-400 hover:text-blue-600 transition-all" data-tag="${tag}">
+                    🏷️ ${tag}
+                </button>
+            `).join('');
+
+            // Bind tag chip click events
+            tagFilterChips.querySelectorAll('.tag-filter-chip').forEach(chip => {
+                chip.addEventListener('click', () => {
+                    const tag = chip.dataset.tag;
+                    this.toggleExamFilterTag(tag);
+                });
+            });
+        }
+
+        // Clear filters button
+        if (clearFiltersBtn) {
+            clearFiltersBtn.addEventListener('click', () => {
+                this.clearExamFilters();
+            });
+        }
+    },
+
+    // Toggle tag filter
+    toggleExamFilterTag(tag) {
+        const idx = this.examFilterTags.indexOf(tag);
+        if (idx === -1) {
+            this.examFilterTags.push(tag);
+        } else {
+            this.examFilterTags.splice(idx, 1);
+        }
+        this.updateTagFilterChipsUI();
+        this.applyExamFilters();
+    },
+
+    // Update tag filter chips UI
+    updateTagFilterChipsUI() {
+        const chips = this.container.querySelectorAll('.tag-filter-chip');
+        chips.forEach(chip => {
+            const tag = chip.dataset.tag;
+            if (this.examFilterTags.includes(tag)) {
+                chip.classList.add('border-blue-500', 'bg-blue-500', 'text-white', 'dark:bg-blue-600', 'dark:border-blue-500');
+                chip.classList.remove('border-slate-200', 'dark:border-slate-600', 'bg-white', 'dark:bg-slate-700', 'text-slate-600', 'dark:text-slate-300');
+            } else {
+                chip.classList.remove('border-blue-500', 'bg-blue-500', 'text-white', 'dark:bg-blue-600', 'dark:border-blue-500');
+                chip.classList.add('border-slate-200', 'dark:border-slate-600', 'bg-white', 'dark:bg-slate-700', 'text-slate-600', 'dark:text-slate-300');
+            }
+        });
+
+        // Update active filters display
+        const activeFilters = this.container.querySelector('#active-filters');
+        const activeFilterTags = this.container.querySelector('#active-filter-tags');
+
+        if (this.examFilterTags.length > 0 && activeFilters && activeFilterTags) {
+            activeFilters.classList.remove('hidden');
+            activeFilterTags.innerHTML = this.examFilterTags.map(tag => `
+                <span class="inline-flex items-center gap-1 px-2 py-0.5 bg-blue-100 dark:bg-blue-900/50 text-blue-700 dark:text-blue-300 rounded-full">
+                    ${tag}
+                    <button type="button" class="remove-filter-tag hover:text-red-500" data-tag="${tag}">×</button>
+                </span>
+            `).join('');
+
+            // Bind remove events
+            activeFilterTags.querySelectorAll('.remove-filter-tag').forEach(btn => {
+                btn.addEventListener('click', (e) => {
+                    e.stopPropagation();
+                    this.toggleExamFilterTag(btn.dataset.tag);
+                });
+            });
+        } else if (activeFilters) {
+            activeFilters.classList.add('hidden');
+        }
+    },
+
+    // Clear all filters
+    clearExamFilters() {
+        this.examSearchQuery = '';
+        this.examFilterTags = [];
+
+        const searchInput = this.container.querySelector('#exam-search-input');
+        if (searchInput) searchInput.value = '';
+
+        this.updateTagFilterChipsUI();
+        this.applyExamFilters();
+    },
+
+    // Apply filters and re-render
+    applyExamFilters() {
+        const sub = this.subjects[this.currentSubjectId];
+        if (!sub) return;
+
+        let filteredExams = [...sub.exams];
+
+        // Filter by search query
+        if (this.examSearchQuery) {
+            filteredExams = filteredExams.filter(exam =>
+                exam.title.toLowerCase().includes(this.examSearchQuery)
+            );
+        }
+
+        // Filter by tags (AND logic - exam must have ALL selected tags)
+        if (this.examFilterTags.length > 0) {
+            filteredExams = filteredExams.filter(exam => {
+                const examTags = exam.tags || [];
+                return this.examFilterTags.every(tag => examTags.includes(tag));
+            });
+        }
+
+        this.renderExamList(filteredExams);
+    },
+
+    // Render exam list
+    renderExamList(exams) {
         const grid = this.container.querySelector('#exam-grid');
-        if (!sub.exams.length) {
-            grid.innerHTML = `<div class="bg-white dark:bg-slate-800 p-6 rounded-2xl border border-slate-200 dark:border-slate-700 text-slate-500 dark:text-slate-300">Chưa có đề thi nào trong môn này.</div>`;
+        const countDisplay = this.container.querySelector('#exam-count-display');
+
+        if (countDisplay) {
+            countDisplay.textContent = `(${exams.length} đề)`;
+        }
+
+        if (!exams.length) {
+            grid.innerHTML = `<div class="bg-white dark:bg-slate-800 p-6 rounded-2xl border border-slate-200 dark:border-slate-700 text-slate-500 dark:text-slate-300 text-center">
+                <svg class="w-12 h-12 mx-auto mb-3 text-slate-300 dark:text-slate-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9.172 16.172a4 4 0 015.656 0M9 10h.01M15 10h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/>
+                </svg>
+                ${this.examSearchQuery || this.examFilterTags.length > 0
+                    ? 'Không tìm thấy đề thi phù hợp với bộ lọc.'
+                    : 'Chưa có đề thi nào trong môn này.'}
+            </div>`;
             return;
         }
-        sub.exams.forEach((exam, index) => {
+
+        grid.innerHTML = '';
+        const subId = this.currentSubjectId;
+
+        exams.forEach((exam, index) => {
             const el = document.createElement('div');
             el.className = 'exam-card bg-white dark:bg-slate-800 p-4 md:p-6 rounded-2xl border border-slate-200 dark:border-slate-700 shadow-sm hover:border-blue-300 dark:hover:border-blue-500 hover:shadow-md transition-all cursor-pointer group';
             el.onclick = () => this.showExamModeModal(subId, exam.id, exam.title);
@@ -1218,15 +1388,32 @@ const app = {
                 ? `<span class="text-[10px] md:text-xs text-slate-400 dark:text-slate-500 flex items-center"><svg class="w-3 h-3 mr-1 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"/></svg>${new Date(exam.createdAt).toLocaleDateString('vi-VN')}</span>`
                 : '';
 
-            // Số lượt làm đề (attemptCount) - luôn hiển thị
+            // Số lượt làm đề (attemptCount)
             const attemptCount = exam.attemptCount || 0;
             const attemptInfo = `<span class="text-[10px] md:text-xs text-emerald-600 dark:text-emerald-400 flex items-center"><svg class="w-3 h-3 mr-1 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"/><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"/></svg>${attemptCount} lượt thi</span>`;
+
+            // Tags HTML
+            const tagsHtml = (exam.tags && exam.tags.length > 0)
+                ? `<div class="flex flex-wrap gap-1 mt-2">${exam.tags.map(tag => {
+                    // Determine tag color based on tag name
+                    let tagColor = 'bg-slate-100 text-slate-600 dark:bg-slate-700 dark:text-slate-300';
+                    if (tag === 'Hot') tagColor = 'bg-red-100 text-red-600 dark:bg-red-900/50 dark:text-red-300';
+                    else if (tag === 'Trường') tagColor = 'bg-blue-100 text-blue-600 dark:bg-blue-900/50 dark:text-blue-300';
+                    else if (tag === 'ĐGNL') tagColor = 'bg-purple-100 text-purple-600 dark:bg-purple-900/50 dark:text-purple-300';
+                    else if (tag === 'Tổng hợp') tagColor = 'bg-amber-100 text-amber-700 dark:bg-amber-900/50 dark:text-amber-300';
+                    else if (tag === 'Mapstudy' || tag === 'Tenschool') tagColor = 'bg-emerald-100 text-emerald-600 dark:bg-emerald-900/50 dark:text-emerald-300';
+                    else if (tag === 'Mạng Xã Hội') tagColor = 'bg-pink-100 text-pink-600 dark:bg-pink-900/50 dark:text-pink-300';
+
+                    return `<span class="text-[10px] font-medium px-2 py-0.5 rounded-full ${tagColor}">${tag}</span>`;
+                }).join('')}</div>`
+                : '';
 
             el.innerHTML = `
                 <div class="flex items-start gap-3 md:gap-4">
                     <div class="shrink-0 w-9 h-9 md:w-10 md:h-10 rounded-full bg-blue-50 dark:bg-blue-900/30 text-blue-600 dark:text-blue-400 flex items-center justify-center font-bold text-xs md:text-sm">${(index + 1).toString().padStart(2, '0')}</div>
                     <div class="flex-1 min-w-0 overflow-hidden">
                         <h4 class="font-bold text-base md:text-lg text-slate-800 dark:text-white group-hover:text-blue-600 dark:group-hover:text-blue-400 transition-colors leading-snug mb-1">${exam.title}</h4>
+                        ${tagsHtml}
                         <div class="flex flex-wrap items-center gap-2 md:gap-4 mt-2">
                             <span class="text-[10px] md:text-xs font-semibold text-slate-500 dark:text-slate-400 bg-slate-100 dark:bg-slate-700 px-2 py-1 rounded flex items-center">
                                 <svg class="w-3 h-3 mr-1 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>
