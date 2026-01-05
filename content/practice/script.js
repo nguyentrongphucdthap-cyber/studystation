@@ -1289,6 +1289,130 @@ const app = {
                 this.clearExamFilters();
             });
         }
+
+        // Mobile tag filter setup
+        this.setupMobileTagFilter(allTags, availableTags);
+    },
+
+    // Setup mobile tag filter modal
+    setupMobileTagFilter(allTags, usedTagsArray) {
+        const mobileBtn = this.container.querySelector('#mobile-tag-filter-btn');
+        const mobileModal = this.container.querySelector('#mobile-tag-filter-modal');
+        const mobileChips = this.container.querySelector('#mobile-tag-chips');
+        const closeBtn = this.container.querySelector('#mobile-tag-filter-close');
+        const applyBtn = this.container.querySelector('#mobile-tag-apply-btn');
+        const clearBtn = this.container.querySelector('#mobile-tag-clear-btn');
+        const selectedCount = this.container.querySelector('#mobile-selected-count');
+        const mobileBadge = this.container.querySelector('#mobile-filter-badge');
+
+        if (!mobileBtn || !mobileModal) return;
+
+        // Temporary selection state for mobile modal
+        this.mobileTempTags = [...this.examFilterTags];
+
+        // Get icon for tag
+        const getTagIcon = (tag) => {
+            const icons = {
+                'Trường': '🏫', 'Hot': '🔥', 'Đúng Sai': '✓✗', 'Trả lời ngắn': '✏️',
+                'Tổng hợp': '📚', 'Mạng Xã Hội': '📱', 'Mapstudy': '🗺️', 'Tenschool': '🎓', 'ĐGNL': '📝'
+            };
+            return icons[tag] || '🏷️';
+        };
+
+        const usedTags = new Set(usedTagsArray);
+
+        // Render mobile tag chips
+        const renderMobileChips = () => {
+            mobileChips.innerHTML = allTags.map(tag => {
+                const isUsed = usedTags.has(tag);
+                const isSelected = this.mobileTempTags.includes(tag);
+                const baseClass = 'px-4 py-2.5 text-sm font-medium rounded-full border-2 transition-all';
+                const selectedClass = isSelected
+                    ? 'border-blue-500 bg-blue-500 text-white'
+                    : `border-slate-200 dark:border-slate-600 bg-white dark:bg-slate-700 text-slate-600 dark:text-slate-300 ${!isUsed ? 'opacity-50' : ''}`;
+
+                return `
+                    <button type="button" class="mobile-tag-chip ${baseClass} ${selectedClass}" data-tag="${tag}">
+                        ${getTagIcon(tag)} ${tag}
+                    </button>
+                `;
+            }).join('');
+
+            // Bind click events
+            mobileChips.querySelectorAll('.mobile-tag-chip').forEach(chip => {
+                chip.addEventListener('click', () => {
+                    const tag = chip.dataset.tag;
+                    const idx = this.mobileTempTags.indexOf(tag);
+                    if (idx === -1) {
+                        this.mobileTempTags.push(tag);
+                    } else {
+                        this.mobileTempTags.splice(idx, 1);
+                    }
+                    renderMobileChips();
+                    updateSelectedCount();
+                });
+            });
+        };
+
+        // Update selected count text
+        const updateSelectedCount = () => {
+            const count = this.mobileTempTags.length;
+            if (count === 0) {
+                selectedCount.textContent = 'Chưa chọn thẻ nào';
+            } else {
+                selectedCount.textContent = `Đã chọn ${count} thẻ: ${this.mobileTempTags.join(', ')}`;
+            }
+        };
+
+        // Update mobile badge
+        const updateMobileBadge = () => {
+            const count = this.examFilterTags.length;
+            if (count > 0) {
+                mobileBadge.textContent = count;
+                mobileBadge.classList.remove('hidden');
+                mobileBadge.classList.add('flex');
+            } else {
+                mobileBadge.classList.add('hidden');
+                mobileBadge.classList.remove('flex');
+            }
+        };
+
+        // Open modal
+        mobileBtn.addEventListener('click', () => {
+            this.mobileTempTags = [...this.examFilterTags];
+            renderMobileChips();
+            updateSelectedCount();
+            mobileModal.classList.remove('hidden');
+        });
+
+        // Close modal
+        const closeModal = () => {
+            mobileModal.classList.add('hidden');
+        };
+
+        closeBtn.addEventListener('click', closeModal);
+        mobileModal.addEventListener('click', (e) => {
+            if (e.target === mobileModal) closeModal();
+        });
+
+        // Clear all
+        clearBtn.addEventListener('click', () => {
+            this.mobileTempTags = [];
+            renderMobileChips();
+            updateSelectedCount();
+        });
+
+        // Apply filter
+        applyBtn.addEventListener('click', () => {
+            this.examFilterTags = [...this.mobileTempTags];
+            this.updateTagFilterChipsUI();
+            this.applyExamFilters();
+            updateMobileBadge();
+            closeModal();
+        });
+
+        // Initial badge update
+        updateMobileBadge();
     },
 
     // Toggle tag filter
@@ -1339,6 +1463,20 @@ const app = {
             });
         } else if (activeFilters) {
             activeFilters.classList.add('hidden');
+        }
+
+        // Update mobile badge
+        const mobileBadge = this.container.querySelector('#mobile-filter-badge');
+        if (mobileBadge) {
+            const count = this.examFilterTags.length;
+            if (count > 0) {
+                mobileBadge.textContent = count;
+                mobileBadge.classList.remove('hidden');
+                mobileBadge.classList.add('flex');
+            } else {
+                mobileBadge.classList.add('hidden');
+                mobileBadge.classList.remove('flex');
+            }
         }
     },
 
