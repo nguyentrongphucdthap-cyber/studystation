@@ -687,1221 +687,1212 @@
                     class="px-2 py-1 text-xs font-semibold rounded-lg border border-slate-200 dark:border-slate-600 text-slate-500 dark:text-slate-300">✕</button>
             </div>
         </div>
+    </div>
 
-        <!-- Exam Mode Selection Modal -->
-        <div id="exam-mode-modal"
-            class="hidden fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm animate-fade-in p-4">
+    <!-- Exam Mode Selection Modal -->
+    <div id="exam-mode-modal"
+        class="hidden fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm animate-fade-in p-4">
+        <div
+            class="bg-white dark:bg-slate-800 w-full max-w-md rounded-2xl shadow-2xl transform transition-all border border-slate-100 dark:border-slate-700 overflow-hidden">
+            <!-- Header -->
             <div
-                class="bg-white dark:bg-slate-800 w-full max-w-md rounded-2xl shadow-2xl transform transition-all border border-slate-100 dark:border-slate-700 overflow-hidden">
-                <!-- Header -->
-                <div
-                    class="p-5 border-b border-slate-100 dark:border-slate-700 bg-gradient-to-r from-blue-50 to-indigo-50 dark:from-blue-900/20 dark:to-indigo-900/20">
-                    <div class="flex items-center gap-3">
+                class="p-5 border-b border-slate-100 dark:border-slate-700 bg-gradient-to-r from-blue-50 to-indigo-50 dark:from-blue-900/20 dark:to-indigo-900/20">
+                <div class="flex items-center gap-3">
+                    <div class="w-12 h-12 rounded-xl bg-blue-100 dark:bg-blue-900/50 flex items-center justify-center">
+                        <svg class="w-6 h-6 text-blue-600 dark:text-blue-400" fill="none" stroke="currentColor"
+                            viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-6 9l2 2 4-4" />
+                        </svg>
+                    </div>
+                    <div>
+                        <h3 class="font-bold text-lg text-slate-900 dark:text-white">Chọn chế độ làm bài</h3>
+                        <p id="mode-modal-exam-title"
+                            class="text-sm text-slate-500 dark:text-slate-400 truncate max-w-[250px]"></p>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Content -->
+            <div class="p-5 space-y-3">
+                <!-- Classic Mode -->
+                <button onclick="app.confirmExamMode('classic')"
+                    class="w-full p-4 rounded-xl border-2 border-slate-200 dark:border-slate-600 bg-white dark:bg-slate-700/50 hover:border-blue-400 dark:hover:border-blue-500 hover:bg-blue-50/50 dark:hover:bg-blue-900/20 transition-all group text-left">
+                    <div class="flex items-start gap-4">
                         <div
-                            class="w-12 h-12 rounded-xl bg-blue-100 dark:bg-blue-900/50 flex items-center justify-center">
+                            class="w-12 h-12 shrink-0 rounded-xl bg-blue-100 dark:bg-blue-900/50 flex items-center justify-center group-hover:scale-110 transition-transform">
                             <svg class="w-6 h-6 text-blue-600 dark:text-blue-400" fill="none" stroke="currentColor"
                                 viewBox="0 0 24 24">
                                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-                                    d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-6 9l2 2 4-4" />
+                                    d="M4 6h16M4 10h16M4 14h16M4 18h16" />
+                            </svg>
+                        </div>
+                        <div class="flex-1">
+                            <h4
+                                class="font-bold text-slate-800 dark:text-white mb-1 group-hover:text-blue-600 dark:group-hover:text-blue-400 transition-colors">
+                                Chế độ Cổ điển</h4>
+                            <p class="text-sm text-slate-500 dark:text-slate-400">Hiển thị tất cả câu hỏi, làm tự do
+                                và
+                                nộp bài khi xong.</p>
+                        </div>
+                    </div>
+                </button>
+
+                <!-- Step-by-Step Mode -->
+                <button onclick="app.confirmExamMode('stepbystep')"
+                    class="w-full p-4 rounded-xl border-2 border-slate-200 dark:border-slate-600 bg-white dark:bg-slate-700/50 hover:border-purple-400 dark:hover:border-purple-500 hover:bg-purple-50/50 dark:hover:bg-purple-900/20 transition-all group text-left">
+                    <div class="flex items-start gap-4">
+                        <div
+                            class="w-12 h-12 shrink-0 rounded-xl bg-purple-100 dark:bg-purple-900/50 flex items-center justify-center group-hover:scale-110 transition-transform">
+                            <svg class="w-6 h-6 text-purple-600 dark:text-purple-400" fill="none" stroke="currentColor"
+                                viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                    d="M9 5l7 7-7 7" />
+                            </svg>
+                        </div>
+                        <div class="flex-1">
+                            <h4
+                                class="font-bold text-slate-800 dark:text-white mb-1 group-hover:text-purple-600 dark:group-hover:text-purple-400 transition-colors">
+                                Chế độ Từng Câu</h4>
+                            <p class="text-sm text-slate-500 dark:text-slate-400">Từng câu một, phải trả lời đúng
+                                mới
+                                qua câu tiếp theo. Có thể bỏ qua.</p>
+                            <span
+                                class="inline-block mt-2 text-xs font-semibold px-2 py-0.5 rounded-full bg-purple-100 dark:bg-purple-900/50 text-purple-600 dark:text-purple-400">MỚI</span>
+                        </div>
+                    </div>
+                </button>
+            </div>
+
+            <!-- Footer -->
+            <div class="p-4 border-t border-slate-100 dark:border-slate-700 bg-slate-50 dark:bg-slate-800/50">
+                <!-- Remember checkbox -->
+                <label class="flex items-center gap-3 mb-3 cursor-pointer group">
+                    <input type="checkbox" id="remember-mode-checkbox"
+                        class="w-5 h-5 rounded border-2 border-slate-300 dark:border-slate-600 text-blue-600 focus:ring-blue-500 focus:ring-offset-0 cursor-pointer">
+                    <span
+                        class="text-sm text-slate-600 dark:text-slate-300 group-hover:text-slate-800 dark:group-hover:text-white transition-colors">Không
+                        hỏi lại nữa (lưu làm mặc định)</span>
+                </label>
+                <button onclick="document.getElementById('exam-mode-modal').classList.add('hidden')"
+                    class="w-full py-3 px-4 rounded-xl border border-slate-200 dark:border-slate-600 text-slate-600 dark:text-slate-300 font-bold hover:bg-slate-100 dark:hover:bg-slate-700 transition-colors">
+                    Hủy
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Submit Confirmation Modal -->
+    <div id="submit-confirm-modal"
+        class="hidden fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm animate-fade-in p-4">
+        <div
+            class="bg-white dark:bg-slate-800 w-full max-w-sm rounded-2xl p-6 shadow-2xl transform transition-all border border-slate-100 dark:border-slate-700 text-center">
+            <div
+                class="w-16 h-16 bg-blue-50 dark:bg-blue-900/30 rounded-full flex items-center justify-center mx-auto mb-4 text-blue-600 dark:text-blue-400">
+                <svg xmlns="http://www.w3.org/2000/svg" class="h-8 w-8" fill="none" viewBox="0 0 24 24"
+                    stroke="currentColor">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                        d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
+                </svg>
+            </div>
+            <h3 class="text-xl font-bold text-slate-900 dark:text-white mb-2">Nộp bài thi?</h3>
+            <p class="text-slate-500 dark:text-slate-400 mb-6">Bạn có chắc chắn muốn nộp bài không? Thời gian làm
+                bài sẽ
+                dừng lại.</p>
+            <div class="flex gap-3">
+                <button onclick="document.getElementById('submit-confirm-modal').classList.add('hidden')"
+                    class="flex-1 py-3 px-4 rounded-xl border border-slate-200 dark:border-slate-600 text-slate-600 dark:text-slate-300 font-bold hover:bg-slate-50 dark:hover:bg-slate-700">Quay
+                    lại</button>
+                <button onclick="app.confirmSubmit()"
+                    class="flex-1 py-3 px-4 rounded-xl bg-blue-600 text-white font-bold hover:bg-blue-700 shadow-lg shadow-blue-500/30">Nộp
+                    bài</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Practice History Modal -->
+    <div id="history-modal"
+        class="hidden fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm animate-fade-in p-4">
+        <div
+            class="bg-white dark:bg-slate-800 w-full max-w-lg rounded-2xl shadow-2xl transform transition-all border border-slate-100 dark:border-slate-700 overflow-hidden">
+            <!-- Header -->
+            <div
+                class="p-4 border-b border-slate-200 dark:border-slate-700 bg-gradient-to-r from-indigo-50 to-purple-50 dark:from-indigo-900/30 dark:to-purple-900/30">
+                <div class="flex items-center justify-between">
+                    <div class="flex items-center gap-3">
+                        <div
+                            class="w-10 h-10 bg-indigo-100 dark:bg-indigo-900/50 rounded-xl flex items-center justify-center">
+                            <svg class="w-5 h-5 text-indigo-600 dark:text-indigo-400" fill="none" stroke="currentColor"
+                                viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                    d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"></path>
                             </svg>
                         </div>
                         <div>
-                            <h3 class="font-bold text-lg text-slate-900 dark:text-white">Chọn chế độ làm bài</h3>
-                            <p id="mode-modal-exam-title"
-                                class="text-sm text-slate-500 dark:text-slate-400 truncate max-w-[250px]"></p>
+                            <h3 class="text-lg font-bold text-slate-900 dark:text-white">Lịch sử làm bài</h3>
+                            <p id="history-exam-title"
+                                class="text-sm text-slate-500 dark:text-slate-400 truncate max-w-[200px]"></p>
                         </div>
                     </div>
+                    <button onclick="app.closeHistoryModal()"
+                        class="text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 p-2 hover:bg-slate-100 dark:hover:bg-slate-700 rounded-lg transition-colors">
+                        <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                d="M6 18L18 6M6 6l12 12"></path>
+                        </svg>
+                    </button>
                 </div>
+            </div>
+            <!-- Content -->
+            <div class="max-h-[60vh] overflow-y-auto custom-scrollbar">
+                <div id="history-list" class="p-4 space-y-3">
+                    <!-- History items will be rendered here -->
+                    <div class="text-center text-slate-400 py-8">Đang tải...</div>
+                </div>
+            </div>
+            <!-- Footer -->
+            <div class="p-4 border-t border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-900/50">
+                <button onclick="app.closeHistoryModal()"
+                    class="w-full py-2.5 px-4 rounded-xl border border-slate-200 dark:border-slate-600 text-slate-600 dark:text-slate-300 font-bold hover:bg-slate-100 dark:hover:bg-slate-700 transition-colors">
+                    Đóng
+                </button>
+            </div>
+        </div>
+    </div>
 
-                <!-- Content -->
-                <div class="p-5 space-y-3">
-                    <!-- Classic Mode -->
-                    <button onclick="app.confirmExamMode('classic')"
-                        class="w-full p-4 rounded-xl border-2 border-slate-200 dark:border-slate-600 bg-white dark:bg-slate-700/50 hover:border-blue-400 dark:hover:border-blue-500 hover:bg-blue-50/50 dark:hover:bg-blue-900/20 transition-all group text-left">
-                        <div class="flex items-start gap-4">
-                            <div
-                                class="w-12 h-12 shrink-0 rounded-xl bg-blue-100 dark:bg-blue-900/50 flex items-center justify-center group-hover:scale-110 transition-transform">
-                                <svg class="w-6 h-6 text-blue-600 dark:text-blue-400" fill="none" stroke="currentColor"
-                                    viewBox="0 0 24 24">
-                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-                                        d="M4 6h16M4 10h16M4 14h16M4 18h16" />
-                                </svg>
-                            </div>
-                            <div class="flex-1">
-                                <h4
-                                    class="font-bold text-slate-800 dark:text-white mb-1 group-hover:text-blue-600 dark:group-hover:text-blue-400 transition-colors">
-                                    Chế độ Cổ điển</h4>
-                                <p class="text-sm text-slate-500 dark:text-slate-400">Hiển thị tất cả câu hỏi, làm tự do
-                                    và
-                                    nộp bài khi xong.</p>
-                            </div>
+    <!-- Theme Selector Modal (First Visit) -->
+    <div id="theme-selector-modal"
+        class="hidden fixed inset-0 z-[9998] flex items-center justify-center bg-gradient-to-br from-slate-900/95 via-blue-900/90 to-indigo-900/95 backdrop-blur-sm p-4 overflow-y-auto">
+        <div
+            class="bg-white w-full max-w-lg rounded-3xl p-6 md:p-8 shadow-2xl transform transition-all border border-slate-100 text-center animate-fade-in my-4">
+            <!-- Icon -->
+            <div
+                class="w-16 h-16 md:w-20 md:h-20 mx-auto mb-4 md:mb-6 rounded-2xl bg-gradient-to-br from-blue-500 to-indigo-600 flex items-center justify-center shadow-lg shadow-blue-500/30">
+                <svg xmlns="http://www.w3.org/2000/svg" class="h-8 w-8 md:h-10 md:w-10 text-white" fill="none"
+                    viewBox="0 0 24 24" stroke="currentColor">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                        d="M7 21a4 4 0 01-4-4V5a2 2 0 012-2h4a2 2 0 012 2v12a4 4 0 01-4 4zm0 0h12a2 2 0 002-2v-4a2 2 0 00-2-2h-2.343M11 7.343l1.657-1.657a2 2 0 012.828 0l2.829 2.829a2 2 0 010 2.828l-8.486 8.485M7 17h.01" />
+                </svg>
+            </div>
+
+            <!-- Title -->
+            <h3 class="text-xl md:text-2xl font-bold text-slate-900 mb-2">Chào mừng bạn đến StudyStation!</h3>
+            <p class="text-slate-500 mb-6">Hãy tùy chỉnh giao diện theo ý thích:</p>
+
+            <!-- Theme Selection -->
+            <div class="mb-6">
+                <h4 class="text-sm font-bold text-slate-600 uppercase tracking-wider mb-3">Chế độ hiển thị</h4>
+                <div class="grid grid-cols-2 gap-3">
+                    <!-- Light Mode Option -->
+                    <button onclick="app.previewTheme('light')" id="theme-btn-light"
+                        class="theme-option group relative p-4 rounded-xl border-2 border-slate-200 bg-slate-50 hover:border-blue-400 hover:bg-blue-50 transition-all duration-300 cursor-pointer">
+                        <div
+                            class="w-10 h-10 mx-auto mb-2 rounded-lg bg-white border border-slate-200 flex items-center justify-center group-hover:scale-110 transition-transform shadow-sm">
+                            <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 text-amber-500" fill="none"
+                                viewBox="0 0 24 24" stroke="currentColor">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                    d="M12 3v1m0 16v1m9-9h-1M4 12H3m15.364 6.364l-.707-.707M6.343 6.343l-.707-.707m12.728 0l-.707.707M6.343 17.657l-.707.707M16 12a4 4 0 11-8 0 4 4 0 018 0z" />
+                            </svg>
                         </div>
+                        <div class="font-bold text-slate-800 text-sm">Sáng</div>
                     </button>
 
-                    <!-- Step-by-Step Mode -->
-                    <button onclick="app.confirmExamMode('stepbystep')"
-                        class="w-full p-4 rounded-xl border-2 border-slate-200 dark:border-slate-600 bg-white dark:bg-slate-700/50 hover:border-purple-400 dark:hover:border-purple-500 hover:bg-purple-50/50 dark:hover:bg-purple-900/20 transition-all group text-left">
-                        <div class="flex items-start gap-4">
-                            <div
-                                class="w-12 h-12 shrink-0 rounded-xl bg-purple-100 dark:bg-purple-900/50 flex items-center justify-center group-hover:scale-110 transition-transform">
-                                <svg class="w-6 h-6 text-purple-600 dark:text-purple-400" fill="none"
+                    <!-- Dark Mode Option -->
+                    <button onclick="app.previewTheme('dark')" id="theme-btn-dark"
+                        class="theme-option group relative p-4 rounded-xl border-2 border-slate-600 bg-slate-700 hover:border-indigo-500 hover:bg-slate-600 transition-all duration-300 cursor-pointer">
+                        <div
+                            class="w-10 h-10 mx-auto mb-2 rounded-lg bg-slate-800 border border-slate-500 flex items-center justify-center group-hover:scale-110 transition-transform shadow-sm">
+                            <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 text-indigo-400" fill="none"
+                                viewBox="0 0 24 24" stroke="currentColor">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                    d="M20.354 15.354A9 9 0 018.646 3.646 9.003 9.003 0 0012 21a9.003 9.003 0 008.354-5.646z" />
+                            </svg>
+                        </div>
+                        <div class="font-bold text-white text-sm">Tối</div>
+                    </button>
+                </div>
+            </div>
+
+            <!-- Font Selection -->
+            <div class="mb-6">
+                <h4 class="text-sm font-bold text-slate-600 uppercase tracking-wider mb-3">Phông chữ</h4>
+                <div class="grid grid-cols-3 gap-2">
+                    <!-- Classic Font - Roboto -->
+                    <button onclick="app.previewFont('classic')" id="font-btn-classic"
+                        class="font-option group relative p-3 rounded-xl border-2 border-slate-200 bg-white hover:border-emerald-400 hover:bg-emerald-50 transition-all duration-300 cursor-pointer">
+                        <div class="text-xl font-medium text-slate-700 mb-1" style="font-family: 'Roboto', sans-serif;">
+                            Aa</div>
+                        <div class="font-bold text-slate-600 text-xs">Cổ điển</div>
+                        <div class="text-[10px] text-slate-400">Roboto</div>
+                    </button>
+
+                    <!-- Basic Font - Times New Roman -->
+                    <button onclick="app.previewFont('basic')" id="font-btn-basic"
+                        class="font-option group relative p-3 rounded-xl border-2 border-slate-200 bg-white hover:border-amber-400 hover:bg-amber-50 transition-all duration-300 cursor-pointer">
+                        <div class="text-xl font-medium text-slate-700 mb-1"
+                            style="font-family: 'Times New Roman', serif;">Aa</div>
+                        <div class="font-bold text-slate-600 text-xs">Cơ bản</div>
+                        <div class="text-[10px] text-slate-400">Times New Roman</div>
+                    </button>
+
+                    <!-- Modern Font - Plus Jakarta Sans -->
+                    <button onclick="app.previewFont('modern')" id="font-btn-modern"
+                        class="font-option group relative p-3 rounded-xl border-2 border-blue-400 bg-blue-50 transition-all duration-300 cursor-pointer">
+                        <div class="text-xl font-medium text-slate-700 mb-1"
+                            style="font-family: 'Plus Jakarta Sans', sans-serif;">Aa</div>
+                        <div class="font-bold text-slate-600 text-xs">Hiện đại</div>
+                        <div class="text-[10px] text-slate-400">Plus Jakarta Sans</div>
+                    </button>
+                </div>
+            </div>
+
+            <!-- Preview Text -->
+            <div class="mb-6 p-4 rounded-xl bg-slate-100 border border-slate-200">
+                <p class="text-xs text-slate-400 uppercase tracking-wider mb-2">Xem trước</p>
+                <p id="font-preview-text" class="text-slate-700 text-base leading-relaxed">
+                    Đây là văn bản mẫu để bạn xem trước phông chữ. The quick brown fox jumps over the lazy dog.
+                </p>
+            </div>
+
+            <!-- Confirm Button -->
+            <button onclick="app.confirmSettings()"
+                class="w-full py-3 px-4 rounded-xl bg-gradient-to-r from-blue-600 to-indigo-600 text-white font-bold hover:from-blue-700 hover:to-indigo-700 shadow-lg shadow-blue-500/30 transition-all duration-300">
+                Xác nhận & Bắt đầu
+            </button>
+
+            <!-- Note -->
+            <p class="text-xs text-slate-400 mt-4">
+                <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4 inline mr-1" fill="none" viewBox="0 0 24 24"
+                    stroke="currentColor">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                        d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                </svg>
+                Bạn có thể thay đổi sau trong phần Cài đặt
+            </p>
+        </div>
+    </div>
+
+    <!-- Spacer for fixed header -->
+    <div class="h-16 shrink-0 bg-slate-50 dark:bg-slate-900"></div>
+
+    <!-- Main Content Area -->
+    <main id="app-container" class="flex-1 overflow-y-auto overflow-x-hidden relative bg-slate-50 dark:bg-slate-900"
+        style="min-height: 0;">
+        <!-- Views will be injected here -->
+    </main>
+
+    <!-- Templates -->
+
+    <!-- 1. Home View -->
+    <template id="tpl-home">
+        <div class="min-h-full overflow-y-auto px-4 py-6 lg:px-10 animate-enter custom-scrollbar scroll-smooth"
+            style="padding-bottom: 100px;">
+            <div class="max-w-6xl mx-auto">
+                <div
+                    class="flex flex-col md:flex-row items-center justify-between bg-white dark:bg-slate-800 rounded-2xl p-6 border border-slate-200 dark:border-slate-700 shadow-sm mb-8 gap-4">
+                    <div>
+                        <h2 class="text-xl md:text-2xl font-bold text-slate-900 dark:text-white mb-1">
+                            Ôn thi THPT QG 2025
+                        </h2>
+                        <p class="text-slate-500 dark:text-slate-400 text-sm">
+                            Cấu trúc đề mới nhất. Tích hợp công thức Toán/Lý/Hóa.
+                        </p>
+                    </div>
+                    <button
+                        class="bg-blue-600 hover:bg-blue-700 text-white px-5 py-2.5 rounded-xl font-semibold text-sm transition-colors shadow-lg shadow-blue-500/20 whitespace-nowrap w-full md:w-auto">
+                        Bắt đầu ngay
+                    </button>
+                </div>
+                <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 md:gap-6"></div>
+            </div>
+        </div>
+    </template>
+
+    <!-- 2. Exam List View -->
+    <template id="tpl-exam-list">
+        <div class="min-h-full overflow-y-auto px-4 py-6 lg:px-10 animate-enter custom-scrollbar"
+            style="padding-bottom: 100px;">
+            <div class="max-w-4xl mx-auto">
+                <button onclick="app.goHome()"
+                    class="group flex items-center text-slate-500 dark:text-slate-400 hover:text-blue-600 dark:hover:text-blue-400 mb-6 transition-colors font-medium text-sm">
+                    <div
+                        class="w-8 h-8 rounded-full bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 flex items-center justify-center mr-3 group-hover:border-blue-200 group-hover:bg-blue-50 dark:group-hover:bg-slate-700 transition-all">
+                        <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24"
+                            stroke="currentColor">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7" />
+                        </svg>
+                    </div>
+                    Quay lại chọn môn
+                </button>
+                <div
+                    class="bg-white dark:bg-slate-800 rounded-3xl p-6 shadow-soft border border-slate-100 dark:border-slate-700 mb-6 flex items-center gap-6">
+                    <div id="subject-icon-large" class="p-4 bg-slate-50 dark:bg-slate-700/50 rounded-2xl"></div>
+                    <div>
+                        <h2 id="subject-title"
+                            class="text-2xl md:text-3xl font-bold text-slate-900 dark:text-white mb-1"></h2>
+                        <p class="text-slate-500 dark:text-slate-400 text-sm md:text-base">Danh sách đề thi thử chọn
+                            lọc
+                        </p>
+                    </div>
+                </div>
+                <div class="space-y-4">
+                    <!-- Filter Section -->
+                    <div
+                        class="bg-white dark:bg-slate-800 rounded-2xl p-4 border border-slate-100 dark:border-slate-700 shadow-sm space-y-3">
+                        <!-- Search Input + Filter Button -->
+                        <div class="flex gap-2">
+                            <div class="relative flex-1">
+                                <svg class="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-slate-400" fill="none"
                                     stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                        d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
+                                </svg>
+                                <input type="text" id="exam-search-input" placeholder="Tìm kiếm đề thi..."
+                                    class="w-full pl-10 pr-4 py-2.5 rounded-xl border border-slate-200 dark:border-slate-600 bg-slate-50 dark:bg-slate-700/50 text-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none text-slate-700 dark:text-slate-200 placeholder-slate-400">
+                            </div>
+                            <!-- Filter Button (visible on all devices) -->
+                            <button id="mobile-tag-filter-btn" type="button"
+                                class="shrink-0 px-4 py-2.5 rounded-xl border border-slate-200 dark:border-slate-600 bg-slate-50 dark:bg-slate-700/50 text-slate-600 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-600 hover:border-blue-300 transition-colors flex items-center gap-2">
+                                <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                        d="M7 7h.01M7 3h5c.512 0 1.024.195 1.414.586l7 7a2 2 0 010 2.828l-7 7a2 2 0 01-2.828 0l-7-7A2 2 0 013 12V7a4 4 0 014-4z" />
+                                </svg>
+                                <span class="text-sm font-medium">Lọc thẻ</span>
+                                <span id="mobile-filter-badge"
+                                    class="hidden min-w-[20px] h-[20px] rounded-full bg-blue-500 text-white text-[11px] font-bold items-center justify-center">0</span>
+                            </button>
+                        </div>
+
+                        <!-- Active Filters Display -->
+                        <div id="active-filters" class="hidden flex items-center gap-2 text-xs flex-wrap">
+                            <span class="text-slate-500 dark:text-slate-400">Đang lọc:</span>
+                            <div id="active-filter-tags" class="flex flex-wrap gap-1.5"></div>
+                            <button id="clear-filters-btn"
+                                class="text-blue-600 dark:text-blue-400 font-semibold hover:underline">Xóa bộ
+                                lọc</button>
+                        </div>
+                    </div>
+
+                    <!-- Knowledge Map Card (History Only) -->
+                    <div id="knowledge-map-card" class="hidden">
+                        <button onclick="app.openKnowledgeMap()"
+                            class="w-full bg-gradient-to-r from-amber-500 via-orange-500 to-red-500 p-4 md:p-5 rounded-2xl text-white shadow-lg hover:shadow-xl hover:scale-[1.01] transition-all group">
+                            <div class="flex items-center gap-4">
+                                <div
+                                    class="w-12 h-12 md:w-14 md:h-14 bg-white/20 rounded-xl flex items-center justify-center text-2xl md:text-3xl backdrop-blur-sm">
+                                    🗺️
+                                </div>
+                                <div class="flex-1 text-left">
+                                    <h3 class="font-bold text-lg md:text-xl">Bản đồ kiến thức Lịch sử</h3>
+                                    <p class="text-white/80 text-sm mt-0.5">Sơ đồ tư duy • Video • Thuyết trình •
+                                        Podcast</p>
+                                </div>
+                                <svg class="w-6 h-6 opacity-60 group-hover:opacity-100 group-hover:translate-x-1 transition-all"
+                                    fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
                                         d="M9 5l7 7-7 7" />
                                 </svg>
                             </div>
-                            <div class="flex-1">
-                                <h4
-                                    class="font-bold text-slate-800 dark:text-white mb-1 group-hover:text-purple-600 dark:group-hover:text-purple-400 transition-colors">
-                                    Chế độ Từng Câu</h4>
-                                <p class="text-sm text-slate-500 dark:text-slate-400">Từng câu một, phải trả lời đúng
-                                    mới
-                                    qua câu tiếp theo. Có thể bỏ qua.</p>
-                                <span
-                                    class="inline-block mt-2 text-xs font-semibold px-2 py-0.5 rounded-full bg-purple-100 dark:bg-purple-900/50 text-purple-600 dark:text-purple-400">MỚI</span>
-                            </div>
-                        </div>
-                    </button>
-                </div>
+                        </button>
+                    </div>
 
-                <!-- Footer -->
-                <div class="p-4 border-t border-slate-100 dark:border-slate-700 bg-slate-50 dark:bg-slate-800/50">
-                    <!-- Remember checkbox -->
-                    <label class="flex items-center gap-3 mb-3 cursor-pointer group">
-                        <input type="checkbox" id="remember-mode-checkbox"
-                            class="w-5 h-5 rounded border-2 border-slate-300 dark:border-slate-600 text-blue-600 focus:ring-blue-500 focus:ring-offset-0 cursor-pointer">
-                        <span
-                            class="text-sm text-slate-600 dark:text-slate-300 group-hover:text-slate-800 dark:group-hover:text-white transition-colors">Không
-                            hỏi lại nữa (lưu làm mặc định)</span>
-                    </label>
-                    <button onclick="document.getElementById('exam-mode-modal').classList.add('hidden')"
-                        class="w-full py-3 px-4 rounded-xl border border-slate-200 dark:border-slate-600 text-slate-600 dark:text-slate-300 font-bold hover:bg-slate-100 dark:hover:bg-slate-700 transition-colors">
-                        Hủy
-                    </button>
+                    <h3 class="text-sm font-bold text-slate-400 uppercase tracking-wider ml-2">Các đề thi có sẵn
+                        <span id="exam-count-display" class="text-slate-300 dark:text-slate-500"></span>
+                    </h3>
+                    <div id="exam-grid" class="grid grid-cols-1 gap-4"></div>
                 </div>
             </div>
         </div>
 
-        <!-- Submit Confirmation Modal -->
-        <div id="submit-confirm-modal"
-            class="hidden fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm animate-fade-in p-4">
+        <!-- Mobile Tag Filter Modal -->
+        <div id="mobile-tag-filter-modal"
+            class="hidden fixed inset-0 bg-slate-900/50 backdrop-blur-sm z-50 flex items-end animate-fade-in">
             <div
-                class="bg-white dark:bg-slate-800 w-full max-w-sm rounded-2xl p-6 shadow-2xl transform transition-all border border-slate-100 dark:border-slate-700 text-center">
-                <div
-                    class="w-16 h-16 bg-blue-50 dark:bg-blue-900/30 rounded-full flex items-center justify-center mx-auto mb-4 text-blue-600 dark:text-blue-400">
-                    <svg xmlns="http://www.w3.org/2000/svg" class="h-8 w-8" fill="none" viewBox="0 0 24 24"
-                        stroke="currentColor">
-                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-                            d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
-                    </svg>
-                </div>
-                <h3 class="text-xl font-bold text-slate-900 dark:text-white mb-2">Nộp bài thi?</h3>
-                <p class="text-slate-500 dark:text-slate-400 mb-6">Bạn có chắc chắn muốn nộp bài không? Thời gian làm
-                    bài sẽ
-                    dừng lại.</p>
-                <div class="flex gap-3">
-                    <button onclick="document.getElementById('submit-confirm-modal').classList.add('hidden')"
-                        class="flex-1 py-3 px-4 rounded-xl border border-slate-200 dark:border-slate-600 text-slate-600 dark:text-slate-300 font-bold hover:bg-slate-50 dark:hover:bg-slate-700">Quay
-                        lại</button>
-                    <button onclick="app.confirmSubmit()"
-                        class="flex-1 py-3 px-4 rounded-xl bg-blue-600 text-white font-bold hover:bg-blue-700 shadow-lg shadow-blue-500/30">Nộp
-                        bài</button>
-                </div>
-            </div>
-        </div>
-
-        <!-- Practice History Modal -->
-        <div id="history-modal"
-            class="hidden fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm animate-fade-in p-4">
-            <div
-                class="bg-white dark:bg-slate-800 w-full max-w-lg rounded-2xl shadow-2xl transform transition-all border border-slate-100 dark:border-slate-700 overflow-hidden">
+                class="bg-white dark:bg-slate-800 w-full rounded-t-3xl p-5 pb-8 max-h-[70vh] overflow-y-auto custom-scrollbar">
                 <!-- Header -->
-                <div
-                    class="p-4 border-b border-slate-200 dark:border-slate-700 bg-gradient-to-r from-indigo-50 to-purple-50 dark:from-indigo-900/30 dark:to-purple-900/30">
-                    <div class="flex items-center justify-between">
-                        <div class="flex items-center gap-3">
-                            <div
-                                class="w-10 h-10 bg-indigo-100 dark:bg-indigo-900/50 rounded-xl flex items-center justify-center">
-                                <svg class="w-5 h-5 text-indigo-600 dark:text-indigo-400" fill="none"
-                                    stroke="currentColor" viewBox="0 0 24 24">
-                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-                                        d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"></path>
-                                </svg>
-                            </div>
-                            <div>
-                                <h3 class="text-lg font-bold text-slate-900 dark:text-white">Lịch sử làm bài</h3>
-                                <p id="history-exam-title"
-                                    class="text-sm text-slate-500 dark:text-slate-400 truncate max-w-[200px]"></p>
-                            </div>
-                        </div>
-                        <button onclick="app.closeHistoryModal()"
-                            class="text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 p-2 hover:bg-slate-100 dark:hover:bg-slate-700 rounded-lg transition-colors">
-                            <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-                                    d="M6 18L18 6M6 6l12 12"></path>
-                            </svg>
-                        </button>
-                    </div>
-                </div>
-                <!-- Content -->
-                <div class="max-h-[60vh] overflow-y-auto custom-scrollbar">
-                    <div id="history-list" class="p-4 space-y-3">
-                        <!-- History items will be rendered here -->
-                        <div class="text-center text-slate-400 py-8">Đang tải...</div>
-                    </div>
-                </div>
-                <!-- Footer -->
-                <div class="p-4 border-t border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-900/50">
-                    <button onclick="app.closeHistoryModal()"
-                        class="w-full py-2.5 px-4 rounded-xl border border-slate-200 dark:border-slate-600 text-slate-600 dark:text-slate-300 font-bold hover:bg-slate-100 dark:hover:bg-slate-700 transition-colors">
-                        Đóng
+                <div class="flex justify-between items-center mb-4">
+                    <h3 class="font-bold text-lg text-slate-900 dark:text-white">🏷️ Lọc theo thẻ</h3>
+                    <button id="mobile-tag-filter-close"
+                        class="p-2 bg-slate-100 dark:bg-slate-700 rounded-full text-slate-500 hover:bg-slate-200 dark:hover:bg-slate-600 transition-colors">
+                        <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                d="M6 18L18 6M6 6l12 12" />
+                        </svg>
                     </button>
                 </div>
-            </div>
-        </div>
 
-        <!-- Theme Selector Modal (First Visit) -->
-        <div id="theme-selector-modal"
-            class="hidden fixed inset-0 z-[9998] flex items-center justify-center bg-gradient-to-br from-slate-900/95 via-blue-900/90 to-indigo-900/95 backdrop-blur-sm p-4 overflow-y-auto">
-            <div
-                class="bg-white w-full max-w-lg rounded-3xl p-6 md:p-8 shadow-2xl transform transition-all border border-slate-100 text-center animate-fade-in my-4">
-                <!-- Icon -->
-                <div
-                    class="w-16 h-16 md:w-20 md:h-20 mx-auto mb-4 md:mb-6 rounded-2xl bg-gradient-to-br from-blue-500 to-indigo-600 flex items-center justify-center shadow-lg shadow-blue-500/30">
-                    <svg xmlns="http://www.w3.org/2000/svg" class="h-8 w-8 md:h-10 md:w-10 text-white" fill="none"
-                        viewBox="0 0 24 24" stroke="currentColor">
-                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-                            d="M7 21a4 4 0 01-4-4V5a2 2 0 012-2h4a2 2 0 012 2v12a4 4 0 01-4 4zm0 0h12a2 2 0 002-2v-4a2 2 0 00-2-2h-2.343M11 7.343l1.657-1.657a2 2 0 012.828 0l2.829 2.829a2 2 0 010 2.828l-8.486 8.485M7 17h.01" />
-                    </svg>
+                <!-- Tag Chips -->
+                <div id="mobile-tag-chips" class="flex flex-wrap gap-2.5 mb-6">
+                    <!-- Tags will be rendered here -->
                 </div>
 
-                <!-- Title -->
-                <h3 class="text-xl md:text-2xl font-bold text-slate-900 mb-2">Chào mừng bạn đến StudyStation!</h3>
-                <p class="text-slate-500 mb-6">Hãy tùy chỉnh giao diện theo ý thích:</p>
-
-                <!-- Theme Selection -->
-                <div class="mb-6">
-                    <h4 class="text-sm font-bold text-slate-600 uppercase tracking-wider mb-3">Chế độ hiển thị</h4>
-                    <div class="grid grid-cols-2 gap-3">
-                        <!-- Light Mode Option -->
-                        <button onclick="app.previewTheme('light')" id="theme-btn-light"
-                            class="theme-option group relative p-4 rounded-xl border-2 border-slate-200 bg-slate-50 hover:border-blue-400 hover:bg-blue-50 transition-all duration-300 cursor-pointer">
-                            <div
-                                class="w-10 h-10 mx-auto mb-2 rounded-lg bg-white border border-slate-200 flex items-center justify-center group-hover:scale-110 transition-transform shadow-sm">
-                                <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 text-amber-500" fill="none"
-                                    viewBox="0 0 24 24" stroke="currentColor">
-                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-                                        d="M12 3v1m0 16v1m9-9h-1M4 12H3m15.364 6.364l-.707-.707M6.343 6.343l-.707-.707m12.728 0l-.707.707M6.343 17.657l-.707.707M16 12a4 4 0 11-8 0 4 4 0 018 0z" />
-                                </svg>
-                            </div>
-                            <div class="font-bold text-slate-800 text-sm">Sáng</div>
-                        </button>
-
-                        <!-- Dark Mode Option -->
-                        <button onclick="app.previewTheme('dark')" id="theme-btn-dark"
-                            class="theme-option group relative p-4 rounded-xl border-2 border-slate-600 bg-slate-700 hover:border-indigo-500 hover:bg-slate-600 transition-all duration-300 cursor-pointer">
-                            <div
-                                class="w-10 h-10 mx-auto mb-2 rounded-lg bg-slate-800 border border-slate-500 flex items-center justify-center group-hover:scale-110 transition-transform shadow-sm">
-                                <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 text-indigo-400" fill="none"
-                                    viewBox="0 0 24 24" stroke="currentColor">
-                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-                                        d="M20.354 15.354A9 9 0 018.646 3.646 9.003 9.003 0 0012 21a9.003 9.003 0 008.354-5.646z" />
-                                </svg>
-                            </div>
-                            <div class="font-bold text-white text-sm">Tối</div>
-                        </button>
-                    </div>
-                </div>
-
-                <!-- Font Selection -->
-                <div class="mb-6">
-                    <h4 class="text-sm font-bold text-slate-600 uppercase tracking-wider mb-3">Phông chữ</h4>
-                    <div class="grid grid-cols-3 gap-2">
-                        <!-- Classic Font - Roboto -->
-                        <button onclick="app.previewFont('classic')" id="font-btn-classic"
-                            class="font-option group relative p-3 rounded-xl border-2 border-slate-200 bg-white hover:border-emerald-400 hover:bg-emerald-50 transition-all duration-300 cursor-pointer">
-                            <div class="text-xl font-medium text-slate-700 mb-1"
-                                style="font-family: 'Roboto', sans-serif;">
-                                Aa</div>
-                            <div class="font-bold text-slate-600 text-xs">Cổ điển</div>
-                            <div class="text-[10px] text-slate-400">Roboto</div>
-                        </button>
-
-                        <!-- Basic Font - Times New Roman -->
-                        <button onclick="app.previewFont('basic')" id="font-btn-basic"
-                            class="font-option group relative p-3 rounded-xl border-2 border-slate-200 bg-white hover:border-amber-400 hover:bg-amber-50 transition-all duration-300 cursor-pointer">
-                            <div class="text-xl font-medium text-slate-700 mb-1"
-                                style="font-family: 'Times New Roman', serif;">Aa</div>
-                            <div class="font-bold text-slate-600 text-xs">Cơ bản</div>
-                            <div class="text-[10px] text-slate-400">Times New Roman</div>
-                        </button>
-
-                        <!-- Modern Font - Plus Jakarta Sans -->
-                        <button onclick="app.previewFont('modern')" id="font-btn-modern"
-                            class="font-option group relative p-3 rounded-xl border-2 border-blue-400 bg-blue-50 transition-all duration-300 cursor-pointer">
-                            <div class="text-xl font-medium text-slate-700 mb-1"
-                                style="font-family: 'Plus Jakarta Sans', sans-serif;">Aa</div>
-                            <div class="font-bold text-slate-600 text-xs">Hiện đại</div>
-                            <div class="text-[10px] text-slate-400">Plus Jakarta Sans</div>
-                        </button>
-                    </div>
-                </div>
-
-                <!-- Preview Text -->
-                <div class="mb-6 p-4 rounded-xl bg-slate-100 border border-slate-200">
-                    <p class="text-xs text-slate-400 uppercase tracking-wider mb-2">Xem trước</p>
-                    <p id="font-preview-text" class="text-slate-700 text-base leading-relaxed">
-                        Đây là văn bản mẫu để bạn xem trước phông chữ. The quick brown fox jumps over the lazy dog.
-                    </p>
-                </div>
-
-                <!-- Confirm Button -->
-                <button onclick="app.confirmSettings()"
-                    class="w-full py-3 px-4 rounded-xl bg-gradient-to-r from-blue-600 to-indigo-600 text-white font-bold hover:from-blue-700 hover:to-indigo-700 shadow-lg shadow-blue-500/30 transition-all duration-300">
-                    Xác nhận & Bắt đầu
-                </button>
-
-                <!-- Note -->
-                <p class="text-xs text-slate-400 mt-4">
-                    <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4 inline mr-1" fill="none" viewBox="0 0 24 24"
-                        stroke="currentColor">
-                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-                            d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
-                    </svg>
-                    Bạn có thể thay đổi sau trong phần Cài đặt
+                <!-- Selected Count -->
+                <p id="mobile-selected-count" class="text-sm text-slate-500 dark:text-slate-400 mb-4">Chưa chọn thẻ
+                    nào
                 </p>
+
+                <!-- Action Buttons -->
+                <div class="flex gap-3">
+                    <button id="mobile-tag-clear-btn"
+                        class="flex-1 py-3 px-4 rounded-xl border border-slate-200 dark:border-slate-600 text-slate-600 dark:text-slate-300 font-bold hover:bg-slate-50 dark:hover:bg-slate-700 transition-colors">
+                        Xóa tất cả
+                    </button>
+                    <button id="mobile-tag-apply-btn"
+                        class="flex-1 py-3 px-4 rounded-xl bg-blue-600 text-white font-bold hover:bg-blue-700 transition-colors shadow-lg shadow-blue-500/20">
+                        Áp dụng lọc
+                    </button>
+                </div>
             </div>
         </div>
 
-        <!-- Spacer for fixed header -->
-        <div class="h-16 shrink-0 bg-slate-50 dark:bg-slate-900"></div>
-
-        <!-- Main Content Area -->
-        <main id="app-container" class="flex-1 overflow-y-auto overflow-x-hidden relative bg-slate-50 dark:bg-slate-900"
-            style="min-height: 0;">
-            <!-- Views will be injected here -->
-        </main>
-
-        <!-- Templates -->
-
-        <!-- 1. Home View -->
-        <template id="tpl-home">
-            <div class="min-h-full overflow-y-auto px-4 py-6 lg:px-10 animate-enter custom-scrollbar scroll-smooth"
-                style="padding-bottom: 100px;">
-                <div class="max-w-6xl mx-auto">
-                    <div
-                        class="flex flex-col md:flex-row items-center justify-between bg-white dark:bg-slate-800 rounded-2xl p-6 border border-slate-200 dark:border-slate-700 shadow-sm mb-8 gap-4">
-                        <div>
-                            <h2 class="text-xl md:text-2xl font-bold text-slate-900 dark:text-white mb-1">
-                                Ôn thi THPT QG 2025
-                            </h2>
-                            <p class="text-slate-500 dark:text-slate-400 text-sm">
-                                Cấu trúc đề mới nhất. Tích hợp công thức Toán/Lý/Hóa.
-                            </p>
-                        </div>
-                        <button
-                            class="bg-blue-600 hover:bg-blue-700 text-white px-5 py-2.5 rounded-xl font-semibold text-sm transition-colors shadow-lg shadow-blue-500/20 whitespace-nowrap w-full md:w-auto">
-                            Bắt đầu ngay
-                        </button>
-                    </div>
-                    <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 md:gap-6"></div>
-                </div>
-            </div>
-        </template>
-
-        <!-- 2. Exam List View -->
-        <template id="tpl-exam-list">
-            <div class="min-h-full overflow-y-auto px-4 py-6 lg:px-10 animate-enter custom-scrollbar"
-                style="padding-bottom: 100px;">
-                <div class="max-w-4xl mx-auto">
-                    <button onclick="app.goHome()"
-                        class="group flex items-center text-slate-500 dark:text-slate-400 hover:text-blue-600 dark:hover:text-blue-400 mb-6 transition-colors font-medium text-sm">
-                        <div
-                            class="w-8 h-8 rounded-full bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 flex items-center justify-center mr-3 group-hover:border-blue-200 group-hover:bg-blue-50 dark:group-hover:bg-slate-700 transition-all">
-                            <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24"
-                                stroke="currentColor">
-                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-                                    d="M15 19l-7-7 7-7" />
-                            </svg>
-                        </div>
-                        Quay lại chọn môn
-                    </button>
-                    <div
-                        class="bg-white dark:bg-slate-800 rounded-3xl p-6 shadow-soft border border-slate-100 dark:border-slate-700 mb-6 flex items-center gap-6">
-                        <div id="subject-icon-large" class="p-4 bg-slate-50 dark:bg-slate-700/50 rounded-2xl"></div>
-                        <div>
-                            <h2 id="subject-title"
-                                class="text-2xl md:text-3xl font-bold text-slate-900 dark:text-white mb-1"></h2>
-                            <p class="text-slate-500 dark:text-slate-400 text-sm md:text-base">Danh sách đề thi thử chọn
-                                lọc
-                            </p>
-                        </div>
-                    </div>
-                    <div class="space-y-4">
-                        <!-- Filter Section -->
-                        <div
-                            class="bg-white dark:bg-slate-800 rounded-2xl p-4 border border-slate-100 dark:border-slate-700 shadow-sm space-y-3">
-                            <!-- Search Input + Filter Button -->
-                            <div class="flex gap-2">
-                                <div class="relative flex-1">
-                                    <svg class="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-slate-400"
-                                        fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-                                            d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
-                                    </svg>
-                                    <input type="text" id="exam-search-input" placeholder="Tìm kiếm đề thi..."
-                                        class="w-full pl-10 pr-4 py-2.5 rounded-xl border border-slate-200 dark:border-slate-600 bg-slate-50 dark:bg-slate-700/50 text-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none text-slate-700 dark:text-slate-200 placeholder-slate-400">
-                                </div>
-                                <!-- Filter Button (visible on all devices) -->
-                                <button id="mobile-tag-filter-btn" type="button"
-                                    class="shrink-0 px-4 py-2.5 rounded-xl border border-slate-200 dark:border-slate-600 bg-slate-50 dark:bg-slate-700/50 text-slate-600 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-600 hover:border-blue-300 transition-colors flex items-center gap-2">
-                                    <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-                                            d="M7 7h.01M7 3h5c.512 0 1.024.195 1.414.586l7 7a2 2 0 010 2.828l-7 7a2 2 0 01-2.828 0l-7-7A2 2 0 013 12V7a4 4 0 014-4z" />
-                                    </svg>
-                                    <span class="text-sm font-medium">Lọc thẻ</span>
-                                    <span id="mobile-filter-badge"
-                                        class="hidden min-w-[20px] h-[20px] rounded-full bg-blue-500 text-white text-[11px] font-bold items-center justify-center">0</span>
-                                </button>
-                            </div>
-
-                            <!-- Active Filters Display -->
-                            <div id="active-filters" class="hidden flex items-center gap-2 text-xs flex-wrap">
-                                <span class="text-slate-500 dark:text-slate-400">Đang lọc:</span>
-                                <div id="active-filter-tags" class="flex flex-wrap gap-1.5"></div>
-                                <button id="clear-filters-btn"
-                                    class="text-blue-600 dark:text-blue-400 font-semibold hover:underline">Xóa bộ
-                                    lọc</button>
+        <!-- Knowledge Map Modal (History Only) -->
+        <div id="knowledge-map-modal"
+            class="hidden fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-50 flex items-center justify-center p-4 animate-fade-in">
+            <div
+                class="bg-white dark:bg-slate-800 w-full max-w-2xl max-h-[85vh] rounded-2xl shadow-2xl overflow-hidden flex flex-col">
+                <!-- Header -->
+                <div class="bg-gradient-to-r from-amber-500 via-orange-500 to-red-500 p-5 text-white">
+                    <div class="flex justify-between items-center">
+                        <div class="flex items-center gap-3">
+                            <span class="text-3xl">🗺️</span>
+                            <div>
+                                <h2 class="font-bold text-xl">Bản đồ kiến thức Lịch sử</h2>
+                                <p class="text-white/80 text-sm">Chọn cách tiếp cận kiến thức phù hợp với bạn</p>
                             </div>
                         </div>
-
-                        <!-- Knowledge Map Card (History Only) -->
-                        <div id="knowledge-map-card" class="hidden">
-                            <button onclick="app.openKnowledgeMap()"
-                                class="w-full bg-gradient-to-r from-amber-500 via-orange-500 to-red-500 p-4 md:p-5 rounded-2xl text-white shadow-lg hover:shadow-xl hover:scale-[1.01] transition-all group">
-                                <div class="flex items-center gap-4">
-                                    <div
-                                        class="w-12 h-12 md:w-14 md:h-14 bg-white/20 rounded-xl flex items-center justify-center text-2xl md:text-3xl backdrop-blur-sm">
-                                        🗺️
-                                    </div>
-                                    <div class="flex-1 text-left">
-                                        <h3 class="font-bold text-lg md:text-xl">Bản đồ kiến thức Lịch sử</h3>
-                                        <p class="text-white/80 text-sm mt-0.5">Sơ đồ tư duy • Video • Thuyết trình •
-                                            Podcast</p>
-                                    </div>
-                                    <svg class="w-6 h-6 opacity-60 group-hover:opacity-100 group-hover:translate-x-1 transition-all"
-                                        fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-                                            d="M9 5l7 7-7 7" />
-                                    </svg>
-                                </div>
-                            </button>
-                        </div>
-
-                        <h3 class="text-sm font-bold text-slate-400 uppercase tracking-wider ml-2">Các đề thi có sẵn
-                            <span id="exam-count-display" class="text-slate-300 dark:text-slate-500"></span></h3>
-                        <div id="exam-grid" class="grid grid-cols-1 gap-4"></div>
-                    </div>
-                </div>
-            </div>
-
-            <!-- Mobile Tag Filter Modal -->
-            <div id="mobile-tag-filter-modal"
-                class="hidden fixed inset-0 bg-slate-900/50 backdrop-blur-sm z-50 flex items-end animate-fade-in">
-                <div
-                    class="bg-white dark:bg-slate-800 w-full rounded-t-3xl p-5 pb-8 max-h-[70vh] overflow-y-auto custom-scrollbar">
-                    <!-- Header -->
-                    <div class="flex justify-between items-center mb-4">
-                        <h3 class="font-bold text-lg text-slate-900 dark:text-white">🏷️ Lọc theo thẻ</h3>
-                        <button id="mobile-tag-filter-close"
-                            class="p-2 bg-slate-100 dark:bg-slate-700 rounded-full text-slate-500 hover:bg-slate-200 dark:hover:bg-slate-600 transition-colors">
+                        <button onclick="app.closeKnowledgeMap()"
+                            class="p-2 bg-white/20 rounded-full hover:bg-white/30 transition-colors">
                             <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
                                     d="M6 18L18 6M6 6l12 12" />
                             </svg>
                         </button>
                     </div>
+                </div>
 
-                    <!-- Tag Chips -->
-                    <div id="mobile-tag-chips" class="flex flex-wrap gap-2.5 mb-6">
-                        <!-- Tags will be rendered here -->
+                <!-- Tab Navigation -->
+                <div
+                    class="flex border-b border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-900/50 overflow-x-auto">
+                    <button onclick="app.switchKnowledgeTab('mindmap')"
+                        class="knowledge-tab active flex-1 min-w-[100px] py-3 px-4 text-sm font-semibold text-center border-b-2 transition-all"
+                        data-tab="mindmap">
+                        🧠 Sơ đồ tư duy
+                    </button>
+                    <button onclick="app.switchKnowledgeTab('video')"
+                        class="knowledge-tab flex-1 min-w-[100px] py-3 px-4 text-sm font-semibold text-center border-b-2 transition-all"
+                        data-tab="video">
+                        🎬 Video
+                    </button>
+                    <button onclick="app.switchKnowledgeTab('presentation')"
+                        class="knowledge-tab flex-1 min-w-[100px] py-3 px-4 text-sm font-semibold text-center border-b-2 transition-all"
+                        data-tab="presentation">
+                        📊 Thuyết trình
+                    </button>
+                    <button onclick="app.switchKnowledgeTab('podcast')"
+                        class="knowledge-tab flex-1 min-w-[100px] py-3 px-4 text-sm font-semibold text-center border-b-2 transition-all"
+                        data-tab="podcast">
+                        🎧 Podcast
+                    </button>
+                </div>
+
+                <!-- Content Area -->
+                <div id="knowledge-content" class="flex-1 overflow-y-auto p-4 custom-scrollbar">
+                    <!-- Content will be rendered by JS -->
+                </div>
+            </div>
+        </div>
+    </template>
+
+    <!-- 3. Taking Exam View -->
+    <template id="tpl-taking-exam">
+        <!-- Main wrapper - full height with flex - NO transform/animation here -->
+        <div class="taking-exam-wrapper">
+            <!-- Questions area - scrolls independently, animation applied here -->
+            <div class="questions-scroll-area animate-enter bg-slate-50 dark:bg-slate-900 px-3 py-6 lg:px-12 scroll-smooth custom-scrollbar"
+                id="questions-container">
+                <div class="content-area mx-auto"
+                    style="padding-bottom: calc(120px + env(safe-area-inset-bottom, 20px));">
+                    <!-- Review Controls -->
+                    <div id="review-controls"
+                        class="hidden mb-6 sticky top-0 z-20 bg-white/90 dark:bg-slate-800/90 backdrop-blur p-3 rounded-xl border border-slate-200 dark:border-slate-700 shadow-sm flex flex-col sm:flex-row gap-3 items-center justify-between">
+                        <div class="flex gap-2 overflow-x-auto no-scrollbar w-full sm:w-auto pb-1 sm:pb-0">
+                            <button onclick="app.filterReview('all')"
+                                class="whitespace-nowrap px-3 py-1.5 rounded-lg text-sm font-bold bg-slate-100 dark:bg-slate-700 text-slate-600 dark:text-slate-300 hover:bg-slate-200 dark:hover:bg-slate-600 transition-colors filter-btn active"
+                                data-filter="all">Tất cả</button>
+                            <button onclick="app.filterReview('wrong')"
+                                class="whitespace-nowrap px-3 py-1.5 rounded-lg text-sm font-bold bg-red-50 dark:bg-red-900/30 text-red-600 dark:text-red-400 hover:bg-red-100 dark:hover:bg-red-900/50 transition-colors filter-btn"
+                                data-filter="wrong">Câu Sai</button>
+                            <button onclick="app.filterReview('correct')"
+                                class="whitespace-nowrap px-3 py-1.5 rounded-lg text-sm font-bold bg-green-50 dark:bg-green-900/30 text-green-600 dark:text-green-400 hover:bg-green-100 dark:hover:bg-green-900/50 transition-colors filter-btn"
+                                data-filter="correct">Câu Đúng</button>
+                        </div>
+                        <button onclick="app.goHome()"
+                            class="w-full sm:w-auto text-sm font-medium text-blue-600 hover:underline text-center sm:text-right">Thoát</button>
                     </div>
 
-                    <!-- Selected Count -->
-                    <p id="mobile-selected-count" class="text-sm text-slate-500 dark:text-slate-400 mb-4">Chưa chọn thẻ
-                        nào
-                    </p>
-
-                    <!-- Action Buttons -->
-                    <div class="flex gap-3">
-                        <button id="mobile-tag-clear-btn"
-                            class="flex-1 py-3 px-4 rounded-xl border border-slate-200 dark:border-slate-600 text-slate-600 dark:text-slate-300 font-bold hover:bg-slate-50 dark:hover:bg-slate-700 transition-colors">
-                            Xóa tất cả
-                        </button>
-                        <button id="mobile-tag-apply-btn"
-                            class="flex-1 py-3 px-4 rounded-xl bg-blue-600 text-white font-bold hover:bg-blue-700 transition-colors shadow-lg shadow-blue-500/20">
-                            Áp dụng lọc
-                        </button>
+                    <div class="space-y-8">
+                        <div id="part-1-container">
+                            <div class="flex items-center gap-3 mb-4">
+                                <div class="h-6 w-1 bg-blue-600 rounded-full"></div>
+                                <div>
+                                    <h3
+                                        class="font-bold text-slate-800 dark:text-white text-base md:text-lg uppercase tracking-tight">
+                                        Phần I: Trắc nghiệm</h3>
+                                    <p class="text-xs md:text-sm text-slate-500 dark:text-slate-400">Chọn 01 phương
+                                        án
+                                        đúng nhất.</p>
+                                </div>
+                            </div>
+                            <div id="part-1-questions" class="space-y-4 md:space-y-6"></div>
+                        </div>
+                        <div id="part-2-container">
+                            <hr class="border-slate-200 dark:border-slate-700 my-6">
+                            <div class="flex items-center gap-3 mb-4">
+                                <div class="h-6 w-1 bg-indigo-600 rounded-full"></div>
+                                <div>
+                                    <h3
+                                        class="font-bold text-slate-800 dark:text-white text-base md:text-lg uppercase tracking-tight">
+                                        Phần II: Đúng / Sai</h3>
+                                    <p class="text-xs md:text-sm text-slate-500 dark:text-slate-400">Quyết định tính
+                                        Đúng/Sai.</p>
+                                </div>
+                            </div>
+                            <div id="part-2-questions" class="space-y-6"></div>
+                        </div>
+                        <div id="part-3-container">
+                            <hr class="border-slate-200 dark:border-slate-700 my-6">
+                            <div class="flex items-center gap-3 mb-4">
+                                <div class="h-6 w-1 bg-emerald-600 rounded-full"></div>
+                                <div>
+                                    <h3
+                                        class="font-bold text-slate-800 dark:text-white text-base md:text-lg uppercase tracking-tight">
+                                        Phần III: Trả lời ngắn</h3>
+                                    <p class="text-xs md:text-sm text-slate-500 dark:text-slate-400">Điền đáp án
+                                        chính
+                                        xác.</p>
+                                </div>
+                            </div>
+                            <div id="part-3-questions" class="space-y-4 md:space-y-6"></div>
+                        </div>
                     </div>
                 </div>
             </div>
 
-            <!-- Knowledge Map Modal (History Only) -->
-            <div id="knowledge-map-modal"
-                class="hidden fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-50 flex items-center justify-center p-4 animate-fade-in">
-                <div
-                    class="bg-white dark:bg-slate-800 w-full max-w-2xl max-h-[85vh] rounded-2xl shadow-2xl overflow-hidden flex flex-col">
-                    <!-- Header -->
-                    <div class="bg-gradient-to-r from-amber-500 via-orange-500 to-red-500 p-5 text-white">
-                        <div class="flex justify-between items-center">
-                            <div class="flex items-center gap-3">
-                                <span class="text-3xl">🗺️</span>
-                                <div>
-                                    <h2 class="font-bold text-xl">Bản đồ kiến thức Lịch sử</h2>
-                                    <p class="text-white/80 text-sm">Chọn cách tiếp cận kiến thức phù hợp với bạn</p>
-                                </div>
-                            </div>
-                            <button onclick="app.closeKnowledgeMap()"
-                                class="p-2 bg-white/20 rounded-full hover:bg-white/30 transition-colors">
-                                <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <!-- Desktop Sidebar - FIXED position with own scroll -->
+            <aside id="desktop-palette-sidebar" class="desktop-sidebar-fixed hidden lg:flex">
+                <div class="sidebar-header">
+                    <h3 class="font-bold text-slate-800 dark:text-white text-base">Mục lục câu hỏi</h3>
+                    <p class="text-xs text-slate-400 mt-0.5">Trạng thái làm bài</p>
+                </div>
+                <div class="sidebar-content custom-scrollbar">
+                    <div id="question-palette" class="grid grid-cols-4 gap-2"></div>
+                </div>
+                <div id="submit-btn-container" class="sidebar-footer">
+                    <button onclick="app.submitExam()"
+                        class="w-full bg-blue-600 hover:bg-blue-700 active:scale-[0.98] text-white font-bold py-3.5 px-4 rounded-xl transition-all shadow-lg shadow-blue-600/20 flex items-center justify-center gap-2">
+                        <span>Nộp bài thi</span>
+                    </button>
+                </div>
+            </aside>
+        </div>
+        <!-- Mobile Footer - OUTSIDE of flex container -->
+        <div id="mobile-footer"
+            class="lg:hidden fixed bottom-0 left-0 right-0 bg-white/90 dark:bg-slate-800/90 backdrop-blur border-t border-slate-200 dark:border-slate-700 p-3 z-40 flex flex-row items-center gap-3 shadow-[0_-4px_20px_rgba(0,0,0,0.05)]"
+            style="height: 64px !important; max-height: 64px !important; min-height: 64px !important; flex-direction: row !important; align-items: center !important; top: auto !important;">
+            <button onclick="document.getElementById('mobile-palette').classList.remove('hidden')"
+                class="shrink-0 px-4 py-3 bg-slate-100 dark:bg-slate-700 text-slate-700 dark:text-slate-200 rounded-xl font-bold flex items-center gap-2"
+                style="height: 44px !important; max-height: 44px !important; align-self: center !important;">
+                Mục lục
+            </button>
+            <button onclick="app.submitExam()"
+                class="flex-1 bg-blue-600 text-white font-bold py-3 px-4 rounded-xl shadow-lg shadow-blue-600/20"
+                style="height: 44px !important; max-height: 44px !important; align-self: center !important;">
+                Nộp bài
+            </button>
+        </div>
+        <!-- Mobile Palette Modal -->
+        <div id="mobile-palette"
+            class="hidden fixed inset-0 bg-slate-900/40 backdrop-blur-sm z-50 flex items-end animate-fade-in">
+            <div
+                class="bg-white dark:bg-slate-800 w-full rounded-t-3xl p-5 max-h-[80vh] overflow-y-auto custom-scrollbar pb-10">
+                <div class="flex justify-between items-center mb-6">
+                    <h3 class="font-bold text-lg text-slate-900 dark:text-white">Danh sách câu hỏi</h3>
+                    <button onclick="document.getElementById('mobile-palette').classList.add('hidden')"
+                        class="p-2 bg-slate-100 dark:bg-slate-700 rounded-full text-slate-500">
+                        <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24"
+                            stroke="currentColor">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                d="M6 18L18 6M6 6l12 12" />
+                        </svg>
+                    </button>
+                </div>
+                <div id="mobile-palette-grid" class="grid grid-cols-5 gap-3"></div>
+            </div>
+        </div>
+    </template>
+
+    <!-- 3b. Step-by-Step Mode View -->
+    <template id="tpl-step-by-step">
+        <!-- Wrapper WITHOUT animate-enter to avoid transform breaking fixed positioning -->
+        <div class="step-mode-wrapper">
+            <!-- Progress Header -->
+            <div
+                class="step-progress-header bg-white dark:bg-slate-800 border-b border-slate-200 dark:border-slate-700 px-4 py-3">
+                <div class="max-w-3xl mx-auto">
+                    <div class="flex items-center justify-between mb-2">
+                        <div class="flex items-center gap-3">
+                            <button onclick="app.exitStepMode()"
+                                class="p-2 hover:bg-slate-100 dark:hover:bg-slate-700 rounded-lg transition-colors"
+                                title="Thoát">
+                                <svg class="w-5 h-5 text-slate-500" fill="none" stroke="currentColor"
+                                    viewBox="0 0 24 24">
                                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
                                         d="M6 18L18 6M6 6l12 12" />
                                 </svg>
                             </button>
+                            <div>
+                                <h3 class="font-bold text-slate-900 dark:text-white text-sm">Chế độ Từng Câu</h3>
+                                <p class="text-xs text-slate-500 dark:text-slate-400">Phải trả lời đúng mới được qua
+                                    câu
+                                    tiếp theo</p>
+                            </div>
+                        </div>
+                        <div class="flex items-center gap-2">
+                            <span id="step-current" class="text-lg font-bold text-blue-600 dark:text-blue-400">1</span>
+                            <span class="text-slate-400">/</span>
+                            <span id="step-total"
+                                class="text-lg font-medium text-slate-500 dark:text-slate-400">0</span>
                         </div>
                     </div>
-
-                    <!-- Tab Navigation -->
-                    <div
-                        class="flex border-b border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-900/50 overflow-x-auto">
-                        <button onclick="app.switchKnowledgeTab('mindmap')"
-                            class="knowledge-tab active flex-1 min-w-[100px] py-3 px-4 text-sm font-semibold text-center border-b-2 transition-all"
-                            data-tab="mindmap">
-                            🧠 Sơ đồ tư duy
-                        </button>
-                        <button onclick="app.switchKnowledgeTab('video')"
-                            class="knowledge-tab flex-1 min-w-[100px] py-3 px-4 text-sm font-semibold text-center border-b-2 transition-all"
-                            data-tab="video">
-                            🎬 Video
-                        </button>
-                        <button onclick="app.switchKnowledgeTab('presentation')"
-                            class="knowledge-tab flex-1 min-w-[100px] py-3 px-4 text-sm font-semibold text-center border-b-2 transition-all"
-                            data-tab="presentation">
-                            📊 Thuyết trình
-                        </button>
-                        <button onclick="app.switchKnowledgeTab('podcast')"
-                            class="knowledge-tab flex-1 min-w-[100px] py-3 px-4 text-sm font-semibold text-center border-b-2 transition-all"
-                            data-tab="podcast">
-                            🎧 Podcast
-                        </button>
+                    <div class="w-full bg-slate-200 dark:bg-slate-700 rounded-full h-2 overflow-hidden">
+                        <div id="step-progress-bar"
+                            class="bg-gradient-to-r from-blue-500 to-indigo-500 h-2 rounded-full transition-all duration-500"
+                            style="width: 0%"></div>
                     </div>
-
-                    <!-- Content Area -->
-                    <div id="knowledge-content" class="flex-1 overflow-y-auto p-4 custom-scrollbar">
-                        <!-- Content will be rendered by JS -->
+                    <div class="flex justify-between mt-2 text-xs">
+                        <span class="text-emerald-600 dark:text-emerald-400 font-medium">
+                            <span id="step-correct-count">0</span> đúng
+                        </span>
+                        <span class="text-amber-600 dark:text-amber-400 font-medium">
+                            <span id="step-skipped-count">0</span> bỏ qua
+                        </span>
                     </div>
                 </div>
             </div>
-        </template>
 
-        <!-- 3. Taking Exam View -->
-        <template id="tpl-taking-exam">
-            <!-- Main wrapper - full height with flex - NO transform/animation here -->
-            <div class="taking-exam-wrapper">
-                <!-- Questions area - scrolls independently, animation applied here -->
-                <div class="questions-scroll-area animate-enter bg-slate-50 dark:bg-slate-900 px-3 py-6 lg:px-12 scroll-smooth custom-scrollbar"
-                    id="questions-container">
-                    <div class="content-area mx-auto"
-                        style="padding-bottom: calc(120px + env(safe-area-inset-bottom, 20px));">
-                        <!-- Review Controls -->
-                        <div id="review-controls"
-                            class="hidden mb-6 sticky top-0 z-20 bg-white/90 dark:bg-slate-800/90 backdrop-blur p-3 rounded-xl border border-slate-200 dark:border-slate-700 shadow-sm flex flex-col sm:flex-row gap-3 items-center justify-between">
-                            <div class="flex gap-2 overflow-x-auto no-scrollbar w-full sm:w-auto pb-1 sm:pb-0">
-                                <button onclick="app.filterReview('all')"
-                                    class="whitespace-nowrap px-3 py-1.5 rounded-lg text-sm font-bold bg-slate-100 dark:bg-slate-700 text-slate-600 dark:text-slate-300 hover:bg-slate-200 dark:hover:bg-slate-600 transition-colors filter-btn active"
-                                    data-filter="all">Tất cả</button>
-                                <button onclick="app.filterReview('wrong')"
-                                    class="whitespace-nowrap px-3 py-1.5 rounded-lg text-sm font-bold bg-red-50 dark:bg-red-900/30 text-red-600 dark:text-red-400 hover:bg-red-100 dark:hover:bg-red-900/50 transition-colors filter-btn"
-                                    data-filter="wrong">Câu Sai</button>
-                                <button onclick="app.filterReview('correct')"
-                                    class="whitespace-nowrap px-3 py-1.5 rounded-lg text-sm font-bold bg-green-50 dark:bg-green-900/30 text-green-600 dark:text-green-400 hover:bg-green-100 dark:hover:bg-green-900/50 transition-colors filter-btn"
-                                    data-filter="correct">Câu Đúng</button>
-                            </div>
-                            <button onclick="app.goHome()"
-                                class="w-full sm:w-auto text-sm font-medium text-blue-600 hover:underline text-center sm:text-right">Thoát</button>
+            <!-- Question Display Area - animate-enter moved here -->
+            <div class="step-question-area animate-enter flex-1 overflow-y-auto px-4 py-6 lg:px-8 bg-slate-50 dark:bg-slate-900"
+                id="step-question-container">
+                <div class="max-w-3xl mx-auto">
+                    <!-- Question Card -->
+                    <div id="step-question-card"
+                        class="bg-white dark:bg-slate-800 rounded-2xl border border-slate-200 dark:border-slate-700 shadow-sm overflow-hidden">
+                        <!-- Question Type Badge -->
+                        <div
+                            class="px-4 py-2 bg-slate-50 dark:bg-slate-700/50 border-b border-slate-100 dark:border-slate-700 flex items-center justify-between">
+                            <span id="step-question-type-badge"
+                                class="text-xs font-bold uppercase tracking-wider text-blue-600 dark:text-blue-400">Trắc
+                                nghiệm</span>
+                            <span id="step-question-part" class="text-xs text-slate-400">Phần I</span>
                         </div>
 
-                        <div class="space-y-8">
-                            <div id="part-1-container">
-                                <div class="flex items-center gap-3 mb-4">
-                                    <div class="h-6 w-1 bg-blue-600 rounded-full"></div>
-                                    <div>
-                                        <h3
-                                            class="font-bold text-slate-800 dark:text-white text-base md:text-lg uppercase tracking-tight">
-                                            Phần I: Trắc nghiệm</h3>
-                                        <p class="text-xs md:text-sm text-slate-500 dark:text-slate-400">Chọn 01 phương
-                                            án
-                                            đúng nhất.</p>
-                                    </div>
-                                </div>
-                                <div id="part-1-questions" class="space-y-4 md:space-y-6"></div>
+                        <!-- Question Content -->
+                        <div class="p-5">
+                            <div id="step-question-text" class="dynamic-text text-slate-800 dark:text-slate-200 mb-4">
                             </div>
-                            <div id="part-2-container">
-                                <hr class="border-slate-200 dark:border-slate-700 my-6">
-                                <div class="flex items-center gap-3 mb-4">
-                                    <div class="h-6 w-1 bg-indigo-600 rounded-full"></div>
-                                    <div>
-                                        <h3
-                                            class="font-bold text-slate-800 dark:text-white text-base md:text-lg uppercase tracking-tight">
-                                            Phần II: Đúng / Sai</h3>
-                                        <p class="text-xs md:text-sm text-slate-500 dark:text-slate-400">Quyết định tính
-                                            Đúng/Sai.</p>
-                                    </div>
-                                </div>
-                                <div id="part-2-questions" class="space-y-6"></div>
+                            <div id="step-question-image" class="hidden mb-4">
+                                <img src="" alt="Question image"
+                                    class="max-w-full md:max-w-md h-auto rounded-xl border border-slate-200 dark:border-slate-700 shadow-sm cursor-pointer hover:opacity-90 hover:shadow-lg transition-all"
+                                    title="Nhấn để xem ảnh lớn" onclick="openLightbox(this.src)"
+                                    onerror="this.parentElement.classList.add('hidden')">
                             </div>
-                            <div id="part-3-container">
-                                <hr class="border-slate-200 dark:border-slate-700 my-6">
-                                <div class="flex items-center gap-3 mb-4">
-                                    <div class="h-6 w-1 bg-emerald-600 rounded-full"></div>
-                                    <div>
-                                        <h3
-                                            class="font-bold text-slate-800 dark:text-white text-base md:text-lg uppercase tracking-tight">
-                                            Phần III: Trả lời ngắn</h3>
-                                        <p class="text-xs md:text-sm text-slate-500 dark:text-slate-400">Điền đáp án
-                                            chính
-                                            xác.</p>
-                                    </div>
-                                </div>
-                                <div id="part-3-questions" class="space-y-4 md:space-y-6"></div>
+
+                            <!-- Answer Options (for Part 1) -->
+                            <div id="step-options-container" class="space-y-3"></div>
+
+                            <!-- Sub-questions (for Part 2) -->
+                            <div id="step-subquestions-container" class="space-y-4 hidden"></div>
+
+                            <!-- Short Answer (for Part 3) -->
+                            <div id="step-short-answer-container" class="hidden">
+                                <input type="text" id="step-short-input"
+                                    class="w-full px-4 py-3 rounded-xl border-2 border-slate-200 dark:border-slate-600 bg-white dark:bg-slate-700 text-slate-800 dark:text-slate-200 text-lg font-medium focus:border-blue-500 focus:ring-2 focus:ring-blue-200 dark:focus:ring-blue-800 outline-none transition-all"
+                                    placeholder="Nhập đáp án của bạn..." autocomplete="off">
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Feedback Message -->
+                    <div id="step-feedback" class="hidden mt-4 p-4 rounded-xl border-2 animate-fade-in">
+                        <div class="flex items-start gap-3">
+                            <div id="step-feedback-icon"
+                                class="shrink-0 w-10 h-10 rounded-full flex items-center justify-center"></div>
+                            <div class="flex-1">
+                                <h4 id="step-feedback-title" class="font-bold text-lg mb-1"></h4>
+                                <p id="step-feedback-message" class="text-sm"></p>
                             </div>
                         </div>
                     </div>
                 </div>
-
-                <!-- Desktop Sidebar - FIXED position with own scroll -->
-                <aside id="desktop-palette-sidebar" class="desktop-sidebar-fixed hidden lg:flex">
-                    <div class="sidebar-header">
-                        <h3 class="font-bold text-slate-800 dark:text-white text-base">Mục lục câu hỏi</h3>
-                        <p class="text-xs text-slate-400 mt-0.5">Trạng thái làm bài</p>
-                    </div>
-                    <div class="sidebar-content custom-scrollbar">
-                        <div id="question-palette" class="grid grid-cols-4 gap-2"></div>
-                    </div>
-                    <div id="submit-btn-container" class="sidebar-footer">
-                        <button onclick="app.submitExam()"
-                            class="w-full bg-blue-600 hover:bg-blue-700 active:scale-[0.98] text-white font-bold py-3.5 px-4 rounded-xl transition-all shadow-lg shadow-blue-600/20 flex items-center justify-center gap-2">
-                            <span>Nộp bài thi</span>
-                        </button>
-                    </div>
-                </aside>
             </div>
-            <!-- Mobile Footer - OUTSIDE of flex container -->
-            <div id="mobile-footer"
-                class="lg:hidden fixed bottom-0 left-0 right-0 bg-white/90 dark:bg-slate-800/90 backdrop-blur border-t border-slate-200 dark:border-slate-700 p-3 z-40 flex flex-row items-center gap-3 shadow-[0_-4px_20px_rgba(0,0,0,0.05)]"
+
+            <!-- Bottom Action Bar - styled like mobile-footer -->
+            <div id="step-action-bar"
+                class="fixed bottom-0 left-0 right-0 bg-white/90 dark:bg-slate-800/90 backdrop-blur border-t border-slate-200 dark:border-slate-700 p-3 z-40 flex flex-row items-center gap-3 shadow-[0_-4px_20px_rgba(0,0,0,0.05)]"
                 style="height: 64px !important; max-height: 64px !important; min-height: 64px !important; flex-direction: row !important; align-items: center !important; top: auto !important;">
-                <button onclick="document.getElementById('mobile-palette').classList.remove('hidden')"
+                <!-- Back Button -->
+                <button onclick="app.stepPrevQuestion()" id="step-back-btn"
+                    class="hidden shrink-0 px-3 py-3 bg-slate-100 dark:bg-slate-700 text-slate-600 dark:text-slate-300 rounded-xl font-bold flex items-center gap-1 hover:bg-slate-200 dark:hover:bg-slate-600 transition-colors"
+                    style="height: 44px !important; max-height: 44px !important; align-self: center !important;">
+                    <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7" />
+                    </svg>
+                    <span class="hidden sm:inline">Quay lại</span>
+                </button>
+                <button onclick="app.stepSkipQuestion()" id="step-skip-btn"
                     class="shrink-0 px-4 py-3 bg-slate-100 dark:bg-slate-700 text-slate-700 dark:text-slate-200 rounded-xl font-bold flex items-center gap-2"
                     style="height: 44px !important; max-height: 44px !important; align-self: center !important;">
-                    Mục lục
+                    <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                            d="M13 5l7 7-7 7M5 5l7 7-7 7" />
+                    </svg>
+                    <span class="hidden sm:inline">Bỏ qua</span>
                 </button>
-                <button onclick="app.submitExam()"
-                    class="flex-1 bg-blue-600 text-white font-bold py-3 px-4 rounded-xl shadow-lg shadow-blue-600/20"
+                <button onclick="app.stepCheckAnswer()" id="step-check-btn"
+                    class="flex-1 bg-blue-600 text-white font-bold py-3 px-4 rounded-xl shadow-lg shadow-blue-600/20 flex items-center justify-center gap-2"
                     style="height: 44px !important; max-height: 44px !important; align-self: center !important;">
-                    Nộp bài
+                    <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7" />
+                    </svg>
+                    <span>Kiểm tra</span>
                 </button>
-            </div>
-            <!-- Mobile Palette Modal -->
-            <div id="mobile-palette"
-                class="hidden fixed inset-0 bg-slate-900/40 backdrop-blur-sm z-50 flex items-end animate-fade-in">
-                <div
-                    class="bg-white dark:bg-slate-800 w-full rounded-t-3xl p-5 max-h-[80vh] overflow-y-auto custom-scrollbar pb-10">
-                    <div class="flex justify-between items-center mb-6">
-                        <h3 class="font-bold text-lg text-slate-900 dark:text-white">Danh sách câu hỏi</h3>
-                        <button onclick="document.getElementById('mobile-palette').classList.add('hidden')"
-                            class="p-2 bg-slate-100 dark:bg-slate-700 rounded-full text-slate-500">
-                            <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24"
-                                stroke="currentColor">
-                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-                                    d="M6 18L18 6M6 6l12 12" />
-                            </svg>
-                        </button>
-                    </div>
-                    <div id="mobile-palette-grid" class="grid grid-cols-5 gap-3"></div>
-                </div>
-            </div>
-        </template>
-
-        <!-- 3b. Step-by-Step Mode View -->
-        <template id="tpl-step-by-step">
-            <!-- Wrapper WITHOUT animate-enter to avoid transform breaking fixed positioning -->
-            <div class="step-mode-wrapper">
-                <!-- Progress Header -->
-                <div
-                    class="step-progress-header bg-white dark:bg-slate-800 border-b border-slate-200 dark:border-slate-700 px-4 py-3">
-                    <div class="max-w-3xl mx-auto">
-                        <div class="flex items-center justify-between mb-2">
-                            <div class="flex items-center gap-3">
-                                <button onclick="app.exitStepMode()"
-                                    class="p-2 hover:bg-slate-100 dark:hover:bg-slate-700 rounded-lg transition-colors"
-                                    title="Thoát">
-                                    <svg class="w-5 h-5 text-slate-500" fill="none" stroke="currentColor"
-                                        viewBox="0 0 24 24">
-                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-                                            d="M6 18L18 6M6 6l12 12" />
-                                    </svg>
-                                </button>
-                                <div>
-                                    <h3 class="font-bold text-slate-900 dark:text-white text-sm">Chế độ Từng Câu</h3>
-                                    <p class="text-xs text-slate-500 dark:text-slate-400">Phải trả lời đúng mới được qua
-                                        câu
-                                        tiếp theo</p>
-                                </div>
-                            </div>
-                            <div class="flex items-center gap-2">
-                                <span id="step-current"
-                                    class="text-lg font-bold text-blue-600 dark:text-blue-400">1</span>
-                                <span class="text-slate-400">/</span>
-                                <span id="step-total"
-                                    class="text-lg font-medium text-slate-500 dark:text-slate-400">0</span>
-                            </div>
-                        </div>
-                        <div class="w-full bg-slate-200 dark:bg-slate-700 rounded-full h-2 overflow-hidden">
-                            <div id="step-progress-bar"
-                                class="bg-gradient-to-r from-blue-500 to-indigo-500 h-2 rounded-full transition-all duration-500"
-                                style="width: 0%"></div>
-                        </div>
-                        <div class="flex justify-between mt-2 text-xs">
-                            <span class="text-emerald-600 dark:text-emerald-400 font-medium">
-                                <span id="step-correct-count">0</span> đúng
-                            </span>
-                            <span class="text-amber-600 dark:text-amber-400 font-medium">
-                                <span id="step-skipped-count">0</span> bỏ qua
-                            </span>
-                        </div>
-                    </div>
-                </div>
-
-                <!-- Question Display Area - animate-enter moved here -->
-                <div class="step-question-area animate-enter flex-1 overflow-y-auto px-4 py-6 lg:px-8 bg-slate-50 dark:bg-slate-900"
-                    id="step-question-container">
-                    <div class="max-w-3xl mx-auto">
-                        <!-- Question Card -->
-                        <div id="step-question-card"
-                            class="bg-white dark:bg-slate-800 rounded-2xl border border-slate-200 dark:border-slate-700 shadow-sm overflow-hidden">
-                            <!-- Question Type Badge -->
-                            <div
-                                class="px-4 py-2 bg-slate-50 dark:bg-slate-700/50 border-b border-slate-100 dark:border-slate-700 flex items-center justify-between">
-                                <span id="step-question-type-badge"
-                                    class="text-xs font-bold uppercase tracking-wider text-blue-600 dark:text-blue-400">Trắc
-                                    nghiệm</span>
-                                <span id="step-question-part" class="text-xs text-slate-400">Phần I</span>
-                            </div>
-
-                            <!-- Question Content -->
-                            <div class="p-5">
-                                <div id="step-question-text"
-                                    class="dynamic-text text-slate-800 dark:text-slate-200 mb-4">
-                                </div>
-                                <div id="step-question-image" class="hidden mb-4">
-                                    <img src="" alt="Question image"
-                                        class="max-w-full md:max-w-md h-auto rounded-xl border border-slate-200 dark:border-slate-700 shadow-sm cursor-pointer hover:opacity-90 hover:shadow-lg transition-all"
-                                        title="Nhấn để xem ảnh lớn" onclick="openLightbox(this.src)"
-                                        onerror="this.parentElement.classList.add('hidden')">
-                                </div>
-
-                                <!-- Answer Options (for Part 1) -->
-                                <div id="step-options-container" class="space-y-3"></div>
-
-                                <!-- Sub-questions (for Part 2) -->
-                                <div id="step-subquestions-container" class="space-y-4 hidden"></div>
-
-                                <!-- Short Answer (for Part 3) -->
-                                <div id="step-short-answer-container" class="hidden">
-                                    <input type="text" id="step-short-input"
-                                        class="w-full px-4 py-3 rounded-xl border-2 border-slate-200 dark:border-slate-600 bg-white dark:bg-slate-700 text-slate-800 dark:text-slate-200 text-lg font-medium focus:border-blue-500 focus:ring-2 focus:ring-blue-200 dark:focus:ring-blue-800 outline-none transition-all"
-                                        placeholder="Nhập đáp án của bạn..." autocomplete="off">
-                                </div>
-                            </div>
-                        </div>
-
-                        <!-- Feedback Message -->
-                        <div id="step-feedback" class="hidden mt-4 p-4 rounded-xl border-2 animate-fade-in">
-                            <div class="flex items-start gap-3">
-                                <div id="step-feedback-icon"
-                                    class="shrink-0 w-10 h-10 rounded-full flex items-center justify-center"></div>
-                                <div class="flex-1">
-                                    <h4 id="step-feedback-title" class="font-bold text-lg mb-1"></h4>
-                                    <p id="step-feedback-message" class="text-sm"></p>
-                                </div>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-
-                <!-- Bottom Action Bar - styled like mobile-footer -->
-                <div id="step-action-bar"
-                    class="fixed bottom-0 left-0 right-0 bg-white/90 dark:bg-slate-800/90 backdrop-blur border-t border-slate-200 dark:border-slate-700 p-3 z-40 flex flex-row items-center gap-3 shadow-[0_-4px_20px_rgba(0,0,0,0.05)]"
-                    style="height: 64px !important; max-height: 64px !important; min-height: 64px !important; flex-direction: row !important; align-items: center !important; top: auto !important;">
-                    <!-- Back Button -->
-                    <button onclick="app.stepPrevQuestion()" id="step-back-btn"
-                        class="hidden shrink-0 px-3 py-3 bg-slate-100 dark:bg-slate-700 text-slate-600 dark:text-slate-300 rounded-xl font-bold flex items-center gap-1 hover:bg-slate-200 dark:hover:bg-slate-600 transition-colors"
-                        style="height: 44px !important; max-height: 44px !important; align-self: center !important;">
-                        <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7" />
-                        </svg>
-                        <span class="hidden sm:inline">Quay lại</span>
-                    </button>
-                    <button onclick="app.stepSkipQuestion()" id="step-skip-btn"
-                        class="shrink-0 px-4 py-3 bg-slate-100 dark:bg-slate-700 text-slate-700 dark:text-slate-200 rounded-xl font-bold flex items-center gap-2"
-                        style="height: 44px !important; max-height: 44px !important; align-self: center !important;">
-                        <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-                                d="M13 5l7 7-7 7M5 5l7 7-7 7" />
-                        </svg>
-                        <span class="hidden sm:inline">Bỏ qua</span>
-                    </button>
-                    <button onclick="app.stepCheckAnswer()" id="step-check-btn"
-                        class="flex-1 bg-blue-600 text-white font-bold py-3 px-4 rounded-xl shadow-lg shadow-blue-600/20 flex items-center justify-center gap-2"
-                        style="height: 44px !important; max-height: 44px !important; align-self: center !important;">
-                        <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7" />
-                        </svg>
-                        <span>Kiểm tra</span>
-                    </button>
-                    <button onclick="app.stepNextQuestion()" id="step-next-btn"
-                        class="hidden flex-1 bg-emerald-600 text-white font-bold py-3 px-4 rounded-xl shadow-lg shadow-emerald-600/20 items-center justify-center gap-2"
-                        style="height: 44px !important; max-height: 44px !important; align-self: center !important;">
-                        <span>Tiếp theo</span>
-                        <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7" />
-                        </svg>
-                    </button>
-                </div>
-            </div>
-        </template>
-
-        <!-- 4. Result View -->
-        <template id="tpl-result">
-            <div class="min-h-full overflow-y-auto p-4 lg:p-8 animate-enter flex items-center justify-center bg-slate-50 dark:bg-slate-900 custom-scrollbar"
-                style="padding-bottom: 60px;">
-                <div
-                    class="bg-white dark:bg-slate-800 w-full max-w-2xl rounded-3xl shadow-soft border border-slate-100 dark:border-slate-700 overflow-hidden relative">
-                    <div class="absolute top-0 left-0 w-full h-40 bg-gradient-to-br from-blue-600 to-indigo-700"></div>
-                    <div class="relative pt-10 pb-6 px-6 text-center text-white">
-                        <h2 class="text-2xl md:text-3xl font-bold mb-1">Kết quả bài thi</h2>
-                        <p id="result-subject-name" class="opacity-90 font-medium text-blue-100 text-sm md:text-base">
-                        </p>
-                    </div>
-
-                    <div class="relative px-6 pb-8">
-                        <div class="flex flex-col items-center justify-center -mt-10 mb-6">
-                            <div
-                                class="w-32 h-32 md:w-40 md:h-40 rounded-full bg-white dark:bg-slate-800 p-2 shadow-xl mb-4 transition-colors">
-                                <div
-                                    class="w-full h-full rounded-full border-8 border-blue-50 dark:border-slate-700 flex flex-col items-center justify-center">
-                                    <span id="score-display"
-                                        class="text-4xl md:text-5xl font-extrabold text-slate-800 dark:text-white tracking-tighter"></span>
-                                    <span
-                                        class="text-[10px] md:text-xs font-bold text-slate-400 uppercase tracking-widest mt-1">Thang
-                                        điểm 10</span>
-                                </div>
-                            </div>
-                        </div>
-
-                        <div class="grid grid-cols-1 sm:grid-cols-3 gap-3 sm:gap-4 mb-6 sm:mb-8">
-                            <div
-                                class="bg-slate-50 dark:bg-slate-700 p-4 rounded-2xl border border-slate-100 dark:border-slate-600 text-center flex sm:block items-center justify-between sm:justify-center">
-                                <div class="text-xs font-bold text-slate-400 uppercase mb-0 sm:mb-2">Thời gian</div>
-                                <div id="result-time" class="font-bold text-lg text-slate-700 dark:text-slate-200">
-                                </div>
-                            </div>
-                            <div
-                                class="bg-green-50 dark:bg-green-900/20 p-4 rounded-2xl border border-green-100 dark:border-green-900/30 text-center flex sm:block items-center justify-between sm:justify-center">
-                                <div
-                                    class="text-xs font-bold text-green-600 dark:text-green-400 uppercase mb-0 sm:mb-2">
-                                    Số
-                                    câu đúng</div>
-                                <div id="result-correct" class="font-bold text-lg text-green-700 dark:text-green-300">
-                                </div>
-                            </div>
-                            <div
-                                class="bg-red-50 dark:bg-red-900/20 p-4 rounded-2xl border border-red-100 dark:border-red-900/30 text-center flex sm:block items-center justify-between sm:justify-center">
-                                <div class="text-xs font-bold text-red-600 dark:text-red-400 uppercase mb-0 sm:mb-2">Số
-                                    câu
-                                    sai</div>
-                                <div id="result-wrong" class="font-bold text-lg text-red-700 dark:text-red-300"></div>
-                            </div>
-                        </div>
-
-                        <div class="flex flex-col sm:flex-row gap-3">
-                            <button onclick="app.goHome()"
-                                class="flex-1 py-3.5 px-6 border border-slate-200 dark:border-slate-600 rounded-xl text-slate-600 dark:text-slate-200 font-bold hover:bg-slate-50 dark:hover:bg-slate-700 transition-colors text-sm md:text-base">
-                                Về trang chủ
-                            </button>
-                            <button onclick="app.reviewExam()"
-                                class="flex-1 py-3.5 px-6 bg-slate-900 dark:bg-slate-100 rounded-xl text-white dark:text-slate-900 font-bold hover:bg-slate-800 dark:hover:bg-slate-200 transition-colors shadow-lg shadow-slate-200 dark:shadow-none text-sm md:text-base">
-                                Xem chi tiết & Lời giải
-                            </button>
-                        </div>
-
-                        <!-- Feedback Section -->
-                        <div class="mt-8 pt-6 border-t border-slate-200 dark:border-slate-700">
-                            <div class="flex items-center gap-2 mb-4">
-                                <svg class="w-5 h-5 text-purple-500" fill="none" stroke="currentColor"
-                                    viewBox="0 0 24 24">
-                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-                                        d="M7 8h10M7 12h4m1 8l-4-4H5a2 2 0 01-2-2V6a2 2 0 012-2h14a2 2 0 012 2v8a2 2 0 01-2 2h-3l-4 4z" />
-                                </svg>
-                                <h3 class="font-bold text-slate-800 dark:text-white text-lg">Góp ý về đề thi</h3>
-                            </div>
-
-                            <!-- Add Comment Form -->
-                            <div class="bg-slate-50 dark:bg-slate-700/50 rounded-xl p-4 mb-4">
-                                <textarea id="feedback-input" maxlength="256" rows="2"
-                                    class="w-full px-4 py-3 border border-slate-200 dark:border-slate-600 rounded-xl text-sm focus:ring-2 focus:ring-purple-500 focus:border-purple-500 outline-none resize-none bg-white dark:bg-slate-800 dark:text-white"
-                                    placeholder="Góp ý về câu hỏi, đáp án... (tối đa 256 ký tự)"></textarea>
-                                <div class="flex items-center justify-between mt-2">
-                                    <span id="feedback-char-count" class="text-xs text-slate-400">0/256</span>
-                                    <button onclick="app.submitFeedback()"
-                                        class="px-4 py-2 bg-purple-600 hover:bg-purple-700 text-white text-sm font-semibold rounded-lg transition-colors flex items-center gap-2">
-                                        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-                                                d="M12 19l9 2-9-18-9 18 9-2zm0 0v-8" />
-                                        </svg>
-                                        Gửi góp ý
-                                    </button>
-                                </div>
-                            </div>
-
-                            <!-- Comments List -->
-                            <div id="feedback-list" class="space-y-4">
-                                <div class="text-center text-slate-400 text-sm py-4">
-                                    <div
-                                        class="w-8 h-8 border-2 border-slate-200 dark:border-slate-600 border-t-purple-500 rounded-full spinner mx-auto mb-2">
-                                    </div>
-                                    Đang tải góp ý...
-                                </div>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-            </div>
-        </template>
-
-        <!-- Image Lightbox Modal -->
-        <div id="image-lightbox"
-            class="fixed inset-0 z-[100] hidden items-center justify-center bg-black/90 backdrop-blur-sm">
-            <!-- Controls -->
-            <div class="absolute top-4 right-4 flex items-center gap-2 z-20">
-                <button id="btn-zoom-in"
-                    class="p-2 bg-white/10 hover:bg-white/20 rounded-lg text-white transition-colors"
-                    title="Phóng to (+)">
-                    <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-                            d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0zM10 7v6m3-3H7" />
+                <button onclick="app.stepNextQuestion()" id="step-next-btn"
+                    class="hidden flex-1 bg-emerald-600 text-white font-bold py-3 px-4 rounded-xl shadow-lg shadow-emerald-600/20 items-center justify-center gap-2"
+                    style="height: 44px !important; max-height: 44px !important; align-self: center !important;">
+                    <span>Tiếp theo</span>
+                    <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7" />
                     </svg>
                 </button>
-                <button id="btn-zoom-out"
-                    class="p-2 bg-white/10 hover:bg-white/20 rounded-lg text-white transition-colors"
-                    title="Thu nhỏ (-)">
-                    <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-                            d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0zM7 10h6" />
-                    </svg>
-                </button>
-                <button id="btn-zoom-reset"
-                    class="p-2 bg-white/10 hover:bg-white/20 rounded-lg text-white transition-colors" title="Reset (0)">
-                    <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-                            d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
-                    </svg>
-                </button>
-                <button id="btn-lightbox-close"
-                    class="p-2 bg-white/10 hover:bg-white/20 rounded-lg text-white transition-colors"
-                    title="Đóng (Esc)">
-                    <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-                            d="M6 18L18 6M6 6l12 12" />
-                    </svg>
-                </button>
-            </div>
-            <!-- Zoom level indicator -->
-            <div id="zoom-indicator"
-                class="absolute bottom-4 left-1/2 -translate-x-1/2 px-3 py-1.5 bg-black/60 text-white text-sm rounded-full z-20 flex items-center gap-2">
-                <span id="zoom-percent">100%</span>
-                <span class="text-white/50 text-xs">Scroll/Kéo để di chuyển</span>
-            </div>
-            <!-- Image container - full screen for dragging -->
-            <div id="lightbox-container" class="absolute inset-0 overflow-hidden cursor-grab active:cursor-grabbing">
-                <img id="lightbox-image" src="" alt="Full size image" class="absolute select-none pointer-events-none"
-                    draggable="false">
             </div>
         </div>
+    </template>
 
-        <script>
-            // Image Lightbox with Pan & Zoom
-            const lightboxState = {
-                zoom: 1,
-                minZoom: 0.5,
-                maxZoom: 6,
-                x: 0,
-                y: 0,
-                isDragging: false,
-                startX: 0,
-                startY: 0,
-                imgWidth: 0,
-                imgHeight: 0
-            };
+    <!-- 4. Result View -->
+    <template id="tpl-result">
+        <div class="min-h-full overflow-y-auto p-4 lg:p-8 animate-enter flex items-center justify-center bg-slate-50 dark:bg-slate-900 custom-scrollbar"
+            style="padding-bottom: 60px;">
+            <div
+                class="bg-white dark:bg-slate-800 w-full max-w-2xl rounded-3xl shadow-soft border border-slate-100 dark:border-slate-700 overflow-hidden relative">
+                <div class="absolute top-0 left-0 w-full h-40 bg-gradient-to-br from-blue-600 to-indigo-700"></div>
+                <div class="relative pt-10 pb-6 px-6 text-center text-white">
+                    <h2 class="text-2xl md:text-3xl font-bold mb-1">Kết quả bài thi</h2>
+                    <p id="result-subject-name" class="opacity-90 font-medium text-blue-100 text-sm md:text-base">
+                    </p>
+                </div>
 
-            function openLightbox(imgSrc) {
-                const lightbox = document.getElementById('image-lightbox');
-                const img = document.getElementById('lightbox-image');
-                if (!lightbox || !img) return;
+                <div class="relative px-6 pb-8">
+                    <div class="flex flex-col items-center justify-center -mt-10 mb-6">
+                        <div
+                            class="w-32 h-32 md:w-40 md:h-40 rounded-full bg-white dark:bg-slate-800 p-2 shadow-xl mb-4 transition-colors">
+                            <div
+                                class="w-full h-full rounded-full border-8 border-blue-50 dark:border-slate-700 flex flex-col items-center justify-center">
+                                <span id="score-display"
+                                    class="text-4xl md:text-5xl font-extrabold text-slate-800 dark:text-white tracking-tighter"></span>
+                                <span
+                                    class="text-[10px] md:text-xs font-bold text-slate-400 uppercase tracking-widest mt-1">Thang
+                                    điểm 10</span>
+                            </div>
+                        </div>
+                    </div>
 
-                // Reset state
-                lightboxState.zoom = 1;
-                lightboxState.x = 0;
-                lightboxState.y = 0;
+                    <div class="grid grid-cols-1 sm:grid-cols-3 gap-3 sm:gap-4 mb-6 sm:mb-8">
+                        <div
+                            class="bg-slate-50 dark:bg-slate-700 p-4 rounded-2xl border border-slate-100 dark:border-slate-600 text-center flex sm:block items-center justify-between sm:justify-center">
+                            <div class="text-xs font-bold text-slate-400 uppercase mb-0 sm:mb-2">Thời gian</div>
+                            <div id="result-time" class="font-bold text-lg text-slate-700 dark:text-slate-200">
+                            </div>
+                        </div>
+                        <div
+                            class="bg-green-50 dark:bg-green-900/20 p-4 rounded-2xl border border-green-100 dark:border-green-900/30 text-center flex sm:block items-center justify-between sm:justify-center">
+                            <div class="text-xs font-bold text-green-600 dark:text-green-400 uppercase mb-0 sm:mb-2">
+                                Số
+                                câu đúng</div>
+                            <div id="result-correct" class="font-bold text-lg text-green-700 dark:text-green-300">
+                            </div>
+                        </div>
+                        <div
+                            class="bg-red-50 dark:bg-red-900/20 p-4 rounded-2xl border border-red-100 dark:border-red-900/30 text-center flex sm:block items-center justify-between sm:justify-center">
+                            <div class="text-xs font-bold text-red-600 dark:text-red-400 uppercase mb-0 sm:mb-2">Số
+                                câu
+                                sai</div>
+                            <div id="result-wrong" class="font-bold text-lg text-red-700 dark:text-red-300"></div>
+                        </div>
+                    </div>
 
-                img.src = imgSrc;
-                img.onload = () => {
-                    lightboxState.imgWidth = img.naturalWidth;
-                    lightboxState.imgHeight = img.naturalHeight;
-                    centerImage();
-                    updateTransform();
-                };
+                    <div class="flex flex-col sm:flex-row gap-3">
+                        <button onclick="app.goHome()"
+                            class="flex-1 py-3.5 px-6 border border-slate-200 dark:border-slate-600 rounded-xl text-slate-600 dark:text-slate-200 font-bold hover:bg-slate-50 dark:hover:bg-slate-700 transition-colors text-sm md:text-base">
+                            Về trang chủ
+                        </button>
+                        <button onclick="app.reviewExam()"
+                            class="flex-1 py-3.5 px-6 bg-slate-900 dark:bg-slate-100 rounded-xl text-white dark:text-slate-900 font-bold hover:bg-slate-800 dark:hover:bg-slate-200 transition-colors shadow-lg shadow-slate-200 dark:shadow-none text-sm md:text-base">
+                            Xem chi tiết & Lời giải
+                        </button>
+                    </div>
 
-                lightbox.classList.remove('hidden');
-                lightbox.classList.add('flex');
-                document.body.style.overflow = 'hidden';
-            }
+                    <!-- Feedback Section -->
+                    <div class="mt-8 pt-6 border-t border-slate-200 dark:border-slate-700">
+                        <div class="flex items-center gap-2 mb-4">
+                            <svg class="w-5 h-5 text-purple-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                    d="M7 8h10M7 12h4m1 8l-4-4H5a2 2 0 01-2-2V6a2 2 0 012-2h14a2 2 0 012 2v8a2 2 0 01-2 2h-3l-4 4z" />
+                            </svg>
+                            <h3 class="font-bold text-slate-800 dark:text-white text-lg">Góp ý về đề thi</h3>
+                        </div>
 
-            function closeLightbox() {
-                const lightbox = document.getElementById('image-lightbox');
-                if (lightbox) {
-                    lightbox.classList.add('hidden');
-                    lightbox.classList.remove('flex');
-                    document.body.style.overflow = '';
-                }
-            }
+                        <!-- Add Comment Form -->
+                        <div class="bg-slate-50 dark:bg-slate-700/50 rounded-xl p-4 mb-4">
+                            <textarea id="feedback-input" maxlength="256" rows="2"
+                                class="w-full px-4 py-3 border border-slate-200 dark:border-slate-600 rounded-xl text-sm focus:ring-2 focus:ring-purple-500 focus:border-purple-500 outline-none resize-none bg-white dark:bg-slate-800 dark:text-white"
+                                placeholder="Góp ý về câu hỏi, đáp án... (tối đa 256 ký tự)"></textarea>
+                            <div class="flex items-center justify-between mt-2">
+                                <span id="feedback-char-count" class="text-xs text-slate-400">0/256</span>
+                                <button onclick="app.submitFeedback()"
+                                    class="px-4 py-2 bg-purple-600 hover:bg-purple-700 text-white text-sm font-semibold rounded-lg transition-colors flex items-center gap-2">
+                                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                            d="M12 19l9 2-9-18-9 18 9-2zm0 0v-8" />
+                                    </svg>
+                                    Gửi góp ý
+                                </button>
+                            </div>
+                        </div>
 
-            function centerImage() {
-                const container = document.getElementById('lightbox-container');
-                if (!container) return;
-                const rect = container.getBoundingClientRect();
-                lightboxState.x = rect.width / 2;
-                lightboxState.y = rect.height / 2;
-            }
+                        <!-- Comments List -->
+                        <div id="feedback-list" class="space-y-4">
+                            <div class="text-center text-slate-400 text-sm py-4">
+                                <div
+                                    class="w-8 h-8 border-2 border-slate-200 dark:border-slate-600 border-t-purple-500 rounded-full spinner mx-auto mb-2">
+                                </div>
+                                Đang tải góp ý...
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </template>
 
-            function updateTransform() {
-                const img = document.getElementById('lightbox-image');
-                const indicator = document.getElementById('zoom-percent');
-                if (img) {
-                    const w = lightboxState.imgWidth * lightboxState.zoom;
-                    const h = lightboxState.imgHeight * lightboxState.zoom;
-                    img.style.width = w + 'px';
-                    img.style.height = h + 'px';
-                    img.style.left = (lightboxState.x - w / 2) + 'px';
-                    img.style.top = (lightboxState.y - h / 2) + 'px';
-                }
-                if (indicator) {
-                    indicator.textContent = Math.round(lightboxState.zoom * 100) + '%';
-                }
-            }
+    <!-- Image Lightbox Modal -->
+    <div id="image-lightbox"
+        class="fixed inset-0 z-[100] hidden items-center justify-center bg-black/90 backdrop-blur-sm">
+        <!-- Controls -->
+        <div class="absolute top-4 right-4 flex items-center gap-2 z-20">
+            <button id="btn-zoom-in" class="p-2 bg-white/10 hover:bg-white/20 rounded-lg text-white transition-colors"
+                title="Phóng to (+)">
+                <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                        d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0zM10 7v6m3-3H7" />
+                </svg>
+            </button>
+            <button id="btn-zoom-out" class="p-2 bg-white/10 hover:bg-white/20 rounded-lg text-white transition-colors"
+                title="Thu nhỏ (-)">
+                <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                        d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0zM7 10h6" />
+                </svg>
+            </button>
+            <button id="btn-zoom-reset"
+                class="p-2 bg-white/10 hover:bg-white/20 rounded-lg text-white transition-colors" title="Reset (0)">
+                <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                        d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
+                </svg>
+            </button>
+            <button id="btn-lightbox-close"
+                class="p-2 bg-white/10 hover:bg-white/20 rounded-lg text-white transition-colors" title="Đóng (Esc)">
+                <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
+                </svg>
+            </button>
+        </div>
+        <!-- Zoom level indicator -->
+        <div id="zoom-indicator"
+            class="absolute bottom-4 left-1/2 -translate-x-1/2 px-3 py-1.5 bg-black/60 text-white text-sm rounded-full z-20 flex items-center gap-2">
+            <span id="zoom-percent">100%</span>
+            <span class="text-white/50 text-xs">Scroll/Kéo để di chuyển</span>
+        </div>
+        <!-- Image container - full screen for dragging -->
+        <div id="lightbox-container" class="absolute inset-0 overflow-hidden cursor-grab active:cursor-grabbing">
+            <img id="lightbox-image" src="" alt="Full size image" class="absolute select-none pointer-events-none"
+                draggable="false">
+        </div>
+    </div>
 
-            function zoomTo(newZoom, centerX, centerY) {
-                const container = document.getElementById('lightbox-container');
-                if (!container) return;
+    <script>
+        // Image Lightbox with Pan & Zoom
+        const lightboxState = {
+            zoom: 1,
+            minZoom: 0.5,
+            maxZoom: 6,
+            x: 0,
+            y: 0,
+            isDragging: false,
+            startX: 0,
+            startY: 0,
+            imgWidth: 0,
+            imgHeight: 0
+        };
 
-                const rect = container.getBoundingClientRect();
-                const cx = centerX !== undefined ? centerX : rect.width / 2;
-                const cy = centerY !== undefined ? centerY : rect.height / 2;
+        function openLightbox(imgSrc) {
+            const lightbox = document.getElementById('image-lightbox');
+            const img = document.getElementById('lightbox-image');
+            if (!lightbox || !img) return;
 
-                const oldZoom = lightboxState.zoom;
-                lightboxState.zoom = Math.max(lightboxState.minZoom, Math.min(lightboxState.maxZoom, newZoom));
+            // Reset state
+            lightboxState.zoom = 1;
+            lightboxState.x = 0;
+            lightboxState.y = 0;
 
-                // Adjust position to zoom toward cursor
-                const ratio = lightboxState.zoom / oldZoom;
-                lightboxState.x = cx - (cx - lightboxState.x) * ratio;
-                lightboxState.y = cy - (cy - lightboxState.y) * ratio;
-
-                updateTransform();
-            }
-
-            // Button handlers
-            document.getElementById('btn-zoom-in')?.addEventListener('click', () => zoomTo(lightboxState.zoom + 0.5));
-            document.getElementById('btn-zoom-out')?.addEventListener('click', () => zoomTo(lightboxState.zoom - 0.5));
-            document.getElementById('btn-zoom-reset')?.addEventListener('click', () => {
-                lightboxState.zoom = 1;
+            img.src = imgSrc;
+            img.onload = () => {
+                lightboxState.imgWidth = img.naturalWidth;
+                lightboxState.imgHeight = img.naturalHeight;
                 centerImage();
                 updateTransform();
-            });
-            document.getElementById('btn-lightbox-close')?.addEventListener('click', closeLightbox);
+            };
 
-            // Click backdrop to close
-            document.getElementById('image-lightbox')?.addEventListener('click', (e) => {
-                if (e.target.id === 'image-lightbox' || e.target.id === 'lightbox-container') {
-                    if (!lightboxState.isDragging) closeLightbox();
-                }
-            });
+            lightbox.classList.remove('hidden');
+            lightbox.classList.add('flex');
+            document.body.style.overflow = 'hidden';
+        }
 
-            // Mouse drag to pan
-            const container = document.getElementById('lightbox-container');
-            if (container) {
-                container.addEventListener('mousedown', (e) => {
-                    lightboxState.isDragging = true;
-                    lightboxState.startX = e.clientX - lightboxState.x;
-                    lightboxState.startY = e.clientY - lightboxState.y;
-                    container.style.cursor = 'grabbing';
-                });
-
-                container.addEventListener('mousemove', (e) => {
-                    if (!lightboxState.isDragging) return;
-                    e.preventDefault();
-                    lightboxState.x = e.clientX - lightboxState.startX;
-                    lightboxState.y = e.clientY - lightboxState.startY;
-                    updateTransform();
-                });
-
-                container.addEventListener('mouseup', () => {
-                    lightboxState.isDragging = false;
-                    container.style.cursor = 'grab';
-                });
-
-                container.addEventListener('mouseleave', () => {
-                    lightboxState.isDragging = false;
-                    container.style.cursor = 'grab';
-                });
-
-                // Touch support for mobile
-                container.addEventListener('touchstart', (e) => {
-                    if (e.touches.length === 1) {
-                        lightboxState.isDragging = true;
-                        lightboxState.startX = e.touches[0].clientX - lightboxState.x;
-                        lightboxState.startY = e.touches[0].clientY - lightboxState.y;
-                    }
-                }, { passive: true });
-
-                container.addEventListener('touchmove', (e) => {
-                    if (!lightboxState.isDragging || e.touches.length !== 1) return;
-                    lightboxState.x = e.touches[0].clientX - lightboxState.startX;
-                    lightboxState.y = e.touches[0].clientY - lightboxState.startY;
-                    updateTransform();
-                }, { passive: true });
-
-                container.addEventListener('touchend', () => {
-                    lightboxState.isDragging = false;
-                });
+        function closeLightbox() {
+            const lightbox = document.getElementById('image-lightbox');
+            if (lightbox) {
+                lightbox.classList.add('hidden');
+                lightbox.classList.remove('flex');
+                document.body.style.overflow = '';
             }
+        }
 
-            // Scroll wheel zoom at cursor position
-            document.getElementById('image-lightbox')?.addEventListener('wheel', (e) => {
-                if (document.getElementById('image-lightbox').classList.contains('hidden')) return;
-                e.preventDefault();
-                const delta = e.deltaY > 0 ? -0.2 : 0.2;
-                const rect = document.getElementById('lightbox-container').getBoundingClientRect();
-                zoomTo(lightboxState.zoom + delta, e.clientX - rect.left, e.clientY - rect.top);
-            }, { passive: false });
+        function centerImage() {
+            const container = document.getElementById('lightbox-container');
+            if (!container) return;
+            const rect = container.getBoundingClientRect();
+            lightboxState.x = rect.width / 2;
+            lightboxState.y = rect.height / 2;
+        }
 
-            // Keyboard shortcuts
-            document.addEventListener('keydown', (e) => {
-                if (document.getElementById('image-lightbox')?.classList.contains('hidden')) return;
-                if (e.key === 'Escape') closeLightbox();
-                if (e.key === '+' || e.key === '=') zoomTo(lightboxState.zoom + 0.5);
-                if (e.key === '-') zoomTo(lightboxState.zoom - 0.5);
-                if (e.key === '0') { lightboxState.zoom = 1; centerImage(); updateTransform(); }
+        function updateTransform() {
+            const img = document.getElementById('lightbox-image');
+            const indicator = document.getElementById('zoom-percent');
+            if (img) {
+                const w = lightboxState.imgWidth * lightboxState.zoom;
+                const h = lightboxState.imgHeight * lightboxState.zoom;
+                img.style.width = w + 'px';
+                img.style.height = h + 'px';
+                img.style.left = (lightboxState.x - w / 2) + 'px';
+                img.style.top = (lightboxState.y - h / 2) + 'px';
+            }
+            if (indicator) {
+                indicator.textContent = Math.round(lightboxState.zoom * 100) + '%';
+            }
+        }
+
+        function zoomTo(newZoom, centerX, centerY) {
+            const container = document.getElementById('lightbox-container');
+            if (!container) return;
+
+            const rect = container.getBoundingClientRect();
+            const cx = centerX !== undefined ? centerX : rect.width / 2;
+            const cy = centerY !== undefined ? centerY : rect.height / 2;
+
+            const oldZoom = lightboxState.zoom;
+            lightboxState.zoom = Math.max(lightboxState.minZoom, Math.min(lightboxState.maxZoom, newZoom));
+
+            // Adjust position to zoom toward cursor
+            const ratio = lightboxState.zoom / oldZoom;
+            lightboxState.x = cx - (cx - lightboxState.x) * ratio;
+            lightboxState.y = cy - (cy - lightboxState.y) * ratio;
+
+            updateTransform();
+        }
+
+        // Button handlers
+        document.getElementById('btn-zoom-in')?.addEventListener('click', () => zoomTo(lightboxState.zoom + 0.5));
+        document.getElementById('btn-zoom-out')?.addEventListener('click', () => zoomTo(lightboxState.zoom - 0.5));
+        document.getElementById('btn-zoom-reset')?.addEventListener('click', () => {
+            lightboxState.zoom = 1;
+            centerImage();
+            updateTransform();
+        });
+        document.getElementById('btn-lightbox-close')?.addEventListener('click', closeLightbox);
+
+        // Click backdrop to close
+        document.getElementById('image-lightbox')?.addEventListener('click', (e) => {
+            if (e.target.id === 'image-lightbox' || e.target.id === 'lightbox-container') {
+                if (!lightboxState.isDragging) closeLightbox();
+            }
+        });
+
+        // Mouse drag to pan
+        const container = document.getElementById('lightbox-container');
+        if (container) {
+            container.addEventListener('mousedown', (e) => {
+                lightboxState.isDragging = true;
+                lightboxState.startX = e.clientX - lightboxState.x;
+                lightboxState.startY = e.clientY - lightboxState.y;
+                container.style.cursor = 'grabbing';
             });
 
-            // Double-click to toggle zoom
-            document.getElementById('lightbox-container')?.addEventListener('dblclick', (e) => {
-                const rect = e.currentTarget.getBoundingClientRect();
-                if (lightboxState.zoom > 1) {
-                    lightboxState.zoom = 1;
-                    centerImage();
-                } else {
-                    zoomTo(2.5, e.clientX - rect.left, e.clientY - rect.top);
-                }
+            container.addEventListener('mousemove', (e) => {
+                if (!lightboxState.isDragging) return;
+                e.preventDefault();
+                lightboxState.x = e.clientX - lightboxState.startX;
+                lightboxState.y = e.clientY - lightboxState.startY;
                 updateTransform();
             });
-        </script>
 
-        <!-- Main Logic -->
-        <script src="https://www.youtube.com/iframe_api"></script>
-        <script src="script.js"></script>
-        <script type="module">
-            import {
-                initGatekeeper,
-                getAllExams,
-                getSubjects,
-                logPracticeAttempt,
-                savePracticeResult,
-                getPracticeHistory,
-                getExamFeedbacks,
-                addFeedback,
-                addReply,
-                deleteFeedback,
-                markFeedbackFixed,
-                getCurrentUserInfo,
-                checkIsAdmin
-            } from "../../gatekeeper.js";
-
-            // Make Firebase functions available globally for the app
-            window.firebaseExams = {
-                getAllExams,
-                getSubjects,
-                logPracticeAttempt,
-                savePracticeResult,
-                getPracticeHistory
-            };
-
-            // Make Feedback functions available globally
-            window.firebaseFeedback = {
-                getExamFeedbacks,
-                addFeedback,
-                addReply,
-                deleteFeedback,
-                markFeedbackFixed,
-                getCurrentUserInfo,
-                checkIsAdmin
-            };
-
-            // Initialize Gatekeeper (presence tracking is started automatically inside)
-            initGatekeeper('protected');
-
-            // Wait for Firebase auth to be ready, then initialize app
-            // This prevents the "slow first load" issue
-            const waitForAuth = () => {
-                return new Promise((resolve) => {
-                    // Check if firebaseExams is ready
-                    if (window.firebaseExams && typeof window.firebaseExams.getAllExams === 'function') {
-                        resolve();
-                    } else {
-                        // Wait a bit and resolve anyway (fallback to local files)
-                        setTimeout(resolve, 100);
-                    }
-                });
-            };
-
-            // Initialize Music player immediately (no Firebase dependency)
-            if (window.musicPlayer) window.musicPlayer.init();
-
-            // Wait for auth then initialize app
-            waitForAuth().then(() => {
-                if (window.app) window.app.init();
+            container.addEventListener('mouseup', () => {
+                lightboxState.isDragging = false;
+                container.style.cursor = 'grab';
             });
 
-            // Mobile viewport height fix for iOS Safari
-            (function () {
-                function setVH() {
-                    const vh = window.innerHeight * 0.01;
-                    document.documentElement.style.setProperty('--vh', `${vh}px`);
+            container.addEventListener('mouseleave', () => {
+                lightboxState.isDragging = false;
+                container.style.cursor = 'grab';
+            });
+
+            // Touch support for mobile
+            container.addEventListener('touchstart', (e) => {
+                if (e.touches.length === 1) {
+                    lightboxState.isDragging = true;
+                    lightboxState.startX = e.touches[0].clientX - lightboxState.x;
+                    lightboxState.startY = e.touches[0].clientY - lightboxState.y;
                 }
-                setVH();
-                window.addEventListener('resize', setVH);
-                window.addEventListener('orientationchange', () => setTimeout(setVH, 100));
-            })();
-        </script>
+            }, { passive: true });
+
+            container.addEventListener('touchmove', (e) => {
+                if (!lightboxState.isDragging || e.touches.length !== 1) return;
+                lightboxState.x = e.touches[0].clientX - lightboxState.startX;
+                lightboxState.y = e.touches[0].clientY - lightboxState.startY;
+                updateTransform();
+            }, { passive: true });
+
+            container.addEventListener('touchend', () => {
+                lightboxState.isDragging = false;
+            });
+        }
+
+        // Scroll wheel zoom at cursor position
+        document.getElementById('image-lightbox')?.addEventListener('wheel', (e) => {
+            if (document.getElementById('image-lightbox').classList.contains('hidden')) return;
+            e.preventDefault();
+            const delta = e.deltaY > 0 ? -0.2 : 0.2;
+            const rect = document.getElementById('lightbox-container').getBoundingClientRect();
+            zoomTo(lightboxState.zoom + delta, e.clientX - rect.left, e.clientY - rect.top);
+        }, { passive: false });
+
+        // Keyboard shortcuts
+        document.addEventListener('keydown', (e) => {
+            if (document.getElementById('image-lightbox')?.classList.contains('hidden')) return;
+            if (e.key === 'Escape') closeLightbox();
+            if (e.key === '+' || e.key === '=') zoomTo(lightboxState.zoom + 0.5);
+            if (e.key === '-') zoomTo(lightboxState.zoom - 0.5);
+            if (e.key === '0') { lightboxState.zoom = 1; centerImage(); updateTransform(); }
+        });
+
+        // Double-click to toggle zoom
+        document.getElementById('lightbox-container')?.addEventListener('dblclick', (e) => {
+            const rect = e.currentTarget.getBoundingClientRect();
+            if (lightboxState.zoom > 1) {
+                lightboxState.zoom = 1;
+                centerImage();
+            } else {
+                zoomTo(2.5, e.clientX - rect.left, e.clientY - rect.top);
+            }
+            updateTransform();
+        });
+    </script>
+
+    <!-- Main Logic -->
+    <script src="https://www.youtube.com/iframe_api"></script>
+    <script src="script.js"></script>
+    <script type="module">
+        import {
+            initGatekeeper,
+            getAllExams,
+            getSubjects,
+            logPracticeAttempt,
+            savePracticeResult,
+            getPracticeHistory,
+            getExamFeedbacks,
+            addFeedback,
+            addReply,
+            deleteFeedback,
+            markFeedbackFixed,
+            getCurrentUserInfo,
+            checkIsAdmin
+        } from "../../gatekeeper.js";
+
+        // Make Firebase functions available globally for the app
+        window.firebaseExams = {
+            getAllExams,
+            getSubjects,
+            logPracticeAttempt,
+            savePracticeResult,
+            getPracticeHistory
+        };
+
+        // Make Feedback functions available globally
+        window.firebaseFeedback = {
+            getExamFeedbacks,
+            addFeedback,
+            addReply,
+            deleteFeedback,
+            markFeedbackFixed,
+            getCurrentUserInfo,
+            checkIsAdmin
+        };
+
+        // Initialize Gatekeeper (presence tracking is started automatically inside)
+        initGatekeeper('protected');
+
+        // Wait for Firebase auth to be ready, then initialize app
+        // This prevents the "slow first load" issue
+        const waitForAuth = () => {
+            return new Promise((resolve) => {
+                // Check if firebaseExams is ready
+                if (window.firebaseExams && typeof window.firebaseExams.getAllExams === 'function') {
+                    resolve();
+                } else {
+                    // Wait a bit and resolve anyway (fallback to local files)
+                    setTimeout(resolve, 100);
+                }
+            });
+        };
+
+        // Initialize Music player immediately (no Firebase dependency)
+        if (window.musicPlayer) window.musicPlayer.init();
+
+        // Wait for auth then initialize app
+        waitForAuth().then(() => {
+            if (window.app) window.app.init();
+        });
+
+        // Mobile viewport height fix for iOS Safari
+        (function () {
+            function setVH() {
+                const vh = window.innerHeight * 0.01;
+                document.documentElement.style.setProperty('--vh', `${vh}px`);
+            }
+            setVH();
+            window.addEventListener('resize', setVH);
+            window.addEventListener('orientationchange', () => setTimeout(setVH, 100));
+        })();
+    </script>
 </body>
 
 </html>
