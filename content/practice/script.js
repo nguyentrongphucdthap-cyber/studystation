@@ -199,7 +199,9 @@ const musicPlayer = {
     pendingActions: [],
     isPanelVisible: false,
     isPlaying: false,
+    isPlaying: false,
     miniForced: false,
+    isMinimized: false,
 
     init() {
         this.refs = {
@@ -238,30 +240,63 @@ const musicPlayer = {
         this.bindEvents();
         this.renderTrackList();
         this.updateCurrentTrackInfo();
+        this.initDraggable();
     },
 
     bindEvents() {
-        this.refs.toggleBtn?.addEventListener('click', () => this.togglePanel());
-        this.refs.hideBtn?.addEventListener('click', () => this.hidePanel());
+        this.refs.toggleBtn?.addEventListener('click', () => {
+            if (this.isPanelVisible) {
+                // If minimized, restore. If full, hide? No, toggle usually means show/hide.
+                // Let's make toggle button just show the panel (expanded)
+                this.toggleMiniMode(false);
+                this.togglePanel();
+            } else {
+                this.togglePanel();
+            }
+        });
+
+        // "Thu gọn" button -> Switch to Mini Mode
+        this.refs.hideBtn?.addEventListener('click', () => this.toggleMiniMode(true));
+
+        // "Tắt" button -> Stop and Hide
         this.refs.stopBtn?.addEventListener('click', () => {
             this.stopPlayback();
             if (this.refs.panel) this.refs.panel.classList.add('hidden');
             this.isPanelVisible = false;
             this.refs.overlay?.classList.add('hidden');
         });
+
+        // Mini Mode Controls
+        this.refs.miniOpen?.addEventListener('click', (e) => {
+            e.stopPropagation();
+            this.toggleMiniMode(false);
+        });
+
+        this.refs.miniClose?.addEventListener('click', (e) => {
+            e.stopPropagation();
+            this.stopPlayback();
+            this.refs.panel.classList.add('hidden');
+            this.isPanelVisible = false;
+        });
+
+        this.refs.miniPlay?.addEventListener('click', (e) => {
+            e.stopPropagation();
+            this.togglePlayPause();
+        });
+
         this.refs.prevBtn?.addEventListener('click', () => this.previousTrack());
         this.refs.nextBtn?.addEventListener('click', () => this.nextTrack());
         this.refs.playBtn?.addEventListener('click', () => this.togglePlayPause());
-        this.refs.volumeInput?.addEventListener('input', (e) => this.setVolume(parseInt(e.target.value, 10)));
-        this.refs.addForm?.addEventListener('submit', (e) => {
-            e.preventDefault();
-            const value = this.refs.addInput.value.trim();
-            if (!value) {
-                this.displayFeedback('Hãy dán link YouTube trước khi thêm.', 'error');
-                return;
-            }
-            this.handleAddTrack(value);
-        });
+
+        this.refs.volumeInput?.addEventListener('input', (e) => this.setVolume(e.target.value));
+
+        if (this.refs.addForm) {
+            this.refs.addForm.addEventListener('submit', (e) => {
+                e.preventDefault();
+                this.handleAddTrack(this.refs.addInput.value);
+            });
+        }
+
         this.refs.resetBtn?.addEventListener('click', (e) => {
             e.preventDefault();
             this.customTracks = [];
@@ -269,13 +304,13 @@ const musicPlayer = {
             this.rebuildTrackList();
             this.displayFeedback('Đã khôi phục danh sách mặc định.', 'success');
         });
-        this.refs.miniPlay?.addEventListener('click', () => this.togglePlayPause());
-        this.refs.miniOpen?.addEventListener('click', () => this.togglePanel(true));
-        this.refs.miniClose?.addEventListener('click', () => {
-            this.stopPlayback();
-            this.hideMiniPlayer();
+
+        this.refs.overlay?.addEventListener('click', () => {
+            // Clicking overlay only closes full panel if not draggable mode?
+            // Actually, with draggable mode we might not want overlay at all.
+            // For now, let's keep it simple: overlay click hides panel (full stop).
+            this.togglePanel();
         });
-        this.refs.overlay?.addEventListener('click', () => this.hidePanel());
     },
 
     enrichTrack(track) {
@@ -302,17 +337,17 @@ const musicPlayer = {
     },
 
     updateMiniInfo() {
-        if (!this.refs.miniTitle) return;
         const track = this.tracks[this.currentIndex];
-        this.refs.miniTitle.textContent = track ? track.title : 'Chưa chọn bài hát';
-        this.updateMiniPlayButton();
+        if (this.refs.miniTitle) {
+            this.refs.miniTitle.textContent = track ? track.title : 'Chưa chọn bài hát';
+        }
     },
 
     updateMiniPlayButton() {
         if (!this.refs.miniPlay) return;
         this.refs.miniPlay.innerHTML = this.isPlaying
             ? `<svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="currentColor" viewBox="0 0 24 24"><path d="M6 4h4v16H6zm8 0h4v16h-4z"/></svg>`
-            : `<svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="currentColor" viewBox="0 0 24 24"><path d="M5 3l14 9-14 9V3z"/></svg>`;
+            : `<svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 ml-0.5" fill="currentColor" viewBox="0 0 24 24"><path d="M5 3l14 9-14 9V3z"/></svg>`;
     },
 
     togglePanel(force) {
@@ -603,6 +638,125 @@ const musicPlayer = {
                 }
             }
         });
+    },
+
+    toggleMiniMode(minimize) {
+        this.isMinimized = minimize;
+        const full = document.getElementById('music-full-view');
+        const mini = this.refs.mini;
+
+        if (!full || !mini) return;
+
+        if (minimize) {
+            full.classList.add('hidden');
+            mini.classList.remove('hidden');
+            this.refs.panel.classList.remove('w-full', 'md:w-auto', 'md:max-w-md', 'p-4', 'md:p-5');
+            this.refs.panel.classList.add('w-auto');
+            this.refs.overlay?.classList.add('hidden');
+        } else {
+            full.classList.remove('hidden');
+            mini.classList.add('hidden');
+            this.refs.panel.classList.add('w-full', 'md:w-auto', 'md:max-w-md', 'p-4', 'md:p-5');
+            this.refs.panel.classList.remove('w-auto');
+        }
+
+        // Ensure panel is visible
+        if (this.refs.panel.classList.contains('hidden')) {
+            this.refs.panel.classList.remove('hidden');
+            this.isPanelVisible = true;
+        }
+    },
+
+    updateMiniInfo() {
+        const track = this.tracks[this.currentIndex];
+        if (this.refs.miniTitle) {
+            this.refs.miniTitle.textContent = track ? track.title : 'Chưa chọn bài hát';
+        }
+    },
+
+    updateMiniPlayButton() {
+        if (!this.refs.miniPlay) return;
+        this.refs.miniPlay.innerHTML = this.isPlaying
+            ? `<svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="currentColor" viewBox="0 0 24 24"><path d="M6 4h4v16H6zm8 0h4v16h-4z"/></svg>`
+            : `<svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 ml-0.5" fill="currentColor" viewBox="0 0 24 24"><path d="M5 3l14 9-14 9V3z"/></svg>`;
+    },
+
+    initDraggable() {
+        const panel = this.refs.panel;
+        if (!panel) return;
+
+        let isDragging = false;
+        let startX, startY, initialLeft, initialTop;
+
+        const startDrag = (e) => {
+            // Ignore if clicking on interactive elements (buttons, inputs) BUT allow dragging on the mini player container itself
+            if (e.target.tagName === 'BUTTON' || e.target.tagName === 'INPUT' || e.target.closest('button') || e.target.closest('input')) return;
+
+            // Allow dragging if:
+            // 1. We are in Mini Mode (anywhere on the container)
+            // 2. We are in Full Mode AND clicking on the Drag Handle or Header area
+
+            const isMini = this.isMinimized;
+            const isHandle = e.target.classList.contains('music-drag-handle');
+
+            // In full view, must click handle or header (top area)
+            if (!isMini && !isHandle && !e.target.closest('.flex.items-start.justify-between')) return;
+
+            isDragging = true;
+            panel.classList.add('is-dragging');
+
+            const clientX = e.clientX || (e.touches ? e.touches[0].clientX : 0);
+            const clientY = e.clientY || (e.touches ? e.touches[0].clientY : 0);
+
+            startX = clientX;
+            startY = clientY;
+
+            const rect = panel.getBoundingClientRect();
+            initialLeft = rect.left;
+            initialTop = rect.top;
+
+            // Override fixed positioning and disable bottom/right to allow free movement
+            panel.classList.add('has-moved');
+            panel.style.margin = '0'; // Clear margins
+            panel.style.transform = 'none'; // Clear transforms
+
+            // Set initial inline styles to lock current position
+            panel.style.left = `${initialLeft}px`;
+            panel.style.top = `${initialTop}px`;
+
+            // Important: Unset bottom/right so top/left takes precedence
+            panel.style.bottom = 'auto';
+            panel.style.right = 'auto';
+        };
+
+        const onDrag = (e) => {
+            if (!isDragging) return;
+            if (e.cancelable) e.preventDefault();
+
+            const clientX = e.clientX || (e.touches ? e.touches[0].clientX : 0);
+            const clientY = e.clientY || (e.touches ? e.touches[0].clientY : 0);
+
+            const dx = clientX - startX;
+            const dy = clientY - startY;
+
+            panel.style.left = `${initialLeft + dx}px`;
+            panel.style.top = `${initialTop + dy}px`;
+        };
+
+        const stopDrag = () => {
+            if (!isDragging) return;
+            isDragging = false;
+            panel.classList.remove('is-dragging');
+        };
+
+        panel.addEventListener('mousedown', startDrag);
+        panel.addEventListener('touchstart', startDrag, { passive: false });
+
+        document.addEventListener('mousemove', onDrag);
+        document.addEventListener('touchmove', onDrag, { passive: false });
+
+        document.addEventListener('mouseup', stopDrag);
+        document.addEventListener('touchend', stopDrag);
     }
 };
 
