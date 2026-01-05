@@ -1300,3 +1300,34 @@ html.dark .exam-mode-btn.mode-stepbystep {
         padding: 12px 16px;
     }
 }
+/* Music Player Draggable Styles */
+#music-panel.draggable {
+    transition: width 0.3s, height 0.3s, opacity 0.3s, border-radius 0.3s, transform 0s !important; /* No transition for transform to prevent lag */
+}
+
+#music-panel.is-dragging {
+    opacity: 0.9;
+    cursor: grabbing;
+    transition: none !important;
+}
+
+/* Allow moving anywhere override */
+#music-panel.has-moved {
+    transform: none !important;
+    bottom: auto !important;
+    right: auto !important;
+}
+
+/* Mini Player specific */
+#music-mini-player {
+    cursor: grab;
+}
+
+#music-mini-player:active {
+    cursor: grabbing;
+}
+
+.music-drag-handle:active {
+    cursor: grabbing;
+}
+
