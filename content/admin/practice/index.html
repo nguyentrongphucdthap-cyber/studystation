@@ -127,6 +127,30 @@
         .admin-section {
             display: block;
         }
+
+        /* Tag chip styles */
+        .tag-chip {
+            border-color: #e2e8f0;
+            background: #ffffff;
+            color: #64748b;
+            cursor: pointer;
+        }
+
+        .tag-chip:hover {
+            border-color: #3b82f6;
+            color: #3b82f6;
+        }
+
+        .tag-chip.selected {
+            border-color: #3b82f6;
+            background: #3b82f6;
+            color: #ffffff;
+        }
+
+        .tag-chip.selected:hover {
+            background: #2563eb;
+            border-color: #2563eb;
+        }
     </style>
 </head>
 
@@ -380,6 +404,81 @@
                                             class="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none"
                                             placeholder="VD: Nguyễn Văn A">
                                         <p class="text-xs text-gray-400 mt-1">Tên người tạo/đóng góp đề thi</p>
+                                    </div>
+
+                                    <!-- Tags Section -->
+                                    <div>
+                                        <label class="block text-sm font-semibold text-gray-700 mb-2">🏷️ Thẻ bài thi
+                                            <span class="text-gray-400 text-xs font-normal">(Tùy chọn - chọn nhiều
+                                                thẻ)</span></label>
+
+                                        <!-- Preset Tags -->
+                                        <div id="preset-tags" class="flex flex-wrap gap-2 mb-3">
+                                            <button type="button"
+                                                class="tag-chip px-3 py-1.5 text-xs font-medium rounded-full border-2 transition-all hover:scale-105"
+                                                data-tag="Trường">
+                                                🏫 Trường
+                                            </button>
+                                            <button type="button"
+                                                class="tag-chip px-3 py-1.5 text-xs font-medium rounded-full border-2 transition-all hover:scale-105"
+                                                data-tag="Hot">
+                                                🔥 Hot
+                                            </button>
+                                            <button type="button"
+                                                class="tag-chip px-3 py-1.5 text-xs font-medium rounded-full border-2 transition-all hover:scale-105"
+                                                data-tag="Đúng Sai">
+                                                ✓✗ Đúng Sai
+                                            </button>
+                                            <button type="button"
+                                                class="tag-chip px-3 py-1.5 text-xs font-medium rounded-full border-2 transition-all hover:scale-105"
+                                                data-tag="Trả lời ngắn">
+                                                ✏️ Trả lời ngắn
+                                            </button>
+                                            <button type="button"
+                                                class="tag-chip px-3 py-1.5 text-xs font-medium rounded-full border-2 transition-all hover:scale-105"
+                                                data-tag="Tổng hợp">
+                                                📚 Tổng hợp
+                                            </button>
+                                            <button type="button"
+                                                class="tag-chip px-3 py-1.5 text-xs font-medium rounded-full border-2 transition-all hover:scale-105"
+                                                data-tag="Mạng Xã Hội">
+                                                📱 Mạng Xã Hội
+                                            </button>
+                                            <button type="button"
+                                                class="tag-chip px-3 py-1.5 text-xs font-medium rounded-full border-2 transition-all hover:scale-105"
+                                                data-tag="Mapstudy">
+                                                🗺️ Mapstudy
+                                            </button>
+                                            <button type="button"
+                                                class="tag-chip px-3 py-1.5 text-xs font-medium rounded-full border-2 transition-all hover:scale-105"
+                                                data-tag="Tenschool">
+                                                🎓 Tenschool
+                                            </button>
+                                            <button type="button"
+                                                class="tag-chip px-3 py-1.5 text-xs font-medium rounded-full border-2 transition-all hover:scale-105"
+                                                data-tag="ĐGNL">
+                                                📝 ĐGNL
+                                            </button>
+                                        </div>
+
+                                        <!-- Selected Tags Display -->
+                                        <div id="selected-tags-container" class="hidden mb-3">
+                                            <p class="text-xs text-gray-500 mb-1.5">Đã chọn:</p>
+                                            <div id="selected-tags" class="flex flex-wrap gap-1.5"></div>
+                                        </div>
+
+                                        <!-- Custom Tag Input -->
+                                        <div class="flex gap-2">
+                                            <input type="text" id="custom-tag-input"
+                                                class="flex-1 px-3 py-2 border border-gray-200 rounded-lg text-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none"
+                                                placeholder="Thêm thẻ tùy chỉnh...">
+                                            <button type="button" id="btn-add-custom-tag"
+                                                class="px-3 py-2 bg-blue-100 text-blue-600 text-sm font-semibold rounded-lg hover:bg-blue-200 transition-colors">
+                                                + Thêm
+                                            </button>
+                                        </div>
+                                        <p class="text-xs text-gray-400 mt-1">Click vào các thẻ để chọn/bỏ chọn, hoặc
+                                            thêm thẻ riêng</p>
                                     </div>
 
                                     <!-- Raw Text Import Section -->
