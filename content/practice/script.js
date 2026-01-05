@@ -1238,22 +1238,16 @@ const app = {
     // Knowledge Map Data for History
     knowledgeMapData: {
         mindmap: [
-            { title: 'Lịch sử Việt Nam từ 1858-1945', description: 'Sơ đồ tóm tắt giai đoạn chống Pháp', url: '#', type: 'image' },
-            { title: 'Lịch sử thế giới hiện đại', description: 'Timeline các sự kiện quan trọng', url: '#', type: 'image' },
-            { title: 'Cách mạng tư sản', description: 'So sánh các cuộc cách mạng', url: '#', type: 'pdf' },
+            { title: 'Bài 6', description: 'Sơ đồ tóm tắt bài 6', url: 'https://drive.google.com/file/d/1I3A-D0X-8IHb5-Il6cLzm6CVqCwrSRre/view?usp=sharing', type: 'image' },
         ],
         video: [
-            { title: 'Chiến dịch Điện Biên Phủ', description: 'Video tóm tắt 10 phút', url: '#', duration: '10:25' },
-            { title: 'Chiến tranh thế giới thứ 2', description: 'Tổng quan và nguyên nhân', url: '#', duration: '15:30' },
-            { title: 'Phong trào độc lập dân tộc', description: 'Châu Á và châu Phi sau 1945', url: '#', duration: '12:00' },
+            { title: 'Bài 6', description: 'Video tóm tắt bài 6', url: 'https://drive.google.com/file/d/1px7-vb0t34wSZnTOc-XoxgyoB4-LdPT3/view?usp=sharing', duration: '5:23' },
         ],
         presentation: [
-            { title: 'Ôn tập Lịch sử Việt Nam', description: 'Slide PowerPoint đầy đủ', url: '#', slides: 45 },
-            { title: 'Lịch sử thế giới cận đại', description: 'Bản thuyết trình chi tiết', url: '#', slides: 60 },
+            { title: 'Bài 6', description: 'Slide PowerPoint đầy đủ', url: 'https://drive.google.com/file/d/15IyF6LZHtcFyaAbP_klOCD1J_dEOgNGI/view?usp=sharing', slides: 14 },
         ],
         podcast: [
-            { title: 'Lịch sử Việt Nam qua các thời kỳ', description: 'Podcast dễ nghe khi di chuyển', url: '#', duration: '25:00' },
-            { title: 'Bí mật lịch sử thế giới', description: 'Những câu chuyện thú vị', url: '#', duration: '18:45' },
+            { title: 'Bài 6', description: 'Podcast dễ nghe', url: 'https://drive.google.com/file/d/1yEbp5Kncbmb9z09zk-xRg6nRznbXhxwa/view?usp=drive_link', duration: '11:22' },
         ]
     },
 
