@@ -1224,7 +1224,7 @@ const app = {
         // Show Knowledge Map card for History subject only
         const knowledgeMapCard = this.container.querySelector('#knowledge-map-card');
         if (knowledgeMapCard) {
-            if (subId === 'lichsu') {
+            if (subId === 'history') {
                 knowledgeMapCard.classList.remove('hidden');
             } else {
                 knowledgeMapCard.classList.add('hidden');
