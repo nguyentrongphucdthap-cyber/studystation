@@ -580,6 +580,18 @@ export async function getExamsBySubject(subjectId) {
  * Ví dụ: vatli-001, toan-012, sinhhoc-023
  * XXX là số thứ tự 3 chữ số, tự động tăng dựa trên số lượng exam hiện có
  * Hoặc sử dụng customId nếu được cung cấp
+ * 
+ * @param {Object} examData - Dữ liệu bài thi
+ * @param {string} examData.subjectId - ID môn học
+ * @param {string} examData.title - Tiêu đề bài thi
+ * @param {number} examData.time - Thời gian làm bài (phút)
+ * @param {string} [examData.author] - Người tạo đề
+ * @param {string[]} [examData.tags] - Mảng các tags của bài thi
+ * @param {Array} examData.part1 - Câu hỏi trắc nghiệm
+ * @param {Array} examData.part2 - Câu hỏi đúng/sai
+ * @param {Array} examData.part3 - Câu hỏi trả lời ngắn
+ * @param {string|null} customId - ID tùy chỉnh (tuỳ chọn)
+ * @returns {Promise<string>} - ID của exam đã tạo
  */
 export async function createExam(examData, customId = null) {
     let examId;
@@ -642,6 +654,17 @@ function generateExamCode(title) {
 
 /**
  * Cập nhật exam
+ * 
+ * @param {string} examId - ID của exam cần cập nhật
+ * @param {Object} examData - Dữ liệu cập nhật (có thể partial)
+ * @param {string} [examData.title] - Tiêu đề bài thi
+ * @param {number} [examData.time] - Thời gian làm bài (phút)
+ * @param {string} [examData.author] - Người tạo đề
+ * @param {string[]} [examData.tags] - Mảng các tags của bài thi
+ * @param {Array} [examData.part1] - Câu hỏi trắc nghiệm
+ * @param {Array} [examData.part2] - Câu hỏi đúng/sai
+ * @param {Array} [examData.part3] - Câu hỏi trả lời ngắn
+ * @returns {Promise<void>}
  */
 export async function updateExam(examId, examData) {
     const examRef = doc(db, 'exams', examId);
