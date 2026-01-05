@@ -245,13 +245,13 @@ const musicPlayer = {
 
     bindEvents() {
         this.refs.toggleBtn?.addEventListener('click', () => {
-            if (this.isPanelVisible) {
-                // If minimized, restore. If full, hide? No, toggle usually means show/hide.
-                // Let's make toggle button just show the panel (expanded)
+            if (!this.isPanelVisible) {
+                // Mở lại từ header -> Luôn hiện Full View
                 this.toggleMiniMode(false);
-                this.togglePanel();
+                this.togglePanel(true);
             } else {
-                this.togglePanel();
+                // Đang mở -> Đóng
+                this.togglePanel(false);
             }
         });
 
@@ -274,9 +274,8 @@ const musicPlayer = {
 
         this.refs.miniClose?.addEventListener('click', (e) => {
             e.stopPropagation();
-            this.stopPlayback();
-            this.refs.panel.classList.add('hidden');
-            this.isPanelVisible = false;
+            // Nút "Ẩn": Chỉ ẩn giao diện, nhạc vẫn chạy
+            this.togglePanel(false);
         });
 
         this.refs.miniPlay?.addEventListener('click', (e) => {
