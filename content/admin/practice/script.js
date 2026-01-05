@@ -77,7 +77,8 @@ const state = {
     exams: [],
     subjects: [],
     currentExamId: null, // null = creating new, string = editing existing
-    isLoading: false
+    isLoading: false,
+    selectedTags: [] // Tags selected for current exam
 };
 
 // ============================================================
@@ -142,8 +143,28 @@ const refs = {
     btnConfirmTextImport: document.getElementById('btn-confirm-text-import'),
 
     // Toast
-    toastContainer: document.getElementById('toast-container')
+    toastContainer: document.getElementById('toast-container'),
+
+    // Tags
+    presetTags: document.getElementById('preset-tags'),
+    selectedTagsContainer: document.getElementById('selected-tags-container'),
+    selectedTagsDisplay: document.getElementById('selected-tags'),
+    customTagInput: document.getElementById('custom-tag-input'),
+    btnAddCustomTag: document.getElementById('btn-add-custom-tag')
 };
+
+// Preset tag definitions with icons
+const PRESET_TAGS = [
+    { name: 'Trường', icon: '🏫' },
+    { name: 'Hot', icon: '🔥' },
+    { name: 'Đúng Sai', icon: '✓✗' },
+    { name: 'Trả lời ngắn', icon: '✏️' },
+    { name: 'Tổng hợp', icon: '📚' },
+    { name: 'Mạng Xã Hội', icon: '📱' },
+    { name: 'Mapstudy', icon: '🗺️' },
+    { name: 'Tenschool', icon: '🎓' },
+    { name: 'ĐGNL', icon: '📝' }
+];
 
 // Text import state
 let textImportData = null;
@@ -270,6 +291,156 @@ function bindEvents() {
     if (refs.btnParseText) refs.btnParseText.addEventListener('click', parseTextImport);
     if (refs.btnCancelTextImport) refs.btnCancelTextImport.addEventListener('click', hideTextImportModal);
     if (refs.btnConfirmTextImport) refs.btnConfirmTextImport.addEventListener('click', confirmTextImport);
+
+    // Tags Events
+    bindTagEvents();
+}
+
+// ============================================================
+// TAGS FUNCTIONS
+// ============================================================
+
+/**
+ * Bind event listeners for tag chips
+ */
+function bindTagEvents() {
+    // Preset tag chips click events
+    if (refs.presetTags) {
+        refs.presetTags.querySelectorAll('.tag-chip').forEach(chip => {
+            chip.addEventListener('click', () => {
+                const tagName = chip.dataset.tag;
+                toggleTag(tagName);
+            });
+        });
+    }
+
+    // Add custom tag button
+    if (refs.btnAddCustomTag) {
+        refs.btnAddCustomTag.addEventListener('click', addCustomTag);
+    }
+
+    // Enter key on custom tag input
+    if (refs.customTagInput) {
+        refs.customTagInput.addEventListener('keypress', (e) => {
+            if (e.key === 'Enter') {
+                e.preventDefault();
+                addCustomTag();
+            }
+        });
+    }
+}
+
+/**
+ * Toggle tag selection
+ */
+function toggleTag(tagName) {
+    const idx = state.selectedTags.indexOf(tagName);
+    if (idx === -1) {
+        state.selectedTags.push(tagName);
+    } else {
+        state.selectedTags.splice(idx, 1);
+    }
+    updateTagChipsUI();
+    renderSelectedTags();
+}
+
+/**
+ * Add custom tag from input
+ */
+function addCustomTag() {
+    if (!refs.customTagInput) return;
+    const tagName = refs.customTagInput.value.trim();
+
+    if (!tagName) {
+        showToast('Vui lòng nhập tên thẻ', 'error');
+        return;
+    }
+
+    // Check if tag already exists
+    if (state.selectedTags.includes(tagName)) {
+        showToast('Thẻ này đã được chọn', 'error');
+        refs.customTagInput.value = '';
+        return;
+    }
+
+    // Add new tag
+    state.selectedTags.push(tagName);
+    refs.customTagInput.value = '';
+
+    updateTagChipsUI();
+    renderSelectedTags();
+    showToast(`Đã thêm thẻ: ${tagName}`);
+}
+
+/**
+ * Update tag chip buttons UI (selected state)
+ */
+function updateTagChipsUI() {
+    if (!refs.presetTags) return;
+
+    refs.presetTags.querySelectorAll('.tag-chip').forEach(chip => {
+        const tagName = chip.dataset.tag;
+        if (state.selectedTags.includes(tagName)) {
+            chip.classList.add('selected');
+        } else {
+            chip.classList.remove('selected');
+        }
+    });
+}
+
+/**
+ * Render selected tags display with remove buttons
+ */
+function renderSelectedTags() {
+    if (!refs.selectedTagsDisplay || !refs.selectedTagsContainer) return;
+
+    if (state.selectedTags.length === 0) {
+        refs.selectedTagsContainer.classList.add('hidden');
+        refs.selectedTagsDisplay.innerHTML = '';
+        return;
+    }
+
+    refs.selectedTagsContainer.classList.remove('hidden');
+    refs.selectedTagsDisplay.innerHTML = state.selectedTags.map(tag => {
+        const preset = PRESET_TAGS.find(p => p.name === tag);
+        const icon = preset ? preset.icon : '🏷️';
+        return `
+            <span class="inline-flex items-center gap-1 px-2 py-1 bg-blue-100 text-blue-700 text-xs font-medium rounded-full">
+                ${icon} ${tag}
+                <button type="button" class="tag-remove ml-0.5 hover:text-red-500 transition-colors" data-tag="${tag}">
+                    <svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/>
+                    </svg>
+                </button>
+            </span>
+        `;
+    }).join('');
+
+    // Bind remove button events
+    refs.selectedTagsDisplay.querySelectorAll('.tag-remove').forEach(btn => {
+        btn.addEventListener('click', () => {
+            const tagName = btn.dataset.tag;
+            toggleTag(tagName);
+        });
+    });
+}
+
+/**
+ * Clear all selected tags
+ */
+function clearTags() {
+    state.selectedTags = [];
+    updateTagChipsUI();
+    renderSelectedTags();
+}
+
+/**
+ * Set tags from array (used when loading exam)
+ */
+function setTags(tags) {
+    state.selectedTags = Array.isArray(tags) ? [...tags] : [];
+    updateTagChipsUI();
+    renderSelectedTags();
 }
 
 // ============================================================
@@ -703,6 +874,9 @@ function showEditor(examId) {
             renderQuestionsPart1(normalizedPart1);
             renderQuestionsPart2(exam.part2 || []);
             renderQuestionsPart3(exam.part3 || []);
+
+            // Load tags
+            setTags(exam.tags || []);
         }
     } else {
         // Creating new
@@ -724,6 +898,9 @@ function showEditor(examId) {
         renderQuestionsPart1([]);
         renderQuestionsPart2([]);
         renderQuestionsPart3([]);
+
+        // Clear tags
+        clearTags();
     }
 
     renderExamList();
@@ -1585,7 +1762,10 @@ function collectFormData() {
         part3.push(q);
     });
 
-    return { subjectId, time, title, customId, author, part1, part2, part3 };
+    // Collect tags
+    const tags = [...state.selectedTags];
+
+    return { subjectId, time, title, customId, author, tags, part1, part2, part3 };
 }
 
 async function saveExam() {
@@ -1897,10 +2077,19 @@ function convertMathChemSymbols(text) {
         '⊂': '$\\subset$', '∪': '$\\cup$', '∩': '$\\cap$',
         '∑': '$\\sum$', '∏': '$\\prod$', '∫': '$\\int$',
         'π': '$\\pi$', 'α': '$\\alpha$', 'β': '$\\beta$', 'γ': '$\\gamma$',
-        'δ': '$\\delta$', 'θ': '$\\theta$', 'λ': '$\\lambda$', 'ω': '$\\omega$'
+        'δ': '$\\delta$', 'θ': '$\\theta$', 'λ': '$\\lambda$', 'ω': '$\\omega$',
+        '°C': '$^\\circ\\text{C}$', '°F': '$^\\circ\\text{F}$', '°': '$^\\circ$'
     };
     Object.entries(symbolMap).forEach(([sym, latex]) => {
         result = result.split(sym).join(latex);
+    });
+
+    // Handle ^\circ C format (without math delimiters) - wrap in math mode
+    result = result.replace(/(\d+(?:[,\.]\d+)?)\s*\^\s*\\circ\s*([A-Z])?/g, (match, num, unit) => {
+        if (unit) {
+            return `$${num}^\\circ\\text{${unit}}$`;
+        }
+        return `$${num}^\\circ$`;
     });
 
     return result;
