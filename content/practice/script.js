@@ -1221,8 +1221,137 @@ const app = {
         // Setup filter UI
         this.setupExamFilters(Array.from(allTags));
 
+        // Show Knowledge Map card for History subject only
+        const knowledgeMapCard = this.container.querySelector('#knowledge-map-card');
+        if (knowledgeMapCard) {
+            if (subId === 'lichsu') {
+                knowledgeMapCard.classList.remove('hidden');
+            } else {
+                knowledgeMapCard.classList.add('hidden');
+            }
+        }
+
         // Render exam list
         this.renderExamList(sub.exams);
+    },
+
+    // Knowledge Map Data for History
+    knowledgeMapData: {
+        mindmap: [
+            { title: 'Lịch sử Việt Nam từ 1858-1945', description: 'Sơ đồ tóm tắt giai đoạn chống Pháp', url: '#', type: 'image' },
+            { title: 'Lịch sử thế giới hiện đại', description: 'Timeline các sự kiện quan trọng', url: '#', type: 'image' },
+            { title: 'Cách mạng tư sản', description: 'So sánh các cuộc cách mạng', url: '#', type: 'pdf' },
+        ],
+        video: [
+            { title: 'Chiến dịch Điện Biên Phủ', description: 'Video tóm tắt 10 phút', url: '#', duration: '10:25' },
+            { title: 'Chiến tranh thế giới thứ 2', description: 'Tổng quan và nguyên nhân', url: '#', duration: '15:30' },
+            { title: 'Phong trào độc lập dân tộc', description: 'Châu Á và châu Phi sau 1945', url: '#', duration: '12:00' },
+        ],
+        presentation: [
+            { title: 'Ôn tập Lịch sử Việt Nam', description: 'Slide PowerPoint đầy đủ', url: '#', slides: 45 },
+            { title: 'Lịch sử thế giới cận đại', description: 'Bản thuyết trình chi tiết', url: '#', slides: 60 },
+        ],
+        podcast: [
+            { title: 'Lịch sử Việt Nam qua các thời kỳ', description: 'Podcast dễ nghe khi di chuyển', url: '#', duration: '25:00' },
+            { title: 'Bí mật lịch sử thế giới', description: 'Những câu chuyện thú vị', url: '#', duration: '18:45' },
+        ]
+    },
+
+    // Open Knowledge Map Modal
+    openKnowledgeMap() {
+        const modal = this.container.querySelector('#knowledge-map-modal');
+        if (modal) {
+            modal.classList.remove('hidden');
+            this.currentKnowledgeTab = 'mindmap';
+            this.renderKnowledgeContent('mindmap');
+            this.updateKnowledgeTabs();
+        }
+    },
+
+    // Close Knowledge Map Modal
+    closeKnowledgeMap() {
+        const modal = this.container.querySelector('#knowledge-map-modal');
+        if (modal) {
+            modal.classList.add('hidden');
+        }
+    },
+
+    // Switch Knowledge Tab
+    switchKnowledgeTab(tab) {
+        this.currentKnowledgeTab = tab;
+        this.updateKnowledgeTabs();
+        this.renderKnowledgeContent(tab);
+    },
+
+    // Update tab active states
+    updateKnowledgeTabs() {
+        const tabs = this.container.querySelectorAll('.knowledge-tab');
+        tabs.forEach(t => {
+            if (t.dataset.tab === this.currentKnowledgeTab) {
+                t.classList.add('active');
+            } else {
+                t.classList.remove('active');
+            }
+        });
+    },
+
+    // Render Knowledge Content
+    renderKnowledgeContent(tab) {
+        const contentEl = this.container.querySelector('#knowledge-content');
+        if (!contentEl) return;
+
+        const items = this.knowledgeMapData[tab] || [];
+
+        if (items.length === 0) {
+            contentEl.innerHTML = `
+                <div class="text-center py-12 text-slate-400">
+                    <span class="text-4xl block mb-3">📭</span>
+                    <p>Chưa có nội dung nào trong mục này</p>
+                </div>
+            `;
+            return;
+        }
+
+        const getIcon = (tab, item) => {
+            switch (tab) {
+                case 'mindmap': return item.type === 'pdf' ? '📄' : '🖼️';
+                case 'video': return '▶️';
+                case 'presentation': return '📊';
+                case 'podcast': return '🎧';
+                default: return '📚';
+            }
+        };
+
+        const getMetadata = (tab, item) => {
+            switch (tab) {
+                case 'mindmap': return item.type === 'pdf' ? 'PDF' : 'Hình ảnh';
+                case 'video': return item.duration;
+                case 'presentation': return `${item.slides} slides`;
+                case 'podcast': return item.duration;
+                default: return '';
+            }
+        };
+
+        contentEl.innerHTML = items.map((item, idx) => `
+            <a href="${item.url}" target="_blank" 
+               class="block p-4 mb-3 bg-slate-50 dark:bg-slate-700/50 rounded-xl border border-slate-200 dark:border-slate-600 hover:border-orange-300 dark:hover:border-orange-500 hover:shadow-md transition-all group">
+                <div class="flex items-start gap-4">
+                    <div class="w-12 h-12 bg-gradient-to-br from-amber-400 to-orange-500 rounded-xl flex items-center justify-center text-xl shadow-sm">
+                        ${getIcon(tab, item)}
+                    </div>
+                    <div class="flex-1 min-w-0">
+                        <h4 class="font-bold text-slate-800 dark:text-white group-hover:text-orange-600 dark:group-hover:text-orange-400 transition-colors">${item.title}</h4>
+                        <p class="text-sm text-slate-500 dark:text-slate-400 mt-0.5">${item.description}</p>
+                        <span class="inline-block mt-2 text-xs font-medium px-2 py-0.5 bg-orange-100 dark:bg-orange-900/30 text-orange-600 dark:text-orange-300 rounded-full">
+                            ${getMetadata(tab, item)}
+                        </span>
+                    </div>
+                    <svg class="w-5 h-5 text-slate-300 dark:text-slate-600 group-hover:text-orange-400 transition-colors shrink-0 mt-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14"/>
+                    </svg>
+                </div>
+            </a>
+        `).join('');
     },
 
     // Setup filter event listeners
