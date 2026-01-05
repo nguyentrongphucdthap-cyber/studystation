@@ -1233,6 +1233,12 @@ const app = {
         const activeFilters = this.container.querySelector('#active-filters');
         const clearFiltersBtn = this.container.querySelector('#clear-filters-btn');
 
+        // Preset tags that are always available
+        const PRESET_TAGS = ['Trường', 'Hot', 'Đúng Sai', 'Trả lời ngắn', 'Tổng hợp', 'Mạng Xã Hội', 'Mapstudy', 'Tenschool', 'ĐGNL'];
+
+        // Combine preset tags with available tags from exams (unique)
+        const allTags = [...new Set([...PRESET_TAGS, ...availableTags])];
+
         // Search input event
         if (searchInput) {
             searchInput.addEventListener('input', (e) => {
@@ -1241,14 +1247,32 @@ const app = {
             });
         }
 
-        // Render tag filter chips if there are tags
-        if (availableTags.length > 0 && tagFilterSection && tagFilterChips) {
+        // Always show tag filter section with preset and available tags
+        if (tagFilterSection && tagFilterChips) {
             tagFilterSection.classList.remove('hidden');
-            tagFilterChips.innerHTML = availableTags.map(tag => `
-                <button type="button" class="tag-filter-chip px-3 py-1.5 text-xs font-medium rounded-full border-2 border-slate-200 dark:border-slate-600 bg-white dark:bg-slate-700 text-slate-600 dark:text-slate-300 hover:border-blue-400 hover:text-blue-600 transition-all" data-tag="${tag}">
-                    🏷️ ${tag}
-                </button>
-            `).join('');
+
+            // Get icon for tag
+            const getTagIcon = (tag) => {
+                const icons = {
+                    'Trường': '🏫', 'Hot': '🔥', 'Đúng Sai': '✓✗', 'Trả lời ngắn': '✏️',
+                    'Tổng hợp': '📚', 'Mạng Xã Hội': '📱', 'Mapstudy': '🗺️', 'Tenschool': '🎓', 'ĐGNL': '📝'
+                };
+                return icons[tag] || '🏷️';
+            };
+
+            // Check which tags are actually used in exams
+            const usedTags = new Set(availableTags);
+
+            tagFilterChips.innerHTML = allTags.map(tag => {
+                const isUsed = usedTags.has(tag);
+                const opacity = isUsed ? '' : 'opacity-50';
+                const title = isUsed ? `Lọc theo: ${tag}` : `${tag} (chưa có đề thi)`;
+                return `
+                    <button type="button" class="tag-filter-chip px-3 py-1.5 text-xs font-medium rounded-full border-2 border-slate-200 dark:border-slate-600 bg-white dark:bg-slate-700 text-slate-600 dark:text-slate-300 hover:border-blue-400 hover:text-blue-600 transition-all ${opacity}" data-tag="${tag}" title="${title}">
+                        ${getTagIcon(tag)} ${tag}
+                    </button>
+                `;
+            }).join('');
 
             // Bind tag chip click events
             tagFilterChips.querySelectorAll('.tag-filter-chip').forEach(chip => {
@@ -1392,19 +1416,24 @@ const app = {
             const attemptCount = exam.attemptCount || 0;
             const attemptInfo = `<span class="text-[10px] md:text-xs text-emerald-600 dark:text-emerald-400 flex items-center"><svg class="w-3 h-3 mr-1 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"/><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"/></svg>${attemptCount} lượt thi</span>`;
 
-            // Tags HTML
+            // Tags HTML with icons
             const tagsHtml = (exam.tags && exam.tags.length > 0)
-                ? `<div class="flex flex-wrap gap-1 mt-2">${exam.tags.map(tag => {
-                    // Determine tag color based on tag name
+                ? `<div class="flex flex-wrap gap-1.5 mt-2">${exam.tags.map(tag => {
+                    // Determine tag color and icon based on tag name
                     let tagColor = 'bg-slate-100 text-slate-600 dark:bg-slate-700 dark:text-slate-300';
-                    if (tag === 'Hot') tagColor = 'bg-red-100 text-red-600 dark:bg-red-900/50 dark:text-red-300';
-                    else if (tag === 'Trường') tagColor = 'bg-blue-100 text-blue-600 dark:bg-blue-900/50 dark:text-blue-300';
-                    else if (tag === 'ĐGNL') tagColor = 'bg-purple-100 text-purple-600 dark:bg-purple-900/50 dark:text-purple-300';
-                    else if (tag === 'Tổng hợp') tagColor = 'bg-amber-100 text-amber-700 dark:bg-amber-900/50 dark:text-amber-300';
-                    else if (tag === 'Mapstudy' || tag === 'Tenschool') tagColor = 'bg-emerald-100 text-emerald-600 dark:bg-emerald-900/50 dark:text-emerald-300';
-                    else if (tag === 'Mạng Xã Hội') tagColor = 'bg-pink-100 text-pink-600 dark:bg-pink-900/50 dark:text-pink-300';
+                    let icon = '🏷️';
 
-                    return `<span class="text-[10px] font-medium px-2 py-0.5 rounded-full ${tagColor}">${tag}</span>`;
+                    if (tag === 'Hot') { tagColor = 'bg-red-100 text-red-600 dark:bg-red-900/50 dark:text-red-300'; icon = '🔥'; }
+                    else if (tag === 'Trường') { tagColor = 'bg-blue-100 text-blue-600 dark:bg-blue-900/50 dark:text-blue-300'; icon = '🏫'; }
+                    else if (tag === 'ĐGNL') { tagColor = 'bg-purple-100 text-purple-600 dark:bg-purple-900/50 dark:text-purple-300'; icon = '📝'; }
+                    else if (tag === 'Tổng hợp') { tagColor = 'bg-amber-100 text-amber-700 dark:bg-amber-900/50 dark:text-amber-300'; icon = '📚'; }
+                    else if (tag === 'Mapstudy') { tagColor = 'bg-emerald-100 text-emerald-600 dark:bg-emerald-900/50 dark:text-emerald-300'; icon = '🗺️'; }
+                    else if (tag === 'Tenschool') { tagColor = 'bg-emerald-100 text-emerald-600 dark:bg-emerald-900/50 dark:text-emerald-300'; icon = '🎓'; }
+                    else if (tag === 'Mạng Xã Hội') { tagColor = 'bg-pink-100 text-pink-600 dark:bg-pink-900/50 dark:text-pink-300'; icon = '📱'; }
+                    else if (tag === 'Đúng Sai') { tagColor = 'bg-cyan-100 text-cyan-600 dark:bg-cyan-900/50 dark:text-cyan-300'; icon = '✓✗'; }
+                    else if (tag === 'Trả lời ngắn') { tagColor = 'bg-orange-100 text-orange-600 dark:bg-orange-900/50 dark:text-orange-300'; icon = '✏️'; }
+
+                    return `<span class="text-[10px] font-medium px-2 py-0.5 rounded-full ${tagColor}">${icon} ${tag}</span>`;
                 }).join('')}</div>`
                 : '';
 
