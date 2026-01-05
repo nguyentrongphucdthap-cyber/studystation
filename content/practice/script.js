@@ -1228,9 +1228,6 @@ const app = {
     // Setup filter event listeners
     setupExamFilters(availableTags) {
         const searchInput = this.container.querySelector('#exam-search-input');
-        const tagFilterSection = this.container.querySelector('#tag-filter-section');
-        const tagFilterChips = this.container.querySelector('#tag-filter-chips');
-        const activeFilters = this.container.querySelector('#active-filters');
         const clearFiltersBtn = this.container.querySelector('#clear-filters-btn');
 
         // Preset tags that are always available
@@ -1247,42 +1244,6 @@ const app = {
             });
         }
 
-        // Always show tag filter section with preset and available tags
-        if (tagFilterSection && tagFilterChips) {
-            tagFilterSection.classList.remove('hidden');
-
-            // Get icon for tag
-            const getTagIcon = (tag) => {
-                const icons = {
-                    'Trường': '🏫', 'Hot': '🔥', 'Đúng Sai': '✓✗', 'Trả lời ngắn': '✏️',
-                    'Tổng hợp': '📚', 'Mạng Xã Hội': '📱', 'Mapstudy': '🗺️', 'Tenschool': '🎓', 'ĐGNL': '📝'
-                };
-                return icons[tag] || '🏷️';
-            };
-
-            // Check which tags are actually used in exams
-            const usedTags = new Set(availableTags);
-
-            tagFilterChips.innerHTML = allTags.map(tag => {
-                const isUsed = usedTags.has(tag);
-                const opacity = isUsed ? '' : 'opacity-50';
-                const title = isUsed ? `Lọc theo: ${tag}` : `${tag} (chưa có đề thi)`;
-                return `
-                    <button type="button" class="tag-filter-chip px-3 py-1.5 text-xs font-medium rounded-full border-2 border-slate-200 dark:border-slate-600 bg-white dark:bg-slate-700 text-slate-600 dark:text-slate-300 hover:border-blue-400 hover:text-blue-600 transition-all ${opacity}" data-tag="${tag}" title="${title}">
-                        ${getTagIcon(tag)} ${tag}
-                    </button>
-                `;
-            }).join('');
-
-            // Bind tag chip click events
-            tagFilterChips.querySelectorAll('.tag-filter-chip').forEach(chip => {
-                chip.addEventListener('click', () => {
-                    const tag = chip.dataset.tag;
-                    this.toggleExamFilterTag(tag);
-                });
-            });
-        }
-
         // Clear filters button
         if (clearFiltersBtn) {
             clearFiltersBtn.addEventListener('click', () => {
@@ -1290,12 +1251,12 @@ const app = {
             });
         }
 
-        // Mobile tag filter setup
-        this.setupMobileTagFilter(allTags, availableTags);
+        // Tag filter modal setup (used for both mobile and PC)
+        this.setupTagFilterModal(allTags, availableTags);
     },
 
-    // Setup mobile tag filter modal
-    setupMobileTagFilter(allTags, usedTagsArray) {
+    // Setup tag filter modal (for both mobile and PC)
+    setupTagFilterModal(allTags, usedTagsArray) {
         const mobileBtn = this.container.querySelector('#mobile-tag-filter-btn');
         const mobileModal = this.container.querySelector('#mobile-tag-filter-modal');
         const mobileChips = this.container.querySelector('#mobile-tag-chips');
@@ -1427,20 +1388,8 @@ const app = {
         this.applyExamFilters();
     },
 
-    // Update tag filter chips UI
+    // Update filter UI (active filters display and badge)
     updateTagFilterChipsUI() {
-        const chips = this.container.querySelectorAll('.tag-filter-chip');
-        chips.forEach(chip => {
-            const tag = chip.dataset.tag;
-            if (this.examFilterTags.includes(tag)) {
-                chip.classList.add('border-blue-500', 'bg-blue-500', 'text-white', 'dark:bg-blue-600', 'dark:border-blue-500');
-                chip.classList.remove('border-slate-200', 'dark:border-slate-600', 'bg-white', 'dark:bg-slate-700', 'text-slate-600', 'dark:text-slate-300');
-            } else {
-                chip.classList.remove('border-blue-500', 'bg-blue-500', 'text-white', 'dark:bg-blue-600', 'dark:border-blue-500');
-                chip.classList.add('border-slate-200', 'dark:border-slate-600', 'bg-white', 'dark:bg-slate-700', 'text-slate-600', 'dark:text-slate-300');
-            }
-        });
-
         // Update active filters display
         const activeFilters = this.container.querySelector('#active-filters');
         const activeFilterTags = this.container.querySelector('#active-filter-tags');
@@ -1465,17 +1414,17 @@ const app = {
             activeFilters.classList.add('hidden');
         }
 
-        // Update mobile badge
-        const mobileBadge = this.container.querySelector('#mobile-filter-badge');
-        if (mobileBadge) {
+        // Update filter button badge
+        const filterBadge = this.container.querySelector('#mobile-filter-badge');
+        if (filterBadge) {
             const count = this.examFilterTags.length;
             if (count > 0) {
-                mobileBadge.textContent = count;
-                mobileBadge.classList.remove('hidden');
-                mobileBadge.classList.add('flex');
+                filterBadge.textContent = count;
+                filterBadge.classList.remove('hidden');
+                filterBadge.classList.add('flex');
             } else {
-                mobileBadge.classList.add('hidden');
-                mobileBadge.classList.remove('flex');
+                filterBadge.classList.add('hidden');
+                filterBadge.classList.remove('flex');
             }
         }
     },
