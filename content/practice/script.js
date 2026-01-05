@@ -408,8 +408,10 @@ const musicPlayer = {
                 this.currentIndex = index;
                 this.updateCurrentTrackInfo();
                 this.renderTrackList();
-                this.playTrack(true);
+                // Show panel first to ensure player div is visible for API
                 this.togglePanel(true);
+                // Small delay to allow transition/rendering
+                setTimeout(() => this.playTrack(true), 50);
             });
             this.refs.trackList.appendChild(button);
         });
@@ -461,7 +463,16 @@ const musicPlayer = {
         if (!track) return;
         this.updateCurrentTrackInfo();
         this.renderTrackList();
+
+        // Ensure panel is visible for player initialization
+        if (autoPlay && !this.isPanelVisible && !this.isMinimized) {
+            this.togglePanel(true);
+        }
+
         this.ensurePlayerReady(() => {
+            // Hide placeholder explicitly just in case
+            this.refs.placeholder?.classList.add('hidden');
+
             if (autoPlay) {
                 this.player.loadVideoById(track.videoId);
             } else {
