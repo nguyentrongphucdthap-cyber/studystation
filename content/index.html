@@ -490,43 +490,43 @@
                 <h2 class="text-3xl md:text-4xl font-bold text-gray-800 mb-8">Kho Tài Liệu Exam</h2>
 
                 <!-- Grid Môn Học -->
-                <div id="docs-subject-grid" class="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6">
-                    <!-- Toán -->
-                    <div onclick="docsApp.loadExamsForSubject('toan', 'Toán Học')"
+                <div id="docs-subject-grid" class="grid grid-cols-2 md:grid-cols-3 gap-6">
+                    <!-- Vật lí (physics) - Blue -->
+                    <div onclick="docsApp.loadExamsForSubject('physics', 'Vật lí')"
                         class="subject-card group p-6 bg-gradient-to-br from-blue-600 to-indigo-700 text-white rounded-2xl cursor-pointer hover:shadow-xl hover:-translate-y-1 transition-all duration-300">
+                        <div
+                            class="mb-4 bg-white/20 w-12 h-12 rounded-lg flex items-center justify-center backdrop-blur-sm">
+                            <span class="text-2xl">⚡</span>
+                        </div>
+                        <h3 class="text-xl font-bold mb-1">Vật lí</h3>
+                        <p class="text-sm text-blue-100 opacity-90">Cơ, Nhiệt, Điện & Hạt nhân</p>
+                    </div>
+
+                    <!-- Toán (math) - Red -->
+                    <div onclick="docsApp.loadExamsForSubject('math', 'Toán Học')"
+                        class="subject-card group p-6 bg-gradient-to-br from-red-600 to-rose-700 text-white rounded-2xl cursor-pointer hover:shadow-xl hover:-translate-y-1 transition-all duration-300">
                         <div
                             class="mb-4 bg-white/20 w-12 h-12 rounded-lg flex items-center justify-center backdrop-blur-sm">
                             <span class="text-2xl">📐</span>
                         </div>
                         <h3 class="text-xl font-bold mb-1">Toán Học</h3>
-                        <p class="text-sm text-blue-100 opacity-90">Đại số, Hình học & Giải tích</p>
+                        <p class="text-sm text-red-100 opacity-90">Đại số, Hình học & Giải tích</p>
                     </div>
 
-                    <!-- Vật lí -->
-                    <div onclick="docsApp.loadExamsForSubject('vat-li', 'Vật Lí')"
-                        class="subject-card group p-6 bg-gradient-to-br from-indigo-500 to-purple-600 text-white rounded-2xl cursor-pointer hover:shadow-xl hover:-translate-y-1 transition-all duration-300">
-                        <div
-                            class="mb-4 bg-white/20 w-12 h-12 rounded-lg flex items-center justify-center backdrop-blur-sm">
-                            <span class="text-2xl">⚡</span>
-                        </div>
-                        <h3 class="text-xl font-bold mb-1">Vật Lí</h3>
-                        <p class="text-sm text-indigo-100 opacity-90">Cơ, Nhiệt, Điện & Hạt nhân</p>
-                    </div>
-
-                    <!-- Hóa học -->
-                    <div onclick="docsApp.loadExamsForSubject('hoa-hoc', 'Hóa Học')"
-                        class="subject-card group p-6 bg-gradient-to-br from-orange-500 to-red-500 text-white rounded-2xl cursor-pointer hover:shadow-xl hover:-translate-y-1 transition-all duration-300">
+                    <!-- Hóa học (chem) - Cyan -->
+                    <div onclick="docsApp.loadExamsForSubject('chem', 'Hóa Học')"
+                        class="subject-card group p-6 bg-gradient-to-br from-cyan-600 to-sky-700 text-white rounded-2xl cursor-pointer hover:shadow-xl hover:-translate-y-1 transition-all duration-300">
                         <div
                             class="mb-4 bg-white/20 w-12 h-12 rounded-lg flex items-center justify-center backdrop-blur-sm">
                             <span class="text-2xl">🧪</span>
                         </div>
                         <h3 class="text-xl font-bold mb-1">Hóa Học</h3>
-                        <p class="text-sm text-orange-100 opacity-90">Vô cơ & Hữu cơ</p>
+                        <p class="text-sm text-cyan-100 opacity-90">Vô cơ & Hữu cơ</p>
                     </div>
 
-                    <!-- Sinh học -->
-                    <div onclick="docsApp.loadExamsForSubject('sinh-hoc', 'Sinh Học')"
-                        class="subject-card group p-6 bg-gradient-to-br from-emerald-500 to-green-600 text-white rounded-2xl cursor-pointer hover:shadow-xl hover:-translate-y-1 transition-all duration-300">
+                    <!-- Sinh học (bio) - Emerald -->
+                    <div onclick="docsApp.loadExamsForSubject('bio', 'Sinh Học')"
+                        class="subject-card group p-6 bg-gradient-to-br from-emerald-600 to-green-700 text-white rounded-2xl cursor-pointer hover:shadow-xl hover:-translate-y-1 transition-all duration-300">
                         <div
                             class="mb-4 bg-white/20 w-12 h-12 rounded-lg flex items-center justify-center backdrop-blur-sm">
                             <span class="text-2xl">🧬</span>
@@ -535,81 +535,26 @@
                         <p class="text-sm text-emerald-100 opacity-90">Di truyền & Tiến hóa</p>
                     </div>
 
-                    <!-- Tiếng Anh -->
-                    <div onclick="docsApp.loadExamsForSubject('tieng-anh', 'Tiếng Anh')"
-                        class="subject-card group p-6 bg-gradient-to-br from-violet-500 to-fuchsia-600 text-white rounded-2xl cursor-pointer hover:shadow-xl hover:-translate-y-1 transition-all duration-300">
-                        <div
-                            class="mb-4 bg-white/20 w-12 h-12 rounded-lg flex items-center justify-center backdrop-blur-sm">
-                            <span class="text-2xl">🇬🇧</span>
-                        </div>
-                        <h3 class="text-xl font-bold mb-1">Tiếng Anh</h3>
-                        <p class="text-sm text-violet-100 opacity-90">Ngữ pháp & Từ vựng</p>
-                    </div>
-
-                    <!-- Ngữ Văn -->
-                    <div onclick="docsApp.loadExamsForSubject('ngu-van', 'Ngữ Văn')"
-                        class="subject-card group p-6 bg-gradient-to-br from-rose-500 to-pink-600 text-white rounded-2xl cursor-pointer hover:shadow-xl hover:-translate-y-1 transition-all duration-300">
-                        <div
-                            class="mb-4 bg-white/20 w-12 h-12 rounded-lg flex items-center justify-center backdrop-blur-sm">
-                            <span class="text-2xl">📚</span>
-                        </div>
-                        <h3 class="text-xl font-bold mb-1">Ngữ Văn</h3>
-                        <p class="text-sm text-rose-100 opacity-90">Văn học & Nghị luận</p>
-                    </div>
-
-                    <!-- Lịch Sử -->
-                    <div onclick="docsApp.loadExamsForSubject('lich-su', 'Lịch Sử')"
-                        class="subject-card group p-6 bg-gradient-to-br from-amber-500 to-yellow-600 text-white rounded-2xl cursor-pointer hover:shadow-xl hover:-translate-y-1 transition-all duration-300">
+                    <!-- Lịch sử (history) - Orange -->
+                    <div onclick="docsApp.loadExamsForSubject('history', 'Lịch Sử')"
+                        class="subject-card group p-6 bg-gradient-to-br from-orange-500 to-amber-600 text-white rounded-2xl cursor-pointer hover:shadow-xl hover:-translate-y-1 transition-all duration-300">
                         <div
                             class="mb-4 bg-white/20 w-12 h-12 rounded-lg flex items-center justify-center backdrop-blur-sm">
                             <span class="text-2xl">🏛️</span>
                         </div>
                         <h3 class="text-xl font-bold mb-1">Lịch Sử</h3>
-                        <p class="text-sm text-amber-100 opacity-90">Việt Nam & Thế giới</p>
+                        <p class="text-sm text-orange-100 opacity-90">Việt Nam & Thế giới</p>
                     </div>
 
-                    <!-- Địa Lí -->
-                    <div onclick="docsApp.loadExamsForSubject('dia-li', 'Địa Lí')"
-                        class="subject-card group p-6 bg-gradient-to-br from-teal-500 to-cyan-600 text-white rounded-2xl cursor-pointer hover:shadow-xl hover:-translate-y-1 transition-all duration-300">
-                        <div
-                            class="mb-4 bg-white/20 w-12 h-12 rounded-lg flex items-center justify-center backdrop-blur-sm">
-                            <span class="text-2xl">🌏</span>
-                        </div>
-                        <h3 class="text-xl font-bold mb-1">Địa Lí</h3>
-                        <p class="text-sm text-teal-100 opacity-90">Tự nhiên & Kinh tế</p>
-                    </div>
-
-                    <!-- GDCD -->
-                    <div onclick="docsApp.loadExamsForSubject('gdcd', 'GDCD')"
-                        class="subject-card group p-6 bg-gradient-to-br from-pink-500 to-rose-500 text-white rounded-2xl cursor-pointer hover:shadow-xl hover:-translate-y-1 transition-all duration-300">
-                        <div
-                            class="mb-4 bg-white/20 w-12 h-12 rounded-lg flex items-center justify-center backdrop-blur-sm">
-                            <span class="text-2xl">⚖️</span>
-                        </div>
-                        <h3 class="text-xl font-bold mb-1">GDCD</h3>
-                        <p class="text-sm text-pink-100 opacity-90">Pháp luật & Đời sống</p>
-                    </div>
-
-                    <!-- Tin Học -->
-                    <div onclick="docsApp.loadExamsForSubject('tin-hoc', 'Tin Học')"
-                        class="subject-card group p-6 bg-gradient-to-br from-slate-600 to-slate-800 text-white rounded-2xl cursor-pointer hover:shadow-xl hover:-translate-y-1 transition-all duration-300">
+                    <!-- Tin học (info) - Purple -->
+                    <div onclick="docsApp.loadExamsForSubject('info', 'Tin Học')"
+                        class="subject-card group p-6 bg-gradient-to-br from-purple-600 to-violet-700 text-white rounded-2xl cursor-pointer hover:shadow-xl hover:-translate-y-1 transition-all duration-300">
                         <div
                             class="mb-4 bg-white/20 w-12 h-12 rounded-lg flex items-center justify-center backdrop-blur-sm">
                             <span class="text-2xl">💻</span>
                         </div>
                         <h3 class="text-xl font-bold mb-1">Tin Học</h3>
-                        <p class="text-sm text-slate-100 opacity-90">Lập trình & CSDL</p>
-                    </div>
-
-                    <!-- Công Nghệ -->
-                    <div onclick="docsApp.loadExamsForSubject('cong-nghe', 'Công Nghệ')"
-                        class="subject-card group p-6 bg-gradient-to-br from-cyan-600 to-sky-700 text-white rounded-2xl cursor-pointer hover:shadow-xl hover:-translate-y-1 transition-all duration-300">
-                        <div
-                            class="mb-4 bg-white/20 w-12 h-12 rounded-lg flex items-center justify-center backdrop-blur-sm">
-                            <span class="text-2xl">🔧</span>
-                        </div>
-                        <h3 class="text-xl font-bold mb-1">Công Nghệ</h3>
-                        <p class="text-sm text-cyan-100 opacity-90">Kỹ thuật & Đời sống</p>
+                        <p class="text-sm text-purple-100 opacity-90">Lập trình & CSDL</p>
                     </div>
                 </div>
 
