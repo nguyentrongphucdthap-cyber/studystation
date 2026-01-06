@@ -1141,11 +1141,10 @@ const app = {
             try {
                 const cached = sessionStorage.getItem(CACHE_KEY);
                 if (cached) {
-                    const { subjects, examContentDB, timestamp } = JSON.parse(cached);
+                    const { subjects, timestamp } = JSON.parse(cached);
                     if (Date.now() - timestamp < CACHE_EXPIRY) {
                         console.log('Loaded exams from cache');
                         this.subjects = subjects;
-                        this.examContentDB = examContentDB;
                         this.subjectLoadError = Object.keys(this.subjects).length ? null : 'Chưa có bài thi nào.';
                         return;
                     }
@@ -1154,10 +1153,25 @@ const app = {
                 console.warn('Cache read error:', cacheErr);
             }
 
+            // Helper: Promise with timeout
+            const withTimeout = (promise, ms, errorMsg) => {
+                return Promise.race([
+                    promise,
+                    new Promise((_, reject) =>
+                        setTimeout(() => reject(new Error(errorMsg)), ms)
+                    )
+                ]);
+            };
+
             // Try Firebase first (if available)
             if (window.firebaseExams && typeof window.firebaseExams.getAllExams === 'function') {
                 try {
-                    const firebaseExams = await window.firebaseExams.getAllExams();
+                    // Use timeout to prevent infinite waiting (8 seconds)
+                    const firebaseExams = await withTimeout(
+                        window.firebaseExams.getAllExams(),
+                        8000,
+                        'Firebase timeout - network too slow'
+                    );
                     const firebaseSubjects = window.firebaseExams.getSubjects();
 
                     if (firebaseExams && firebaseExams.length > 0) {
@@ -1165,7 +1179,6 @@ const app = {
 
                         // Build subjects from Firebase data
                         this.subjects = {};
-                        this.examContentDB = {};
 
                         firebaseSubjects.forEach(sub => {
                             this.subjects[sub.id] = {
@@ -1191,14 +1204,6 @@ const app = {
                                     attemptCount: exam.attemptCount || 0,
                                     tags: exam.tags || []
                                 });
-                                this.examContentDB[exam.id] = {
-                                    id: exam.id,
-                                    title: exam.title,
-                                    time: exam.time || 50,
-                                    part1: exam.part1 || [],
-                                    part2: exam.part2 || [],
-                                    part3: exam.part3 || []
-                                };
                             }
                         });
 
@@ -1219,11 +1224,10 @@ const app = {
 
                         this.subjectLoadError = Object.keys(this.subjects).length ? null : 'Chưa có bài thi nào. Admin có thể thêm bài thi mới.';
 
-                        // Save to session cache for faster subsequent loads
+                        // Save to session cache for faster subsequent loads (only metadata, no content)
                         try {
                             sessionStorage.setItem(CACHE_KEY, JSON.stringify({
                                 subjects: this.subjects,
-                                examContentDB: this.examContentDB,
                                 timestamp: Date.now()
                             }));
                             console.log('Saved exams to cache');
@@ -1234,7 +1238,7 @@ const app = {
                         return;
                     }
                 } catch (fbError) {
-                    console.warn('Firebase load failed, falling back to local files:', fbError);
+                    console.warn('Firebase load failed, falling back to local files:', fbError.message);
                 }
             }
 
@@ -1244,7 +1248,6 @@ const app = {
             const data = await res.json();
             const subjectList = data.subjects || [];
             this.subjects = {};
-            this.examContentDB = {};
 
             await Promise.all(subjectList.map(async (sub) => {
                 const normalized = {
@@ -1265,12 +1268,6 @@ const app = {
                         if (!examRes.ok) throw new Error(`Missing exam ${fileName}`);
                         const examJson = await examRes.json();
                         normalized.exams.push({ id: examJson.id, title: examJson.title, time: examJson.time || 50 });
-                        this.examContentDB[examJson.id] = {
-                            ...examJson,
-                            part1: examJson.part1 || [],
-                            part2: examJson.part2 || [],
-                            part3: examJson.part3 || []
-                        };
                     } catch (examErr) {
                         console.error(`Không thể tải đề thi ${fileName}`, examErr);
                     }
@@ -1281,9 +1278,33 @@ const app = {
         } catch (error) {
             console.error('Load subjects failed', error);
             this.subjects = {};
-            this.examContentDB = {};
-            this.subjectLoadError = 'Không thể tải danh sách đề thi. Vui lòng kiểm tra lại.';
+            this.subjectLoadError = 'Không thể tải danh sách đề thi. Vui lòng tải lại trang.';
         }
+    },
+
+    // Lazy load exam content when needed (for starting an exam)
+    async getExamContent(examId) {
+        // Check if we have content in local cache first
+        if (this.examContentDB && this.examContentDB[examId]) {
+            return this.examContentDB[examId];
+        }
+
+        // Try to load from Firebase
+        if (window.firebaseExams?.getExamContent) {
+            try {
+                const content = await window.firebaseExams.getExamContent(examId);
+                if (content) {
+                    // Cache locally
+                    if (!this.examContentDB) this.examContentDB = {};
+                    this.examContentDB[examId] = content;
+                    return content;
+                }
+            } catch (err) {
+                console.error('Failed to load exam content:', err);
+            }
+        }
+
+        return null;
     },
 
     toggleDarkMode(checked) {
@@ -1395,19 +1416,25 @@ const app = {
             }
         }
 
-        // Load highest scores from Firebase
+        // Render exam list immediately (without highest scores)
         this.highestScores = {};
-        if (window.firebaseExams?.getHighestScores) {
-            try {
-                this.highestScores = await window.firebaseExams.getHighestScores();
-                console.log('[Practice] Loaded highest scores for', Object.keys(this.highestScores).length, 'exams');
-            } catch (err) {
-                console.warn('[Practice] Failed to load highest scores:', err);
-            }
-        }
-
-        // Render exam list
         this.renderExamList(sub.exams);
+
+        // Load highest scores in background, then update UI
+        if (window.firebaseExams?.getHighestScores) {
+            window.firebaseExams.getHighestScores()
+                .then(scores => {
+                    this.highestScores = scores;
+                    console.log('[Practice] Loaded highest scores for', Object.keys(scores).length, 'exams');
+                    // Re-render exam list with scores if still on the same subject
+                    if (this.currentSubjectId === subId) {
+                        this.renderExamList(sub.exams);
+                    }
+                })
+                .catch(err => {
+                    console.warn('[Practice] Failed to load highest scores:', err);
+                });
+        }
     },
 
     // Knowledge Map Data for History
@@ -1983,13 +2010,41 @@ const app = {
     },
 
 
-    startExam(subId, examId) {
+    async startExam(subId, examId) {
         const subject = this.subjects[subId];
         if (!subject) { alert('Không tìm thấy môn học này.'); return; }
         const examMeta = subject.exams.find(e => e.id === examId);
-        const originalData = this.examContentDB[examId];
 
-        if (!examMeta || !originalData) { alert('Không tìm thấy dữ liệu bài thi.'); return; }
+        if (!examMeta) { alert('Không tìm thấy bài thi này.'); return; }
+
+        // Show loading indicator
+        const loadingHtml = `
+            <div class="fixed inset-0 bg-black/50 flex items-center justify-center z-50" id="exam-loading-overlay">
+                <div class="bg-white dark:bg-slate-800 rounded-2xl p-6 text-center">
+                    <div class="w-10 h-10 border-3 border-indigo-500 border-t-transparent rounded-full animate-spin mx-auto mb-3"></div>
+                    <p class="text-slate-600 dark:text-slate-300 font-medium">Đang tải bài thi...</p>
+                </div>
+            </div>
+        `;
+        document.body.insertAdjacentHTML('beforeend', loadingHtml);
+
+        // Lazy load exam content if not in cache
+        let originalData = this.examContentDB?.[examId];
+        if (!originalData) {
+            try {
+                originalData = await this.getExamContent(examId);
+            } catch (err) {
+                console.error('Failed to load exam content:', err);
+            }
+        }
+
+        // Remove loading overlay
+        document.getElementById('exam-loading-overlay')?.remove();
+
+        if (!originalData) {
+            alert('Không thể tải nội dung bài thi. Vui lòng thử lại.');
+            return;
+        }
 
         // Deep copy for session to enable shuffling without mutating original
         const examData = JSON.parse(JSON.stringify(originalData));
@@ -3100,13 +3155,41 @@ const app = {
     // ============================================================
 
     // Start Step-by-Step Mode
-    startStepMode(subId, examId) {
+    async startStepMode(subId, examId) {
         const subject = this.subjects[subId];
         if (!subject) { alert('Không tìm thấy môn học này.'); return; }
         const examMeta = subject.exams.find(e => e.id === examId);
-        const originalData = this.examContentDB[examId];
 
-        if (!examMeta || !originalData) { alert('Không tìm thấy dữ liệu bài thi.'); return; }
+        if (!examMeta) { alert('Không tìm thấy bài thi này.'); return; }
+
+        // Show loading indicator
+        const loadingHtml = `
+            <div class="fixed inset-0 bg-black/50 flex items-center justify-center z-50" id="exam-loading-overlay">
+                <div class="bg-white dark:bg-slate-800 rounded-2xl p-6 text-center">
+                    <div class="w-10 h-10 border-3 border-indigo-500 border-t-transparent rounded-full animate-spin mx-auto mb-3"></div>
+                    <p class="text-slate-600 dark:text-slate-300 font-medium">Đang tải bài thi...</p>
+                </div>
+            </div>
+        `;
+        document.body.insertAdjacentHTML('beforeend', loadingHtml);
+
+        // Lazy load exam content if not in cache
+        let originalData = this.examContentDB?.[examId];
+        if (!originalData) {
+            try {
+                originalData = await this.getExamContent(examId);
+            } catch (err) {
+                console.error('Failed to load exam content:', err);
+            }
+        }
+
+        // Remove loading overlay
+        document.getElementById('exam-loading-overlay')?.remove();
+
+        if (!originalData) {
+            alert('Không thể tải nội dung bài thi. Vui lòng thử lại.');
+            return;
+        }
 
         // Deep copy
         const examData = JSON.parse(JSON.stringify(originalData));
