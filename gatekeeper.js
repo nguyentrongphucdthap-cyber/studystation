@@ -622,6 +622,27 @@ export function clearExamListCache() {
 }
 
 /**
+ * Lấy TẤT CẢ exams với FULL DATA (bao gồm part1/part2/part3)
+ * CHỈ DÙNG CHO ADMIN PANEL - không cache vì data lớn
+ */
+export async function getAllExamsFull() {
+    console.log('[Firebase] Fetching FULL exam data for admin...');
+    const examsCol = collection(db, 'exams');
+    const snapshot = await getDocs(examsCol);
+
+    const exams = snapshot.docs.map(doc => {
+        const data = doc.data();
+        return {
+            id: doc.id,
+            ...data  // Include everything: part1, part2, part3, etc.
+        };
+    });
+
+    console.log('[Firebase] Fetched', exams.length, 'exams with full data');
+    return exams;
+}
+
+/**
  * Lấy metadata của tất cả exams (KHÔNG bao gồm part1/part2/part3)
  * Sử dụng cho việc hiển thị danh sách - load nhanh hơn nhiều
  */
