@@ -1553,7 +1553,8 @@ export async function getAllNotifications() {
 
 /**
  * Tạo thông báo mới (Admin only)
- * @param {object} data - { title, content, author, isNew }
+ * @param {object} data - { title, content, author, category, isNew }
+ * category: 'update' | 'remove' | 'edit' | 'fix' | 'new' | 'info'
  */
 export async function createNotification(data) {
     if (!checkIsAdmin()) {
@@ -1564,6 +1565,7 @@ export async function createNotification(data) {
         title: data.title || '',
         content: data.content || '',
         author: data.author || '',
+        category: data.category || 'info',
         isNew: data.isNew !== undefined ? data.isNew : true,
         createdAt: new Date().toISOString()
     });
