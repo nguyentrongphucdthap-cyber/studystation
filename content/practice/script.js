@@ -3074,6 +3074,14 @@ const app = {
     },
 
     // ============================================================
+    // DOWNLOAD EXAM METHODS
+    // Tải đề thi - Hỗ trợ DOCX, DOC, PDF với/không có đáp án
+    // ============================================================
+
+    // Tính năng Tải Đề Thi đã được chuyển sang Module Tài liệu (Dashboard) 
+    // Xem docsApp trong index.html
+
+    // ============================================================
     // STEP-BY-STEP MODE METHODS
     // Chế độ làm từng câu một - phải trả lời đúng mới qua câu tiếp
     // ============================================================
