@@ -561,22 +561,64 @@ export { db, collection, getDocs, addDoc, deleteDoc, setDoc, doc, getDoc };
 // Cache for exam content to avoid re-fetching
 const examContentCache = new Map();
 
+// Cache for exam list (metadata only)
+let examListCache = null;
+let examListCacheTime = 0;
+const EXAM_LIST_CACHE_DURATION = 60000; // 1 minute
+
 /**
- * Lấy tất cả exams từ Firestore (CHỈ METADATA, không load part1/part2/part3)
- * Đây là bản tối ưu để load nhanh hơn
+ * Kiểm tra Firebase đã sẵn sàng chưa
+ */
+export function isFirebaseReady() {
+    return auth.currentUser !== null;
+}
+
+/**
+ * Lấy tất cả exams từ Firestore (CHỈ METADATA - không part1/part2/part3)
+ * Có cache để tránh gọi Firebase liên tục
  */
 export async function getAllExams() {
+    // Check cache first
+    if (examListCache && (Date.now() - examListCacheTime < EXAM_LIST_CACHE_DURATION)) {
+        console.log('[Firebase] Returning cached exam list');
+        return examListCache;
+    }
+
+    console.log('[Firebase] Fetching exam list from Firestore...');
     const examsCol = collection(db, 'exams');
     const snapshot = await getDocs(examsCol);
-    return snapshot.docs.map(doc => {
+
+    // Chỉ lấy metadata cần thiết, KHÔNG lấy part1/part2/part3
+    const exams = snapshot.docs.map(doc => {
         const data = doc.data();
         return {
             id: doc.id,
-            ...data,
-            // Đánh dấu đã có full content hay chưa
-            _hasFullContent: true
+            subjectId: data.subjectId,
+            title: data.title,
+            time: data.time || 50,
+            examCode: data.examCode || '',
+            createdAt: data.createdAt || '',
+            author: data.author || '',
+            attemptCount: data.attemptCount || 0,
+            tags: data.tags || []
         };
     });
+
+    // Cache the result
+    examListCache = exams;
+    examListCacheTime = Date.now();
+    console.log('[Firebase] Fetched and cached', exams.length, 'exams');
+
+    return exams;
+}
+
+/**
+ * Xóa cache exam list (gọi khi cần refresh)
+ */
+export function clearExamListCache() {
+    examListCache = null;
+    examListCacheTime = 0;
+    console.log('[Firebase] Exam list cache cleared');
 }
 
 /**
@@ -584,23 +626,8 @@ export async function getAllExams() {
  * Sử dụng cho việc hiển thị danh sách - load nhanh hơn nhiều
  */
 export async function getAllExamsMetadata() {
-    const examsCol = collection(db, 'exams');
-    const snapshot = await getDocs(examsCol);
-    return snapshot.docs.map(doc => {
-        const data = doc.data();
-        // Chỉ lấy metadata, không lấy part1/part2/part3
-        return {
-            id: doc.id,
-            subjectId: data.subjectId,
-            title: data.title,
-            time: data.time,
-            examCode: data.examCode,
-            createdAt: data.createdAt,
-            author: data.author,
-            attemptCount: data.attemptCount,
-            tags: data.tags
-        };
-    });
+    // Reuse getAllExams since it now only returns metadata
+    return getAllExams();
 }
 
 /**
@@ -610,9 +637,11 @@ export async function getAllExamsMetadata() {
 export async function getExamContent(examId) {
     // Check cache first
     if (examContentCache.has(examId)) {
+        console.log('[Firebase] Returning cached content for exam:', examId);
         return examContentCache.get(examId);
     }
 
+    console.log('[Firebase] Fetching exam content for:', examId);
     const examRef = doc(db, 'exams', examId);
     const examSnap = await getDoc(examRef);
 
@@ -628,6 +657,7 @@ export async function getExamContent(examId) {
         };
         // Cache for future use
         examContentCache.set(examId, content);
+        console.log('[Firebase] Cached content for exam:', examId);
         return content;
     }
     return null;
