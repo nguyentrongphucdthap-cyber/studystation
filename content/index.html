@@ -13,6 +13,11 @@
     <link href="https://fonts.googleapis.com/css2?family=Be+Vietnam+Pro:wght@400;500;600;700&display=swap"
         rel="stylesheet">
 
+    <!-- Libraries for exporting exams (Documents Feature) -->
+    <script src="https://unpkg.com/docx@8.5.0/build/index.umd.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
+
     <style>
         /* Tet Theme */
         body {
@@ -472,6 +477,7 @@
             <!-- 2b. Trang Chọn Môn Học (Tài liệu) -->
             <div id="tai-lieu-main" class="page-content">
                 <button
+                    onclick="document.getElementById('docs-exam-list').classList.add('hidden'); document.getElementById('docs-subject-grid').classList.remove('hidden');"
                     class="back-to-menu-btn flex items-center space-x-2 text-gray-600 hover:text-blue-600 transition-colors duration-300 mb-6 group">
                     <svg class="w-5 h-5 transition-transform duration-300 group-hover:-translate-x-1" fill="none"
                         stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
@@ -479,31 +485,138 @@
                             d="M10 19l-7-7m0 0l7-7m-7 7h18">
                         </path>
                     </svg>
-                    <span class="font-medium">Quay lại Menu</span>
+                    <span class="font-medium">Quay lại Danh sách môn</span>
                 </button>
-                <h2 class="text-3xl md:text-4xl font-bold text-gray-800 mb-8">Chọn môn học (Tài liệu)</h2>
+                <h2 class="text-3xl md:text-4xl font-bold text-gray-800 mb-8">Kho Tài Liệu Exam</h2>
 
-                <div class="grid grid-cols-2 gap-6">
-                    <a href="./docs/vat-li.html"
-                        class="subject-card block p-6 bg-gradient-to-br from-blue-500 to-blue-600 text-white rounded-xl cursor-pointer decoration-0 hover:no-underline">
+                <!-- Grid Môn Học -->
+                <div id="docs-subject-grid" class="grid grid-cols-2 gap-6">
+                    <div onclick="docsApp.loadExamsForSubject('vat-li', 'Vật lí')"
+                        class="subject-card block p-6 bg-gradient-to-br from-blue-500 to-blue-600 text-white rounded-xl cursor-pointer hover:shadow-xl transition-all">
                         <h3 class="text-xl md:text-2xl font-semibold mb-2">Vật lí</h3>
-                        <p class="font-light">Tổng hợp tài liệu, ghi chú và đề cương môn Vật lí.</p>
-                    </a>
-                    <a href="./docs/sinh-hoc.html"
-                        class="subject-card block p-6 bg-gradient-to-br from-green-500 to-green-600 text-white rounded-xl cursor-pointer decoration-0 hover:no-underline">
+                        <p class="font-light">Thư viện đề thi trắc nghiệm Vật lí 12.</p>
+                    </div>
+                    <div onclick="docsApp.loadExamsForSubject('sinh-hoc', 'Sinh học')"
+                        class="subject-card block p-6 bg-gradient-to-br from-green-500 to-green-600 text-white rounded-xl cursor-pointer hover:shadow-xl transition-all">
                         <h3 class="text-xl md:text-2xl font-semibold mb-2">Sinh học</h3>
-                        <p class="font-light">Tài liệu về di truyền, tế bào, hệ sinh thái và tiến hóa.</p>
-                    </a>
-                    <a href="./docs/tin-hoc.html"
-                        class="subject-card block p-6 bg-gradient-to-br from-purple-500 to-purple-600 text-white rounded-xl cursor-pointer decoration-0 hover:no-underline">
+                        <p class="font-light">Thư viện đề thi trắc nghiệm Sinh học 12.</p>
+                    </div>
+                    <div onclick="docsApp.loadExamsForSubject('tin-hoc', 'Tin học')"
+                        class="subject-card block p-6 bg-gradient-to-br from-purple-500 to-purple-600 text-white rounded-xl cursor-pointer hover:shadow-xl transition-all">
                         <h3 class="text-xl md:text-2xl font-semibold mb-2">Tin học</h3>
-                        <p class="font-light">Tài liệu cấu trúc dữ liệu, giải thuật và lập trình.</p>
-                    </a>
-                    <a href="./docs/lich-su.html"
-                        class="subject-card block p-6 bg-gradient-to-br from-yellow-500 to-orange-500 text-white rounded-xl cursor-pointer decoration-0 hover:no-underline">
+                        <p class="font-light">Thư viện đề thi trắc nghiệm Tin học 12.</p>
+                    </div>
+                    <div onclick="docsApp.loadExamsForSubject('lich-su', 'Lịch sử')"
+                        class="subject-card block p-6 bg-gradient-to-br from-yellow-500 to-orange-500 text-white rounded-xl cursor-pointer hover:shadow-xl transition-all">
                         <h3 class="text-xl md:text-2xl font-semibold mb-2">Lịch sử</h3>
-                        <p class="font-light">Tài liệu các giai đoạn lịch sử và sự kiện quan trọng.</p>
-                    </a>
+                        <p class="font-light">Thư viện đề thi trắc nghiệm Lịch sử 12.</p>
+                    </div>
+                </div>
+
+                <!-- Danh sách đề thi (Ẩn mặc định) -->
+                <div id="docs-exam-list" class="hidden animate-fade-in">
+                    <div class="flex items-center justify-between mb-6">
+                        <h3 id="docs-selected-subject" class="text-2xl font-bold text-blue-600">Môn học</h3>
+                        <div class="text-sm text-gray-500">Chọn đề thi để tải về</div>
+                    </div>
+                    <div id="docs-exam-container" class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                        <!-- Exam cards will be injected here -->
+                    </div>
+                </div>
+            </div>
+
+            <!-- Download Exam Modal (Added for Docs Feature) -->
+            <div id="download-exam-modal"
+                class="hidden fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm animate-fade-in p-4">
+                <div
+                    class="bg-white w-full max-w-md rounded-2xl shadow-2xl transform transition-all border border-gray-100 overflow-hidden">
+                    <!-- Header -->
+                    <div class="p-4 border-b border-gray-100 bg-gradient-to-r from-emerald-50 to-teal-50">
+                        <div class="flex items-center justify-between">
+                            <div class="flex items-center gap-3">
+                                <div class="w-10 h-10 bg-emerald-100 rounded-xl flex items-center justify-center">
+                                    <svg class="w-5 h-5 text-emerald-600" fill="none" stroke="currentColor"
+                                        viewBox="0 0 24 24">
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                            d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4"></path>
+                                    </svg>
+                                </div>
+                                <div>
+                                    <h3 class="text-lg font-bold text-gray-900">Tải đề thi</h3>
+                                    <p id="download-exam-title" class="text-sm text-gray-500 truncate max-w-[200px]">
+                                    </p>
+                                </div>
+                            </div>
+                            <button onclick="docsApp.closeDownloadModal()"
+                                class="text-gray-400 hover:text-gray-600 p-2 hover:bg-gray-100 rounded-lg transition-colors">
+                                <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                        d="M6 18L18 6M6 6l12 12"></path>
+                                </svg>
+                            </button>
+                        </div>
+                    </div>
+                    <!-- Content -->
+                    <div class="p-5 space-y-5">
+                        <!-- Include/Exclude Answers -->
+                        <div>
+                            <label class="text-sm font-bold text-gray-700 block mb-3">Nội dung bao gồm</label>
+                            <div class="space-y-2">
+                                <label
+                                    class="flex items-center gap-3 p-3 rounded-xl border border-gray-200 hover:bg-gray-50 cursor-pointer transition-colors">
+                                    <input type="radio" name="download-answers" value="no" checked
+                                        class="w-4 h-4 text-emerald-600 border-gray-300 focus:ring-emerald-500">
+                                    <div><span class="text-sm font-medium text-gray-700">Chỉ câu hỏi</span>
+                                        <p class="text-xs text-gray-400">Tải về đề thi không kèm đáp án</p>
+                                    </div>
+                                </label>
+                                <label
+                                    class="flex items-center gap-3 p-3 rounded-xl border border-gray-200 hover:bg-gray-50 cursor-pointer transition-colors">
+                                    <input type="radio" name="download-answers" value="yes"
+                                        class="w-4 h-4 text-emerald-600 border-gray-300 focus:ring-emerald-500">
+                                    <div><span class="text-sm font-medium text-gray-700">Kèm đáp án</span>
+                                        <p class="text-xs text-gray-400">Tải về đề thi có đáp án ở cuối</p>
+                                    </div>
+                                </label>
+                            </div>
+                        </div>
+                        <!-- Format Selection -->
+                        <div>
+                            <label class="text-sm font-bold text-gray-700 block mb-3">Định dạng file</label>
+                            <div class="grid grid-cols-3 gap-2">
+                                <label class="download-format-option relative">
+                                    <input type="radio" name="download-format" value="docx" checked
+                                        class="sr-only peer">
+                                    <div
+                                        class="p-3 rounded-xl border-2 border-gray-200 text-center cursor-pointer transition-all peer-checked:border-emerald-500 peer-checked:bg-emerald-50 hover:border-gray-300">
+                                        <span class="text-xs font-bold text-gray-700">DOCX</span>
+                                    </div>
+                                </label>
+                                <label class="download-format-option relative">
+                                    <input type="radio" name="download-format" value="doc" class="sr-only peer">
+                                    <div
+                                        class="p-3 rounded-xl border-2 border-gray-200 text-center cursor-pointer transition-all peer-checked:border-emerald-500 peer-checked:bg-emerald-50 hover:border-gray-300">
+                                        <span class="text-xs font-bold text-gray-700">DOC</span>
+                                    </div>
+                                </label>
+                                <label class="download-format-option relative">
+                                    <input type="radio" name="download-format" value="pdf" class="sr-only peer">
+                                    <div
+                                        class="p-3 rounded-xl border-2 border-gray-200 text-center cursor-pointer transition-all peer-checked:border-emerald-500 peer-checked:bg-emerald-50 hover:border-gray-300">
+                                        <span class="text-xs font-bold text-gray-700">PDF</span>
+                                    </div>
+                                </label>
+                            </div>
+                        </div>
+                    </div>
+                    <!-- Footer -->
+                    <div class="p-4 border-t border-gray-100 bg-gray-50 flex gap-3">
+                        <button onclick="docsApp.closeDownloadModal()"
+                            class="flex-1 py-2.5 px-4 rounded-xl border border-gray-200 text-gray-600 font-bold hover:bg-gray-100 transition-colors">Hủy</button>
+                        <button onclick="docsApp.confirmDownload()" id="download-confirm-btn"
+                            class="flex-1 py-2.5 px-4 rounded-xl bg-emerald-600 text-white font-bold hover:bg-emerald-700 shadow-lg shadow-emerald-500/30 transition-colors">Tải
+                            về</button>
+                    </div>
                 </div>
             </div>
 
@@ -1420,6 +1533,332 @@
                 if (adminBtnMobile) adminBtnMobile.classList.add('hidden');
             }
         });
+    </script>
+
+    <!-- DOCS APP LOGIC (Tính năng Tài liệu Dashboard) -->
+    <script type="module">
+        import { getAllExams, getExamContent } from "../gatekeeper.js";
+
+        const docsApp = {
+            currentSubject: null,
+            pendingDownload: null,
+
+            // Load exams when a subject is clicked
+            async loadExamsForSubject(subjectId, subjectName) {
+                console.log('Loading docs for:', subjectId);
+                this.currentSubject = { id: subjectId, name: subjectName };
+
+                // Switch UI
+                document.getElementById('docs-subject-grid').classList.add('hidden');
+                document.getElementById('docs-exam-list').classList.remove('hidden');
+                document.getElementById('docs-selected-subject').textContent = subjectName;
+                document.getElementById('docs-selected-subject').className = `text-2xl font-bold ${this.getSubjectColorClass(subjectId)}`;
+
+                const container = document.getElementById('docs-exam-container');
+                container.innerHTML = '<div class="col-span-2 text-center py-8 text-gray-500"><div class="animate-spin w-8 h-8 border-4 border-blue-500 border-t-transparent rounded-full mx-auto mb-2"></div>Đang tải dữ liệu...</div>';
+
+                try {
+                    const allExams = await getAllExams();
+                    // Filter exams by subject
+                    const exams = allExams.filter(e => e.subjectId === subjectId);
+
+                    if (exams.length === 0) {
+                        container.innerHTML = '<div class="col-span-2 text-center py-12 text-gray-500 bg-gray-50 rounded-xl border border-dashed border-gray-300">Chưa có tài liệu nào cho môn này.</div>';
+                        return;
+                    }
+
+                    container.innerHTML = '';
+                    exams.forEach(exam => {
+                        const card = document.createElement('div');
+                        card.className = "bg-white p-4 rounded-xl shadow-sm border border-gray-100 hover:shadow-md transition-shadow flex items-center justify-between group";
+                        card.innerHTML = `
+                            <div class="flex items-center gap-3 overflow-hidden">
+                                <div class="w-10 h-10 rounded-lg bg-gray-50 flex items-center justify-center text-gray-400 shrink-0">
+                                    <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"></path></svg>
+                                </div>
+                                <div class="overflow-hidden">
+                                    <h4 class="font-bold text-gray-800 truncate group-hover:text-blue-600 transition-colors" title="${exam.title}">${exam.title}</h4>
+                                    <p class="text-xs text-gray-500">${exam.attemptCount || 0} lượt tải • ${exam.author || 'Admin'}</p>
+                                </div>
+                            </div>
+                            <button onclick="window.docsApp.showDownloadModal('${exam.id}', '${exam.title.replace(/'/g, "\\'")}')" 
+                                class="shrink-0 p-2 text-emerald-600 hover:bg-emerald-50 rounded-lg transition-colors" title="Tải về">
+                                <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4"></path></svg>
+                            </button>
+                        `;
+                        container.appendChild(card);
+                    });
+                } catch (error) {
+                    console.error('Error loading exams:', error);
+                    container.innerHTML = '<div class="col-span-2 text-center py-8 text-red-500">Không thể tải dữ liệu. Vui lòng thử lại sau.</div>';
+                }
+            },
+
+            getSubjectColorClass(subjectId) {
+                switch (subjectId) {
+                    case 'vat-li': return 'text-blue-600';
+                    case 'sinh-hoc': return 'text-green-600';
+                    case 'tin-hoc': return 'text-purple-600';
+                    case 'lich-su': return 'text-yellow-600';
+                    default: return 'text-gray-800';
+                }
+            },
+
+            // ============================================================
+            // DOWNLOAD LOGIC (Ported from Practice)
+            // ============================================================
+
+            showDownloadModal(examId, examTitle) {
+                this.pendingDownload = { examId, examTitle };
+                document.getElementById('download-exam-title').textContent = examTitle;
+                document.getElementById('download-exam-modal').classList.remove('hidden');
+            },
+
+            closeDownloadModal() {
+                document.getElementById('download-exam-modal').classList.add('hidden');
+                this.pendingDownload = null;
+            },
+
+            async confirmDownload() {
+                if (!this.pendingDownload) return;
+
+                const { examId, examTitle } = this.pendingDownload;
+                const includeAnswers = document.querySelector('input[name="download-answers"]:checked').value === 'yes';
+                const format = document.querySelector('input[name="download-format"]:checked').value;
+
+                const confirmBtn = document.getElementById('download-confirm-btn');
+                const originalContent = confirmBtn.innerHTML;
+                confirmBtn.innerHTML = '<div class="w-5 h-5 border-2 border-white border-t-transparent rounded-full animate-spin"></div>';
+                confirmBtn.disabled = true;
+
+                try {
+                    // Fetch full content
+                    const examData = await getExamContent(examId);
+                    if (!examData) throw new Error('Không tìm thấy nội dung bài thi');
+
+                    if (format === 'pdf') {
+                        await this.downloadAsPDF(examData, examTitle, includeAnswers);
+                    } else {
+                        await this.downloadAsDOCX(examData, examTitle, includeAnswers, format);
+                    }
+
+                    this.closeDownloadModal();
+                    alert('Tải về thành công!');
+                } catch (error) {
+                    console.error(error);
+                    alert('Lỗi tải về: ' + error.message);
+                } finally {
+                    confirmBtn.innerHTML = originalContent;
+                    confirmBtn.disabled = false;
+                }
+            },
+
+            convertMathToPlainText(text) {
+                if (!text) return '';
+                let result = String(text);
+                // Basic replacements
+                result = result.replace(/\\female/g, '♀').replace(/\\male/g, '♂').replace(/\\venus/g, '♀').replace(/\\mars/g, '♂');
+                result = result.replace(/\\circ/g, '°');
+                result = result.replace(/\\frac\{([^}]+)\}\{([^}]+)\}/g, '($1)/($2)');
+                result = result.replace(/\\sqrt\{([^}]+)\}/g, '√($1)');
+                // Superscripts/Subscripts
+                result = result.replace(/\^2/g, '²').replace(/\^3/g, '³').replace(/_(\d)/g, '_$1');
+
+                // Remove LaTeX commands but keep content
+                result = result.replace(/\\text\{([^}]+)\}/g, '$1');
+                result = result.replace(/\\textbf\{([^}]+)\}/g, '$1');
+                result = result.replace(/\\textit\{([^}]+)\}/g, '$1');
+
+                // Remove delimiters
+                result = result.replace(/\\\(/g, '').replace(/\\\)/g, '').replace(/\\\[/g, '').replace(/\\\]/g, '').replace(/\$/g, '');
+
+                // Clean extra backslashes
+                result = result.replace(/\\([a-zA-Z]+)/g, '');
+                result = result.replace(/[{}]/g, '');
+                result = result.replace(/\s+/g, ' ').trim();
+                return result;
+            },
+
+            async downloadAsDOCX(examData, examTitle, includeAnswers, format) {
+                if (!window.docx) { alert('Thư viện tạo file chưa tải xong. Vui lòng thử lại.'); return; }
+                const { Document, Packer, Paragraph, TextRun, HeadingLevel, AlignmentType, convertInchesToTwip } = window.docx;
+
+                const children = [];
+                const answersKey = [];
+                let qNum = 0;
+
+                // Title
+                children.push(new Paragraph({
+                    children: [new TextRun({ text: examTitle, bold: true, size: 32 })],
+                    heading: HeadingLevel.HEADING_1,
+                    alignment: AlignmentType.CENTER,
+                    spacing: { after: 400 }
+                }));
+
+                // Helper to process parts
+                const processPart = (partData, partTitle, type) => {
+                    if (!partData || partData.length === 0) return;
+                    children.push(new Paragraph({
+                        children: [new TextRun({ text: partTitle, bold: true, size: 28 })],
+                        heading: HeadingLevel.HEADING_2,
+                        spacing: { before: 400, after: 200 }
+                    }));
+
+                    partData.forEach(q => {
+                        qNum++;
+                        const qText = this.convertMathToPlainText(q.text);
+                        // Question text
+                        children.push(new Paragraph({
+                            children: [
+                                new TextRun({ text: `Câu ${qNum}: `, bold: true }),
+                                new TextRun({ text: qText })
+                            ],
+                            spacing: { before: 200, after: 100 }
+                        }));
+
+                        // Options/Sub-questions
+                        if (type === 'part1') { // MC
+                            const labels = ['A', 'B', 'C', 'D'];
+                            (q.options || []).forEach((opt, i) => {
+                                children.push(new Paragraph({
+                                    children: [new TextRun({ text: `${labels[i]}. `, bold: true }), new TextRun({ text: this.convertMathToPlainText(opt) })],
+                                    indent: { left: convertInchesToTwip(0.3) }
+                                }));
+                            });
+                            answersKey.push({ num: qNum, ans: labels[q.correct] || 'N/A' });
+                        } else if (type === 'part2') { // TF
+                            const subAns = [];
+                            (q.subQuestions || []).forEach(sub => {
+                                children.push(new Paragraph({
+                                    children: [new TextRun({ text: `${sub.id}) `, bold: true }), new TextRun({ text: this.convertMathToPlainText(sub.text) })],
+                                    indent: { left: convertInchesToTwip(0.3) }
+                                }));
+                                subAns.push(`${sub.id}) ${sub.correct ? 'Đ' : 'S'}`);
+                            });
+                            answersKey.push({ num: qNum, ans: subAns.join(', ') });
+                        } else if (type === 'part3') { // SA
+                            children.push(new Paragraph({
+                                children: [new TextRun({ text: 'Đáp án: _______________' })],
+                                indent: { left: convertInchesToTwip(0.3) }
+                            }));
+                            answersKey.push({ num: qNum, ans: this.convertMathToPlainText(String(q.correct)) });
+                        }
+                    });
+                };
+
+                processPart(examData.part1, 'PHẦN I: TRẮC NGHIỆM', 'part1');
+                processPart(examData.part2, 'PHẦN II: ĐÚNG/SAI', 'part2');
+                processPart(examData.part3, 'PHẦN III: TRẢ LỜI NGẮN', 'part3');
+
+                // Answer Key
+                if (includeAnswers && answersKey.length > 0) {
+                    children.push(new Paragraph({ children: [], pageBreakBefore: true }));
+                    children.push(new Paragraph({
+                        children: [new TextRun({ text: 'ĐÁP ÁN', bold: true, size: 32 })],
+                        heading: HeadingLevel.HEADING_1,
+                        alignment: AlignmentType.CENTER,
+                        spacing: { after: 400 }
+                    }));
+                    answersKey.forEach(a => {
+                        children.push(new Paragraph({
+                            children: [new TextRun({ text: `Câu ${a.num}: `, bold: true }), new TextRun({ text: a.ans, color: '0066CC' })],
+                            spacing: { after: 50 }
+                        }));
+                    });
+                }
+
+                const doc = new Document({ sections: [{ children }] });
+                const blob = await Packer.toBlob(doc);
+                const filename = `${examTitle.replace(/[^a-zA-Z0-9 ]/g, '_')}.${format}`;
+
+                const link = document.createElement('a');
+                link.href = URL.createObjectURL(blob);
+                link.download = filename;
+                link.click();
+            },
+
+            async downloadAsPDF(examData, examTitle, includeAnswers) {
+                if (!window.jspdf) return;
+                const { jsPDF } = window.jspdf;
+                const doc = new jsPDF('p', 'mm', 'a4');
+                doc.setFont('helvetica');
+
+                const pageWidth = doc.internal.pageSize.getWidth();
+                const margin = 20;
+                let y = margin;
+
+                const addText = (text, opts = {}) => {
+                    doc.setFontSize(opts.size || 12);
+                    doc.setFont('helvetica', opts.bold ? 'bold' : 'normal');
+                    const lines = doc.splitTextToSize(text, pageWidth - margin * 2 - (opts.indent || 0));
+                    lines.forEach(line => {
+                        if (y > 280) { doc.addPage(); y = margin; }
+                        doc.text(line, margin + (opts.indent || 0), y);
+                        y += (opts.size || 12) * 0.4 + 2;
+                    });
+                };
+
+                // Title
+                doc.setFontSize(18); doc.setFont('helvetica', 'bold');
+                doc.text(this.convertMathToPlainText(examTitle), pageWidth / 2, y, { align: 'center' });
+                y += 15;
+
+                let qNum = 0;
+                const answersKey = [];
+
+                if (examData.part1?.length) {
+                    addText('PHAN I: TRAC NGHIEM', { bold: true, size: 14 });
+                    examData.part1.forEach(q => {
+                        qNum++;
+                        addText(`Cau ${qNum}: ${this.convertMathToPlainText(q.text)}`, { size: 11 });
+                        const labels = ['A', 'B', 'C', 'D'];
+                        (q.options || []).forEach((opt, i) => addText(`${labels[i]}. ${this.convertMathToPlainText(opt)}`, { indent: 10, size: 10 }));
+                        y += 2;
+                        answersKey.push({ num: qNum, ans: labels[q.correct] });
+                    });
+                }
+
+                // Similar simple rendering for Part 2 & 3 (simplified for brevity)
+                if (examData.part2?.length) {
+                    y += 5; addText('PHAN II: DUNG/SAI', { bold: true, size: 14 });
+                    examData.part2.forEach(q => {
+                        qNum++;
+                        addText(`Cau ${qNum}: ${this.convertMathToPlainText(q.text)}`, { size: 11 });
+                        const subAns = [];
+                        (q.subQuestions || []).forEach(sub => {
+                            addText(`${sub.id}) ${this.convertMathToPlainText(sub.text)}`, { indent: 10, size: 10 });
+                            subAns.push(`${sub.id}) ${sub.correct ? 'D' : 'S'}`);
+                        });
+                        answersKey.push({ num: qNum, ans: subAns.join(', ') });
+                        y += 2;
+                    });
+                }
+
+                if (examData.part3?.length) {
+                    y += 5; addText('PHAN III: TRA LOI NGAN', { bold: true, size: 14 });
+                    examData.part3.forEach(q => {
+                        qNum++;
+                        addText(`Cau ${qNum}: ${this.convertMathToPlainText(q.text)}`, { size: 11 });
+                        addText('Dap an: ________', { indent: 10, size: 10 });
+                        answersKey.push({ num: qNum, ans: this.convertMathToPlainText(String(q.correct)) });
+                        y += 2;
+                    });
+                }
+
+                if (includeAnswers && answersKey.length) {
+                    doc.addPage(); y = margin;
+                    doc.setFontSize(16); doc.text('DAP AN', pageWidth / 2, y, { align: 'center' }); y += 10;
+                    answersKey.forEach(a => {
+                        addText(`Cau ${a.num}: ${a.ans}`, { size: 11 });
+                    });
+                }
+
+                doc.save(`${examTitle.replace(/[^a-zA-Z0-9 ]/g, '_')}.pdf`);
+            }
+        };
+
+        // Export to Window so HTML can access
+        window.docsApp = docsApp;
     </script>
 
 </body>
