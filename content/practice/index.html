@@ -1875,25 +1875,41 @@
         // Initialize Gatekeeper (presence tracking is started automatically inside)
         initGatekeeper('protected');
 
-        // Wait for Firebase auth to be ready, then initialize app
-        // This prevents the "slow first load" issue
-        const waitForAuth = () => {
+        // Wait for Firebase auth to be ready with better retry logic
+        const waitForFirebaseReady = () => {
             return new Promise((resolve) => {
-                // Check if firebaseExams is ready
-                if (window.firebaseExams && typeof window.firebaseExams.getAllExams === 'function') {
-                    resolve();
-                } else {
-                    // Wait a bit and resolve anyway (fallback to local files)
-                    setTimeout(resolve, 100);
-                }
+                let attempts = 0;
+                const maxAttempts = 30; // 30 * 100ms = 3 seconds max wait
+
+                const checkReady = () => {
+                    attempts++;
+                    // Check if firebaseExams is ready AND has been properly initialized
+                    if (window.firebaseExams && typeof window.firebaseExams.getAllExams === 'function') {
+                        console.log('[Practice] Firebase ready after', attempts * 100, 'ms');
+                        resolve(true);
+                        return;
+                    }
+
+                    if (attempts >= maxAttempts) {
+                        console.warn('[Practice] Firebase not ready after', maxAttempts * 100, 'ms, proceeding anyway');
+                        resolve(false);
+                        return;
+                    }
+
+                    // Keep polling
+                    setTimeout(checkReady, 100);
+                };
+
+                checkReady();
             });
         };
 
         // Initialize Music player immediately (no Firebase dependency)
         if (window.musicPlayer) window.musicPlayer.init();
 
-        // Wait for auth then initialize app
-        waitForAuth().then(() => {
+        // Wait for Firebase then initialize app
+        waitForFirebaseReady().then((isReady) => {
+            console.log('[Practice] Initializing app, Firebase ready:', isReady);
             if (window.app) window.app.init();
         });
 
