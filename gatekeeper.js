@@ -558,13 +558,79 @@ function setupRealtimeMonitor(userRef, currentLocalSession, currentDeviceType) {
  */
 export { db, collection, getDocs, addDoc, deleteDoc, setDoc, doc, getDoc };
 
+// Cache for exam content to avoid re-fetching
+const examContentCache = new Map();
+
 /**
- * Lấy tất cả exams từ Firestore
+ * Lấy tất cả exams từ Firestore (CHỈ METADATA, không load part1/part2/part3)
+ * Đây là bản tối ưu để load nhanh hơn
  */
 export async function getAllExams() {
     const examsCol = collection(db, 'exams');
     const snapshot = await getDocs(examsCol);
-    return snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+    return snapshot.docs.map(doc => {
+        const data = doc.data();
+        return {
+            id: doc.id,
+            ...data,
+            // Đánh dấu đã có full content hay chưa
+            _hasFullContent: true
+        };
+    });
+}
+
+/**
+ * Lấy metadata của tất cả exams (KHÔNG bao gồm part1/part2/part3)
+ * Sử dụng cho việc hiển thị danh sách - load nhanh hơn nhiều
+ */
+export async function getAllExamsMetadata() {
+    const examsCol = collection(db, 'exams');
+    const snapshot = await getDocs(examsCol);
+    return snapshot.docs.map(doc => {
+        const data = doc.data();
+        // Chỉ lấy metadata, không lấy part1/part2/part3
+        return {
+            id: doc.id,
+            subjectId: data.subjectId,
+            title: data.title,
+            time: data.time,
+            examCode: data.examCode,
+            createdAt: data.createdAt,
+            author: data.author,
+            attemptCount: data.attemptCount,
+            tags: data.tags
+        };
+    });
+}
+
+/**
+ * Lấy nội dung chi tiết của 1 exam (lazy loading)
+ * Cache kết quả để tránh load lại
+ */
+export async function getExamContent(examId) {
+    // Check cache first
+    if (examContentCache.has(examId)) {
+        return examContentCache.get(examId);
+    }
+
+    const examRef = doc(db, 'exams', examId);
+    const examSnap = await getDoc(examRef);
+
+    if (examSnap.exists()) {
+        const data = examSnap.data();
+        const content = {
+            id: examId,
+            title: data.title,
+            time: data.time,
+            part1: data.part1 || [],
+            part2: data.part2 || [],
+            part3: data.part3 || []
+        };
+        // Cache for future use
+        examContentCache.set(examId, content);
+        return content;
+    }
+    return null;
 }
 
 /**
