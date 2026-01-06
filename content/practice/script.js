@@ -1143,14 +1143,16 @@ const app = {
                 if (cached) {
                     const { subjects, timestamp } = JSON.parse(cached);
                     if (Date.now() - timestamp < CACHE_EXPIRY) {
-                        console.log('Loaded exams from cache');
+                        console.log('[Practice] Loaded exams from cache');
                         this.subjects = subjects;
                         this.subjectLoadError = Object.keys(this.subjects).length ? null : 'Chưa có bài thi nào.';
                         return;
+                    } else {
+                        console.log('[Practice] Cache expired, will fetch fresh data');
                     }
                 }
             } catch (cacheErr) {
-                console.warn('Cache read error:', cacheErr);
+                console.warn('[Practice] Cache read error:', cacheErr);
             }
 
             // Helper: Promise with timeout
@@ -1163,19 +1165,37 @@ const app = {
                 ]);
             };
 
+            // Helper: Retry function
+            const retryAsync = async (fn, retries = 2, delay = 1000) => {
+                for (let i = 0; i <= retries; i++) {
+                    try {
+                        return await fn();
+                    } catch (err) {
+                        if (i === retries) throw err;
+                        console.log(`[Practice] Retry ${i + 1}/${retries} after error:`, err.message);
+                        await new Promise(r => setTimeout(r, delay));
+                    }
+                }
+            };
+
             // Try Firebase first (if available)
             if (window.firebaseExams && typeof window.firebaseExams.getAllExams === 'function') {
                 try {
-                    // Use timeout to prevent infinite waiting (8 seconds)
-                    const firebaseExams = await withTimeout(
-                        window.firebaseExams.getAllExams(),
-                        8000,
-                        'Firebase timeout - network too slow'
-                    );
+                    console.log('[Practice] Loading exams from Firebase...');
+
+                    // Use timeout and retry for better reliability
+                    const firebaseExams = await retryAsync(async () => {
+                        return await withTimeout(
+                            window.firebaseExams.getAllExams(),
+                            10000, // 10 seconds timeout
+                            'Firebase timeout - network too slow'
+                        );
+                    }, 2, 1000); // Retry 2 times with 1 second delay
+
                     const firebaseSubjects = window.firebaseExams.getSubjects();
 
                     if (firebaseExams && firebaseExams.length > 0) {
-                        console.log('Loaded exams from Firebase:', firebaseExams.length);
+                        console.log('[Practice] Loaded exams from Firebase:', firebaseExams.length);
 
                         // Build subjects from Firebase data
                         this.subjects = {};
@@ -1276,9 +1296,9 @@ const app = {
 
             this.subjectLoadError = subjectList.length ? null : 'Chưa có môn học nào trong thư mục tests.';
         } catch (error) {
-            console.error('Load subjects failed', error);
+            console.error('[Practice] Load subjects failed:', error);
             this.subjects = {};
-            this.subjectLoadError = 'Không thể tải danh sách đề thi. Vui lòng tải lại trang.';
+            this.subjectLoadError = 'Không thể kết nối đến máy chủ. Vui lòng kiểm tra mạng và thử lại.';
         }
     },
 
@@ -1305,6 +1325,31 @@ const app = {
         }
 
         return null;
+    },
+
+    // Retry loading subjects (called when user clicks retry button)
+    async retryLoadSubjects() {
+        console.log('[Practice] Retrying to load subjects...');
+        // Clear cache to force fresh load
+        try {
+            sessionStorage.removeItem('studyStation_examCache');
+        } catch (e) { }
+
+        // Show loading state
+        const grid = this.container.querySelector('.grid');
+        if (grid) {
+            grid.innerHTML = `
+                <div class="col-span-full bg-white dark:bg-slate-800 p-8 rounded-2xl border border-slate-200 dark:border-slate-700 text-center">
+                    <div class="w-10 h-10 border-4 border-indigo-500 border-t-transparent rounded-full animate-spin mx-auto mb-4"></div>
+                    <p class="text-slate-600 dark:text-slate-300 font-medium">Đang tải lại danh sách bài thi...</p>
+                </div>
+            `;
+        }
+
+        // Reset error and reload
+        this.subjectLoadError = null;
+        await this.loadSubjects();
+        this.goHome();
     },
 
     toggleDarkMode(checked) {
@@ -1365,7 +1410,18 @@ const app = {
         const subjectEntries = Object.values(this.subjects || {});
 
         if (this.subjectLoadError) {
-            grid.innerHTML = `<div class="col-span-full bg-white dark:bg-slate-800 p-6 rounded-2xl border border-red-200 dark:border-red-800 text-red-600 dark:text-red-300">${this.subjectLoadError}</div>`;
+            grid.innerHTML = `
+                <div class="col-span-full bg-white dark:bg-slate-800 p-6 rounded-2xl border border-red-200 dark:border-red-800 text-center">
+                    <svg class="w-12 h-12 mx-auto mb-3 text-red-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"/>
+                    </svg>
+                    <p class="text-red-600 dark:text-red-300 mb-4">${this.subjectLoadError}</p>
+                    <button onclick="app.retryLoadSubjects()" 
+                        class="px-6 py-2 bg-indigo-600 hover:bg-indigo-700 text-white font-semibold rounded-xl transition-colors">
+                        🔄 Thử tải lại
+                    </button>
+                </div>
+            `;
             return;
         }
 
