@@ -33,6 +33,11 @@
         };
     </script>
     <script id="MathJax-script" async src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-mml-chtml.js"></script>
+
+    <!-- Libraries for exporting exams -->
+    <script src="https://unpkg.com/docx@8.5.0/build/index.umd.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
     <style>
         .music-section summary {
             list-style: none;
@@ -860,6 +865,139 @@
                 <button onclick="app.closeHistoryModal()"
                     class="w-full py-2.5 px-4 rounded-xl border border-slate-200 dark:border-slate-600 text-slate-600 dark:text-slate-300 font-bold hover:bg-slate-100 dark:hover:bg-slate-700 transition-colors">
                     Đóng
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Download Exam Modal -->
+    <div id="download-exam-modal"
+        class="hidden fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm animate-fade-in p-4">
+        <div
+            class="bg-white dark:bg-slate-800 w-full max-w-md rounded-2xl shadow-2xl transform transition-all border border-slate-100 dark:border-slate-700 overflow-hidden">
+            <!-- Header -->
+            <div
+                class="p-4 border-b border-slate-200 dark:border-slate-700 bg-gradient-to-r from-emerald-50 to-teal-50 dark:from-emerald-900/30 dark:to-teal-900/30">
+                <div class="flex items-center justify-between">
+                    <div class="flex items-center gap-3">
+                        <div
+                            class="w-10 h-10 bg-emerald-100 dark:bg-emerald-900/50 rounded-xl flex items-center justify-center">
+                            <svg class="w-5 h-5 text-emerald-600 dark:text-emerald-400" fill="none"
+                                stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                    d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4"></path>
+                            </svg>
+                        </div>
+                        <div>
+                            <h3 class="text-lg font-bold text-slate-900 dark:text-white">Tải đề thi</h3>
+                            <p id="download-exam-title"
+                                class="text-sm text-slate-500 dark:text-slate-400 truncate max-w-[200px]"></p>
+                        </div>
+                    </div>
+                    <button onclick="app.closeDownloadModal()"
+                        class="text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 p-2 hover:bg-slate-100 dark:hover:bg-slate-700 rounded-lg transition-colors">
+                        <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                d="M6 18L18 6M6 6l12 12"></path>
+                        </svg>
+                    </button>
+                </div>
+            </div>
+            <!-- Content -->
+            <div class="p-5 space-y-5">
+                <!-- Include/Exclude Answers -->
+                <div>
+                    <label class="text-sm font-bold text-slate-700 dark:text-slate-300 block mb-3">Nội dung bao
+                        gồm</label>
+                    <div class="space-y-2">
+                        <label
+                            class="flex items-center gap-3 p-3 rounded-xl border border-slate-200 dark:border-slate-600 hover:bg-slate-50 dark:hover:bg-slate-700 cursor-pointer transition-colors">
+                            <input type="radio" name="download-answers" value="no" checked
+                                class="w-4 h-4 text-emerald-600 border-slate-300 focus:ring-emerald-500">
+                            <div>
+                                <span class="text-sm font-medium text-slate-700 dark:text-slate-200">Chỉ câu hỏi</span>
+                                <p class="text-xs text-slate-400">Tải về đề thi không kèm đáp án</p>
+                            </div>
+                        </label>
+                        <label
+                            class="flex items-center gap-3 p-3 rounded-xl border border-slate-200 dark:border-slate-600 hover:bg-slate-50 dark:hover:bg-slate-700 cursor-pointer transition-colors">
+                            <input type="radio" name="download-answers" value="yes"
+                                class="w-4 h-4 text-emerald-600 border-slate-300 focus:ring-emerald-500">
+                            <div>
+                                <span class="text-sm font-medium text-slate-700 dark:text-slate-200">Kèm đáp án</span>
+                                <p class="text-xs text-slate-400">Tải về đề thi có đáp án ở cuối</p>
+                            </div>
+                        </label>
+                    </div>
+                </div>
+
+                <!-- Format Selection -->
+                <div>
+                    <label class="text-sm font-bold text-slate-700 dark:text-slate-300 block mb-3">Định dạng
+                        file</label>
+                    <div class="grid grid-cols-3 gap-2">
+                        <label class="download-format-option relative">
+                            <input type="radio" name="download-format" value="docx" checked class="sr-only peer">
+                            <div
+                                class="p-3 rounded-xl border-2 border-slate-200 dark:border-slate-600 text-center cursor-pointer transition-all peer-checked:border-emerald-500 peer-checked:bg-emerald-50 dark:peer-checked:bg-emerald-900/30 hover:border-slate-300 dark:hover:border-slate-500">
+                                <svg class="w-8 h-8 mx-auto mb-1 text-blue-600" fill="currentColor" viewBox="0 0 24 24">
+                                    <path
+                                        d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8l-6-6zM14 3.5L18.5 8H14V3.5zM16 13v2H8v-2h8zm0 4v2H8v-2h8z" />
+                                </svg>
+                                <span class="text-xs font-bold text-slate-700 dark:text-slate-200">DOCX</span>
+                            </div>
+                        </label>
+                        <label class="download-format-option relative">
+                            <input type="radio" name="download-format" value="doc" class="sr-only peer">
+                            <div
+                                class="p-3 rounded-xl border-2 border-slate-200 dark:border-slate-600 text-center cursor-pointer transition-all peer-checked:border-emerald-500 peer-checked:bg-emerald-50 dark:peer-checked:bg-emerald-900/30 hover:border-slate-300 dark:hover:border-slate-500">
+                                <svg class="w-8 h-8 mx-auto mb-1 text-blue-700" fill="currentColor" viewBox="0 0 24 24">
+                                    <path
+                                        d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8l-6-6zM14 3.5L18.5 8H14V3.5zM16 13v2H8v-2h8zm0 4v2H8v-2h8z" />
+                                </svg>
+                                <span class="text-xs font-bold text-slate-700 dark:text-slate-200">DOC</span>
+                            </div>
+                        </label>
+                        <label class="download-format-option relative">
+                            <input type="radio" name="download-format" value="pdf" class="sr-only peer">
+                            <div
+                                class="p-3 rounded-xl border-2 border-slate-200 dark:border-slate-600 text-center cursor-pointer transition-all peer-checked:border-emerald-500 peer-checked:bg-emerald-50 dark:peer-checked:bg-emerald-900/30 hover:border-slate-300 dark:hover:border-slate-500">
+                                <svg class="w-8 h-8 mx-auto mb-1 text-red-600" fill="currentColor" viewBox="0 0 24 24">
+                                    <path
+                                        d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8l-6-6zM14 3.5L18.5 8H14V3.5zM11.5 13.5c0 .83-.67 1.5-1.5 1.5s-1.5-.67-1.5-1.5.67-1.5 1.5-1.5 1.5.67 1.5 1.5zm3-1.5h2v1h-2v1h1.5v1H14.5v1h-1v-4h2zm-7 0h1.5c.83 0 1.5.67 1.5 1.5v1c0 .83-.67 1.5-1.5 1.5H6.5v-4zm1 1v2h.5c.28 0 .5-.22.5-.5v-1c0-.28-.22-.5-.5-.5h-.5z" />
+                                </svg>
+                                <span class="text-xs font-bold text-slate-700 dark:text-slate-200">PDF</span>
+                            </div>
+                        </label>
+                    </div>
+                </div>
+
+                <!-- Info note -->
+                <div
+                    class="flex items-start gap-2 p-3 bg-amber-50 dark:bg-amber-900/20 rounded-xl border border-amber-200 dark:border-amber-800">
+                    <svg class="w-5 h-5 text-amber-600 shrink-0 mt-0.5" fill="none" stroke="currentColor"
+                        viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                            d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+                    </svg>
+                    <p class="text-xs text-amber-700 dark:text-amber-300">Công thức toán học sẽ được chuyển đổi sang
+                        định dạng tương thích với Word/PDF. Một số công thức phức tạp có thể cần chỉnh sửa thủ công.</p>
+                </div>
+            </div>
+            <!-- Footer -->
+            <div
+                class="p-4 border-t border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-900/50 flex gap-3">
+                <button onclick="app.closeDownloadModal()"
+                    class="flex-1 py-2.5 px-4 rounded-xl border border-slate-200 dark:border-slate-600 text-slate-600 dark:text-slate-300 font-bold hover:bg-slate-100 dark:hover:bg-slate-700 transition-colors">
+                    Hủy
+                </button>
+                <button onclick="app.confirmDownload()" id="download-confirm-btn"
+                    class="flex-1 py-2.5 px-4 rounded-xl bg-emerald-600 text-white font-bold hover:bg-emerald-700 shadow-lg shadow-emerald-500/30 transition-colors flex items-center justify-center gap-2">
+                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                            d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4"></path>
+                    </svg>
+                    Tải về
                 </button>
             </div>
         </div>
@@ -1802,7 +1940,8 @@
             getPracticeHistory,
             getHighestScores,
             isFirebaseReady,
-            clearExamListCache
+            clearExamListCache,
+            onUserChange
         } from "../../gatekeeper.js";
 
         // Make Firebase functions available globally for the app
@@ -1822,51 +1961,36 @@
         // Initialize Gatekeeper (presence tracking is started automatically inside)
         initGatekeeper('protected');
 
-        // Wait for Firebase auth to be ready with better retry logic
-        const waitForFirebaseReady = () => {
-            return new Promise((resolve) => {
-                let attempts = 0;
-                const maxAttempts = 50; // 50 * 100ms = 5 seconds max wait
-
-                const checkReady = () => {
-                    attempts++;
-                    // Check if firebaseExams is ready AND Firebase auth is connected
-                    if (window.firebaseExams && typeof window.firebaseExams.getAllExams === 'function') {
-                        // Also check if auth is ready using isFirebaseReady
-                        const authReady = window.firebaseExams.isFirebaseReady ?
-                            window.firebaseExams.isFirebaseReady() : true;
-
-                        if (authReady) {
-                            console.log('[Practice] Firebase fully ready after', attempts * 100, 'ms');
-                            resolve(true);
-                            return;
-                        }
-                    }
-
-                    if (attempts >= maxAttempts) {
-                        console.warn('[Practice] Firebase not ready after', maxAttempts * 100, 'ms, proceeding anyway');
-                        resolve(false);
-                        return;
-                    }
-
-                    // Keep polling
-                    setTimeout(checkReady, 100);
-                };
-
-                checkReady();
-            });
-        };
-
         // Initialize Music player immediately (no Firebase dependency)
         if (window.musicPlayer) window.musicPlayer.init();
 
-        // Wait for Firebase then initialize app
-        waitForFirebaseReady().then((isReady) => {
-            console.log('[Practice] Initializing app, Firebase ready:', isReady);
-            if (window.app) {
-                window.app.init();
+        // Wait for user auth callback before initializing app
+        // This is more reliable than polling isFirebaseReady()
+        let appInitialized = false;
+
+        onUserChange((user) => {
+            if (appInitialized) return; // Only init once
+
+            if (user) {
+                console.log('[Practice] User authenticated, initializing app...');
+                appInitialized = true;
+                if (window.app) {
+                    window.app.init();
+                }
             }
         });
+
+        // Fallback: If no user callback after 5 seconds, try to init anyway
+        // (handles case where user is not logged in but page should still show)
+        setTimeout(() => {
+            if (!appInitialized) {
+                console.warn('[Practice] Auth timeout, initializing app anyway...');
+                appInitialized = true;
+                if (window.app) {
+                    window.app.init();
+                }
+            }
+        }, 5000);
 
         // Mobile viewport height fix for iOS Safari
         (function () {
