@@ -692,9 +692,11 @@ export async function deleteExam(examId) {
  * @param {string} examId - ID của bài thi
  * @param {string} examTitle - Tên bài thi
  * @param {string} subjectId - ID môn học
+ * @param {string} mode - Chế độ làm bài: 'classic' hoặc 'stepbystep'
+ * @param {number} durationSeconds - Thời gian làm bài (giây), optional - sẽ được cập nhật khi nộp bài
  */
-export async function logPracticeAttempt(examId, examTitle, subjectId) {
-    console.log('[logPracticeAttempt] Starting...', { examId, examTitle, subjectId });
+export async function logPracticeAttempt(examId, examTitle, subjectId, mode = 'classic', durationSeconds = null) {
+    console.log('[logPracticeAttempt] Starting...', { examId, examTitle, subjectId, mode });
     try {
         const user = auth.currentUser;
         if (!user) {
@@ -706,14 +708,22 @@ export async function logPracticeAttempt(examId, examTitle, subjectId) {
         // 1. Lưu log vào collection practice_logs
         console.log('[logPracticeAttempt] Step 1: Adding to practice_logs...');
         const logsCol = collection(db, 'practice_logs');
-        await addDoc(logsCol, {
+        const logData = {
             examId: examId,
             examTitle: examTitle,
             subjectId: subjectId || '',
             userEmail: user.email,
             userName: user.displayName || user.email.split('@')[0],
+            mode: mode, // 'classic' hoặc 'stepbystep'
             timestamp: new Date().toISOString()
-        });
+        };
+
+        // Thêm durationSeconds nếu có
+        if (durationSeconds !== null) {
+            logData.durationSeconds = durationSeconds;
+        }
+
+        await addDoc(logsCol, logData);
         console.log('[logPracticeAttempt] Step 1: SUCCESS - Log added');
 
         // 2. Tăng attemptCount trong exam document
