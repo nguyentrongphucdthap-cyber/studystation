@@ -899,6 +899,52 @@ export async function getPracticeHistory(examId) {
 }
 
 /**
+ * Lấy điểm cao nhất của tất cả bài thi cho người dùng hiện tại
+ * @returns {Promise<Object>} - Object với examId làm key và { highestScore, attemptCount } làm value
+ */
+export async function getHighestScores() {
+    try {
+        const user = auth.currentUser;
+        if (!user) {
+            console.warn('[getHighestScores] No user logged in');
+            return {};
+        }
+
+        const historyCol = collection(db, 'practice_history');
+        const q = query(historyCol,
+            where('userId', '==', user.uid)
+        );
+        const snapshot = await getDocs(q);
+
+        // Group by examId and find highest score
+        const scores = {};
+        snapshot.docs.forEach(doc => {
+            const data = doc.data();
+            const examId = data.examId;
+            const score = data.score || 0;
+
+            if (!scores[examId]) {
+                scores[examId] = {
+                    highestScore: score,
+                    attemptCount: 1
+                };
+            } else {
+                if (score > scores[examId].highestScore) {
+                    scores[examId].highestScore = score;
+                }
+                scores[examId].attemptCount++;
+            }
+        });
+
+        console.log('[getHighestScores] Loaded scores for', Object.keys(scores).length, 'exams');
+        return scores;
+    } catch (error) {
+        console.error('[getHighestScores] FAILED:', error);
+        return {};
+    }
+}
+
+/**
  * Lấy danh sách subjects (hardcoded for now)
  */
 export function getSubjects() {
