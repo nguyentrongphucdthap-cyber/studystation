@@ -1840,6 +1840,8 @@
             savePracticeResult,
             getPracticeHistory,
             getHighestScores,
+            isFirebaseReady,
+            clearExamListCache,
             getExamFeedbacks,
             addFeedback,
             addReply,
@@ -1858,7 +1860,9 @@
             logPracticeAttempt,
             savePracticeResult,
             getPracticeHistory,
-            getHighestScores
+            getHighestScores,
+            isFirebaseReady,
+            clearExamListCache
         };
 
         // Make Feedback functions available globally
@@ -1879,15 +1883,21 @@
         const waitForFirebaseReady = () => {
             return new Promise((resolve) => {
                 let attempts = 0;
-                const maxAttempts = 30; // 30 * 100ms = 3 seconds max wait
+                const maxAttempts = 50; // 50 * 100ms = 5 seconds max wait
 
                 const checkReady = () => {
                     attempts++;
-                    // Check if firebaseExams is ready AND has been properly initialized
+                    // Check if firebaseExams is ready AND Firebase auth is connected
                     if (window.firebaseExams && typeof window.firebaseExams.getAllExams === 'function') {
-                        console.log('[Practice] Firebase ready after', attempts * 100, 'ms');
-                        resolve(true);
-                        return;
+                        // Also check if auth is ready using isFirebaseReady
+                        const authReady = window.firebaseExams.isFirebaseReady ?
+                            window.firebaseExams.isFirebaseReady() : true;
+
+                        if (authReady) {
+                            console.log('[Practice] Firebase fully ready after', attempts * 100, 'ms');
+                            resolve(true);
+                            return;
+                        }
                     }
 
                     if (attempts >= maxAttempts) {
@@ -1910,7 +1920,9 @@
         // Wait for Firebase then initialize app
         waitForFirebaseReady().then((isReady) => {
             console.log('[Practice] Initializing app, Firebase ready:', isReady);
-            if (window.app) window.app.init();
+            if (window.app) {
+                window.app.init();
+            }
         });
 
         // Mobile viewport height fix for iOS Safari
