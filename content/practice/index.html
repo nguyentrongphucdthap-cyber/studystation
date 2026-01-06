@@ -1833,6 +1833,8 @@
         import {
             initGatekeeper,
             getAllExams,
+            getAllExamsMetadata,
+            getExamContent,
             getSubjects,
             logPracticeAttempt,
             savePracticeResult,
@@ -1850,6 +1852,8 @@
         // Make Firebase functions available globally for the app
         window.firebaseExams = {
             getAllExams,
+            getAllExamsMetadata,
+            getExamContent,
             getSubjects,
             logPracticeAttempt,
             savePracticeResult,
