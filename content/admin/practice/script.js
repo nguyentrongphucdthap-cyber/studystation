@@ -10,7 +10,7 @@ import {
     initGatekeeper,
     checkIsAdmin,
     onUserChange,
-    getAllExams,
+    getAllExamsFull,
     createExam,
     updateExam,
     deleteExam,
@@ -243,7 +243,7 @@ function loadSubjects() {
 
 async function loadExams() {
     try {
-        state.exams = await getAllExams();
+        state.exams = await getAllExamsFull();
         renderExamList();
     } catch (error) {
         console.error('Failed to load exams:', error);
