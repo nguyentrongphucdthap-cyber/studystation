@@ -1362,7 +1362,7 @@ const app = {
         });
     },
 
-    goSubject(subId) {
+    async goSubject(subId) {
         const sub = this.subjects[subId];
         if (!sub) { alert('Không tìm thấy môn học này.'); return; }
 
@@ -1392,6 +1392,17 @@ const app = {
                 knowledgeMapCard.classList.remove('hidden');
             } else {
                 knowledgeMapCard.classList.add('hidden');
+            }
+        }
+
+        // Load highest scores from Firebase
+        this.highestScores = {};
+        if (window.firebaseExams?.getHighestScores) {
+            try {
+                this.highestScores = await window.firebaseExams.getHighestScores();
+                console.log('[Practice] Loaded highest scores for', Object.keys(this.highestScores).length, 'exams');
+            } catch (err) {
+                console.warn('[Practice] Failed to load highest scores:', err);
             }
         }
 
@@ -1828,6 +1839,30 @@ const app = {
                 }).join('')}</div>`
                 : '';
 
+            // Get highest score for this exam
+            const scoreData = this.highestScores?.[exam.id];
+            let highestScoreHtml = '';
+            if (scoreData && scoreData.highestScore !== undefined) {
+                const score = scoreData.highestScore;
+                let scoreBg, scoreColor;
+                if (score >= 8) {
+                    scoreBg = 'bg-emerald-100 dark:bg-emerald-900/40';
+                    scoreColor = 'text-emerald-700 dark:text-emerald-400';
+                } else if (score >= 5) {
+                    scoreBg = 'bg-blue-100 dark:bg-blue-900/40';
+                    scoreColor = 'text-blue-700 dark:text-blue-400';
+                } else {
+                    scoreBg = 'bg-orange-100 dark:bg-orange-900/40';
+                    scoreColor = 'text-orange-700 dark:text-orange-400';
+                }
+                highestScoreHtml = `
+                    <div class="flex flex-col items-center justify-center px-3 py-2 ${scoreBg} rounded-xl min-w-[60px]" title="Điểm cao nhất của bạn">
+                        <span class="text-[10px] font-medium text-slate-500 dark:text-slate-400">Cao nhất</span>
+                        <span class="text-lg font-bold ${scoreColor}">${score.toFixed(1)}</span>
+                    </div>
+                `;
+            }
+
             el.innerHTML = `
                 <div class="flex items-start gap-3 md:gap-4">
                     <div class="shrink-0 w-9 h-9 md:w-10 md:h-10 rounded-full bg-blue-50 dark:bg-blue-900/30 text-blue-600 dark:text-blue-400 flex items-center justify-center font-bold text-xs md:text-sm">${(index + 1).toString().padStart(2, '0')}</div>
@@ -1844,6 +1879,7 @@ const app = {
                         </div>
                     </div>
                     <div class="shrink-0 flex items-center gap-2">
+                        ${highestScoreHtml}
                         <button onclick="event.stopPropagation(); app.showHistoryModal('${exam.id}', '${exam.title.replace(/'/g, "\\'")}')" 
                             class="w-8 h-8 md:w-9 md:h-9 rounded-lg bg-indigo-50 dark:bg-indigo-900/30 text-indigo-600 dark:text-indigo-400 flex items-center justify-center hover:bg-indigo-100 dark:hover:bg-indigo-900/50 transition-colors" 
                             title="Xem lịch sử làm bài">
