@@ -2011,10 +2011,10 @@ const app = {
         this.startTimer(examMeta.time * 60);
         this.renderMath();
 
-        // Log practice attempt (ghi log và tăng số lượt thi)
+        // Log practice attempt (ghi log và tăng số lượt thi) - mode 'classic'
         if (window.firebaseExams?.logPracticeAttempt) {
-            console.log('[Practice] Logging attempt for:', examId, examMeta.title, subId);
-            window.firebaseExams.logPracticeAttempt(examId, examMeta.title, subId)
+            console.log('[Practice] Logging attempt for:', examId, examMeta.title, subId, 'mode: classic');
+            window.firebaseExams.logPracticeAttempt(examId, examMeta.title, subId, 'classic')
                 .then(() => console.log('[Practice] Attempt logged successfully'))
                 .catch(err => console.error('[Practice] Failed to log attempt:', err));
         } else {
@@ -2880,19 +2880,33 @@ const app = {
                 const timeStr = date.toLocaleTimeString('vi-VN', { hour: '2-digit', minute: '2-digit' });
                 const durationMins = Math.floor(item.durationSeconds / 60);
                 const durationSecs = item.durationSeconds % 60;
-                const scoreColor = item.score >= 8 ? 'text-emerald-600 dark:text-emerald-400'
-                    : item.score >= 5 ? 'text-blue-600 dark:text-blue-400'
-                        : 'text-red-600 dark:text-red-400';
-                const scoreBg = item.score >= 8 ? 'bg-emerald-50 dark:bg-emerald-900/30'
-                    : item.score >= 5 ? 'bg-blue-50 dark:bg-blue-900/30'
-                        : 'bg-red-50 dark:bg-red-900/30';
+
+                // Check if this was a step-by-step mode attempt
+                const isStepMode = item.mode === 'stepbystep';
+
+                let scoreDisplay, scoreBg, scoreColor;
+                if (isStepMode) {
+                    // Show "Từng câu" label instead of score for step-by-step mode
+                    scoreDisplay = 'Từng câu';
+                    scoreBg = 'bg-purple-50 dark:bg-purple-900/30';
+                    scoreColor = 'text-purple-600 dark:text-purple-400';
+                } else {
+                    // Normal score display
+                    scoreDisplay = item.score.toFixed(1);
+                    scoreColor = item.score >= 8 ? 'text-emerald-600 dark:text-emerald-400'
+                        : item.score >= 5 ? 'text-blue-600 dark:text-blue-400'
+                            : 'text-red-600 dark:text-red-400';
+                    scoreBg = item.score >= 8 ? 'bg-emerald-50 dark:bg-emerald-900/30'
+                        : item.score >= 5 ? 'bg-blue-50 dark:bg-blue-900/30'
+                            : 'bg-red-50 dark:bg-red-900/30';
+                }
 
                 return `
                     <div class="bg-slate-50 dark:bg-slate-700/50 rounded-xl p-4 border border-slate-200 dark:border-slate-600 hover:border-indigo-300 dark:hover:border-indigo-500 transition-colors">
                         <div class="flex items-center justify-between gap-3">
                             <div class="flex items-center gap-3">
                                 <div class="w-10 h-10 ${scoreBg} rounded-xl flex items-center justify-center shrink-0">
-                                    <span class="font-bold ${scoreColor}">${item.score.toFixed(1)}</span>
+                                    <span class="font-bold ${scoreColor} ${isStepMode ? 'text-xs' : ''}">${scoreDisplay}</span>
                                 </div>
                                 <div>
                                     <div class="flex items-center gap-2 text-sm font-medium text-slate-700 dark:text-slate-200">
@@ -2909,6 +2923,7 @@ const app = {
                                             <svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>
                                             ${durationMins}:${durationSecs.toString().padStart(2, '0')}
                                         </span>
+                                        ${isStepMode ? '<span class="px-1.5 py-0.5 bg-purple-100 dark:bg-purple-900/50 text-purple-600 dark:text-purple-400 rounded text-[10px] font-bold">Từng câu</span>' : ''}
                                     </div>
                                 </div>
                             </div>
@@ -3135,7 +3150,8 @@ const app = {
             selectedAnswer: null,
             tfAnswers: {},
             isChecked: false,
-            isCorrect: false
+            isCorrect: false,
+            scoredQuestions: {} // Track which questions have been scored to prevent double counting
         };
 
         this.currentExam = { meta: examMeta, data: examData, subId: subId };
@@ -3148,8 +3164,15 @@ const app = {
         // Update total count
         document.getElementById('step-total').textContent = questionQueue.length;
 
-
-
+        // Log practice attempt (ghi log và tăng số lượt thi) - mode 'stepbystep'
+        if (window.firebaseExams?.logPracticeAttempt) {
+            console.log('[Practice] Logging attempt for:', examId, examMeta.title, subId, 'mode: stepbystep');
+            window.firebaseExams.logPracticeAttempt(examId, examMeta.title, subId, 'stepbystep')
+                .then(() => console.log('[Practice] Step mode attempt logged successfully'))
+                .catch(err => console.error('[Practice] Failed to log step mode attempt:', err));
+        } else {
+            console.warn('[Practice] logPracticeAttempt not available');
+        }
 
         // Render first question
         this.renderStepQuestion();
@@ -3408,6 +3431,11 @@ const app = {
         const q = this.stepMode.currentQuestion;
         if (!q) return;
 
+        const questionId = `${q.type}_${q.data.id}`;
+
+        // Check if this question was already scored
+        const alreadyScored = this.stepMode.scoredQuestions[questionId];
+
         // Remove previous selection
         document.querySelectorAll('#step-options-container .step-option').forEach(b => {
             b.classList.remove('step-option-selected', 'step-option-correct', 'step-option-wrong');
@@ -3422,7 +3450,12 @@ const app = {
             // Correct - show green
             btnEl.classList.add('step-option-correct');
             this.stepMode.isCorrect = true;
-            this.stepMode.correctCount++;
+
+            // Only count score if not already scored
+            if (!alreadyScored) {
+                this.stepMode.correctCount++;
+                this.stepMode.scoredQuestions[questionId] = 'correct';
+            }
 
             // Update count and show next button
             document.getElementById('step-correct-count').textContent = this.stepMode.correctCount;
@@ -3480,6 +3513,9 @@ const app = {
         const q = this.stepMode.currentQuestion;
         if (!q || this.stepMode.isChecked) return;
 
+        const questionId = `${q.type}_${q.data.id}`;
+        const alreadyScored = this.stepMode.scoredQuestions[questionId];
+
         // Part 2 - True/False
         if (q.type === 'part2') {
             const subQuestions = q.data.subQuestions || [];
@@ -3529,7 +3565,13 @@ const app = {
             if (allCorrect) {
                 // All correct - show next button
                 this.stepMode.isCorrect = true;
-                this.stepMode.correctCount++;
+
+                // Only count score if not already scored
+                if (!alreadyScored) {
+                    this.stepMode.correctCount++;
+                    this.stepMode.scoredQuestions[questionId] = 'correct';
+                }
+
                 document.getElementById('step-correct-count').textContent = this.stepMode.correctCount;
                 document.getElementById('step-check-btn').classList.add('hidden');
                 document.getElementById('step-next-btn').classList.remove('hidden');
@@ -3569,7 +3611,12 @@ const app = {
 
                 this.stepMode.isChecked = true;
                 this.stepMode.isCorrect = true;
-                this.stepMode.correctCount++;
+
+                // Only count score if not already scored
+                if (!alreadyScored) {
+                    this.stepMode.correctCount++;
+                    this.stepMode.scoredQuestions[questionId] = 'correct';
+                }
 
                 document.getElementById('step-correct-count').textContent = this.stepMode.correctCount;
                 document.getElementById('step-check-btn').classList.add('hidden');
@@ -3667,12 +3714,35 @@ const app = {
         const total = questionQueue.length;
         const score = ((correctCount / total) * 10).toFixed(1);
 
-        this.renderTemplate('tpl-result');
-
         // Calculate time
         const duration = Math.floor((new Date() - this.startTime) / 1000);
         const minutes = Math.floor(duration / 60);
         const seconds = duration % 60;
+
+        // Store exam result for saving to Firebase
+        this.examResult = {
+            examId: this.currentExam.meta.id,
+            examTitle: this.currentExam.meta.title,
+            subjectId: this.currentExam.subId,
+            score: parseFloat(score),
+            correctCount,
+            totalQuestions: total,
+            wrongCount: total - correctCount - skippedCount,
+            skippedCount,
+            durationSeconds: duration,
+            mode: 'stepbystep', // Mark as step-by-step mode
+            answers: { ...this.stepMode.scoredQuestions }, // Store scored questions
+            examData: this.currentExam.data
+        };
+
+        // Save result to Firebase for history
+        if (window.firebaseExams?.savePracticeResult) {
+            window.firebaseExams.savePracticeResult(this.examResult)
+                .then(() => console.log('[Practice] Step mode result saved to Firebase'))
+                .catch(err => console.error('[Practice] Failed to save step mode result:', err));
+        }
+
+        this.renderTemplate('tpl-result');
 
         document.getElementById('result-subject-name').textContent = `${this.currentExam.meta.title} (Chế độ Từng Câu)`;
         document.getElementById('score-display').textContent = score;
@@ -3682,7 +3752,7 @@ const app = {
 
         // Update average bar
         const avgBar = document.getElementById('stat-avg-bar');
-        if (avgBar) avgBar.style.width = (score * 10) + '%';
+        if (avgBar) avgBar.style.width = (parseFloat(score) * 10) + '%';
     }
 };
 
