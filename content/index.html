@@ -4,12 +4,12 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>StudyStation - Cổng thông tin học tập</title>
+    <title>StudyStation - Cá»•ng thÃ´ng tin há»c táº­p</title>
     <meta name="ga-measurement-id" content="G-4FGSW7XDZ9">
     <link rel="icon" type="image/png" href="../favicon.png">
-    <!-- Tải Tailwind CSS -->
+    <!-- Táº£i Tailwind CSS -->
     <script src="https://cdn.tailwindcss.com"></script>
-    <!-- Tải font Be Vietnam Pro từ Google Fonts -->
+    <!-- Táº£i font Be Vietnam Pro tá»« Google Fonts -->
     <link href="https://fonts.googleapis.com/css2?family=Be+Vietnam+Pro:wght@400;500;600;700&display=swap"
         rel="stylesheet">
 
@@ -87,16 +87,16 @@
         }
 
 
-        /* Định nghĩa hiệu ứng chuyển cảnh (fade-in và trượt lên) */
+        /* Äá»‹nh nghÄ©a hiá»‡u á»©ng chuyá»ƒn cáº£nh (fade-in vÃ  trÆ°á»£t lÃªn) */
         .page-content {
             display: none;
-            /* Ẩn tất cả các trang theo mặc định */
+            /* áº¨n táº¥t cáº£ cÃ¡c trang theo máº·c Ä‘á»‹nh */
             animation: pageFadeIn 0.5s cubic-bezier(0.25, 0.46, 0.45, 0.94) forwards;
         }
 
         .page-content.active {
             display: block;
-            /* Hiển thị trang đang hoạt động */
+            /* Hiá»ƒn thá»‹ trang Ä‘ang hoáº¡t Ä‘á»™ng */
         }
 
         @keyframes pageFadeIn {
@@ -111,7 +111,7 @@
             }
         }
 
-        /* Hiệu ứng hover mượt mà cho các nút môn học */
+        /* Hiá»‡u á»©ng hover mÆ°á»£t mÃ  cho cÃ¡c nÃºt mÃ´n há»c */
         .subject-card {
             transition: transform 0.3s ease, box-shadow 0.3s ease;
         }
@@ -173,7 +173,7 @@
             transition: opacity 0.075s ease-in, transform 0.075s ease-in;
         }
 
-        /* Modal Animation - Cập nhật */
+        /* Modal Animation - Cáº­p nháº­t */
         #notification-modal {
             transition: opacity 0.3s ease;
         }
@@ -193,7 +193,7 @@
 
 <body class="bg-gray-100 relative">
 
-    <!-- Màn hình Loading Gatekeeper -->
+    <!-- MÃ n hÃ¬nh Loading Gatekeeper -->
     <div id="gatekeeper-loading"
         style="position:fixed;top:0;left:0;width:100%;height:100%;background:#0f172a;display:none;justify-content:center;align-items:center;color:#ffffff;z-index:9999">
         <div style="display:flex;flex-direction:column;align-items:center;gap:10px">
@@ -205,13 +205,13 @@
         </div>
     </div>
 
-    <!-- NEW HEADER: Cố định góc trên -->
+    <!-- NEW HEADER: Cá»‘ Ä‘á»‹nh gÃ³c trÃªn -->
     <header
         class="fixed top-0 left-0 w-full z-40 px-6 py-4 flex justify-between items-center bg-gradient-to-b from-black/70 to-transparent pointer-events-none">
         <!-- Logo Area -->
         <div class="pointer-events-auto">
             <h1 class="text-2xl md:text-3xl font-bold text-white drop-shadow-md flex items-center gap-2">
-                Study<span class="text-yellow-400">Station</span> <span class="text-2xl animate-bounce">🧧</span>
+                Study<span class="text-yellow-400">Station</span> <span class="text-2xl animate-bounce">ðŸ§§</span>
             </h1>
             <!-- Online Users Counter -->
             <div id="online-users-badge" class="flex items-center gap-1.5 mt-1 ml-1">
@@ -226,7 +226,7 @@
 
         <!-- Right Actions -->
         <div class="flex items-center gap-4 relative pointer-events-auto">
-            <!-- Icon Thông báo (Bell) -->
+            <!-- Icon ThÃ´ng bÃ¡o (Bell) -->
             <button id="notification-bell-btn"
                 class="relative p-2 text-white hover:text-yellow-300 transition-colors focus:outline-none">
                 <svg class="w-7 h-7 filter drop-shadow-sm" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -238,10 +238,10 @@
                     class="absolute top-1 right-1.5 w-2.5 h-2.5 bg-red-600 border border-white rounded-full hidden shadow-sm"></span>
             </button>
 
-            <!-- Text Xin chào -->
+            <!-- Text Xin chÃ o -->
             <div class="hidden md:flex flex-col items-end text-right mr-1">
-                <p class="text-xs text-yellow-200 uppercase tracking-wider font-bold">Xin chào</p>
-                <p id="header-acc-name" class="text-white font-bold text-sm drop-shadow-sm truncate max-w-[150px]">Bạn
+                <p class="text-xs text-yellow-200 uppercase tracking-wider font-bold">Xin chÃ o</p>
+                <p id="header-acc-name" class="text-white font-bold text-sm drop-shadow-sm truncate max-w-[150px]">Báº¡n
                 </p>
             </div>
 
@@ -258,7 +258,7 @@
                 <div id="acc-dropdown"
                     class="hidden user-dropdown-menu absolute right-0 z-50 mt-2 w-60 origin-top-right rounded-xl bg-white/95 backdrop-blur-xl shadow-2xl ring-1 ring-black ring-opacity-5 focus:outline-none">
                     <div class="px-4 py-4 border-b border-gray-100 bg-red-50/50 rounded-t-xl">
-                        <p class="text-xs font-bold text-red-500 uppercase tracking-wide mb-1">Tài khoản</p>
+                        <p class="text-xs font-bold text-red-500 uppercase tracking-wide mb-1">TÃ i khoáº£n</p>
                         <div class="flex items-center gap-2">
                             <p id="acc-name" class="text-base font-bold text-gray-900 truncate">User Name</p>
                             <span id="admin-badge"
@@ -268,19 +268,19 @@
                     </div>
                     <div class="py-2">
                         <a id="admin-link" href="./admin/index.html"
-                            class="hidden block px-4 py-2.5 text-sm text-red-600 font-bold hover:bg-red-50 transition-colors">⚡
-                            Trang Quản Trị</a>
+                            class="hidden block px-4 py-2.5 text-sm text-red-600 font-bold hover:bg-red-50 transition-colors">âš¡
+                            Trang Quáº£n Trá»‹</a>
                         <a href="#"
-                            class="block px-4 py-2.5 text-sm text-gray-700 hover:bg-gray-50 hover:text-blue-600 transition-colors">Hồ
-                            sơ cá nhân</a>
+                            class="block px-4 py-2.5 text-sm text-gray-700 hover:bg-gray-50 hover:text-blue-600 transition-colors">Há»“
+                            sÆ¡ cÃ¡ nhÃ¢n</a>
                         <button id="menu-history-btn"
-                            class="block w-full text-left px-4 py-2.5 text-sm text-gray-700 hover:bg-gray-50 hover:text-blue-600 transition-colors">Lịch
-                            sử thông báo</button>
+                            class="block w-full text-left px-4 py-2.5 text-sm text-gray-700 hover:bg-gray-50 hover:text-blue-600 transition-colors">Lá»‹ch
+                            sá»­ thÃ´ng bÃ¡o</button>
                     </div>
                     <div class="py-2 border-t border-gray-100">
                         <button id="acc-logout"
-                            class="block w-full text-left px-4 py-2.5 text-sm text-red-600 font-bold hover:bg-red-50 transition-colors rounded-b-xl">Đăng
-                            xuất</button>
+                            class="block w-full text-left px-4 py-2.5 text-sm text-red-600 font-bold hover:bg-red-50 transition-colors rounded-b-xl">ÄÄƒng
+                            xuáº¥t</button>
                     </div>
                 </div>
             </div>
@@ -293,7 +293,7 @@
         <div class="absolute inset-0 bg-black/60 backdrop-blur-sm transition-opacity opacity-0" id="modal-backdrop"
             style="transition: opacity 0.3s ease;"></div>
 
-        <!-- Nội dung Modal -->
+        <!-- Ná»™i dung Modal -->
         <div id="modal-card"
             class="modal-card-content bg-white rounded-2xl shadow-2xl w-full max-w-md relative z-10 overflow-hidden">
             <!-- Header Modal -->
@@ -304,7 +304,7 @@
                             d="M15 17h5l-1.405-1.405A2.032 2.032 0 0118 14.158V11a6.002 6.002 0 00-4-5.659V5a2 2 0 10-4 0v.341C7.67 6.165 6 8.388 6 11v3.159c0 .538-.214 1.055-.595 1.436L4 17h5m6 0v1a3 3 0 11-6 0v-1m6 0H9">
                         </path>
                     </svg>
-                    Thông báo mới
+                    ThÃ´ng bÃ¡o má»›i
                 </h3>
                 <button id="close-modal-btn" class="text-blue-100 hover:text-white transition-colors">
                     <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -317,7 +317,7 @@
             <!-- Body Modal -->
             <div class="p-6">
                 <div id="latest-notification-content">
-                    <!-- Nội dung sẽ được JS inject vào đây -->
+                    <!-- Ná»™i dung sáº½ Ä‘Æ°á»£c JS inject vÃ o Ä‘Ã¢y -->
                     <div class="animate-pulse flex space-x-4">
                         <div class="flex-1 space-y-4 py-1">
                             <div class="h-4 bg-gray-200 rounded w-3/4"></div>
@@ -332,29 +332,29 @@
 
             <!-- Footer Modal -->
             <div class="bg-gray-50 px-6 py-3 flex justify-between items-center border-t border-gray-100">
-                <button id="view-history-btn-modal" class="text-sm text-blue-600 font-medium hover:underline">Xem lịch
-                    sử cập nhật</button>
+                <button id="view-history-btn-modal" class="text-sm text-blue-600 font-medium hover:underline">Xem lá»‹ch
+                    sá»­ cáº­p nháº­t</button>
                 <button id="close-modal-btn-sub"
-                    class="px-4 py-2 bg-blue-600 text-white text-sm font-medium rounded-lg hover:bg-blue-700 transition-colors">Đã
-                    hiểu</button>
+                    class="px-4 py-2 bg-blue-600 text-white text-sm font-medium rounded-lg hover:bg-blue-700 transition-colors">ÄÃ£
+                    hiá»ƒu</button>
             </div>
         </div>
     </div>
 
-    <!-- Card chính của ứng dụng -->
+    <!-- Card chÃ­nh cá»§a á»©ng dá»¥ng -->
     <div class="w-full max-w-5xl mx-auto glass-panel mt-24 md:mt-32 mb-10 overflow-hidden rounded-3xl relative">
 
-        <!-- Khu vực nội dung chính -->
+        <!-- Khu vá»±c ná»™i dung chÃ­nh -->
         <main class="w-full p-6 md:p-8 min-h-[500px]">
 
 
 
-            <!-- 1. Trang Menu Thẻ (Hub Trung Tâm) -->
+            <!-- 1. Trang Menu Tháº» (Hub Trung TÃ¢m) -->
             <div id="menu-cards" class="page-content active pt-4">
                 <!-- Grid Menu Cards - Reset Layout -->
                 <div class="grid grid-cols-2 md:grid-cols-3 gap-6">
 
-                    <!-- Card Bài Thi -->
+                    <!-- Card BÃ i Thi -->
                     <div class="menu-card relative group rounded-2xl p-6 h-48 flex flex-col items-center justify-center gap-4 cursor-pointer border border-white/40 hover:border-yellow-400 bg-white/20 transition-all duration-300"
                         data-link="./practice/index.html">
                         <div
@@ -365,13 +365,13 @@
                                 </path>
                             </svg>
                         </div>
-                        <span class="text-lg font-bold text-gray-800 tracking-wide group-hover:text-red-700">Bài
+                        <span class="text-lg font-bold text-gray-800 tracking-wide group-hover:text-red-700">BÃ i
                             Thi</span>
                     </div>
 
 
 
-                    <!-- Card Lịch Thi -->
+                    <!-- Card Lá»‹ch Thi -->
                     <div class="menu-card relative group rounded-2xl p-6 h-48 flex flex-col items-center justify-center gap-4 cursor-pointer border border-white/40 hover:border-yellow-400 bg-white/20 transition-all duration-300"
                         data-target="lich-thi-main">
                         <div
@@ -381,11 +381,11 @@
                                     d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"></path>
                             </svg>
                         </div>
-                        <span class="text-lg font-bold text-gray-800 tracking-wide group-hover:text-red-700">Lịch
+                        <span class="text-lg font-bold text-gray-800 tracking-wide group-hover:text-red-700">Lá»‹ch
                             Thi</span>
                     </div>
 
-                    <!-- Card Tài Liệu -->
+                    <!-- Card TÃ i Liá»‡u -->
                     <div class="menu-card relative group rounded-2xl p-6 h-48 flex flex-col items-center justify-center gap-4 cursor-pointer border border-white/40 hover:border-yellow-400 bg-white/20 transition-all duration-300"
                         data-target="tai-lieu-main">
                         <div
@@ -395,8 +395,8 @@
                                     d="M3 7v10a2 2 0 002 2h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2z"></path>
                             </svg>
                         </div>
-                        <span class="text-lg font-bold text-gray-800 tracking-wide group-hover:text-red-700">Tài
-                            Liệu</span>
+                        <span class="text-lg font-bold text-gray-800 tracking-wide group-hover:text-red-700">TÃ i
+                            Liá»‡u</span>
                     </div>
 
 
@@ -435,9 +435,9 @@
                 </div>
             </div>
 
-            <!-- 2. Trang Chọn Môn Học (Ôn thi) -->
+            <!-- 2. Trang Chá»n MÃ´n Há»c (Ã”n thi) -->
             <div id="on-thi-main" class="page-content">
-                <!-- Nút Quay lại Menu -->
+                <!-- NÃºt Quay láº¡i Menu -->
                 <button
                     class="back-to-menu-btn flex items-center space-x-2 text-gray-600 hover:text-blue-600 transition-colors duration-300 mb-6 group">
                     <svg class="w-5 h-5 transition-transform duration-300 group-hover:-translate-x-1" fill="none"
@@ -446,35 +446,36 @@
                             d="M10 19l-7-7m0 0l7-7m-7 7h18">
                         </path>
                     </svg>
-                    <span class="font-medium">Quay lại Menu</span>
+                    <span class="font-medium">Quay láº¡i Menu</span>
                 </button>
-                <h2 class="text-3xl md:text-4xl font-bold text-gray-800 mb-8">Chọn môn học (Ôn thi)</h2>
+                <h2 class="text-3xl md:text-4xl font-bold text-gray-800 mb-8">Chá»n mÃ´n há»c (Ã”n thi)</h2>
 
                 <div class="grid grid-cols-2 gap-6">
                     <a href="./practice/vat-li.html"
                         class="subject-card block p-6 bg-gradient-to-br from-blue-500 to-blue-600 text-white rounded-xl cursor-pointer decoration-0 hover:no-underline">
-                        <h3 class="text-xl md:text-2xl font-semibold mb-2">Vật lí</h3>
-                        <p class="font-light">Các định luật Newton, điện học, quang học và hơn thế nữa.</p>
+                        <h3 class="text-xl md:text-2xl font-semibold mb-2">Váº­t lÃ­</h3>
+                        <p class="font-light">CÃ¡c Ä‘á»‹nh luáº­t Newton, Ä‘iá»‡n há»c, quang há»c vÃ  hÆ¡n tháº¿
+                            ná»¯a.</p>
                     </a>
                     <a href="./practice/sinh-hoc.html"
                         class="subject-card block p-6 bg-gradient-to-br from-green-500 to-green-600 text-white rounded-xl cursor-pointer decoration-0 hover:no-underline">
-                        <h3 class="text-xl md:text-2xl font-semibold mb-2">Sinh học</h3>
-                        <p class="font-light">Di truyền, tế bào, hệ sinh thái và quá trình tiến hóa.</p>
+                        <h3 class="text-xl md:text-2xl font-semibold mb-2">Sinh há»c</h3>
+                        <p class="font-light">Di truyá»n, táº¿ bÃ o, há»‡ sinh thÃ¡i vÃ  quÃ¡ trÃ¬nh tiáº¿n hÃ³a.</p>
                     </a>
                     <a href="./practice/tin-hoc.html"
                         class="subject-card block p-6 bg-gradient-to-br from-purple-500 to-purple-600 text-white rounded-xl cursor-pointer decoration-0 hover:no-underline">
-                        <h3 class="text-xl md:text-2xl font-semibold mb-2">Tin học</h3>
-                        <p class="font-light">Cấu trúc dữ liệu, giải thuật và lập trình cơ bản.</p>
+                        <h3 class="text-xl md:text-2xl font-semibold mb-2">Tin há»c</h3>
+                        <p class="font-light">Cáº¥u trÃºc dá»¯ liá»‡u, giáº£i thuáº­t vÃ  láº­p trÃ¬nh cÆ¡ báº£n.</p>
                     </a>
                     <a href="./practice/lich-su.html"
                         class="subject-card block p-6 bg-gradient-to-br from-yellow-500 to-orange-500 text-white rounded-xl cursor-pointer decoration-0 hover:no-underline">
-                        <h3 class="text-xl md:text-2xl font-semibold mb-2">Lịch sử</h3>
-                        <p class="font-light">Các cuộc chiến tranh, cách mạng và các triều đại.</p>
+                        <h3 class="text-xl md:text-2xl font-semibold mb-2">Lá»‹ch sá»­</h3>
+                        <p class="font-light">CÃ¡c cuá»™c chiáº¿n tranh, cÃ¡ch máº¡ng vÃ  cÃ¡c triá»u Ä‘áº¡i.</p>
                     </a>
                 </div>
             </div>
 
-            <!-- 2b. Trang Chọn Môn Học (Tài liệu) -->
+            <!-- 2b. Trang Chá»n MÃ´n Há»c (TÃ i liá»‡u) -->
             <div id="tai-lieu-main" class="page-content">
                 <button
                     onclick="document.getElementById('docs-exam-list').classList.add('hidden'); document.getElementById('docs-subject-grid').classList.remove('hidden');"
@@ -485,84 +486,84 @@
                             d="M10 19l-7-7m0 0l7-7m-7 7h18">
                         </path>
                     </svg>
-                    <span class="font-medium">Quay lại Danh sách môn</span>
+                    <span class="font-medium">Quay láº¡i Danh sÃ¡ch mÃ´n</span>
                 </button>
-                <h2 class="text-3xl md:text-4xl font-bold text-gray-800 mb-8">Kho Tài Liệu Exam</h2>
+                <h2 class="text-3xl md:text-4xl font-bold text-gray-800 mb-8">Kho TÃ i Liá»‡u Exam</h2>
 
-                <!-- Grid Môn Học -->
+                <!-- Grid MÃ´n Há»c -->
                 <div id="docs-subject-grid" class="grid grid-cols-2 md:grid-cols-3 gap-6">
-                    <!-- Vật lí (physics) - Blue -->
-                    <div onclick="docsApp.loadExamsForSubject('physics', 'Vật lí')"
+                    <!-- Váº­t lÃ­ (physics) - Blue -->
+                    <div onclick="docsApp.loadExamsForSubject('physics', 'Váº­t lÃ­')"
                         class="subject-card group p-6 bg-gradient-to-br from-blue-600 to-indigo-700 text-white rounded-2xl cursor-pointer hover:shadow-xl hover:-translate-y-1 transition-all duration-300">
                         <div
                             class="mb-4 bg-white/20 w-12 h-12 rounded-lg flex items-center justify-center backdrop-blur-sm">
-                            <span class="text-2xl">⚡</span>
+                            <span class="text-2xl">âš¡</span>
                         </div>
-                        <h3 class="text-xl font-bold mb-1">Vật lí</h3>
-                        <p class="text-sm text-blue-100 opacity-90">Cơ, Nhiệt, Điện & Hạt nhân</p>
+                        <h3 class="text-xl font-bold mb-1">Váº­t lÃ­</h3>
+                        <p class="text-sm text-blue-100 opacity-90">CÆ¡, Nhiá»‡t, Äiá»‡n & Háº¡t nhÃ¢n</p>
                     </div>
 
-                    <!-- Toán (math) - Red -->
-                    <div onclick="docsApp.loadExamsForSubject('math', 'Toán Học')"
+                    <!-- ToÃ¡n (math) - Red -->
+                    <div onclick="docsApp.loadExamsForSubject('math', 'ToÃ¡n Há»c')"
                         class="subject-card group p-6 bg-gradient-to-br from-red-600 to-rose-700 text-white rounded-2xl cursor-pointer hover:shadow-xl hover:-translate-y-1 transition-all duration-300">
                         <div
                             class="mb-4 bg-white/20 w-12 h-12 rounded-lg flex items-center justify-center backdrop-blur-sm">
-                            <span class="text-2xl">📐</span>
+                            <span class="text-2xl">ðŸ“</span>
                         </div>
-                        <h3 class="text-xl font-bold mb-1">Toán Học</h3>
-                        <p class="text-sm text-red-100 opacity-90">Đại số, Hình học & Giải tích</p>
+                        <h3 class="text-xl font-bold mb-1">ToÃ¡n Há»c</h3>
+                        <p class="text-sm text-red-100 opacity-90">Äáº¡i sá»‘, HÃ¬nh há»c & Giáº£i tÃ­ch</p>
                     </div>
 
-                    <!-- Hóa học (chem) - Cyan -->
-                    <div onclick="docsApp.loadExamsForSubject('chem', 'Hóa Học')"
+                    <!-- HÃ³a há»c (chem) - Cyan -->
+                    <div onclick="docsApp.loadExamsForSubject('chem', 'HÃ³a Há»c')"
                         class="subject-card group p-6 bg-gradient-to-br from-cyan-600 to-sky-700 text-white rounded-2xl cursor-pointer hover:shadow-xl hover:-translate-y-1 transition-all duration-300">
                         <div
                             class="mb-4 bg-white/20 w-12 h-12 rounded-lg flex items-center justify-center backdrop-blur-sm">
-                            <span class="text-2xl">🧪</span>
+                            <span class="text-2xl">ðŸ§ª</span>
                         </div>
-                        <h3 class="text-xl font-bold mb-1">Hóa Học</h3>
-                        <p class="text-sm text-cyan-100 opacity-90">Vô cơ & Hữu cơ</p>
+                        <h3 class="text-xl font-bold mb-1">HÃ³a Há»c</h3>
+                        <p class="text-sm text-cyan-100 opacity-90">VÃ´ cÆ¡ & Há»¯u cÆ¡</p>
                     </div>
 
-                    <!-- Sinh học (bio) - Emerald -->
-                    <div onclick="docsApp.loadExamsForSubject('bio', 'Sinh Học')"
+                    <!-- Sinh há»c (bio) - Emerald -->
+                    <div onclick="docsApp.loadExamsForSubject('bio', 'Sinh Há»c')"
                         class="subject-card group p-6 bg-gradient-to-br from-emerald-600 to-green-700 text-white rounded-2xl cursor-pointer hover:shadow-xl hover:-translate-y-1 transition-all duration-300">
                         <div
                             class="mb-4 bg-white/20 w-12 h-12 rounded-lg flex items-center justify-center backdrop-blur-sm">
-                            <span class="text-2xl">🧬</span>
+                            <span class="text-2xl">ðŸ§¬</span>
                         </div>
-                        <h3 class="text-xl font-bold mb-1">Sinh Học</h3>
-                        <p class="text-sm text-emerald-100 opacity-90">Di truyền & Tiến hóa</p>
+                        <h3 class="text-xl font-bold mb-1">Sinh Há»c</h3>
+                        <p class="text-sm text-emerald-100 opacity-90">Di truyá»n & Tiáº¿n hÃ³a</p>
                     </div>
 
-                    <!-- Lịch sử (history) - Orange -->
-                    <div onclick="docsApp.loadExamsForSubject('history', 'Lịch Sử')"
+                    <!-- Lá»‹ch sá»­ (history) - Orange -->
+                    <div onclick="docsApp.loadExamsForSubject('history', 'Lá»‹ch Sá»­')"
                         class="subject-card group p-6 bg-gradient-to-br from-orange-500 to-amber-600 text-white rounded-2xl cursor-pointer hover:shadow-xl hover:-translate-y-1 transition-all duration-300">
                         <div
                             class="mb-4 bg-white/20 w-12 h-12 rounded-lg flex items-center justify-center backdrop-blur-sm">
-                            <span class="text-2xl">🏛️</span>
+                            <span class="text-2xl">ðŸ›ï¸</span>
                         </div>
-                        <h3 class="text-xl font-bold mb-1">Lịch Sử</h3>
-                        <p class="text-sm text-orange-100 opacity-90">Việt Nam & Thế giới</p>
+                        <h3 class="text-xl font-bold mb-1">Lá»‹ch Sá»­</h3>
+                        <p class="text-sm text-orange-100 opacity-90">Viá»‡t Nam & Tháº¿ giá»›i</p>
                     </div>
 
-                    <!-- Tin học (info) - Purple -->
-                    <div onclick="docsApp.loadExamsForSubject('info', 'Tin Học')"
+                    <!-- Tin há»c (info) - Purple -->
+                    <div onclick="docsApp.loadExamsForSubject('info', 'Tin Há»c')"
                         class="subject-card group p-6 bg-gradient-to-br from-purple-600 to-violet-700 text-white rounded-2xl cursor-pointer hover:shadow-xl hover:-translate-y-1 transition-all duration-300">
                         <div
                             class="mb-4 bg-white/20 w-12 h-12 rounded-lg flex items-center justify-center backdrop-blur-sm">
-                            <span class="text-2xl">💻</span>
+                            <span class="text-2xl">ðŸ’»</span>
                         </div>
-                        <h3 class="text-xl font-bold mb-1">Tin Học</h3>
-                        <p class="text-sm text-purple-100 opacity-90">Lập trình & CSDL</p>
+                        <h3 class="text-xl font-bold mb-1">Tin Há»c</h3>
+                        <p class="text-sm text-purple-100 opacity-90">Láº­p trÃ¬nh & CSDL</p>
                     </div>
                 </div>
 
-                <!-- Danh sách đề thi (Ẩn mặc định) -->
+                <!-- Danh sÃ¡ch Ä‘á» thi (áº¨n máº·c Ä‘á»‹nh) -->
                 <div id="docs-exam-list" class="hidden animate-fade-in">
                     <div class="flex items-center justify-between mb-6">
-                        <h3 id="docs-selected-subject" class="text-2xl font-bold text-blue-600">Môn học</h3>
-                        <div class="text-sm text-gray-500">Chọn đề thi để tải về</div>
+                        <h3 id="docs-selected-subject" class="text-2xl font-bold text-blue-600">MÃ´n há»c</h3>
+                        <div class="text-sm text-gray-500">Chá»n Ä‘á» thi Ä‘á»ƒ táº£i vá»</div>
                     </div>
                     <div id="docs-exam-container" class="grid grid-cols-1 md:grid-cols-2 gap-4">
                         <!-- Exam cards will be injected here -->
@@ -587,7 +588,7 @@
                                     </svg>
                                 </div>
                                 <div>
-                                    <h3 class="text-lg font-bold text-gray-900">Tải đề thi</h3>
+                                    <h3 class="text-lg font-bold text-gray-900">Táº£i Ä‘á» thi</h3>
                                     <p id="download-exam-title" class="text-sm text-gray-500 truncate max-w-[200px]">
                                     </p>
                                 </div>
@@ -605,29 +606,30 @@
                     <div class="p-5 space-y-5">
                         <!-- Include/Exclude Answers -->
                         <div>
-                            <label class="text-sm font-bold text-gray-700 block mb-3">Nội dung bao gồm</label>
+                            <label class="text-sm font-bold text-gray-700 block mb-3">Ná»™i dung bao gá»“m</label>
                             <div class="space-y-2">
                                 <label
                                     class="flex items-center gap-3 p-3 rounded-xl border border-gray-200 hover:bg-gray-50 cursor-pointer transition-colors">
                                     <input type="radio" name="download-answers" value="no" checked
                                         class="w-4 h-4 text-emerald-600 border-gray-300 focus:ring-emerald-500">
-                                    <div><span class="text-sm font-medium text-gray-700">Chỉ câu hỏi</span>
-                                        <p class="text-xs text-gray-400">Tải về đề thi không kèm đáp án</p>
+                                    <div><span class="text-sm font-medium text-gray-700">Chá»‰ cÃ¢u há»i</span>
+                                        <p class="text-xs text-gray-400">Táº£i vá» Ä‘á» thi khÃ´ng kÃ¨m Ä‘Ã¡p Ã¡n</p>
                                     </div>
                                 </label>
                                 <label
                                     class="flex items-center gap-3 p-3 rounded-xl border border-gray-200 hover:bg-gray-50 cursor-pointer transition-colors">
                                     <input type="radio" name="download-answers" value="yes"
                                         class="w-4 h-4 text-emerald-600 border-gray-300 focus:ring-emerald-500">
-                                    <div><span class="text-sm font-medium text-gray-700">Kèm đáp án</span>
-                                        <p class="text-xs text-gray-400">Tải về đề thi có đáp án ở cuối</p>
+                                    <div><span class="text-sm font-medium text-gray-700">KÃ¨m Ä‘Ã¡p Ã¡n</span>
+                                        <p class="text-xs text-gray-400">Táº£i vá» Ä‘á» thi cÃ³ Ä‘Ã¡p Ã¡n á»Ÿ cuá»‘i
+                                        </p>
                                     </div>
                                 </label>
                             </div>
                         </div>
                         <!-- Format Selection -->
                         <div>
-                            <label class="text-sm font-bold text-gray-700 block mb-3">Định dạng file</label>
+                            <label class="text-sm font-bold text-gray-700 block mb-3">Äá»‹nh dáº¡ng file</label>
                             <div class="grid grid-cols-3 gap-2">
                                 <label class="download-format-option relative">
                                     <input type="radio" name="download-format" value="docx" checked
@@ -657,15 +659,15 @@
                     <!-- Footer -->
                     <div class="p-4 border-t border-gray-100 bg-gray-50 flex gap-3">
                         <button onclick="docsApp.closeDownloadModal()"
-                            class="flex-1 py-2.5 px-4 rounded-xl border border-gray-200 text-gray-600 font-bold hover:bg-gray-100 transition-colors">Hủy</button>
+                            class="flex-1 py-2.5 px-4 rounded-xl border border-gray-200 text-gray-600 font-bold hover:bg-gray-100 transition-colors">Há»§y</button>
                         <button onclick="docsApp.confirmDownload()" id="download-confirm-btn"
-                            class="flex-1 py-2.5 px-4 rounded-xl bg-emerald-600 text-white font-bold hover:bg-emerald-700 shadow-lg shadow-emerald-500/30 transition-colors">Tải
-                            về</button>
+                            class="flex-1 py-2.5 px-4 rounded-xl bg-emerald-600 text-white font-bold hover:bg-emerald-700 shadow-lg shadow-emerald-500/30 transition-colors">Táº£i
+                            vá»</button>
                     </div>
                 </div>
             </div>
 
-            <!-- NEW: Trang Lịch Thi Khối 12 -->
+            <!-- NEW: Trang Lá»‹ch Thi Khá»‘i 12 -->
             <div id="lich-thi-main" class="page-content">
                 <button
                     class="back-to-menu-btn flex items-center space-x-2 text-gray-600 hover:text-blue-600 transition-colors duration-300 mb-6 group">
@@ -675,17 +677,17 @@
                             d="M10 19l-7-7m0 0l7-7m-7 7h18">
                         </path>
                     </svg>
-                    <span class="font-medium">Quay lại Menu</span>
+                    <span class="font-medium">Quay láº¡i Menu</span>
                 </button>
 
                 <div class="flex items-center justify-between mb-6">
-                    <h2 class="text-2xl md:text-3xl font-bold text-gray-800">📅 Lịch Thi Khối 12</h2>
+                    <h2 class="text-2xl md:text-3xl font-bold text-gray-800">ðŸ“… Lá»‹ch Thi Khá»‘i 12</h2>
                     <span
                         class="bg-red-100 text-red-700 text-xs font-bold px-3 py-1 rounded-full border border-red-200">HK1
                         - 2025-2026</span>
                 </div>
 
-                <!-- Lịch Thi dạng Card -->
+                <!-- Lá»‹ch Thi dáº¡ng Card -->
                 <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
 
                     <!-- Card 05/01 -->
@@ -695,28 +697,28 @@
                             class="bg-gradient-to-r from-red-500 to-red-600 text-white px-4 py-3 flex items-center justify-between">
                             <div class="flex items-center gap-2">
                                 <span class="text-2xl font-bold">05/01</span>
-                                <span class="text-red-100 text-sm">Thứ 2</span>
+                                <span class="text-red-100 text-sm">Thá»© 2</span>
                             </div>
-                            <span class="bg-white/20 text-xs px-2 py-1 rounded-full">2 môn</span>
+                            <span class="bg-white/20 text-xs px-2 py-1 rounded-full">2 mÃ´n</span>
                         </div>
                         <div class="p-4 space-y-3">
                             <div class="flex items-center justify-between p-3 bg-red-50 rounded-xl">
                                 <div class="flex items-center gap-2">
-                                    <span class="text-xl">📝</span>
-                                    <span class="font-bold text-gray-800">Ngữ văn</span>
+                                    <span class="text-xl">ðŸ“</span>
+                                    <span class="font-bold text-gray-800">Ngá»¯ vÄƒn</span>
                                 </div>
                                 <div class="text-right">
-                                    <div class="text-xs text-gray-500">90 phút</div>
+                                    <div class="text-xs text-gray-500">90 phÃºt</div>
                                     <div class="font-bold text-green-600">7g05</div>
                                 </div>
                             </div>
                             <div class="flex items-center justify-between p-3 bg-gray-50 rounded-xl">
                                 <div class="flex items-center gap-2">
-                                    <span class="text-xl">⚡</span>
-                                    <span class="font-bold text-gray-800">Vật lý</span>
+                                    <span class="text-xl">âš¡</span>
+                                    <span class="font-bold text-gray-800">Váº­t lÃ½</span>
                                 </div>
                                 <div class="text-right">
-                                    <div class="text-xs text-gray-500">45 phút</div>
+                                    <div class="text-xs text-gray-500">45 phÃºt</div>
                                     <div class="font-bold text-green-600">8g45</div>
                                 </div>
                             </div>
@@ -730,18 +732,18 @@
                             class="bg-gradient-to-r from-blue-500 to-blue-600 text-white px-4 py-3 flex items-center justify-between">
                             <div class="flex items-center gap-2">
                                 <span class="text-2xl font-bold">06/01</span>
-                                <span class="text-blue-100 text-sm">Thứ 3</span>
+                                <span class="text-blue-100 text-sm">Thá»© 3</span>
                             </div>
-                            <span class="bg-white/20 text-xs px-2 py-1 rounded-full">1 môn</span>
+                            <span class="bg-white/20 text-xs px-2 py-1 rounded-full">1 mÃ´n</span>
                         </div>
                         <div class="p-4 space-y-3">
                             <div class="flex items-center justify-between p-3 bg-blue-50 rounded-xl">
                                 <div class="flex items-center gap-2">
-                                    <span class="text-xl">🔢</span>
-                                    <span class="font-bold text-gray-800">Toán</span>
+                                    <span class="text-xl">ðŸ”¢</span>
+                                    <span class="font-bold text-gray-800">ToÃ¡n</span>
                                 </div>
                                 <div class="text-right">
-                                    <div class="text-xs text-gray-500">90 phút</div>
+                                    <div class="text-xs text-gray-500">90 phÃºt</div>
                                     <div class="font-bold text-green-600">7g05</div>
                                 </div>
                             </div>
@@ -755,28 +757,28 @@
                             class="bg-gradient-to-r from-green-500 to-green-600 text-white px-4 py-3 flex items-center justify-between">
                             <div class="flex items-center gap-2">
                                 <span class="text-2xl font-bold">07/01</span>
-                                <span class="text-green-100 text-sm">Thứ 4</span>
+                                <span class="text-green-100 text-sm">Thá»© 4</span>
                             </div>
-                            <span class="bg-white/20 text-xs px-2 py-1 rounded-full">2 môn</span>
+                            <span class="bg-white/20 text-xs px-2 py-1 rounded-full">2 mÃ´n</span>
                         </div>
                         <div class="p-4 space-y-3">
                             <div class="flex items-center justify-between p-3 bg-green-50 rounded-xl">
                                 <div class="flex items-center gap-2">
-                                    <span class="text-xl">📜</span>
-                                    <span class="font-bold text-gray-800">Lịch sử</span>
+                                    <span class="text-xl">ðŸ“œ</span>
+                                    <span class="font-bold text-gray-800">Lá»‹ch sá»­</span>
                                 </div>
                                 <div class="text-right">
-                                    <div class="text-xs text-gray-500">45 phút</div>
+                                    <div class="text-xs text-gray-500">45 phÃºt</div>
                                     <div class="font-bold text-green-600">7g05</div>
                                 </div>
                             </div>
                             <div class="flex items-center justify-between p-3 bg-gray-50 rounded-xl">
                                 <div class="flex items-center gap-2">
-                                    <span class="text-xl">🧪</span>
-                                    <span class="font-bold text-gray-800">Hóa học</span>
+                                    <span class="text-xl">ðŸ§ª</span>
+                                    <span class="font-bold text-gray-800">HÃ³a há»c</span>
                                 </div>
                                 <div class="text-right">
-                                    <div class="text-xs text-gray-500">45 phút</div>
+                                    <div class="text-xs text-gray-500">45 phÃºt</div>
                                     <div class="font-bold text-green-600">8g00</div>
                                 </div>
                             </div>
@@ -790,28 +792,28 @@
                             class="bg-gradient-to-r from-indigo-500 to-indigo-600 text-white px-4 py-3 flex items-center justify-between">
                             <div class="flex items-center gap-2">
                                 <span class="text-2xl font-bold">08/01</span>
-                                <span class="text-indigo-100 text-sm">Thứ 5</span>
+                                <span class="text-indigo-100 text-sm">Thá»© 5</span>
                             </div>
-                            <span class="bg-white/20 text-xs px-2 py-1 rounded-full">2 môn</span>
+                            <span class="bg-white/20 text-xs px-2 py-1 rounded-full">2 mÃ´n</span>
                         </div>
                         <div class="p-4 space-y-3">
                             <div class="flex items-center justify-between p-3 bg-indigo-50 rounded-xl">
                                 <div class="flex items-center gap-2">
-                                    <span class="text-xl">🌍</span>
-                                    <span class="font-bold text-gray-800">Tiếng Anh</span>
+                                    <span class="text-xl">ðŸŒ</span>
+                                    <span class="font-bold text-gray-800">Tiáº¿ng Anh</span>
                                 </div>
                                 <div class="text-right">
-                                    <div class="text-xs text-gray-500">60 phút</div>
+                                    <div class="text-xs text-gray-500">60 phÃºt</div>
                                     <div class="font-bold text-green-600">7g05</div>
                                 </div>
                             </div>
                             <div class="flex items-center justify-between p-3 bg-gray-50 rounded-xl">
                                 <div class="flex items-center gap-2">
-                                    <span class="text-xl">🧬</span>
-                                    <span class="font-bold text-gray-800">Sinh học</span>
+                                    <span class="text-xl">ðŸ§¬</span>
+                                    <span class="font-bold text-gray-800">Sinh há»c</span>
                                 </div>
                                 <div class="text-right">
-                                    <div class="text-xs text-gray-500">45 phút</div>
+                                    <div class="text-xs text-gray-500">45 phÃºt</div>
                                     <div class="font-bold text-green-600">8g15</div>
                                 </div>
                             </div>
@@ -825,28 +827,28 @@
                             class="bg-gradient-to-r from-amber-500 to-amber-600 text-white px-4 py-3 flex items-center justify-between">
                             <div class="flex items-center gap-2">
                                 <span class="text-2xl font-bold">09/01</span>
-                                <span class="text-amber-100 text-sm">Thứ 6</span>
+                                <span class="text-amber-100 text-sm">Thá»© 6</span>
                             </div>
-                            <span class="bg-white/20 text-xs px-2 py-1 rounded-full">2 môn</span>
+                            <span class="bg-white/20 text-xs px-2 py-1 rounded-full">2 mÃ´n</span>
                         </div>
                         <div class="p-4 space-y-3">
                             <div class="flex items-center justify-between p-3 bg-amber-50 rounded-xl">
                                 <div class="flex items-center gap-2">
-                                    <span class="text-xl">⚖️</span>
+                                    <span class="text-xl">âš–ï¸</span>
                                     <span class="font-bold text-gray-800">KTPL</span>
                                 </div>
                                 <div class="text-right">
-                                    <div class="text-xs text-gray-500">45 phút</div>
+                                    <div class="text-xs text-gray-500">45 phÃºt</div>
                                     <div class="font-bold text-green-600">7g05</div>
                                 </div>
                             </div>
                             <div class="flex items-center justify-between p-3 bg-gray-50 rounded-xl">
                                 <div class="flex items-center gap-2">
-                                    <span class="text-xl">🔧</span>
-                                    <span class="font-bold text-gray-800">Công nghệ</span>
+                                    <span class="text-xl">ðŸ”§</span>
+                                    <span class="font-bold text-gray-800">CÃ´ng nghá»‡</span>
                                 </div>
                                 <div class="text-right">
-                                    <div class="text-xs text-gray-500">45 phút</div>
+                                    <div class="text-xs text-gray-500">45 phÃºt</div>
                                     <div class="font-bold text-green-600">8g00</div>
                                 </div>
                             </div>
@@ -860,28 +862,28 @@
                             class="bg-gradient-to-r from-pink-500 to-pink-600 text-white px-4 py-3 flex items-center justify-between">
                             <div class="flex items-center gap-2">
                                 <span class="text-2xl font-bold">10/01</span>
-                                <span class="text-pink-100 text-sm">Thứ 7</span>
+                                <span class="text-pink-100 text-sm">Thá»© 7</span>
                             </div>
-                            <span class="bg-white/20 text-xs px-2 py-1 rounded-full">2 môn</span>
+                            <span class="bg-white/20 text-xs px-2 py-1 rounded-full">2 mÃ´n</span>
                         </div>
                         <div class="p-4 space-y-3">
                             <div class="flex items-center justify-between p-3 bg-pink-50 rounded-xl">
                                 <div class="flex items-center gap-2">
-                                    <span class="text-xl">💻</span>
-                                    <span class="font-bold text-gray-800">Tin học</span>
+                                    <span class="text-xl">ðŸ’»</span>
+                                    <span class="font-bold text-gray-800">Tin há»c</span>
                                 </div>
                                 <div class="text-right">
-                                    <div class="text-xs text-gray-500">45 phút</div>
+                                    <div class="text-xs text-gray-500">45 phÃºt</div>
                                     <div class="font-bold text-green-600">7g05</div>
                                 </div>
                             </div>
                             <div class="flex items-center justify-between p-3 bg-gray-50 rounded-xl">
                                 <div class="flex items-center gap-2">
-                                    <span class="text-xl">🗺️</span>
-                                    <span class="font-bold text-gray-800">Địa lý</span>
+                                    <span class="text-xl">ðŸ—ºï¸</span>
+                                    <span class="font-bold text-gray-800">Äá»‹a lÃ½</span>
                                 </div>
                                 <div class="text-right">
-                                    <div class="text-xs text-gray-500">90 phút</div>
+                                    <div class="text-xs text-gray-500">90 phÃºt</div>
                                     <div class="font-bold text-green-600">7g05</div>
                                 </div>
                             </div>
@@ -890,7 +892,7 @@
                 </div>
             </div>
 
-            <!-- NEW: Trang Lịch sử Thông Báo -->
+            <!-- NEW: Trang Lá»‹ch sá»­ ThÃ´ng BÃ¡o -->
             <div id="notification-history" class="page-content">
                 <button
                     class="back-to-menu-btn flex items-center space-x-2 text-gray-600 hover:text-blue-600 transition-colors duration-300 mb-6 group">
@@ -900,21 +902,21 @@
                             d="M10 19l-7-7m0 0l7-7m-7 7h18">
                         </path>
                     </svg>
-                    <span class="font-medium">Quay lại Menu</span>
+                    <span class="font-medium">Quay láº¡i Menu</span>
                 </button>
 
                 <div class="flex items-center justify-between mb-8">
-                    <h2 class="text-3xl md:text-4xl font-bold text-gray-800">Lịch sử cập nhật</h2>
+                    <h2 class="text-3xl md:text-4xl font-bold text-gray-800">Lá»‹ch sá»­ cáº­p nháº­t</h2>
                     <span
                         class="bg-blue-100 text-blue-800 text-xs font-semibold px-2.5 py-0.5 rounded border border-blue-400">News</span>
                 </div>
 
                 <div class="space-y-4" id="notification-list-container">
-                    <!-- Danh sách thông báo sẽ được render tại đây bởi JS -->
+                    <!-- Danh sÃ¡ch thÃ´ng bÃ¡o sáº½ Ä‘Æ°á»£c render táº¡i Ä‘Ã¢y bá»Ÿi JS -->
                 </div>
             </div>
 
-            <!-- 4. Trang "Đang phát triển" -->
+            <!-- 4. Trang "Äang phÃ¡t triá»ƒn" -->
             <div id="coming-soon" class="page-content">
                 <button
                     class="back-to-menu-btn flex items-center space-x-2 text-gray-600 hover:text-blue-600 transition-colors duration-300 mb-6 group">
@@ -924,7 +926,7 @@
                             d="M10 19l-7-7m0 0l7-7m-7 7h18">
                         </path>
                     </svg>
-                    <span class="font-medium">Quay lại Menu</span>
+                    <span class="font-medium">Quay láº¡i Menu</span>
                 </button>
                 <div class="text-center mt-10">
                     <svg class="w-24 h-24 text-gray-400 mx-auto mb-6" fill="none" stroke="currentColor"
@@ -933,9 +935,10 @@
                             d="M19.428 15.428a2 2 0 00-1.022-.547l-2.387-.477a6 6 0 00-3.86.517l-.318.158a6 6 0 01-3.86.517L6.05 15.21a2 2 0 00-1.806.547M8 4h8l-1 1v5.172a2 2 0 00.586 1.414l5 5c1.26 1.26.367 3.414-1.415 3.414H4.828c-1.782 0-2.674-2.154-1.414-3.414l5-5A2 2 0 009 10.172V5L8 4z">
                         </path>
                     </svg>
-                    <h2 class="text-3xl md:text-4xl font-bold text-gray-800 mb-4">Tính năng đang phát triển</h2>
-                    <p class="text-base md:text-lg text-gray-600">Chúng tôi đang nỗ lực làm việc để sớm ra mắt tính năng
-                        này. <br>Vui lòng quay lại sau nhé!</p>
+                    <h2 class="text-3xl md:text-4xl font-bold text-gray-800 mb-4">TÃ­nh nÄƒng Ä‘ang phÃ¡t triá»ƒn</h2>
+                    <p class="text-base md:text-lg text-gray-600">ChÃºng tÃ´i Ä‘ang ná»— lá»±c lÃ m viá»‡c Ä‘á»ƒ sá»›m
+                        ra máº¯t tÃ­nh nÄƒng
+                        nÃ y. <br>Vui lÃ²ng quay láº¡i sau nhÃ©!</p>
                 </div>
             </div>
 
@@ -970,7 +973,7 @@
                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
                             d="M13 10V3L4 14h7v7l9-11h-7z"></path>
                     </svg>
-                    Khu vực Quản trị
+                    Khu vá»±c Quáº£n trá»‹
                 </button>
                 <button
                     class="w-full flex items-center gap-3 px-4 py-3 text-gray-700 bg-gray-50 hover:bg-gray-100 rounded-xl transition-colors">
@@ -978,7 +981,7 @@
                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
                             d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z"></path>
                     </svg>
-                    Hồ sơ cá nhân
+                    Há»“ sÆ¡ cÃ¡ nhÃ¢n
                 </button>
                 <button id="mobile-history-btn"
                     class="w-full flex items-center gap-3 px-4 py-3 text-gray-700 bg-gray-50 hover:bg-gray-100 rounded-xl transition-colors">
@@ -987,7 +990,7 @@
                             d="M15 17h5l-1.405-1.405A2.032 2.032 0 0118 14.158V11a6.002 6.002 0 00-4-5.659V5a2 2 0 10-4 0v.341C7.67 6.165 6 8.388 6 11v3.159c0 .538-.214 1.055-.595 1.436L4 17h5m6 0v1a3 3 0 11-6 0v-1m6 0H9">
                         </path>
                     </svg>
-                    Lịch sử thông báo
+                    Lá»‹ch sá»­ thÃ´ng bÃ¡o
                 </button>
                 <button id="acc-mobile-logout"
                     class="w-full flex items-center gap-3 px-4 py-3 text-red-600 bg-red-50 hover:bg-red-100 rounded-xl transition-colors font-medium">
@@ -996,7 +999,7 @@
                             d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1">
                         </path>
                     </svg>
-                    Đăng xuất
+                    ÄÄƒng xuáº¥t
                 </button>
             </div>
         </div>
@@ -1010,7 +1013,7 @@
                 item.classList.add('falling-item');
 
                 // Random Tet icons: Peach Blossom, Apricot Blossom, Red Envelope, Lantern, Sparkles
-                const icons = ['🌸', '🌼', '🧧', '🏮', '✨'];
+                const icons = ['ðŸŒ¸', 'ðŸŒ¼', 'ðŸ§§', 'ðŸ®', 'âœ¨'];
                 item.innerText = icons[Math.floor(Math.random() * icons.length)];
 
                 item.style.left = Math.random() * 100 + 'vw';
@@ -1027,18 +1030,18 @@
 
             setInterval(createFallingItem, 300);
 
-            // --- DATA THÔNG BÁO (sẽ được load từ Firebase) ---
+            // --- DATA THÃ”NG BÃO (sáº½ Ä‘Æ°á»£c load tá»« Firebase) ---
             let notifications = [];
             window.notifications = notifications;
 
             // Category styling helper
             const categoryStyles = {
-                update: { bg: 'bg-blue-100', text: 'text-blue-700', icon: '🚀', label: 'Cập nhật' },
-                remove: { bg: 'bg-red-100', text: 'text-red-700', icon: '🗑️', label: 'Loại bỏ' },
-                edit: { bg: 'bg-amber-100', text: 'text-amber-700', icon: '✏️', label: 'Chỉnh sửa' },
-                fix: { bg: 'bg-purple-100', text: 'text-purple-700', icon: '🐛', label: 'Fix lỗi' },
-                new: { bg: 'bg-emerald-100', text: 'text-emerald-700', icon: '✨', label: 'Tính năng mới' },
-                info: { bg: 'bg-gray-100', text: 'text-gray-700', icon: 'ℹ️', label: 'Thông tin' }
+                update: { bg: 'bg-blue-100', text: 'text-blue-700', icon: 'ðŸš€', label: 'Cáº­p nháº­t' },
+                remove: { bg: 'bg-red-100', text: 'text-red-700', icon: 'ðŸ—‘ï¸', label: 'Loáº¡i bá»' },
+                edit: { bg: 'bg-amber-100', text: 'text-amber-700', icon: 'âœï¸', label: 'Chá»‰nh sá»­a' },
+                fix: { bg: 'bg-purple-100', text: 'text-purple-700', icon: 'ðŸ›', label: 'Fix lá»—i' },
+                new: { bg: 'bg-emerald-100', text: 'text-emerald-700', icon: 'âœ¨', label: 'TÃ­nh nÄƒng má»›i' },
+                info: { bg: 'bg-gray-100', text: 'text-gray-700', icon: 'â„¹ï¸', label: 'ThÃ´ng tin' }
             };
 
             function getCategoryStyle(category) {
@@ -1095,7 +1098,7 @@
                 return count;
             }
 
-            // --- Hằng số và Biến ---
+            // --- Háº±ng sá»‘ vÃ  Biáº¿n ---
             const pages = document.querySelectorAll('.page-content');
             const menuCards = document.querySelectorAll('.menu-card');
             const backToMenuButtons = document.querySelectorAll('.back-to-menu-btn');
@@ -1120,18 +1123,18 @@
             const notificationListContainer = document.getElementById('notification-list-container');
             const latestContentContainer = document.getElementById('latest-notification-content');
 
-            // Logic xử lý Click vào Avatar (Thông minh)
+            // Logic xá»­ lÃ½ Click vÃ o Avatar (ThÃ´ng minh)
             if (accAvatarBtn) {
                 accAvatarBtn.addEventListener('click', (e) => {
                     e.stopPropagation();
 
-                    // Logic Desktop đơn giản hơn vì đã tách Header
+                    // Logic Desktop Ä‘Æ¡n giáº£n hÆ¡n vÃ¬ Ä‘Ã£ tÃ¡ch Header
                     const isExpanded = accAvatarBtn.getAttribute('aria-expanded') === 'true';
                     accAvatarBtn.setAttribute('aria-expanded', !isExpanded);
                     if (isExpanded) {
                         closeDropdown();
                     } else {
-                        // Cập nhật tên lại lần nữa cho chắc
+                        // Cáº­p nháº­t tÃªn láº¡i láº§n ná»¯a cho cháº¯c
                         document.getElementById('header-acc-name').textContent = document.getElementById('acc-name').textContent;
                         openDropdown();
                     }
@@ -1158,21 +1161,21 @@
                 }, 75);
             }
 
-            // Đóng dropdown khi click ra ngoài (Desktop)
+            // ÄÃ³ng dropdown khi click ra ngoÃ i (Desktop)
             document.addEventListener('click', (e) => {
                 if (accInfo && !accInfo.contains(e.target)) {
                     closeDropdown();
                 }
             });
 
-            // Logic đóng Mobile Sheet
+            // Logic Ä‘Ã³ng Mobile Sheet
             if (accMobileBackdrop && accMobileSheet) {
                 accMobileBackdrop.addEventListener('click', () => {
                     accMobileSheet.classList.add('hidden');
                 });
             }
 
-            // --- Hàm Điều Hướng ---
+            // --- HÃ m Äiá»u HÆ°á»›ng ---
             function showPage(pageId) {
                 pages.forEach(page => { page.classList.remove('active'); });
                 const targetPage = document.getElementById(pageId);
@@ -1182,18 +1185,18 @@
                 }
             }
 
-            // --- Gán Sự Kiện Menu Cards ---
+            // --- GÃ¡n Sá»± Kiá»‡n Menu Cards ---
             menuCards.forEach(card => {
                 card.addEventListener('click', (e) => {
                     card.classList.add('clicked');
                     setTimeout(() => { card.classList.remove('clicked'); }, 350);
 
-                    // Log activity khi click vào module
+                    // Log activity khi click vÃ o module
                     const moduleLabel = card.querySelector('span:last-of-type')?.textContent?.trim() || 'Unknown';
                     const externalLink = card.dataset.link;
                     const targetId = card.dataset.target;
 
-                    // Xác định tên module
+                    // XÃ¡c Ä‘á»‹nh tÃªn module
                     let moduleName = 'unknown';
                     if (externalLink) {
                         if (externalLink.includes('practice')) moduleName = 'practice';
@@ -1204,7 +1207,7 @@
                         moduleName = targetId;
                     }
 
-                    // Log async (không chờ)
+                    // Log async (khÃ´ng chá»)
                     if (window.logUserActivity) {
                         window.logUserActivity(moduleName, moduleLabel);
                     }
@@ -1214,7 +1217,7 @@
                 });
             });
 
-            // --- LOGIC THÔNG BÁO (NOTIFICATION) ---
+            // --- LOGIC THÃ”NG BÃO (NOTIFICATION) ---
             function renderNotifications() {
                 // Get new notifications (ones that are marked as new)
                 const newNotifications = notifications.filter(n => n.isNew);
@@ -1229,7 +1232,7 @@
                                     <div class="flex items-center gap-2 mb-2 flex-wrap">
                                         <span class="px-2 py-0.5 ${catStyle.bg} ${catStyle.text} text-xs font-semibold rounded">${catStyle.icon} ${catStyle.label}</span>
                                         <span class="text-xs font-semibold text-blue-600 bg-blue-50 px-2 py-0.5 rounded-md border border-blue-100">${notif.date}</span>
-                                        <span class="text-xs text-gray-400">Bởi: ${notif.author}</span>
+                                        <span class="text-xs text-gray-400">Bá»Ÿi: ${notif.author}</span>
                                     </div>
                                     <h4 class="text-lg font-bold text-gray-800 mb-1">${notif.title}</h4>
                                     <p class="text-gray-600 text-sm leading-relaxed">${formatContent(notif.content)}</p>
@@ -1244,7 +1247,7 @@
                             <div class="mb-2 flex items-center gap-2 flex-wrap">
                                 <span class="px-2 py-0.5 ${catStyle.bg} ${catStyle.text} text-xs font-semibold rounded">${catStyle.icon} ${catStyle.label}</span>
                                 <span class="text-xs font-semibold text-blue-600 bg-blue-50 px-2 py-0.5 rounded-md border border-blue-100">${latest.date}</span>
-                                <span class="text-xs text-gray-400">Bởi: ${latest.author}</span>
+                                <span class="text-xs text-gray-400">Bá»Ÿi: ${latest.author}</span>
                             </div>
                             <h4 class="text-xl font-bold text-gray-800 mb-2">${latest.title}</h4>
                             <p class="text-gray-600 text-sm leading-relaxed">${formatContent(latest.content)}</p>
@@ -1258,13 +1261,13 @@
                         const catStyle = getCategoryStyle(notif.category);
                         item.className = "bg-white p-5 rounded-xl border border-gray-100 shadow-sm hover:shadow-md transition-shadow relative overflow-hidden";
                         const newBadge = notif.isNew ?
-                            `<div class="absolute top-0 right-0 bg-red-500 text-white text-[10px] font-bold px-2 py-1 rounded-bl-lg uppercase tracking-wider">Mới</div>` : '';
+                            `<div class="absolute top-0 right-0 bg-red-500 text-white text-[10px] font-bold px-2 py-1 rounded-bl-lg uppercase tracking-wider">Má»›i</div>` : '';
                         item.innerHTML = `
             ${newBadge}
             <div class="flex items-center gap-2 mb-2 flex-wrap">
                 <span class="px-2 py-0.5 ${catStyle.bg} ${catStyle.text} text-xs font-semibold rounded">${catStyle.icon} ${catStyle.label}</span>
                 <span class="text-xs text-gray-500">${notif.date}</span>
-                <span class="text-xs text-gray-400">• ${notif.author}</span>
+                <span class="text-xs text-gray-400">â€¢ ${notif.author}</span>
             </div>
             <h3 class="text-lg font-bold text-gray-800 mb-2 mt-1">${notif.title}</h3>
             <p class="text-gray-600 text-sm">${formatContent(notif.content)}</p>
@@ -1347,7 +1350,7 @@
                 });
             }
 
-            // --- AUTO SHOW LOGIC (QUAN TRỌNG) ---
+            // --- AUTO SHOW LOGIC (QUAN TRá»ŒNG) ---
             renderNotifications();
             if (notifications.length > 0) {
                 const latestId = notifications[0].id;
@@ -1360,7 +1363,7 @@
                 }
             }
 
-            // --- Tìm kiếm nhanh trên toàn website (UI Only) ---
+            // --- TÃ¬m kiáº¿m nhanh trÃªn toÃ n website (UI Only) ---
             const globalSearchInput = document.getElementById('global-search-input');
             const globalSearchResults = document.getElementById('global-search-results');
 
@@ -1393,7 +1396,7 @@
                 if (results.length === 0) {
                     const noResult = document.createElement('p');
                     noResult.className = 'text-gray-500';
-                    noResult.textContent = 'Không tìm thấy kết quả phù hợp.';
+                    noResult.textContent = 'KhÃ´ng tÃ¬m tháº¥y káº¿t quáº£ phÃ¹ há»£p.';
                     globalSearchResults.appendChild(noResult);
                     return;
                 }
@@ -1436,19 +1439,19 @@
                 });
             }
 
-            // Quay lại Menu (từ các trang chọn môn)
+            // Quay láº¡i Menu (tá»« cÃ¡c trang chá»n mÃ´n)
             backToMenuButtons.forEach(button => {
                 button.addEventListener('click', () => { showPage('menu-cards'); });
             });
 
-            // Khởi động
+            // Khá»Ÿi Ä‘á»™ng
             showPage('menu-cards');
         });
     </script>
 
     <!-- MODULE GATEKEEPER & ADMIN LOGIC -->
     <script type="module">
-        // Import checkIsAdmin và getAllNotifications + Presence functions
+        // Import checkIsAdmin vÃ  getAllNotifications + Presence functions
         import {
             initGatekeeper,
             onUserChange,
@@ -1480,7 +1483,7 @@
 
         function updateOnlineCount(count) {
             if (onlineCountEl) {
-                onlineCountEl.textContent = `${count} người đang học`;
+                onlineCountEl.textContent = `${count} ngÆ°á»i Ä‘ang há»c`;
             }
         }
 
@@ -1541,8 +1544,8 @@
 
             // Presence tracking is started automatically in initGatekeeper
 
-            // Cập nhật thông tin User
-            const userName = user.displayName || 'Người dùng';
+            // Cáº­p nháº­t thÃ´ng tin User
+            const userName = user.displayName || 'NgÆ°á»i dÃ¹ng';
             const userEmail = user.email || '';
             const userPhoto = user.photoURL || '../favicon.png';
 
@@ -1556,11 +1559,11 @@
             if (accMobileEmail) accMobileEmail.textContent = userEmail;
             if (accMobileAvatarSheetImg) accMobileAvatarSheetImg.src = userPhoto;
 
-            // 🚀 KIỂM TRA QUYỀN ADMIN VÀ HIỂN THỊ GIAO DIỆN
+            // ðŸš€ KIá»‚M TRA QUYá»€N ADMIN VÃ€ HIá»‚N THá»Š GIAO DIá»†N
             const isAdmin = checkIsAdmin();
 
             if (isAdmin) {
-                // Hiển thị UI Admin
+                // Hiá»ƒn thá»‹ UI Admin
                 if (adminBadge) adminBadge.classList.remove('hidden');
                 if (adminLink) adminLink.classList.remove('hidden');
                 if (adminBadgeMobile) adminBadgeMobile.classList.remove('hidden');
@@ -1571,7 +1574,7 @@
                     };
                 }
             } else {
-                // Ẩn UI Admin (nếu user bị hạ quyền mà không reload)
+                // áº¨n UI Admin (náº¿u user bá»‹ háº¡ quyá»n mÃ  khÃ´ng reload)
                 if (adminBadge) adminBadge.classList.add('hidden');
                 if (adminLink) adminLink.classList.add('hidden');
                 if (adminBadgeMobile) adminBadgeMobile.classList.add('hidden');
@@ -1580,36 +1583,55 @@
         });
     </script>
 
-    <!-- DOCS APP LOGIC (Tính năng Tài liệu Dashboard) -->
+    <!-- DOCS APP LOGIC (TÃ­nh nÄƒng TÃ i liá»‡u Dashboard) -->
     <script type="module">
         import { getAllExams, getExamContent } from "../gatekeeper.js";
 
-        window.docsApp = {
+        const docsApp = {
             currentSubject: null,
             pendingDownload: null,
+            DOWNLOAD_LIMIT_KEY: 'studyStation_downloadLimit',
+            MAX_DOWNLOADS_PER_DAY: 3,
 
-            // Load exams when a subject is clicked
+            getDownloadInfo() {
+                try {
+                    const saved = localStorage.getItem(this.DOWNLOAD_LIMIT_KEY);
+                    if (saved) {
+                        const info = JSON.parse(saved);
+                        const today = new Date().toLocaleDateString('vi-VN', { timeZone: 'Asia/Ho_Chi_Minh' });
+                        if (info.date === today) return info;
+                    }
+                } catch (e) { }
+                return { date: new Date().toLocaleDateString('vi-VN', { timeZone: 'Asia/Ho_Chi_Minh' }), count: 0 };
+            },
+
+            getRemainingDownloads() {
+                return Math.max(0, this.MAX_DOWNLOADS_PER_DAY - this.getDownloadInfo().count);
+            },
+
+            incrementDownloadCount() {
+                const info = this.getDownloadInfo();
+                info.count++;
+                try { localStorage.setItem(this.DOWNLOAD_LIMIT_KEY, JSON.stringify(info)); } catch (e) { }
+            },
+
+            canDownload() { return this.getRemainingDownloads() > 0; },
+
             async loadExamsForSubject(subjectId, subjectName) {
-                console.log('Loading docs for:', subjectId);
                 this.currentSubject = { id: subjectId, name: subjectName };
-
-                // Switch UI
                 document.getElementById('docs-subject-grid').classList.add('hidden');
                 document.getElementById('docs-exam-list').classList.remove('hidden');
                 document.getElementById('docs-selected-subject').textContent = subjectName;
-                document.getElementById('docs-selected-subject').className = `text-2xl font-bold ${this.getSubjectColorClass(subjectId)}`;
+                document.getElementById('docs-selected-subject').className = 'text-2xl font-bold ' + this.getSubjectColorClass(subjectId);
 
                 const container = document.getElementById('docs-exam-container');
                 container.innerHTML = '<div class="col-span-2 text-center py-8 text-gray-500"><div class="animate-spin w-8 h-8 border-4 border-blue-500 border-t-transparent rounded-full mx-auto mb-2"></div>Đang tải dữ liệu...</div>';
 
                 try {
-                    const allExams = await getAllExams();
-                    // Filter exams by subject (Loose matching)
-                    const exams = allExams.filter(e => {
-                        if (!e.subjectId) return false;
-                        const normalize = s => String(s).toLowerCase().replace(/[-_\s]/g, '');
-                        return normalize(e.subjectId) === normalize(subjectId);
-                    });
+                    const timeoutPromise = new Promise((_, reject) => setTimeout(() => reject(new Error('Timeout')), 15000));
+                    const allExams = await Promise.race([getAllExams(), timeoutPromise]);
+                    const normalize = s => String(s).toLowerCase().replace(/[-_\s]/g, '');
+                    const exams = allExams.filter(e => e.subjectId && normalize(e.subjectId) === normalize(subjectId));
 
                     if (exams.length === 0) {
                         container.innerHTML = '<div class="col-span-2 text-center py-12 text-gray-500 bg-gray-50 rounded-xl border border-dashed border-gray-300">Chưa có tài liệu nào cho môn này.</div>';
@@ -1619,45 +1641,27 @@
                     container.innerHTML = '';
                     exams.forEach(exam => {
                         const card = document.createElement('div');
-                        card.className = "bg-white p-4 rounded-xl shadow-sm border border-gray-100 hover:shadow-md transition-shadow flex items-center justify-between group";
-                        card.innerHTML = `
-                            <div class="flex items-center gap-3 overflow-hidden">
-                                <div class="w-10 h-10 rounded-lg bg-gray-50 flex items-center justify-center text-gray-400 shrink-0">
-                                    <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"></path></svg>
-                                </div>
-                                <div class="overflow-hidden">
-                                    <h4 class="font-bold text-gray-800 truncate group-hover:text-blue-600 transition-colors" title="${exam.title}">${exam.title}</h4>
-                                    <p class="text-xs text-gray-500">${exam.attemptCount || 0} lượt tải • ${exam.author || 'Admin'}</p>
-                                </div>
-                            </div>
-                            <button onclick="window.docsApp.showDownloadModal('${exam.id}', '${exam.title.replace(/'/g, "\\'")}')" 
-                                class="shrink-0 p-2 text-emerald-600 hover:bg-emerald-50 rounded-lg transition-colors" title="Tải về">
-                                <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4"></path></svg>
-                            </button>
-                        `;
+                        card.className = 'bg-white p-4 rounded-xl shadow-sm border border-gray-100 hover:shadow-md transition-shadow flex items-center justify-between group';
+                        const safeTitle = exam.title.replace(/'/g, "\\'");
+                        card.innerHTML = '<div class="flex items-center gap-3 overflow-hidden"><div class="w-10 h-10 rounded-lg bg-gray-50 flex items-center justify-center text-gray-400 shrink-0"><svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"></path></svg></div><div class="overflow-hidden"><h4 class="font-bold text-gray-800 truncate group-hover:text-blue-600 transition-colors" title="' + exam.title + '">' + exam.title + '</h4><p class="text-xs text-gray-500">' + (exam.attemptCount || 0) + ' lượt tải • ' + (exam.author || 'Admin') + '</p></div></div><button onclick="window.docsApp.showDownloadModal(\'' + exam.id + '\', \'' + safeTitle + '\')" class="shrink-0 p-2 text-emerald-600 hover:bg-emerald-50 rounded-lg transition-colors" title="Tải về"><svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4"></path></svg></button>';
                         container.appendChild(card);
                     });
                 } catch (error) {
-                    console.error('Error loading exams:', error);
-                    container.innerHTML = '<div class="col-span-2 text-center py-8 text-red-500">Không thể tải dữ liệu. Vui lòng thử lại sau.</div>';
+                    const isTimeout = error.message === 'Timeout';
+                    container.innerHTML = '<div class="col-span-2 text-center py-8"><div class="text-red-500 mb-3">' + (isTimeout ? '⏱️ Kết nối chậm. Vui lòng thử lại.' : 'Không thể tải dữ liệu.') + '</div><button onclick="window.docsApp.loadExamsForSubject(\'' + subjectId + '\', \'' + subjectName + '\')" class="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700">🔄 Thử lại</button></div>';
                 }
             },
 
             getSubjectColorClass(subjectId) {
-                switch (subjectId) {
-                    case 'vat-li': return 'text-blue-600';
-                    case 'sinh-hoc': return 'text-green-600';
-                    case 'tin-hoc': return 'text-purple-600';
-                    case 'lich-su': return 'text-yellow-600';
-                    default: return 'text-gray-800';
-                }
+                const colors = { 'physics': 'text-blue-600', 'math': 'text-red-600', 'chem': 'text-cyan-600', 'bio': 'text-emerald-600', 'history': 'text-orange-600', 'info': 'text-purple-600' };
+                return colors[subjectId] || 'text-gray-800';
             },
 
-            // ============================================================
-            // DOWNLOAD LOGIC (Ported from Practice)
-            // ============================================================
-
             showDownloadModal(examId, examTitle) {
+                if (!this.canDownload()) {
+                    alert('âš ï¸ Báº¡n Ä‘Ã£ háº¿t lÆ°á»£t táº£i hÃ´m nay (' + this.MAX_DOWNLOADS_PER_DAY + ' lÆ°á»£t/ngÃ y).\nVui lÃ²ng quay láº¡i vÃ o ngÃ y mai!');
+                    return;
+                }
                 this.pendingDownload = { examId, examTitle };
                 document.getElementById('download-exam-title').textContent = examTitle;
                 document.getElementById('download-exam-modal').classList.remove('hidden');
@@ -1670,6 +1674,7 @@
 
             async confirmDownload() {
                 if (!this.pendingDownload) return;
+                if (!this.canDownload()) { alert('Báº¡n Ä‘Ã£ háº¿t lÆ°á»£t táº£i hÃ´m nay!'); this.closeDownloadModal(); return; }
 
                 const { examId, examTitle } = this.pendingDownload;
                 const includeAnswers = document.querySelector('input[name="download-answers"]:checked').value === 'yes';
@@ -1681,21 +1686,18 @@
                 confirmBtn.disabled = true;
 
                 try {
-                    // Fetch full content
-                    const examData = await getExamContent(examId);
-                    if (!examData) throw new Error('Không tìm thấy nội dung bài thi');
+                    const timeoutPromise = new Promise((_, reject) => setTimeout(() => reject(new Error('Timeout - Káº¿t ná»‘i quÃ¡ cháº­m')), 20000));
+                    const examData = await Promise.race([getExamContent(examId), timeoutPromise]);
+                    if (!examData) throw new Error('KhÃ´ng tÃ¬m tháº¥y ná»™i dung bÃ i thi');
 
-                    if (format === 'pdf') {
-                        await this.downloadAsPDF(examData, examTitle, includeAnswers);
-                    } else {
-                        await this.downloadAsDOCX(examData, examTitle, includeAnswers, format);
-                    }
+                    if (format === 'pdf') { await this.downloadAsPDF(examData, examTitle, includeAnswers); }
+                    else { await this.downloadAsDOCX(examData, examTitle, includeAnswers, format); }
 
+                    this.incrementDownloadCount();
                     this.closeDownloadModal();
-                    alert('Tải về thành công!');
+                    alert('âœ… Táº£i vá» thÃ nh cÃ´ng!\nðŸ“Š CÃ²n ' + this.getRemainingDownloads() + ' lÆ°á»£t táº£i hÃ´m nay.');
                 } catch (error) {
-                    console.error(error);
-                    alert('Lỗi tải về: ' + error.message);
+                    alert('âŒ Lá»—i táº£i vá»: ' + error.message);
                 } finally {
                     confirmBtn.innerHTML = originalContent;
                     confirmBtn.disabled = false;
@@ -1704,125 +1706,64 @@
 
             convertMathToPlainText(text) {
                 if (!text) return '';
-                let result = String(text);
-                // Basic replacements
-                result = result.replace(/\\female/g, '♀').replace(/\\male/g, '♂').replace(/\\venus/g, '♀').replace(/\\mars/g, '♂');
-                result = result.replace(/\\circ/g, '°');
-                result = result.replace(/\\frac\{([^}]+)\}\{([^}]+)\}/g, '($1)/($2)');
-                result = result.replace(/\\sqrt\{([^}]+)\}/g, '√($1)');
-                // Superscripts/Subscripts
-                result = result.replace(/\^2/g, '²').replace(/\^3/g, '³').replace(/_(\d)/g, '_$1');
+                let r = String(text);
+                r = r.replace(/\\female/g, 'â™€').replace(/\\male/g, 'â™‚').replace(/\\venus/g, 'â™€').replace(/\\mars/g, 'â™‚');
+                r = r.replace(/\\circ/g, 'Â°').replace(/\\frac\{([^}]+)\}\{([^}]+)\}/g, '($1)/($2)').replace(/\\sqrt\{([^}]+)\}/g, 'âˆš($1)');
+                r = r.replace(/\^2/g, 'Â²').replace(/\^3/g, 'Â³').replace(/_(\d)/g, '_$1');
+                r = r.replace(/\\text\{([^}]+)\}/g, '$1').replace(/\\textbf\{([^}]+)\}/g, '$1').replace(/\\textit\{([^}]+)\}/g, '$1');
+                r = r.replace(/\\\(/g, '').replace(/\\\)/g, '').replace(/\\\[/g, '').replace(/\\\]/g, '').replace(/\$/g, '');
+                r = r.replace(/\\([a-zA-Z]+)/g, '').replace(/[{}]/g, '').replace(/\s+/g, ' ').trim();
+                return r;
+            },
 
-                // Remove LaTeX commands but keep content
-                result = result.replace(/\\text\{([^}]+)\}/g, '$1');
-                result = result.replace(/\\textbf\{([^}]+)\}/g, '$1');
-                result = result.replace(/\\textit\{([^}]+)\}/g, '$1');
-
-                // Remove delimiters
-                result = result.replace(/\\\(/g, '').replace(/\\\)/g, '').replace(/\\\[/g, '').replace(/\\\]/g, '').replace(/\$/g, '');
-
-                // Clean extra backslashes
-                result = result.replace(/\\([a-zA-Z]+)/g, '');
-                result = result.replace(/[{}]/g, '');
-                result = result.replace(/\s+/g, ' ').trim();
-                return result;
+            generateFilename(examTitle, format) {
+                const cleanTitle = examTitle.replace(/[^a-zA-Z0-9Ã€-á»¹\s]/g, '').replace(/\s+/g, '_').substring(0, 50);
+                return cleanTitle + '_StudyStation.' + format;
             },
 
             async downloadAsDOCX(examData, examTitle, includeAnswers, format) {
-                if (!window.docx) { alert('Thư viện tạo file chưa tải xong. Vui lòng thử lại.'); return; }
+                if (!window.docx) { alert('ThÆ° viá»‡n táº¡o file chÆ°a táº£i xong.'); return; }
                 const { Document, Packer, Paragraph, TextRun, HeadingLevel, AlignmentType, convertInchesToTwip } = window.docx;
+                const children = []; const answersKey = []; let qNum = 0;
 
-                const children = [];
-                const answersKey = [];
-                let qNum = 0;
+                children.push(new Paragraph({ children: [new TextRun({ text: examTitle, bold: true, size: 32 })], heading: HeadingLevel.HEADING_1, alignment: AlignmentType.CENTER, spacing: { after: 400 } }));
 
-                // Title
-                children.push(new Paragraph({
-                    children: [new TextRun({ text: examTitle, bold: true, size: 32 })],
-                    heading: HeadingLevel.HEADING_1,
-                    alignment: AlignmentType.CENTER,
-                    spacing: { after: 400 }
-                }));
-
-                // Helper to process parts
                 const processPart = (partData, partTitle, type) => {
                     if (!partData || partData.length === 0) return;
-                    children.push(new Paragraph({
-                        children: [new TextRun({ text: partTitle, bold: true, size: 28 })],
-                        heading: HeadingLevel.HEADING_2,
-                        spacing: { before: 400, after: 200 }
-                    }));
-
+                    children.push(new Paragraph({ children: [new TextRun({ text: partTitle, bold: true, size: 28 })], heading: HeadingLevel.HEADING_2, spacing: { before: 400, after: 200 } }));
                     partData.forEach(q => {
                         qNum++;
-                        const qText = this.convertMathToPlainText(q.text);
-                        // Question text
-                        children.push(new Paragraph({
-                            children: [
-                                new TextRun({ text: `Câu ${qNum}: `, bold: true }),
-                                new TextRun({ text: qText })
-                            ],
-                            spacing: { before: 200, after: 100 }
-                        }));
-
-                        // Options/Sub-questions
-                        if (type === 'part1') { // MC
+                        children.push(new Paragraph({ children: [new TextRun({ text: 'CÃ¢u ' + qNum + ': ', bold: true }), new TextRun({ text: this.convertMathToPlainText(q.text) })], spacing: { before: 200, after: 100 } }));
+                        if (type === 'part1') {
                             const labels = ['A', 'B', 'C', 'D'];
-                            (q.options || []).forEach((opt, i) => {
-                                children.push(new Paragraph({
-                                    children: [new TextRun({ text: `${labels[i]}. `, bold: true }), new TextRun({ text: this.convertMathToPlainText(opt) })],
-                                    indent: { left: convertInchesToTwip(0.3) }
-                                }));
-                            });
+                            (q.options || []).forEach((opt, i) => { children.push(new Paragraph({ children: [new TextRun({ text: labels[i] + '. ', bold: true }), new TextRun({ text: this.convertMathToPlainText(opt) })], indent: { left: convertInchesToTwip(0.3) } })); });
                             answersKey.push({ num: qNum, ans: labels[q.correct] || 'N/A' });
-                        } else if (type === 'part2') { // TF
+                        } else if (type === 'part2') {
                             const subAns = [];
-                            (q.subQuestions || []).forEach(sub => {
-                                children.push(new Paragraph({
-                                    children: [new TextRun({ text: `${sub.id}) `, bold: true }), new TextRun({ text: this.convertMathToPlainText(sub.text) })],
-                                    indent: { left: convertInchesToTwip(0.3) }
-                                }));
-                                subAns.push(`${sub.id}) ${sub.correct ? 'Đ' : 'S'}`);
-                            });
+                            (q.subQuestions || []).forEach(sub => { children.push(new Paragraph({ children: [new TextRun({ text: sub.id + ') ', bold: true }), new TextRun({ text: this.convertMathToPlainText(sub.text) })], indent: { left: convertInchesToTwip(0.3) } })); subAns.push(sub.id + ') ' + (sub.correct ? 'Ä' : 'S')); });
                             answersKey.push({ num: qNum, ans: subAns.join(', ') });
-                        } else if (type === 'part3') { // SA
-                            children.push(new Paragraph({
-                                children: [new TextRun({ text: 'Đáp án: _______________' })],
-                                indent: { left: convertInchesToTwip(0.3) }
-                            }));
+                        } else if (type === 'part3') {
+                            children.push(new Paragraph({ children: [new TextRun({ text: 'ÄÃ¡p Ã¡n: _______________' })], indent: { left: convertInchesToTwip(0.3) } }));
                             answersKey.push({ num: qNum, ans: this.convertMathToPlainText(String(q.correct)) });
                         }
                     });
                 };
 
-                processPart(examData.part1, 'PHẦN I: TRẮC NGHIỆM', 'part1');
-                processPart(examData.part2, 'PHẦN II: ĐÚNG/SAI', 'part2');
-                processPart(examData.part3, 'PHẦN III: TRẢ LỜI NGẮN', 'part3');
+                processPart(examData.part1, 'PHáº¦N I: TRáº®C NGHIá»†M', 'part1');
+                processPart(examData.part2, 'PHáº¦N II: ÄÃšNG/SAI', 'part2');
+                processPart(examData.part3, 'PHáº¦N III: TRáº¢ Lá»œI NGáº®N', 'part3');
 
-                // Answer Key
                 if (includeAnswers && answersKey.length > 0) {
                     children.push(new Paragraph({ children: [], pageBreakBefore: true }));
-                    children.push(new Paragraph({
-                        children: [new TextRun({ text: 'ĐÁP ÁN', bold: true, size: 32 })],
-                        heading: HeadingLevel.HEADING_1,
-                        alignment: AlignmentType.CENTER,
-                        spacing: { after: 400 }
-                    }));
-                    answersKey.forEach(a => {
-                        children.push(new Paragraph({
-                            children: [new TextRun({ text: `Câu ${a.num}: `, bold: true }), new TextRun({ text: a.ans, color: '0066CC' })],
-                            spacing: { after: 50 }
-                        }));
-                    });
+                    children.push(new Paragraph({ children: [new TextRun({ text: 'ÄÃP ÃN', bold: true, size: 32 })], heading: HeadingLevel.HEADING_1, alignment: AlignmentType.CENTER, spacing: { after: 400 } }));
+                    answersKey.forEach(a => { children.push(new Paragraph({ children: [new TextRun({ text: 'CÃ¢u ' + a.num + ': ', bold: true }), new TextRun({ text: a.ans, color: '0066CC' })], spacing: { after: 50 } })); });
                 }
 
                 const doc = new Document({ sections: [{ children }] });
                 const blob = await Packer.toBlob(doc);
-                const filename = `${examTitle.replace(/[^a-zA-Z0-9 ]/g, '_')}.${format}`;
-
                 const link = document.createElement('a');
                 link.href = URL.createObjectURL(blob);
-                link.download = filename;
+                link.download = this.generateFilename(examTitle, format);
                 link.click();
             },
 
@@ -1831,7 +1772,6 @@
                 const { jsPDF } = window.jspdf;
                 const doc = new jsPDF('p', 'mm', 'a4');
                 doc.setFont('helvetica');
-
                 const pageWidth = doc.internal.pageSize.getWidth();
                 const margin = 20;
                 let y = margin;
@@ -1839,74 +1779,35 @@
                 const addText = (text, opts = {}) => {
                     doc.setFontSize(opts.size || 12);
                     doc.setFont('helvetica', opts.bold ? 'bold' : 'normal');
-                    const lines = doc.splitTextToSize(text, pageWidth - margin * 2 - (opts.indent || 0));
-                    lines.forEach(line => {
+                    doc.splitTextToSize(text, pageWidth - margin * 2 - (opts.indent || 0)).forEach(line => {
                         if (y > 280) { doc.addPage(); y = margin; }
                         doc.text(line, margin + (opts.indent || 0), y);
                         y += (opts.size || 12) * 0.4 + 2;
                     });
                 };
 
-                // Title
                 doc.setFontSize(18); doc.setFont('helvetica', 'bold');
                 doc.text(this.convertMathToPlainText(examTitle), pageWidth / 2, y, { align: 'center' });
                 y += 15;
 
-                let qNum = 0;
-                const answersKey = [];
-
+                let qNum = 0; const answersKey = [];
                 if (examData.part1?.length) {
                     addText('PHAN I: TRAC NGHIEM', { bold: true, size: 14 });
-                    examData.part1.forEach(q => {
-                        qNum++;
-                        addText(`Cau ${qNum}: ${this.convertMathToPlainText(q.text)}`, { size: 11 });
-                        const labels = ['A', 'B', 'C', 'D'];
-                        (q.options || []).forEach((opt, i) => addText(`${labels[i]}. ${this.convertMathToPlainText(opt)}`, { indent: 10, size: 10 }));
-                        y += 2;
-                        answersKey.push({ num: qNum, ans: labels[q.correct] });
-                    });
+                    examData.part1.forEach(q => { qNum++; addText('Cau ' + qNum + ': ' + this.convertMathToPlainText(q.text), { size: 11 }); const labels = ['A', 'B', 'C', 'D']; (q.options || []).forEach((opt, i) => addText(labels[i] + '. ' + this.convertMathToPlainText(opt), { indent: 10, size: 10 })); y += 2; answersKey.push({ num: qNum, ans: labels[q.correct] }); });
                 }
-
-                // Similar simple rendering for Part 2 & 3 (simplified for brevity)
                 if (examData.part2?.length) {
                     y += 5; addText('PHAN II: DUNG/SAI', { bold: true, size: 14 });
-                    examData.part2.forEach(q => {
-                        qNum++;
-                        addText(`Cau ${qNum}: ${this.convertMathToPlainText(q.text)}`, { size: 11 });
-                        const subAns = [];
-                        (q.subQuestions || []).forEach(sub => {
-                            addText(`${sub.id}) ${this.convertMathToPlainText(sub.text)}`, { indent: 10, size: 10 });
-                            subAns.push(`${sub.id}) ${sub.correct ? 'D' : 'S'}`);
-                        });
-                        answersKey.push({ num: qNum, ans: subAns.join(', ') });
-                        y += 2;
-                    });
+                    examData.part2.forEach(q => { qNum++; addText('Cau ' + qNum + ': ' + this.convertMathToPlainText(q.text), { size: 11 }); const subAns = []; (q.subQuestions || []).forEach(sub => { addText(sub.id + ') ' + this.convertMathToPlainText(sub.text), { indent: 10, size: 10 }); subAns.push(sub.id + ') ' + (sub.correct ? 'D' : 'S')); }); answersKey.push({ num: qNum, ans: subAns.join(', ') }); y += 2; });
                 }
-
                 if (examData.part3?.length) {
                     y += 5; addText('PHAN III: TRA LOI NGAN', { bold: true, size: 14 });
-                    examData.part3.forEach(q => {
-                        qNum++;
-                        addText(`Cau ${qNum}: ${this.convertMathToPlainText(q.text)}`, { size: 11 });
-                        addText('Dap an: ________', { indent: 10, size: 10 });
-                        answersKey.push({ num: qNum, ans: this.convertMathToPlainText(String(q.correct)) });
-                        y += 2;
-                    });
+                    examData.part3.forEach(q => { qNum++; addText('Cau ' + qNum + ': ' + this.convertMathToPlainText(q.text), { size: 11 }); addText('Dap an: ________', { indent: 10, size: 10 }); answersKey.push({ num: qNum, ans: this.convertMathToPlainText(String(q.correct)) }); y += 2; });
                 }
-
-                if (includeAnswers && answersKey.length) {
-                    doc.addPage(); y = margin;
-                    doc.setFontSize(16); doc.text('DAP AN', pageWidth / 2, y, { align: 'center' }); y += 10;
-                    answersKey.forEach(a => {
-                        addText(`Cau ${a.num}: ${a.ans}`, { size: 11 });
-                    });
-                }
-
-                doc.save(`${examTitle.replace(/[^a-zA-Z0-9 ]/g, '_')}.pdf`);
+                if (includeAnswers && answersKey.length) { doc.addPage(); y = margin; doc.setFontSize(16); doc.text('DAP AN', pageWidth / 2, y, { align: 'center' }); y += 10; answersKey.forEach(a => addText('Cau ' + a.num + ': ' + a.ans, { size: 11 })); }
+                doc.save(this.generateFilename(examTitle, 'pdf'));
             }
         };
 
-        // Export to Window so HTML can access
         window.docsApp = docsApp;
     </script>
 
