@@ -185,21 +185,45 @@ function renderExamList() {
         return;
     }
 
+    // Sort: Newest created first (assuming we have createdAt, otherwise fallback to index)
+    // For now keep original order or reverse
+
     refs.examList.innerHTML = filtered.map(exam => {
-        const subject = state.subjects.find(s => s.id === exam.subjectId);
         const totalQ = countTotalQuestions(exam);
         const isSelected = exam.id === state.currentExamId;
 
+        const TYPE_CONFIG = {
+            'thpt': { label: 'THPT QG', color: 'bg-blue-100 text-blue-700 border-blue-200' },
+            'dgnl': { label: 'ĐGNL', color: 'bg-purple-100 text-purple-700 border-purple-200' },
+            'quiz': { label: 'Mini Test', color: 'bg-emerald-100 text-emerald-700 border-emerald-200' },
+            'topic': { label: 'Chuyên đề', color: 'bg-orange-100 text-orange-700 border-orange-200' },
+            'default': { label: 'Khác', color: 'bg-gray-100 text-gray-700 border-gray-200' }
+        };
+        const typeInfo = TYPE_CONFIG[exam.examType] || TYPE_CONFIG.default;
+
         return `
-            <div class="exam-item p-4 border-b border-gray-100 cursor-pointer hover:bg-purple-50 transition-colors ${isSelected ? 'bg-purple-50 border-l-4 border-l-purple-500' : ''}"
+            <div class="exam-item p-4 border-b border-gray-100 cursor-pointer hover:bg-purple-50 transition-colors ${isSelected ? 'bg-purple-50 border-l-4 border-l-purple-500' : 'border-l-4 border-l-transparent'}"
                 data-id="${exam.id}">
-                <div class="font-semibold text-gray-800 mb-1 line-clamp-1">${exam.title || 'Không tiêu đề'}</div>
-                <div class="flex items-center gap-2 text-xs text-gray-500">
-                    <span class="px-1.5 py-0.5 bg-gray-100 rounded">${subject?.name || exam.subjectId}</span>
-                    <span>•</span>
-                    <span>${totalQ} câu</span>
-                    <span>•</span>
-                    <span>${exam.time || 45} phút</span>
+                <div class="flex items-center gap-2 mb-2">
+                    <span class="px-2 py-0.5 rounded-md text-[10px] uppercase font-bold border ${typeInfo.color}">
+                        ${typeInfo.label}
+                    </span>
+                    <span class="text-xs text-gray-400 font-mono ml-auto">#${exam.id.slice(0, 6)}</span>
+                </div>
+                <div class="font-bold text-gray-800 mb-2 line-clamp-2 text-sm leading-snug">${exam.title || 'Không tiêu đề'}</div>
+                <div class="flex items-center gap-3 text-xs text-gray-500 border-t border-gray-100 pt-2 mt-2">
+                    <span class="flex items-center gap-1" title="Số câu hỏi">
+                        <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2"/></svg> 
+                        ${totalQ} câu
+                    </span>
+                    <span class="flex items-center gap-1" title="Thời gian làm bài">
+                        <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"/></svg> 
+                        ${exam.time || 45}p
+                    </span>
+                    <span class="flex items-center gap-1 ml-auto text-xs" title="Ngày tạo">
+                        <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"/></svg>
+                        ${exam.createdAt ? new Date(exam.createdAt).toLocaleDateString('vi-VN', { day: '2-digit', month: '2-digit' }) : '--/--'}
+                    </span>
                 </div>
             </div>
         `;
