@@ -2035,6 +2035,10 @@ function detectAnswerKeys(fullText, questions) {
 function convertMathChemSymbols(text) {
     let result = text;
 
+    // Handle percent sign - preserve \% if already escaped, otherwise convert % inside math to \%
+    // This regex looks for % that is NOT preceded by a backslash and converts to \\%
+    result = result.replace(/(?<!\\)%/g, '\\%');
+
     // Trigonometry (sin, cos, tan, cot) -> \sin, \cos...
     result = result.replace(/(^|[^\\a-zA-Z])\b(sin|cos|tan|cot)\b/g, '$1\\\\$2');
 
