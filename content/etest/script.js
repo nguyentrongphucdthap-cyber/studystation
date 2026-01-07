@@ -315,10 +315,7 @@ const app = {
         this.isReviewMode = false;
         document.body.classList.remove('review-mode');
         this.hideExamUI();
-        const tpl = document.getElementById('tpl-home');
-        if (tpl) {
-            document.getElementById('app-container').innerHTML = tpl.innerHTML;
-        }
+        this.showExamList();
     },
 
     hideExamUI() {
@@ -339,63 +336,71 @@ const app = {
     // ========================================================================
     // EXAM LIST DISPLAY
     // ========================================================================
-    showExamList(type) {
-        let exams = [];
+    showExamList() {
+        // Tag Definitions
+        const EXAM_TYPE_LABELS = {
+            'thpt': { label: 'THPT QG', bg: 'bg-blue-100 dark:bg-blue-900/40', text: 'text-blue-700 dark:text-blue-300', border: 'border-blue-200 dark:border-blue-800' },
+            'dgnl': { label: 'ĐGNL', bg: 'bg-purple-100 dark:bg-purple-900/40', text: 'text-purple-700 dark:text-purple-300', border: 'border-purple-200 dark:border-purple-800' },
+            'quiz': { label: 'Mini Test', bg: 'bg-emerald-100 dark:bg-emerald-900/40', text: 'text-emerald-700 dark:text-emerald-300', border: 'border-emerald-200 dark:border-emerald-800' },
+            'topic': { label: 'Chuyên đề', bg: 'bg-orange-100 dark:bg-orange-900/40', text: 'text-orange-700 dark:text-orange-300', border: 'border-orange-200 dark:border-orange-800' },
+            'default': { label: 'Tự do', bg: 'bg-slate-100 dark:bg-slate-800', text: 'text-slate-700 dark:text-slate-300', border: 'border-slate-200 dark:border-slate-700' }
+        };
 
-        // Load from Firebase only - no fallback to hard-coded data
-        if (this.firebaseLoaded && this.firebaseExams.length > 0) {
-            exams = this.firebaseExams
-                .filter(ex => ex.examType === type)
-                .map(ex => ({
-                    id: ex.id,
-                    title: ex.title || 'Đề thi không tên',
-                    // Firebase stores time in minutes, display in minutes
-                    duration: `${ex.time || 45} phút`,
-                    count: this.countQuestions(ex.sections)
-                }));
-        }
+        const exams = this.firebaseLoaded ? this.firebaseExams : [];
 
         let html = `
-            <div class="max-w-4xl mx-auto px-4 py-6 lg:py-10 animate-fade-in">
-                <button onclick="app.goHome()" class="flex items-center gap-2 text-slate-500 hover:text-blue-600 mb-6 font-medium transition-colors">
-                    <i class="ph-bold ph-arrow-left"></i> Quay lại
-                </button>
-                <h2 class="text-2xl lg:text-3xl font-bold text-slate-900 dark:text-white mb-6">Chọn đề thi</h2>
-                <div class="space-y-4">
+            <div class="max-w-6xl mx-auto px-4 py-8 lg:py-12 animate-fade-in">
+                <div class="flex flex-col md:flex-row justify-between items-start md:items-center mb-8 gap-4">
+                    <div>
+                        <h2 class="text-3xl font-bold text-slate-900 dark:text-white">Danh sách đề thi</h2>
+                        <p class="text-slate-500 dark:text-slate-400 mt-2">Chọn đề thi để bắt đầu làm bài</p>
+                    </div>
+                </div>
+                
+                <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
         `;
 
         if (exams.length === 0) {
             html += `
-                <div class="text-center py-16">
-                    <div class="w-20 h-20 mx-auto mb-6 rounded-full bg-slate-100 dark:bg-slate-800 flex items-center justify-center">
-                        <i class="ph-bold ph-files text-3xl text-slate-400"></i>
+                <div class="col-span-full py-20 text-center">
+                    <div class="w-24 h-24 mx-auto mb-6 rounded-full bg-slate-50 dark:bg-slate-800 flex items-center justify-center">
+                        <i class="ph-duotone ph-files text-4xl text-slate-300"></i>
                     </div>
-                    <p class="text-slate-500 dark:text-slate-400 text-lg">Chưa có đề thi nào</p>
-                    <p class="text-slate-400 dark:text-slate-500 text-sm mt-2">Hãy tạo đề thi mới từ trang Admin</p>
+                    <h3 class="text-lg font-medium text-slate-900 dark:text-white mb-2">Chưa có đề thi nào</h3>
+                    <p class="text-slate-500 dark:text-slate-400">Vui lòng quay lại sau</p>
                 </div>
             `;
         } else {
             exams.forEach(ex => {
+                const typeConfig = EXAM_TYPE_LABELS[ex.examType] || EXAM_TYPE_LABELS.default;
+                const questionCount = this.countQuestions(ex.sections);
+                const duration = ex.time || 45;
+
                 html += `
                     <div onclick="app.startExam('${ex.id}')" 
-                         class="bg-white dark:bg-slate-800 p-5 lg:p-6 rounded-2xl border border-slate-200 dark:border-slate-700 hover:border-blue-500 cursor-pointer shadow-sm hover:shadow-md transition-all group">
-                        <div class="flex justify-between items-center">
-                            <div>
-                                <h3 class="font-bold text-base lg:text-lg text-slate-900 dark:text-white group-hover:text-blue-600 dark:group-hover:text-blue-400 transition-colors">
-                                    ${ex.title}
-                                </h3>
-                                <div class="flex items-center gap-3 mt-2 text-xs lg:text-sm text-slate-500 dark:text-slate-400">
-                                    <span class="flex items-center gap-1">
-                                        <i class="ph-fill ph-clock"></i> ${ex.duration}
-                                    </span>
-                                    <span class="flex items-center gap-1">
-                                        <i class="ph-fill ph-list-numbers"></i> ${ex.count} câu
-                                    </span>
-                                </div>
-                            </div>
-                            <div class="w-8 h-8 lg:w-10 lg:h-10 rounded-full bg-slate-100 dark:bg-slate-700 flex items-center justify-center text-slate-400 group-hover:bg-blue-600 group-hover:text-white transition-all">
+                         class="group bg-white dark:bg-slate-900 rounded-2xl p-6 border border-slate-200 dark:border-slate-800 hover:border-blue-500 dark:hover:border-blue-500 shadow-sm hover:shadow-md transition-all cursor-pointer relative overflow-hidden flex flex-col h-full">
+                        
+                        <!-- Tag -->
+                        <div class="flex items-start justify-between mb-4">
+                            <span class="inline-flex items-center px-3 py-1 rounded-lg text-xs font-bold uppercase tracking-wider ${typeConfig.bg} ${typeConfig.text} ${typeConfig.border} border">
+                                ${typeConfig.label}
+                            </span>
+                             <div class="w-8 h-8 rounded-full bg-slate-50 dark:bg-slate-800 flex items-center justify-center text-slate-400 group-hover:bg-blue-600 group-hover:text-white transition-colors">
                                 <i class="ph-bold ph-caret-right"></i>
                             </div>
+                        </div>
+
+                        <h3 class="text-lg font-bold text-slate-900 dark:text-white group-hover:text-blue-600 dark:group-hover:text-blue-400 transition-colors mb-3 line-clamp-2 leading-relaxed">
+                            ${ex.title}
+                        </h3>
+
+                        <div class="mt-auto flex items-center gap-4 text-sm text-slate-500 dark:text-slate-400 pt-4 border-t border-slate-100 dark:border-slate-800">
+                             <span class="flex items-center gap-1.5">
+                                <i class="ph-fill ph-clock text-slate-400"></i> ${duration} phút
+                            </span>
+                            <span class="flex items-center gap-1.5">
+                                <i class="ph-fill ph-list-numbers text-slate-400"></i> ${questionCount} câu
+                            </span>
                         </div>
                     </div>
                 `;
