@@ -11,23 +11,74 @@ body {
 }
 
 /* Custom Scrollbar */
-.custom-scroll::-webkit-scrollbar { width: 4px; height: 4px; }
-.custom-scroll::-webkit-scrollbar-track { background: transparent; }
-.custom-scroll::-webkit-scrollbar-thumb { background: #cbd5e1; border-radius: 3px; }
-.dark .custom-scroll::-webkit-scrollbar-thumb { background: #475569; }
+.custom-scroll::-webkit-scrollbar {
+    width: 4px;
+    height: 4px;
+}
+
+.custom-scroll::-webkit-scrollbar-track {
+    background: transparent;
+}
+
+.custom-scroll::-webkit-scrollbar-thumb {
+    background: #cbd5e1;
+    border-radius: 3px;
+}
+
+.dark .custom-scroll::-webkit-scrollbar-thumb {
+    background: #475569;
+}
 
 /* Highlight Colors */
-.hl-yellow { background-color: #fef08a; color: #1e293b; }
-.hl-green { background-color: #bbf7d0; color: #1e293b; }
-.hl-blue { background-color: #bfdbfe; color: #1e293b; }
-.hl-pink { background-color: #fbcfe8; color: #1e293b; }
-.hl-purple { background-color: #e9d5ff; color: #1e293b; }
+.hl-yellow {
+    background-color: #fef08a;
+    color: #1e293b;
+}
 
-.dark .hl-yellow { background-color: #854d0e; color: #fef08a; }
-.dark .hl-green { background-color: #166534; color: #bbf7d0; }
-.dark .hl-blue { background-color: #1e40af; color: #bfdbfe; }
-.dark .hl-pink { background-color: #9d174d; color: #fbcfe8; }
-.dark .hl-purple { background-color: #6b21a8; color: #e9d5ff; }
+.hl-green {
+    background-color: #bbf7d0;
+    color: #1e293b;
+}
+
+.hl-blue {
+    background-color: #bfdbfe;
+    color: #1e293b;
+}
+
+.hl-pink {
+    background-color: #fbcfe8;
+    color: #1e293b;
+}
+
+.hl-purple {
+    background-color: #e9d5ff;
+    color: #1e293b;
+}
+
+.dark .hl-yellow {
+    background-color: #854d0e;
+    color: #fef08a;
+}
+
+.dark .hl-green {
+    background-color: #166534;
+    color: #bbf7d0;
+}
+
+.dark .hl-blue {
+    background-color: #1e40af;
+    color: #bfdbfe;
+}
+
+.dark .hl-pink {
+    background-color: #9d174d;
+    color: #fbcfe8;
+}
+
+.dark .hl-purple {
+    background-color: #6b21a8;
+    color: #e9d5ff;
+}
 
 /* User Note */
 .user-note {
@@ -39,6 +90,7 @@ body {
     padding: 0 4px;
     border-radius: 4px;
 }
+
 .dark .user-note {
     color: #60A5FA;
     border-bottom-color: #60A5FA;
@@ -56,9 +108,20 @@ body {
     align-items: center;
     justify-content: center;
 }
-.resizer:hover, .resizer.resizing { background-color: #3B82F6; }
-.dark .resizer { background-color: #475569; }
-.dark .resizer:hover, .dark .resizer.resizing { background-color: #60A5FA; }
+
+.resizer:hover,
+.resizer.resizing {
+    background-color: #3B82F6;
+}
+
+.dark .resizer {
+    background-color: #475569;
+}
+
+.dark .resizer:hover,
+.dark .resizer.resizing {
+    background-color: #60A5FA;
+}
 
 /* Review Mode Styles */
 .review-mode .correct-option {
@@ -66,51 +129,75 @@ body {
     background-color: #ECFDF5 !important;
     color: #065F46 !important;
 }
+
 .dark .review-mode .correct-option {
     background-color: rgba(6, 95, 70, 0.4) !important;
     color: #D1FAE5 !important;
 }
+
 .review-mode .wrong-option {
     border-color: #EF4444 !important;
     background-color: #FEF2F2 !important;
     color: #991B1B !important;
 }
+
 .dark .review-mode .wrong-option {
     background-color: rgba(153, 27, 27, 0.4) !important;
     color: #FECACA !important;
 }
-.filter-btn.active { background-color: #3B82F6; color: white; }
 
-/* Dynamic Font Sizing Application */
-.dynamic-text { font-size: var(--content-size); line-height: var(--line-height); }
-
-/* Tooltip Arrow */
-.tooltip-arrow { position: absolute; bottom: -6px; left: 50%; margin-left: -6px; border-width: 6px; border-style: solid; border-color: #1e293b transparent transparent transparent; }
-.dark .tooltip-arrow { border-color: #f8fafc transparent transparent transparent; }
-
-/* Radio Logic - Improved Dark Mode Contrast */
-body:not(.review-mode) .peer:checked + div { 
-    border-color: #3B82F6; 
-    background-color: #EFF6FF; 
-    color: #1D4ED8; 
-    box-shadow: 0 4px 6px -1px rgba(59, 130, 246, 0.1); 
+.filter-btn.active {
+    background-color: #3B82F6;
+    color: white;
 }
 
-body:not(.review-mode) .dark .peer:checked + div { 
-    background-color: rgba(59, 130, 246, 0.2); /* Blue-500 with opacity */
-    border-color: #3B82F6; /* Blue-500 border */
-    color: #FFFFFF; /* White text for contrast */
+/* Dynamic Font Sizing Application */
+.dynamic-text {
+    font-size: var(--content-size);
+    line-height: var(--line-height);
+}
+
+/* Tooltip Arrow */
+.tooltip-arrow {
+    position: absolute;
+    bottom: -6px;
+    left: 50%;
+    margin-left: -6px;
+    border-width: 6px;
+    border-style: solid;
+    border-color: #1e293b transparent transparent transparent;
+}
+
+.dark .tooltip-arrow {
+    border-color: #f8fafc transparent transparent transparent;
+}
+
+/* Radio Logic - Improved Dark Mode Contrast */
+body:not(.review-mode) .peer:checked+div {
+    border-color: #3B82F6;
+    background-color: #EFF6FF;
+    color: #1D4ED8;
+    box-shadow: 0 4px 6px -1px rgba(59, 130, 246, 0.1);
+}
+
+body:not(.review-mode) .dark .peer:checked+div {
+    background-color: rgba(59, 130, 246, 0.2);
+    /* Blue-500 with opacity */
+    border-color: #3B82F6;
+    /* Blue-500 border */
+    color: #FFFFFF;
+    /* White text for contrast */
     box-shadow: 0 0 0 1px #3B82F6, 0 4px 6px -1px rgba(0, 0, 0, 0.3);
 }
 
-body:not(.review-mode) .peer:checked + div .option-circle { 
-    background-color: #2563EB; 
-    border-color: #2563EB; 
-    color: white; 
-    transform: scale(1.1); 
+body:not(.review-mode) .peer:checked+div .option-circle {
+    background-color: #2563EB;
+    border-color: #2563EB;
+    color: white;
+    transform: scale(1.1);
 }
 
-body:not(.review-mode) .dark .peer:checked + div .option-circle {
+body:not(.review-mode) .dark .peer:checked+div .option-circle {
     background-color: #3B82F6;
     border-color: #3B82F6;
     color: #FFFFFF;
@@ -122,6 +209,7 @@ body:not(.review-mode) .dark .peer:checked + div .option-circle {
     color: #3B82F6;
     font-weight: 700;
 }
+
 .dark .mobile-tab-active {
     border-bottom-color: #60A5FA;
     color: #60A5FA;
@@ -130,4 +218,72 @@ body:not(.review-mode) .dark .peer:checked + div .option-circle {
 /* Safe Area for iPhones */
 .pb-safe {
     padding-bottom: env(safe-area-inset-bottom);
+}
+
+/* Enhanced Bold Text Visibility */
+.dynamic-text b,
+.dynamic-text strong {
+    color: #ea580c;
+    /* Orange-600 */
+    font-weight: 800;
+}
+
+.dark .dynamic-text b,
+.dark .dynamic-text strong {
+    color: #fb923c;
+    /* Orange-400 */
+}
+
+/* Gap Fill Spot Styling - High Contrast */
+.gap-spot {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    padding: 2px 14px;
+    margin: 0 4px;
+
+    background-color: #ffedd5;
+    /* Orange-100 */
+    color: #c2410c;
+    /* Orange-700 High Contrast */
+
+    border: 2px solid #f97316;
+    /* Orange-500 Solid Border */
+    border-radius: 8px;
+
+    font-weight: 800;
+    font-size: 1.05em;
+    box-shadow: 0 3px 0 #c2410c;
+    /* 3D Shadow Effect */
+
+    transform: translateY(-2px);
+    cursor: default;
+    white-space: nowrap;
+    transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.gap-spot:hover {
+    background-color: #f97316;
+    /* Invert on hover */
+    color: #ffffff;
+    border-color: #c2410c;
+    box-shadow: 0 4px 0 #7c2d12;
+    transform: translateY(-4px) scale(1.05);
+}
+
+.dark .gap-spot {
+    background-color: #431407;
+    /* Orange-950 */
+    color: #fdba74;
+    /* Orange-300 */
+    border-color: #fb923c;
+    /* Orange-400 */
+    box-shadow: 0 3px 0 #9a3412;
+}
+
+.dark .gap-spot:hover {
+    background-color: #fb923c;
+    color: #431407;
+    border-color: #fb923c;
+    box-shadow: 0 4px 0 #c2410c;
 }
