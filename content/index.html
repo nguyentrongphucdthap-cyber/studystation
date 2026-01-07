@@ -4,12 +4,12 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>StudyStation - Cá»•ng thÃ´ng tin há»c táº­p</title>
+    <title>StudyStation - Cổng thông tin học tập</title>
     <meta name="ga-measurement-id" content="G-4FGSW7XDZ9">
     <link rel="icon" type="image/png" href="../favicon.png">
-    <!-- Táº£i Tailwind CSS -->
+    <!-- Tải Tailwind CSS -->
     <script src="https://cdn.tailwindcss.com"></script>
-    <!-- Táº£i font Be Vietnam Pro tá»« Google Fonts -->
+    <!-- Tải font Be Vietnam Pro từ Google Fonts -->
     <link href="https://fonts.googleapis.com/css2?family=Be+Vietnam+Pro:wght@400;500;600;700&display=swap"
         rel="stylesheet">
 
@@ -1583,7 +1583,7 @@
         });
     </script>
 
-    <!-- DOCS APP LOGIC (TÃ­nh nÄƒng TÃ i liá»‡u Dashboard) -->
+    <!-- DOCS APP LOGIC (Tính năng Tài liệu Dashboard) -->
     <script type="module">
         import { getAllExams, getExamContent } from "../gatekeeper.js";
 
@@ -1659,7 +1659,7 @@
 
             showDownloadModal(examId, examTitle) {
                 if (!this.canDownload()) {
-                    alert('âš ï¸ Báº¡n Ä‘Ã£ háº¿t lÆ°á»£t táº£i hÃ´m nay (' + this.MAX_DOWNLOADS_PER_DAY + ' lÆ°á»£t/ngÃ y).\nVui lÃ²ng quay láº¡i vÃ o ngÃ y mai!');
+                    alert('⚠️ Bạn đã hết lượt tải hôm nay (' + this.MAX_DOWNLOADS_PER_DAY + ' lượt/ngày).\nVui lòng quay lại vào ngày mai!');
                     return;
                 }
                 this.pendingDownload = { examId, examTitle };
@@ -1674,7 +1674,7 @@
 
             async confirmDownload() {
                 if (!this.pendingDownload) return;
-                if (!this.canDownload()) { alert('Báº¡n Ä‘Ã£ háº¿t lÆ°á»£t táº£i hÃ´m nay!'); this.closeDownloadModal(); return; }
+                if (!this.canDownload()) { alert('Bạn đã hết lượt tải hôm nay!'); this.closeDownloadModal(); return; }
 
                 const { examId, examTitle } = this.pendingDownload;
                 const includeAnswers = document.querySelector('input[name="download-answers"]:checked').value === 'yes';
@@ -1686,18 +1686,18 @@
                 confirmBtn.disabled = true;
 
                 try {
-                    const timeoutPromise = new Promise((_, reject) => setTimeout(() => reject(new Error('Timeout - Káº¿t ná»‘i quÃ¡ cháº­m')), 20000));
+                    const timeoutPromise = new Promise((_, reject) => setTimeout(() => reject(new Error('Timeout - Kết nối quá chậm')), 20000));
                     const examData = await Promise.race([getExamContent(examId), timeoutPromise]);
-                    if (!examData) throw new Error('KhÃ´ng tÃ¬m tháº¥y ná»™i dung bÃ i thi');
+                    if (!examData) throw new Error('Không tìm thấy nội dung bài thi');
 
                     if (format === 'pdf') { await this.downloadAsPDF(examData, examTitle, includeAnswers); }
                     else { await this.downloadAsDOCX(examData, examTitle, includeAnswers, format); }
 
                     this.incrementDownloadCount();
                     this.closeDownloadModal();
-                    alert('âœ… Táº£i vá» thÃ nh cÃ´ng!\nðŸ“Š CÃ²n ' + this.getRemainingDownloads() + ' lÆ°á»£t táº£i hÃ´m nay.');
+                    alert('✅ Tải về thành công!\n📊 Còn ' + this.getRemainingDownloads() + ' lượt tải hôm nay.');
                 } catch (error) {
-                    alert('âŒ Lá»—i táº£i vá»: ' + error.message);
+                    alert('❌ Lỗi tải về: ' + error.message);
                 } finally {
                     confirmBtn.innerHTML = originalContent;
                     confirmBtn.disabled = false;
@@ -1707,9 +1707,9 @@
             convertMathToPlainText(text) {
                 if (!text) return '';
                 let r = String(text);
-                r = r.replace(/\\female/g, 'â™€').replace(/\\male/g, 'â™‚').replace(/\\venus/g, 'â™€').replace(/\\mars/g, 'â™‚');
-                r = r.replace(/\\circ/g, 'Â°').replace(/\\frac\{([^}]+)\}\{([^}]+)\}/g, '($1)/($2)').replace(/\\sqrt\{([^}]+)\}/g, 'âˆš($1)');
-                r = r.replace(/\^2/g, 'Â²').replace(/\^3/g, 'Â³').replace(/_(\d)/g, '_$1');
+                r = r.replace(/\\female/g, '♀').replace(/\\male/g, '♂').replace(/\\venus/g, '♀').replace(/\\mars/g, '♂');
+                r = r.replace(/\\circ/g, '°').replace(/\\frac\{([^}]+)\}\{([^}]+)\}/g, '($1)/($2)').replace(/\\sqrt\{([^}]+)\}/g, '√($1)');
+                r = r.replace(/\^2/g, '²').replace(/\^3/g, '³').replace(/_(\d)/g, '_$1');
                 r = r.replace(/\\text\{([^}]+)\}/g, '$1').replace(/\\textbf\{([^}]+)\}/g, '$1').replace(/\\textit\{([^}]+)\}/g, '$1');
                 r = r.replace(/\\\(/g, '').replace(/\\\)/g, '').replace(/\\\[/g, '').replace(/\\\]/g, '').replace(/\$/g, '');
                 r = r.replace(/\\([a-zA-Z]+)/g, '').replace(/[{}]/g, '').replace(/\s+/g, ' ').trim();
@@ -1717,12 +1717,12 @@
             },
 
             generateFilename(examTitle, format) {
-                const cleanTitle = examTitle.replace(/[^a-zA-Z0-9Ã€-á»¹\s]/g, '').replace(/\s+/g, '_').substring(0, 50);
+                const cleanTitle = examTitle.replace(/[^a-zA-Z0-9À-ỹ\s]/g, '').replace(/\s+/g, '_').substring(0, 50);
                 return cleanTitle + '_StudyStation.' + format;
             },
 
             async downloadAsDOCX(examData, examTitle, includeAnswers, format) {
-                if (!window.docx) { alert('ThÆ° viá»‡n táº¡o file chÆ°a táº£i xong.'); return; }
+                if (!window.docx) { alert('Thư viện tạo file chưa tải xong.'); return; }
                 const { Document, Packer, Paragraph, TextRun, HeadingLevel, AlignmentType, convertInchesToTwip } = window.docx;
                 const children = []; const answersKey = []; let qNum = 0;
 
