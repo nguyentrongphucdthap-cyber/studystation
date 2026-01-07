@@ -1,21 +1,211 @@
-/* Sử dụng font Be Vietnam Pro làm font chữ mặc định */
 body {
-    font-family: 'Be Vietnam Pro', sans-serif;
+    background-color: #f8fafc;
+    color: #0f172a;
+    -webkit-font-smoothing: antialiased;
+    transition: background-color 0.3s, color 0.3s;
+    overflow-x: hidden;
 }
 
-/* Định nghĩa hiệu ứng chuyển cảnh (fade-in và trượt lên) */
-.page-content {
+html.dark body {
+    background-color: #0f172a;
+    color: #f1f5f9;
+}
+
+/* --- Scrollbar --- */
+.custom-scrollbar::-webkit-scrollbar {
+    width: 6px;
+    height: 6px;
+}
+
+.custom-scrollbar::-webkit-scrollbar-track {
+    background: transparent;
+}
+
+.custom-scrollbar::-webkit-scrollbar-thumb {
+    background-color: #cbd5e1;
+    border-radius: 10px;
+}
+
+html.dark .custom-scrollbar::-webkit-scrollbar-thumb {
+    background-color: #334155;
+}
+
+.no-scrollbar::-webkit-scrollbar {
     display: none;
-    /* Ẩn tất cả các trang theo mặc định */
-    animation: pageFadeIn 0.5s cubic-bezier(0.25, 0.46, 0.45, 0.94) forwards;
 }
 
-.page-content.active {
-    display: block;
-    /* Hiển thị trang đang hoạt động */
+.no-scrollbar {
+    -ms-overflow-style: none;
+    scrollbar-width: none;
 }
 
-@keyframes pageFadeIn {
+.glass-header {
+    background: rgba(255, 255, 255, 0.85);
+    backdrop-filter: blur(12px);
+    -webkit-backdrop-filter: blur(12px);
+    border-bottom: 1px solid rgba(226, 232, 240, 0.6);
+    transition: background-color 0.3s, border-color 0.3s;
+}
+
+html.dark .glass-header {
+    background: rgba(15, 23, 42, 0.85);
+    border-bottom: 1px solid rgba(51, 65, 85, 0.6);
+}
+
+.card-hover {
+    transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.card-hover:hover {
+    transform: translateY(-4px);
+    box-shadow: 0 12px 24px -4px rgba(0, 0, 0, 0.08);
+}
+
+html.dark .card-hover:hover {
+    box-shadow: 0 12px 24px -4px rgba(0, 0, 0, 0.3);
+}
+
+/* --- Radio Button --- */
+.option-radio:checked+div {
+    border-color: #2563eb;
+    background-color: #eff6ff;
+    box-shadow: 0 0 0 1px #2563eb;
+}
+
+html.dark .option-radio:checked+div {
+    background-color: rgba(59, 130, 246, 0.1);
+    border-color: #3b82f6;
+    box-shadow: 0 0 0 1px #3b82f6;
+}
+
+.option-dot-inner {
+    transform: scale(0);
+    transition: transform 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.option-radio:checked+div .option-dot-inner {
+    transform: scale(1);
+}
+
+.option-radio:checked+div .option-dot-outer {
+    border-color: #2563eb;
+    background-color: #2563eb;
+}
+
+html.dark .option-radio:checked+div .option-dot-outer {
+    border-color: #3b82f6;
+    background-color: #3b82f6;
+}
+
+/* --- Palette Items --- */
+.question-nav-item {
+    transition: all 0.2s;
+}
+
+.question-nav-item.answered {
+    background-color: #2563eb !important;
+    color: white !important;
+    border-color: transparent !important;
+    box-shadow: 0 2px 4px rgba(37, 99, 235, 0.2);
+}
+
+.question-nav-item:hover:not(.answered) {
+    background-color: #f1f5f9;
+    transform: scale(1.05);
+}
+
+html.dark .question-nav-item:hover:not(.answered) {
+    background-color: #334155;
+}
+
+/* --- Buttons --- */
+.tf-btn {
+    transition: all 0.2s ease;
+    -webkit-tap-highlight-color: transparent;
+    touch-action: manipulation;
+    user-select: none;
+    -webkit-user-select: none;
+    cursor: pointer;
+}
+
+/* Remove stuck active state on mobile */
+.tf-btn:active {
+    opacity: 0.8;
+}
+
+/* Ensure proper touch response */
+.tf-btn-group {
+    touch-action: manipulation;
+}
+
+.tf-btn.selected-true {
+    background-color: #2563eb;
+    color: white;
+    border-color: #2563eb;
+}
+
+.tf-btn.selected-false {
+    background-color: #ef4444;
+    color: white;
+    border-color: #ef4444;
+}
+
+/* --- Review Mode --- */
+.review-correct {
+    background-color: #d1fae5 !important;
+    border-color: #10b981 !important;
+    color: #065f46 !important;
+}
+
+html.dark .review-correct {
+    background-color: rgba(16, 185, 129, 0.2) !important;
+    border-color: #10b981 !important;
+    color: #d1fae5 !important;
+}
+
+.review-wrong {
+    background-color: #fee2e2 !important;
+    border-color: #ef4444 !important;
+    color: #991b1b !important;
+}
+
+html.dark .review-wrong {
+    background-color: rgba(239, 68, 68, 0.2) !important;
+    border-color: #ef4444 !important;
+    color: #fee2e2 !important;
+}
+
+/* Review mode for True/False buttons - Correct answer (green filled) */
+.tf-btn.review-correct-answer {
+    background-color: #10b981 !important;
+    color: white !important;
+    border-color: #10b981 !important;
+    font-weight: 700;
+    box-shadow: 0 2px 8px rgba(16, 185, 129, 0.4);
+}
+
+html.dark .tf-btn.review-correct-answer {
+    background-color: #10b981 !important;
+    color: white !important;
+    border-color: #10b981 !important;
+}
+
+/* Review mode for True/False buttons - Wrong answer (red filled) */
+.tf-btn.review-wrong-answer {
+    background-color: #ef4444 !important;
+    color: white !important;
+    border-color: #ef4444 !important;
+    font-weight: 700;
+    box-shadow: 0 2px 8px rgba(239, 68, 68, 0.4);
+}
+
+html.dark .tf-btn.review-wrong-answer {
+    background-color: #ef4444 !important;
+    color: white !important;
+    border-color: #ef4444 !important;
+}
+
+@keyframes fadeInUp {
     from {
         opacity: 0;
         transform: translateY(20px);
@@ -27,224 +217,1118 @@ body {
     }
 }
 
-/* Hiệu ứng hover mượt mà cho các nút môn học */
-.subject-card {
-    transition: transform 0.3s ease, box-shadow 0.3s ease;
+.animate-enter {
+    animation: fadeInUp 0.4s cubic-bezier(0.16, 1, 0.3, 1) forwards;
 }
 
-.subject-card:hover {
-    transform: translateY(-5px);
-    box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05);
+/* Toggle Switch */
+.toggle-checkbox:checked {
+    right: 0;
+    border-color: #2563eb;
 }
 
-.menu-card {
-    transition: transform 0.3s ease, box-shadow 0.3s ease;
+.toggle-checkbox:checked+.toggle-label {
+    background-color: #2563eb;
 }
 
-.menu-card.clicked {
-    animation: cardClick 0.35s ease;
+:root {
+    --question-font-size: 16px;
+    --question-line-height: 1.6;
+    --ui-scale: 1;
+    --content-max-width: 768px;
+    --question-font-family: 'Plus Jakarta Sans', 'Be Vietnam Pro', sans-serif;
 }
 
-@keyframes cardClick {
-    0% {
-        transform: scale(1);
-    }
-
-    30% {
-        transform: scale(0.92);
-        filter: brightness(0.9);
-    }
-
-    100% {
-        transform: scale(1);
-        filter: brightness(1);
-    }
+/* Question and Answer text styling - uses custom font */
+.dynamic-text {
+    font-size: calc(var(--question-font-size) * var(--ui-scale)) !important;
+    line-height: var(--question-line-height) !important;
+    font-family: var(--question-font-family) !important;
 }
 
-/* --- CSS MỚI CHO TRANG LÀM BÀI --- */
-
-/* Loading Spinner */
-@keyframes spin {
-    to {
-        transform: rotate(360deg);
-    }
+/* Apply custom font to question cards content */
+.question-card .font-question,
+.question-card p,
+.option-label span,
+.sub-question-row .dynamic-text,
+[data-question-content] {
+    font-family: var(--question-font-family);
 }
 
-#loading-indicator {
-    width: 60px;
-    height: 60px;
-    border: 6px solid rgba(196, 30, 58, 0.1);
-    border-top: 6px solid #C41E3A;
+/* Apply line-height to question cards and options */
+.question-card,
+.question-card .font-question,
+.question-card span,
+.sub-question-row,
+.option-label span {
+    line-height: var(--question-line-height);
+}
+
+/* Question container width control */
+.content-area {
+    max-width: var(--content-max-width);
+    transition: max-width 0.3s ease;
+}
+
+/* Vertical answer layout (1 column) */
+.answers-vertical .answer-options-grid {
+    grid-template-columns: 1fr !important;
+}
+
+input[type=range] {
+    -webkit-appearance: none;
+    appearance: none;
+    background: transparent;
+}
+
+input[type=range]::-webkit-slider-thumb {
+    -webkit-appearance: none;
+    height: 20px;
+    width: 20px;
     border-radius: 50%;
-    animation: spin 0.8s cubic-bezier(0.5, 0, 0.5, 1) infinite;
-}
-
-/* Kiểu dáng câu hỏi */
-.quiz-question {
-    background-color: #f9fafb;
-    /* bg-gray-50 */
-    padding: 1rem;
-    /* p-4 for mobile */
-    border-radius: 0.75rem;
-    /* rounded-lg */
-    margin-bottom: 1.5rem;
-    /* mb-6 */
-    border: 1px solid #e5e7eb;
-    /* border border-gray-200 */
-}
-
-.question-text {
-    font-size: 1rem;
-    /* text-base for mobile */
-    font-weight: 600;
-    /* font-semibold */
-    margin-bottom: 1rem;
-    /* mb-4 */
-    color: #1f2937;
-    /* text-gray-800 */
-}
-
-.options-container label {
-    display: block;
-    padding: 0.75rem;
-    /* p-3 for mobile */
-    background-color: #ffffff;
-    /* bg-white */
-    border: 1px solid #d1d5db;
-    /* border border-gray-300 */
-    border-radius: 0.5rem;
-    /* rounded-md */
-    margin-bottom: 0.75rem;
-    /* mb-3 */
+    background: #2563eb;
     cursor: pointer;
-    transition: border-color 0.2s ease, background-color 0.2s ease;
+    margin-top: -8px;
+    box-shadow: 0 2px 6px rgba(37, 99, 235, 0.4);
 }
 
-.options-container label:hover {
-    background-color: #f9fafb;
-    /* hover:bg-gray-50 */
+input[type=range]::-webkit-slider-runnable-track {
+    width: 100%;
+    height: 4px;
+    cursor: pointer;
+    background: #e2e8f0;
+    border-radius: 2px;
 }
 
-.options-container input[type="radio"]:checked+span {
-    font-weight: 600;
-    /* font-semibold */
-    color: #C41E3A;
-    /* Updated to Christmas Red */
+html.dark input[type=range]::-webkit-slider-runnable-track {
+    background: #334155;
 }
 
-.options-container label input {
-    margin-right: 0.75rem;
-    /* mr-3 */
+/* ============================================================
+   MOBILE RESPONSIVE OPTIMIZATION
+   ============================================================ */
+
+/* Prevent horizontal overflow on all containers */
+* {
+    box-sizing: border-box;
 }
 
-/* --- CSS MỚI CHO TRANG KẾT QUẢ --- */
-.review-item {
-    border: 1px solid #e5e7eb;
-    /* border border-gray-200 */
-    border-radius: 0.75rem;
-    /* rounded-lg */
+/* Ensure text wraps properly without breaking formulas */
+.dynamic-text,
+.font-question {
+    word-break: normal;
+    overflow-wrap: break-word;
+    hyphens: none;
+}
+
+/* Mobile-specific rules */
+@media screen and (max-width: 768px) {
+
+    /* Base font adjustments */
+    body {
+        font-size: 14px;
+    }
+
+    /* Question cards - prevent content overflow */
+    .question-card {
+        padding: 1rem !important;
+        margin-left: 0.25rem;
+        margin-right: 0.25rem;
+        overflow: hidden;
+    }
+
+    /* Exam list cards */
+    .exam-card {
+        padding: 0.875rem !important;
+    }
+
+    .exam-card h4 {
+        font-size: 0.9375rem;
+        line-height: 1.4;
+    }
+
+    /* Question text container */
+    .question-card .flex-1 {
+        min-width: 0;
+        overflow: hidden;
+    }
+
+    /* Question number badge - smaller on mobile */
+    .question-card>div>div>.w-10 {
+        width: 2rem !important;
+        height: 2rem !important;
+        min-width: 2rem;
+        font-size: 0.75rem;
+    }
+
+    /* Question text - proper wrapping */
+    .question-card .dynamic-text {
+        font-size: var(--question-font-size, 15px);
+        line-height: 1.5;
+        word-break: break-word;
+    }
+
+    /* Option labels - better mobile touch targets */
+    .option-label {
+        min-height: 44px;
+    }
+
+    .option-label>input+div {
+        padding: 0.75rem !important;
+        min-height: 48px;
+    }
+
+    .option-label span.dynamic-text {
+        font-size: 14px !important;
+        word-break: normal;
+        overflow-wrap: anywhere;
+        white-space: normal;
+    }
+
+    /* Prevent MathJax from breaking inline */
+    mjx-container {
+        display: inline !important;
+        white-space: nowrap;
+    }
+
+    /* True/False buttons - better sizing */
+    .tf-btn {
+        min-height: 40px;
+        font-size: 0.8rem !important;
+        padding: 0.5rem 1rem !important;
+    }
+
+    /* Sub-question rows - already stacked in HTML, just ensure proper spacing */
+    .sub-question-row {
+        padding: 0.875rem !important;
+    }
+
+    .sub-question-row .dynamic-text {
+        font-size: 14px;
+        line-height: 1.5;
+    }
+
+    /* Short answer input */
+    #questions-container input[type="text"] {
+        width: 100% !important;
+        font-size: 16px !important;
+        /* Prevent zoom on iOS */
+        padding: 0.75rem !important;
+    }
+
+    /* Question images */
+    .question-card img {
+        max-width: 100%;
+        height: auto;
+        border-radius: 0.5rem;
+    }
+
+    /* Bottom navigation - more padding to avoid gesture conflicts */
+    #mobile-footer {
+        padding: 0.75rem 0.75rem calc(0.75rem + env(safe-area-inset-bottom, 0px)) !important;
+    }
+
+    /* More space at the bottom for mobile footer */
+    #questions-container>div>div {
+        padding-bottom: 6rem !important;
+    }
+
+    /* Mobile palette modal improvements */
+    #mobile-palette>div {
+        max-height: 75vh;
+        padding-bottom: calc(1rem + env(safe-area-inset-bottom, 0px));
+    }
+
+    #mobile-palette-grid {
+        gap: 0.5rem;
+    }
+
+    #mobile-palette-grid button {
+        min-height: 40px;
+        font-size: 0.875rem;
+    }
+
+    /* Header adjustments */
+    .glass-header {
+        padding-left: 0.75rem !important;
+        padding-right: 0.75rem !important;
+    }
+
+    /* Timer on mobile */
+    #exam-timer {
+        font-size: 0.875rem !important;
+        padding: 0.375rem 0.5rem !important;
+    }
+
+    /* Part headers */
+    #part-1-container h3,
+    #part-2-container h3,
+    #part-3-container h3 {
+        font-size: 0.875rem !important;
+    }
+
+    /* Review controls - horizontal scroll on mobile */
+    #review-controls {
+        overflow-x: auto;
+        -webkit-overflow-scrolling: touch;
+    }
+
+    #review-controls>div:first-child {
+        flex-shrink: 0;
+    }
+
+    /* Result page adjustments */
+    #score-display {
+        font-size: 2.5rem !important;
+    }
+
+    /* Make MathJax formulas scrollable onr overflow */
+    mjx-container {
+        overflow-x: auto;
+        max-width: 100%;
+        display: block;
+    }
+}
+
+/* Very small screens (iPhone SE, etc) */
+@media screen and (max-width: 375px) {
+    .question-card {
+        padding: 0.75rem !important;
+    }
+
+    .tf-btn {
+        min-width: 3rem !important;
+        font-size: 0.65rem !important;
+    }
+
+    .sub-question-row .dynamic-text {
+        font-size: 13px !important;
+    }
+
+    #exam-timer {
+        font-size: 0.75rem !important;
+    }
+}
+
+/* Fix for iOS safe area */
+@supports (padding-bottom: env(safe-area-inset-bottom)) {
+    #mobile-footer {
+        padding-bottom: calc(0.75rem + env(safe-area-inset-bottom)) !important;
+    }
+}
+
+/* ============================================================
+   FIX CHO CÁC THIẾT BỊ CÓ TỈ LỆ MÀN HÌNH KHÁC NHAU (v2)
+   ============================================================ */
+
+/* QUAN TRỌNG: Bỏ height constraint trên html/body */
+html {
+    height: auto !important;
+    min-height: 100%;
+    overflow-x: hidden;
+    overflow-y: auto !important;
+}
+
+body {
+    height: auto !important;
+    min-height: 100vh;
+    min-height: calc(var(--vh, 1vh) * 100);
+    /* Fallback for iOS Safari */
+    min-height: 100dvh;
+    display: flex;
+    flex-direction: column;
+    overflow-x: hidden;
+    overflow-y: visible !important;
+}
+
+/* Main container - KHÔNG dùng overflow hidden */
+#app-container {
+    flex: 1 1 auto;
+    min-height: 0;
+    height: auto !important;
+    overflow-y: visible;
+    overflow-x: hidden;
+    position: relative;
+}
+
+/* Content trong app container - KHÔNG bao gồm fixed elements */
+#app-container>div:not(#mobile-footer):not(#mobile-palette):not([class*="fixed"]) {
+    min-height: 100%;
+    height: auto !important;
+    overflow-y: visible;
+}
+
+/* Questions container - phải scroll được */
+#questions-container {
+    overflow-y: auto !important;
+    overflow-x: hidden;
+    -webkit-overflow-scrolling: touch;
+    height: auto !important;
+    min-height: 100%;
+    max-height: none !important;
+}
+
+/* Content area trong questions */
+#questions-container>.content-area {
+    padding-bottom: 140px !important;
+}
+
+/* Mobile-specific fixes */
+@media screen and (max-width: 1024px) {
+
+    html,
+    body {
+        height: auto !important;
+        overflow-y: auto !important;
+        position: relative;
+    }
+
+    #app-container {
+        height: auto !important;
+        min-height: calc(100vh - 64px);
+        min-height: calc(100dvh - 64px);
+        overflow: visible !important;
+    }
+
+    /* Chỉ target container view chính, không phải fixed elements */
+    #app-container>div:not([id*="mobile"]):not([id*="palette"]) {
+        height: auto !important;
+        min-height: 100%;
+        overflow-y: visible !important;
+        padding-bottom: 100px;
+    }
+
+    /* Container flex trong taking-exam view */
+    #app-container>div>.flex.min-h-full:not(#mobile-footer) {
+        height: auto !important;
+        min-height: 100%;
+    }
+
+    #questions-container {
+        height: auto !important;
+        min-height: calc(100vh - 64px);
+        overflow-y: scroll !important;
+        -webkit-overflow-scrolling: touch;
+    }
+
+    #questions-container>.content-area {
+        padding-bottom: calc(140px + env(safe-area-inset-bottom, 0px)) !important;
+    }
+
+    .animate-enter.overflow-y-auto,
+    .min-h-full.overflow-y-auto {
+        height: auto !important;
+        min-height: 100%;
+        overflow-y: visible !important;
+        padding-bottom: 80px;
+    }
+
+    /* QUAN TRỌNG: Bảo vệ mobile footer khỏi bị stretch */
+    #mobile-footer {
+        height: auto !important;
+        min-height: auto !important;
+        max-height: none;
+        flex: 0 0 auto !important;
+        position: fixed !important;
+        bottom: 0 !important;
+        left: 0 !important;
+        right: 0 !important;
+        padding: 12px !important;
+        z-index: 40 !important;
+    }
+
+    /* Buttons trong mobile footer giữ kích thước bình thường */
+    #mobile-footer button {
+        height: auto !important;
+        min-height: auto !important;
+        flex: none;
+        padding: 12px 16px !important;
+    }
+
+    #mobile-footer button.flex-1 {
+        flex: 1 1 0% !important;
+    }
+}
+
+/* ============================================
+   MOBILE FOOTER - PROTECTION (CRITICAL)
+   Chỉ áp dụng cho mobile để không override lg:hidden
+   ============================================ */
+@media screen and (max-width: 1023px) {
+
+    #mobile-footer,
+    div#mobile-footer,
+    [id="mobile-footer"] {
+        display: flex !important;
+        flex-direction: row !important;
+        align-items: center !important;
+        position: fixed !important;
+        bottom: 0 !important;
+        left: 0 !important;
+        right: 0 !important;
+        top: auto !important;
+        height: 64px !important;
+        max-height: 64px !important;
+        min-height: 64px !important;
+        width: 100% !important;
+        padding: 12px !important;
+        margin: 0 !important;
+        z-index: 40 !important;
+        flex-grow: 0 !important;
+        flex-shrink: 0 !important;
+        flex-basis: auto !important;
+        overflow: visible !important;
+        box-sizing: border-box !important;
+    }
+
+    #mobile-footer>button,
+    div#mobile-footer>button {
+        height: auto !important;
+        min-height: unset !important;
+        max-height: 48px !important;
+        flex-grow: 0 !important;
+        flex-shrink: 0 !important;
+        padding: 12px 16px !important;
+    }
+
+    #mobile-footer>button.flex-1,
+    div#mobile-footer>button.flex-1 {
+        flex-grow: 1 !important;
+        flex-shrink: 1 !important;
+    }
+
+    #mobile-footer>*,
+    div#mobile-footer>* {
+        align-self: center !important;
+        height: auto !important;
+        max-height: 48px !important;
+        min-height: unset !important;
+        flex-grow: 0 !important;
+        flex-shrink: 0 !important;
+    }
+}
+
+/* Desktop: hide mobile footer explicitly */
+@media screen and (min-width: 1024px) {
+
+    #mobile-footer,
+    div#mobile-footer,
+    [id="mobile-footer"] {
+        display: none !important;
+    }
+}
+
+/* Safe area cho các thiết bị có notch/home indicator */
+@supports (padding-bottom: env(safe-area-inset-bottom)) {
+    .safe-bottom {
+        padding-bottom: env(safe-area-inset-bottom);
+    }
+
+    .pb-safe {
+        padding-bottom: max(1rem, env(safe-area-inset-bottom));
+    }
+
+    @media screen and (max-width: 1023px) {
+        #mobile-footer {
+            padding-bottom: calc(12px + env(safe-area-inset-bottom)) !important;
+        }
+    }
+}
+
+/* Fix cho màn hình rất ngắn */
+@media screen and (max-height: 600px) {
+    #app-container>div:not(#mobile-footer):not(#mobile-palette) {
+        padding-bottom: 100px;
+    }
+
+    .glass-header {
+        height: 56px !important;
+    }
+
+    .h-16.shrink-0 {
+        height: 56px !important;
+    }
+}
+
+/* Fix cho màn hình rất dài */
+@media screen and (min-aspect-ratio: 9/19) {
+    #questions-container>.content-area {
+        padding-bottom: calc(160px + env(safe-area-inset-bottom, 0px)) !important;
+    }
+}
+
+/* ============================================================
+   FIXED SIDEBAR LAYOUT FOR PRACTICE MODULE
+   Sidebar luôn cố định, scroll riêng với phần làm bài
+   ============================================================ */
+
+/* Main wrapper for taking exam view */
+.taking-exam-wrapper {
+    display: flex;
+    min-height: 100%;
+    height: calc(100vh - 64px);
+    /* Full height minus header */
+    position: relative;
+}
+
+/* Questions area - scrolls independently */
+.questions-scroll-area {
+    flex: 1;
+    overflow-y: auto;
+    overflow-x: hidden;
+    height: 100%;
+    -webkit-overflow-scrolling: touch;
+}
+
+/* Desktop Sidebar - FIXED position */
+.desktop-sidebar-fixed {
+    position: fixed;
+    top: 64px;
+    /* Below header */
+    right: 0;
+    bottom: 0;
+    width: 256px;
+    /* w-64 = 16rem = 256px */
+    background: white;
+    border-left: 1px solid #f1f5f9;
+    display: flex;
+    flex-direction: column;
+    z-index: 20;
+    box-shadow: -4px 0 20px rgba(0, 0, 0, 0.02);
+}
+
+html.dark .desktop-sidebar-fixed {
+    background: #1e293b;
+    border-left-color: #334155;
+}
+
+/* Sidebar header - fixed at top */
+.sidebar-header {
     padding: 1rem;
-    /* p-4 for mobile */
-    margin-bottom: 1rem;
-    /* mb-4 */
+    border-bottom: 1px solid #f8fafc;
+    flex-shrink: 0;
 }
 
-.review-item.correct {
-    background-color: #f0fdf4;
-    /* bg-green-50 */
-    border-color: #bbf7d0;
-    /* border-green-200 */
+html.dark .sidebar-header {
+    border-bottom-color: #334155;
 }
 
-.review-item.incorrect {
-    background-color: #fef2f2;
-    /* bg-red-50 */
-    border-color: #fecaca;
-    /* border-red-200 */
+/* Sidebar content - scrollable area */
+.sidebar-content {
+    flex: 1;
+    overflow-y: auto;
+    overflow-x: hidden;
+    padding: 1rem;
+    -webkit-overflow-scrolling: touch;
 }
 
-.feedback-text {
+/* Sidebar footer - fixed at bottom */
+.sidebar-footer {
+    padding: 1.5rem;
+    border-top: 1px solid #f8fafc;
+    background: rgba(248, 250, 252, 0.5);
+    flex-shrink: 0;
+}
+
+html.dark .sidebar-footer {
+    border-top-color: #334155;
+    background: #1e293b;
+}
+
+/* Adjust questions area to account for fixed sidebar on desktop */
+@media screen and (min-width: 1024px) {
+    .taking-exam-wrapper {
+        padding-right: 256px;
+        /* Make room for fixed sidebar */
+    }
+
+    .questions-scroll-area {
+        width: 100%;
+    }
+}
+
+/* Mobile: no sidebar adjustment needed */
+@media screen and (max-width: 1023px) {
+    .taking-exam-wrapper {
+        height: auto;
+        min-height: calc(100vh - 64px);
+        padding-right: 0;
+    }
+
+    .questions-scroll-area {
+        height: auto;
+        min-height: 100%;
+        overflow-y: visible;
+    }
+
+    .desktop-sidebar-fixed {
+        display: none !important;
+    }
+}
+
+/* ============================================================
+   STEP-BY-STEP MODE STYLES
+   Chế độ làm từng câu một
+   ============================================================ */
+
+/* Main wrapper */
+.step-mode-wrapper {
+    display: flex;
+    flex-direction: column;
+    min-height: calc(100vh - 64px);
+    height: calc(100vh - 64px);
+}
+
+/* Progress header */
+.step-progress-header {
+    flex-shrink: 0;
+    z-index: 10;
+}
+
+/* Question area */
+.step-question-area {
+    flex: 1;
+    overflow-y: auto;
+    padding-bottom: 80px !important;
+    /* Reduced for less scrolling */
+    -webkit-overflow-scrolling: touch;
+}
+
+/* Question text - bold by default */
+#step-question-text {
     font-weight: 600;
-    /* font-semibold */
-    margin-top: 0.75rem;
-    /* mt-3 */
-    padding-top: 0.75rem;
-    /* pt-3 */
-    border-top: 1px solid #e5e7eb;
-    /* border-t border-gray-200 */
+    font-size: 1.125rem;
+    line-height: 1.75;
 }
 
-.correct-answer {
-    color: #165B33;
-    /* Updated to Christmas Green */
+/* Step action bar - styled like mobile-footer (always visible, fixed) */
+.step-action-bar {
+    display: flex !important;
+    flex-direction: row !important;
+    align-items: center !important;
+    position: fixed !important;
+    bottom: 0 !important;
+    left: 0 !important;
+    right: 0 !important;
+    height: 64px !important;
+    max-height: 64px !important;
+    min-height: 64px !important;
+    width: 100% !important;
+    padding: 12px !important;
+    padding-bottom: calc(12px + env(safe-area-inset-bottom, 0px)) !important;
+    margin: 0 !important;
+    z-index: 30 !important;
+    background: rgba(255, 255, 255, 0.98);
+    backdrop-filter: blur(12px);
+    -webkit-backdrop-filter: blur(12px);
+    border-top: 1px solid #e2e8f0;
+    box-shadow: 0 -4px 20px rgba(0, 0, 0, 0.08);
+    box-sizing: border-box !important;
+    gap: 12px;
 }
 
-.incorrect-answer {
-    color: #C41E3A;
-    /* Updated to Christmas Red */
+html.dark .step-action-bar {
+    background: rgba(30, 41, 59, 0.98);
+    border-top-color: #334155;
+    box-shadow: 0 -4px 20px rgba(0, 0, 0, 0.25);
 }
 
-/* --- CSS CHO MENU TÀI KHOẢN (MỚI) --- */
-
-/* Hiệu ứng Dropdown Desktop */
-.user-dropdown-menu {
-    transform-origin: top right;
-    transition: all 0.2s ease-out;
-    opacity: 0;
-    transform: scale(0.95) translateY(-10px);
-    pointer-events: none;
-    display: none;
-    /* Thêm display none để ẩn hoàn toàn */
+/* Ensure step action buttons display correctly */
+#step-skip-btn,
+#step-check-btn,
+#step-next-btn {
+    display: flex !important;
+    align-items: center !important;
+    justify-content: center !important;
 }
 
-.user-dropdown-menu.show {
+#step-check-btn.hidden,
+#step-next-btn.hidden {
+    display: none !important;
+}
+
+/* Step action buttons container */
+.step-action-buttons {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    width: 100%;
+    max-width: 600px;
+    margin: 0 auto;
+}
+
+/* Skip button */
+.step-skip-btn {
+    flex-shrink: 0;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+    padding: 12px 16px;
+    background: #f1f5f9;
+    color: #475569;
+    border: none;
+    border-radius: 12px;
+    font-weight: 700;
+    font-size: 14px;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    min-height: 48px;
+}
+
+html.dark .step-skip-btn {
+    background: #334155;
+    color: #cbd5e1;
+}
+
+.step-skip-btn:hover {
+    background: #e2e8f0;
+}
+
+html.dark .step-skip-btn:hover {
+    background: #475569;
+}
+
+.step-skip-btn:disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+}
+
+/* Main action button (check/next) */
+.step-main-btn {
+    flex: 1;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+    padding: 12px 20px;
+    border: none;
+    border-radius: 12px;
+    font-weight: 700;
+    font-size: 16px;
+    color: white;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    min-height: 48px;
+}
+
+.step-main-btn.hidden {
+    display: none !important;
+}
+
+/* Check button */
+.step-check-btn {
+    background: linear-gradient(135deg, #3b82f6, #2563eb);
+    box-shadow: 0 4px 14px rgba(59, 130, 246, 0.35);
+}
+
+.step-check-btn:hover {
+    background: linear-gradient(135deg, #2563eb, #1d4ed8);
+    transform: translateY(-1px);
+}
+
+/* Next button */
+.step-next-btn {
+    background: linear-gradient(135deg, #10b981, #059669);
+    box-shadow: 0 4px 14px rgba(16, 185, 129, 0.35);
+}
+
+.step-next-btn:hover {
+    background: linear-gradient(135deg, #059669, #047857);
+    transform: translateY(-1px);
+}
+
+/* Step option styling */
+.step-option {
     display: block;
-    /* Hiện block trước khi chạy animation */
-    opacity: 1;
-    transform: scale(1) translateY(0);
-    pointer-events: auto;
+    width: 100%;
+    padding: 1rem;
+    border-radius: 0.75rem;
+    border: 2px solid #e2e8f0;
+    background: white;
+    text-align: left;
+    transition: all 0.2s ease;
+    cursor: pointer;
 }
 
-/* Hiệu ứng Mobile Sheet */
-.mobile-sheet-content {
-    transition: transform 0.3s cubic-bezier(0.16, 1, 0.3, 1);
-    transform: translateY(100%);
+html.dark .step-option {
+    border-color: #475569;
+    background: #1e293b;
 }
 
-.mobile-sheet-backdrop {
-    transition: opacity 0.3s ease;
-    opacity: 0;
-    pointer-events: none;
+.step-option:hover:not(:disabled):not(.step-option-correct):not(.step-option-wrong) {
+    border-color: #3b82f6;
+    background: #eff6ff;
 }
 
-.mobile-sheet.open .mobile-sheet-content {
-    transform: translateY(0);
+html.dark .step-option:hover:not(:disabled):not(.step-option-correct):not(.step-option-wrong) {
+    border-color: #3b82f6;
+    background: rgba(59, 130, 246, 0.1);
 }
 
-.mobile-sheet.open .mobile-sheet-backdrop {
-    opacity: 1;
-    pointer-events: auto;
+.step-option.step-option-selected {
+    border-color: #3b82f6;
+    background: #eff6ff;
+    box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.2);
 }
 
-/* Media query cho màn hình lớn hơn */
-@media (min-width: 640px) {
-    .quiz-question {
-        padding: 1.5rem;
-        /* p-6 */
+html.dark .step-option.step-option-selected {
+    background: rgba(59, 130, 246, 0.15);
+}
+
+.step-option.step-option-correct {
+    border-color: #10b981 !important;
+    background: #d1fae5 !important;
+    color: #065f46 !important;
+}
+
+html.dark .step-option.step-option-correct {
+    background: rgba(16, 185, 129, 0.2) !important;
+    color: #d1fae5 !important;
+}
+
+.step-option.step-option-wrong {
+    border-color: #ef4444 !important;
+    background: #fee2e2 !important;
+    color: #991b1b !important;
+}
+
+html.dark .step-option.step-option-wrong {
+    background: rgba(239, 68, 68, 0.2) !important;
+    color: #fee2e2 !important;
+}
+
+/* Feedback box styling */
+#step-feedback.feedback-correct {
+    border-color: #10b981;
+    background: #ecfdf5;
+}
+
+html.dark #step-feedback.feedback-correct {
+    background: rgba(16, 185, 129, 0.1);
+}
+
+#step-feedback.feedback-wrong {
+    border-color: #ef4444;
+    background: #fef2f2;
+}
+
+html.dark #step-feedback.feedback-wrong {
+    background: rgba(239, 68, 68, 0.1);
+}
+
+/* TF button in step mode */
+.step-tf-btn {
+    flex: 1;
+    padding: 0.75rem 1rem;
+    border-radius: 0.75rem;
+    border: 2px solid #e2e8f0;
+    background: white;
+    font-weight: 600;
+    transition: all 0.2s ease;
+    cursor: pointer;
+}
+
+html.dark .step-tf-btn {
+    border-color: #475569;
+    background: #1e293b;
+    color: #e2e8f0;
+}
+
+.step-tf-btn:hover:not(:disabled):not(.step-tf-correct):not(.step-tf-wrong) {
+    border-color: #3b82f6;
+}
+
+.step-tf-btn.step-tf-selected-true {
+    background: #2563eb;
+    border-color: #2563eb;
+    color: white;
+}
+
+/* Both true and false selection use the same blue color to avoid confusion */
+.step-tf-btn.step-tf-selected-false {
+    background: #2563eb;
+    border-color: #2563eb;
+    color: white;
+}
+
+.step-tf-btn.step-tf-correct {
+    background: #10b981 !important;
+    border-color: #10b981 !important;
+    color: white !important;
+}
+
+.step-tf-btn.step-tf-wrong {
+    background: #ef4444 !important;
+    border-color: #ef4444 !important;
+    color: white !important;
+}
+
+/* Exam mode selector buttons */
+.exam-mode-selector {
+    display: flex;
+    gap: 0.5rem;
+    margin-top: 1rem;
+}
+
+.exam-mode-btn {
+    flex: 1;
+    padding: 0.75rem 1rem;
+    border-radius: 0.75rem;
+    border: 2px solid #e2e8f0;
+    background: white;
+    font-weight: 600;
+    font-size: 0.875rem;
+    transition: all 0.2s ease;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 0.5rem;
+}
+
+html.dark .exam-mode-btn {
+    border-color: #475569;
+    background: #1e293b;
+    color: #e2e8f0;
+}
+
+.exam-mode-btn:hover {
+    border-color: #3b82f6;
+}
+
+.exam-mode-btn.mode-classic {
+    border-color: #3b82f6;
+    background: #eff6ff;
+    color: #2563eb;
+}
+
+html.dark .exam-mode-btn.mode-classic {
+    background: rgba(59, 130, 246, 0.15);
+    color: #60a5fa;
+}
+
+.exam-mode-btn.mode-stepbystep {
+    border-color: #8b5cf6;
+    background: #f5f3ff;
+    color: #7c3aed;
+}
+
+html.dark .exam-mode-btn.mode-stepbystep {
+    background: rgba(139, 92, 246, 0.15);
+    color: #a78bfa;
+}
+
+/* ============================================================
+   STEP MODE RESPONSIVE STYLES
+   ============================================================ */
+
+/* Mobile-first optimizations */
+@media (max-width: 767px) {
+    .step-mode-wrapper {
+        min-height: calc(100vh - 56px);
+        height: calc(100vh - 56px);
     }
 
-    .question-text {
-        font-size: 1.125rem;
-        /* text-lg */
+    .step-question-area {
+        padding: 12px;
+        padding-bottom: 80px !important;
     }
 
-    .options-container label {
-        padding: 0.75rem 1rem;
-        /* p-3 px-4 */
+    /* Keep action bar fixed like mobile-footer */
+    .step-skip-btn {
+        padding: 10px 14px;
+        min-height: 44px;
     }
 
-    .review-item {
-        padding: 1rem;
-        /* p-4 */
+    .step-skip-btn span {
+        display: none;
+        /* Hide text on mobile - only show icon */
+    }
+
+    .step-main-btn {
+        padding: 10px 16px;
+        min-height: 44px;
+        font-size: 15px;
+    }
+
+    #step-question-text {
+        font-size: 1rem;
+    }
+
+    .step-option {
+        padding: 14px;
+    }
+
+    .step-tf-btn {
+        padding: 10px 12px;
+        font-size: 14px;
     }
 }
+
+/* Desktop optimizations */
+@media (min-width: 768px) {
+    .step-mode-wrapper {
+        min-height: calc(100vh - 64px);
+    }
+
+    .step-question-area {
+        padding: 24px 32px;
+        padding-bottom: 100px !important;
+    }
+
+    /* Center action bar content on desktop */
+    .step-action-buttons {
+        max-width: 500px;
+        margin: 0 auto;
+    }
+
+    #step-question-text {
+        font-size: 1.25rem;
+    }
+
+    .step-option {
+        padding: 18px;
+    }
+
+    .step-option:hover:not(:disabled):not(.step-option-correct):not(.step-option-wrong) {
+        transform: translateY(-2px);
+        box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+    }
+
+    .step-tf-btn {
+        padding: 12px 16px;
+    }
+}
+/* Music Player Draggable Styles */
+#music-panel.draggable {
+    transition: width 0.3s, height 0.3s, opacity 0.3s, border-radius 0.3s, transform 0s !important; /* No transition for transform to prevent lag */
+}
+
+#music-panel.is-dragging {
+    opacity: 0.9;
+    cursor: grabbing;
+    transition: none !important;
+}
+
+/* Allow moving anywhere override */
+#music-panel.has-moved {
+    transform: none !important;
+    bottom: auto !important;
+    right: auto !important;
+}
+
+/* Mini Player specific */
+#music-mini-player {
+    cursor: grab;
+}
+
+#music-mini-player:active {
+    cursor: grabbing;
+}
+
+.music-drag-handle:active {
+    cursor: grabbing;
+}
+
+
