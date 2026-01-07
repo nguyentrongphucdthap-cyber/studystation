@@ -234,56 +234,52 @@ body:not(.review-mode) .dark .peer:checked+div .option-circle {
     /* Orange-400 */
 }
 
-/* Gap Fill Spot Styling - High Contrast */
+/* Gap Fill Spot Styling - Clean Blue */
 .gap-spot {
     display: inline-flex;
     align-items: center;
     justify-content: center;
-    padding: 2px 14px;
+    padding: 2px 12px;
     margin: 0 4px;
 
-    background-color: #ffedd5;
-    /* Orange-100 */
-    color: #c2410c;
-    /* Orange-700 High Contrast */
+    background-color: #eff6ff;
+    /* Blue-50 */
+    color: #2563eb;
+    /* Blue-600 */
 
-    border: 2px solid #f97316;
-    /* Orange-500 Solid Border */
-    border-radius: 8px;
+    border: 1px solid #60a5fa;
+    /* Blue-400 */
+    border-radius: 6px;
 
-    font-weight: 800;
-    font-size: 1.05em;
-    box-shadow: 0 3px 0 #c2410c;
-    /* 3D Shadow Effect */
+    font-weight: 700;
+    font-size: 0.95em;
 
-    transform: translateY(-2px);
     cursor: default;
     white-space: nowrap;
-    transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+    transition: all 0.2s ease;
+    box-shadow: 0 1px 2px rgba(37, 99, 235, 0.1);
 }
 
 .gap-spot:hover {
-    background-color: #f97316;
-    /* Invert on hover */
-    color: #ffffff;
-    border-color: #c2410c;
-    box-shadow: 0 4px 0 #7c2d12;
-    transform: translateY(-4px) scale(1.05);
+    background-color: #dbeafe;
+    /* Blue-100 */
+    border-color: #3b82f6;
+    /* Blue-500 */
+    color: #1d4ed8;
+    /* Blue-700 */
+    box-shadow: 0 2px 4px rgba(37, 99, 235, 0.15);
+    transform: translateY(-1px);
 }
 
 .dark .gap-spot {
-    background-color: #431407;
-    /* Orange-950 */
-    color: #fdba74;
-    /* Orange-300 */
-    border-color: #fb923c;
-    /* Orange-400 */
-    box-shadow: 0 3px 0 #9a3412;
+    background-color: rgba(59, 130, 246, 0.1);
+    color: #60a5fa;
+    /* Blue-400 */
+    border-color: #3b82f6;
+    box-shadow: none;
 }
 
 .dark .gap-spot:hover {
-    background-color: #fb923c;
-    color: #431407;
-    border-color: #fb923c;
-    box-shadow: 0 4px 0 #c2410c;
+    background-color: rgba(59, 130, 246, 0.2);
+    border-color: #60a5fa;
 }
