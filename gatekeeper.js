@@ -564,7 +564,7 @@ const examContentCache = new Map();
 // Cache for exam list (metadata only)
 let examListCache = null;
 let examListCacheTime = 0;
-const EXAM_LIST_CACHE_DURATION = 60000; // 1 minute
+const EXAM_LIST_CACHE_DURATION = 300000; // 5 minutes - reduces Firebase calls while keeping data fresh
 
 /**
  * Kiểm tra Firebase đã sẵn sàng chưa
