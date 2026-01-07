@@ -622,7 +622,7 @@ const app = {
                     <!-- Left Pane: Passage -->
                     <div class="w-full lg:w-1/2 h-full overflow-y-auto custom-scroll bg-white dark:bg-slate-800 p-4 lg:p-8 passage-content relative shadow-inner block" id="left-pane">
                         <div class="dynamic-text text-justify prose dark:prose-invert max-w-none text-slate-700 dark:text-slate-300 pb-20 lg:pb-0">
-                            ${section.content}
+                            ${this.processContent(section.content)}
                         </div>
                         <div class="mt-8 text-center text-xs text-slate-400 italic bg-slate-50 dark:bg-slate-900/50 p-2 rounded-lg border border-slate-100 dark:border-slate-700 lg:hidden">
                             (Chuyển tab để xem câu hỏi)
@@ -695,6 +695,17 @@ const app = {
             document.body.style.cursor = '';
             document.body.style.userSelect = '';
         });
+    },
+
+    processContent(content) {
+        if (!content) return '';
+        let processed = content;
+
+        // Gap Fill Highlighting: Convert (1), [1] to styled spots with ellipsis
+        // Example: "word (1) word" -> "word <span...>... (1) ...</span> word"
+        processed = processed.replace(/(\(\d+\)|\[\d+\])/g, '<span class="gap-spot">... $1 ...</span>');
+
+        return processed;
     },
 
     // Helper: Render questions with instruction headers
