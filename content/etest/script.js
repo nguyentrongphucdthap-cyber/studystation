@@ -631,6 +631,12 @@ const app = {
                     <div class="w-full lg:flex-1 h-full overflow-y-auto custom-scroll bg-slate-50 dark:bg-slate-900 p-4 lg:p-8 pb-24 hidden lg:block" id="right-pane">
                         <div class="max-w-2xl mx-auto space-y-4 lg:space-y-6">
                             ${this.renderQuestionsWithInstructions(section.questions)}
+                            ${this.currentSectionIndex < this.data.sections.length - 1 ? `
+                                <button onclick="app.nextSection()" class="w-full bg-blue-50 dark:bg-blue-900/20 hover:bg-blue-100 dark:hover:bg-blue-900/40 text-blue-600 dark:text-blue-400 font-bold py-4 rounded-xl mt-8 transition-colors border border-blue-200 dark:border-blue-800 border-dashed flex items-center justify-center gap-2 group shadow-sm">
+                                    Tiếp tục sang Phần ${this.currentSectionIndex + 2} 
+                                    <i class="ph-bold ph-arrow-right group-hover:translate-x-1 transition-transform"></i>
+                                </button>
+                            ` : ''}
                         </div>
                     </div>
                 </div>
@@ -643,6 +649,14 @@ const app = {
             <div class="h-full overflow-y-auto custom-scroll bg-slate-50 dark:bg-slate-900 p-4 lg:p-8 pb-24 animate-fade-in">
                 <div class="max-w-3xl mx-auto space-y-4 lg:space-y-6">
                     ${this.renderQuestionsWithInstructions(section.questions)}
+                    ${this.currentSectionIndex < this.data.sections.length - 1 ? `
+                        <div class="mt-8 pb-8">
+                            <button onclick="app.nextSection()" class="w-full bg-blue-50 dark:bg-blue-900/20 hover:bg-blue-100 dark:hover:bg-blue-900/40 text-blue-600 dark:text-blue-400 font-bold py-4 rounded-xl transition-colors border border-blue-200 dark:border-blue-800 border-dashed flex items-center justify-center gap-2 group shadow-sm">
+                                Tiếp tục sang Phần ${this.currentSectionIndex + 2} 
+                                <i class="ph-bold ph-arrow-right group-hover:translate-x-1 transition-transform"></i>
+                            </button>
+                        </div>
+                    ` : ''}
                 </div>
             </div>
         `;
