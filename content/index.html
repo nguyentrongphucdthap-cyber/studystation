@@ -1454,6 +1454,7 @@
             onUserChange,
             logoutUser,
             checkIsAdmin,
+            checkIsGuest,
             getAllNotifications,
             stopPresence,
             subscribeToOnlineUsers,
@@ -1571,11 +1572,55 @@
                     };
                 }
             } else {
-                // áº¨n UI Admin (náº¿u user bá»‹ háº¡ quyá»n mÃ  khÃ´ng reload)
+                // áº¨n UI Admin (náº¿u user bá»‹ háº¡ quyá» n mÃ  khÃ´ng reload)
                 if (adminBadge) adminBadge.classList.add('hidden');
                 if (adminLink) adminLink.classList.add('hidden');
                 if (adminBadgeMobile) adminBadgeMobile.classList.add('hidden');
                 if (adminBtnMobile) adminBtnMobile.classList.add('hidden');
+            }
+
+            // --- GUEST MODE UI ---
+            // Ẩn Flashcard và E-test nếu là Guest
+            const isGuest = checkIsGuest();
+            const flashcardCard = document.querySelector('.menu-card[data-link="./vocab/index.html"]');
+            const etestCard = document.querySelector('.menu-card[data-link="./etest/index.html"]');
+
+            if (isGuest) {
+                // Xử lý Giao diện Khách
+                if (accName) accName.textContent += " (Khách)";
+
+                // Cách 1: Ẩn hẳn
+                // if (flashcardCard) flashcardCard.classList.add('hidden');
+                // if (etestCard) etestCard.classList.add('hidden');
+
+                // Cách 2: Làm mờ và hiện icon khóa (Premium hơn)
+                const lockOverlay = `
+                    <div class="absolute inset-0 bg-gray-200/50 backdrop-blur-[2px] rounded-2xl flex items-center justify-center z-10 cursor-not-allowed">
+                        <div class="bg-white/80 p-3 rounded-full shadow-lg">
+                            <svg class="w-6 h-6 text-gray-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z"/></svg>
+                        </div>
+                    </div>
+                `;
+
+                [flashcardCard, etestCard].forEach(card => {
+                    if (card && !card.querySelector('.lock-overlay')) {
+                        // Thêm overlay khóa
+                        const overlayDiv = document.createElement('div');
+                        overlayDiv.className = 'lock-overlay';
+                        overlayDiv.innerHTML = lockOverlay;
+                        card.appendChild(overlayDiv);
+                        // Vô hiệu hóa click
+                        card.style.pointerEvents = 'none';
+                        card.setAttribute('onclick', '');
+                    }
+                });
+
+            } else {
+                // Remove locks if regular user
+                document.querySelectorAll('.lock-overlay').forEach(el => el.remove());
+                [flashcardCard, etestCard].forEach(card => {
+                    if (card) card.style.pointerEvents = 'auto';
+                });
             }
         });
     </script>
