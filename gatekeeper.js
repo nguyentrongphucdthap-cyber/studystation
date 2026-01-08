@@ -183,6 +183,14 @@ export function checkIsSuperAdmin() {
     return role.includes('super-admin');
 }
 
+/**
+ * Kiểm tra xem User có phải là Khách (Guest - Không có trong Whitelist) không
+ * @returns {boolean}
+ */
+export function checkIsGuest() {
+    return getCurrentUserRole() === 'guest';
+}
+
 // ============================================================
 // 4. LOGIC CỐT LÕI (INIT GATEKEEPER)
 // ============================================================
@@ -246,7 +254,46 @@ export function initGatekeeper(mode = 'protected') {
             }
 
             if (!docSnap.exists()) {
-                throw new Error("Email của bạn không nằm trong danh sách cho phép (Whitelist).");
+                console.log('[Gatekeeper] User not in whitelist. Activating Guest Mode.');
+                setUserRole('guest');
+
+                // --- GUEST MODE LOGIC ---
+                // Guests don't have a Firestore doc, so we SKIP session tracking/updates.
+                // We just check if they are on a RESTRICTED page.
+
+                const currentPath = window.location.pathname;
+
+                // List of RESTRICTED paths for guests
+                // Only Practice (`/practice/`), Dashboard (`/content/index.html`), and Login (`/index.html`) are allowed.
+                // Everything else (Vocab, Etest, Admin) is BLOCKED.
+                const isRestricted =
+                    currentPath.includes('/vocab/') ||
+                    currentPath.includes('/etest/') ||
+                    currentPath.includes('/admin/') ||
+                    // Also block direct project member pages if needed, but keeping it simple for now
+                    (currentPath.includes('/content/') && !currentPath.includes('practice') && !currentPath.includes('index.html'));
+
+                if (mode === 'login') {
+                    // Determine where to send them (Dashboard)
+                    setEntryToken();
+                    window.location.href = toUrl('content/index.html');
+                    return;
+                }
+
+                if (isRestricted) {
+                    console.warn('[Gatekeeper] Guest attempted to access restricted page. Redirecting...');
+                    // Use custom dialog if available, else alert
+                    await showSafeAlert('Tính năng này chỉ dành cho tài khoản thành viên.\nBạn đang sử dụng quyền Khách (Guest).');
+                    window.location.href = toUrl('content/index.html');
+                    return;
+                }
+
+                // If on allowed page (Dashboard or Practice), let them pass
+                if (isProtected) {
+                    unlockUI(loadingEl);
+                    startPresence(); // Optional: Track guest presence? Sure.
+                }
+                return; // Stop further processing (don't run session update logic below)
             }
 
             const userData = docSnap.data();
@@ -705,26 +752,58 @@ export async function getExamContent(examId) {
         return examContentCache.get(examId);
     }
 
-    console.log('[Firebase] Fetching exam content for:', examId);
-    const examRef = doc(db, 'exams', examId);
-    const examSnap = await getDoc(examRef);
+    const MAX_RETRIES = 3;
+    const TIMEOUT_MS = 10000; // 10 seconds timeout per attempt
+    let lastError = null;
 
-    if (examSnap.exists()) {
-        const data = examSnap.data();
-        const content = {
-            id: examId,
-            title: data.title,
-            time: data.time,
-            part1: data.part1 || [],
-            part2: data.part2 || [],
-            part3: data.part3 || []
-        };
-        // Cache for future use
-        examContentCache.set(examId, content);
-        console.log('[Firebase] Cached content for exam:', examId);
-        return content;
+    for (let i = 0; i < MAX_RETRIES; i++) {
+        try {
+            console.log(`[Firebase] Fetching exam content for: ${examId} (Attempt ${i + 1}/${MAX_RETRIES})`);
+
+            // Create a timeout promise to race against the network request
+            const timeoutPromise = new Promise((_, reject) => {
+                const id = setTimeout(() => {
+                    clearTimeout(id);
+                    reject(new Error('Network timeout - connection too slow'));
+                }, TIMEOUT_MS);
+            });
+
+            const examRef = doc(db, 'exams', examId);
+            // Race between getDoc and timeout
+            const examSnap = await Promise.race([getDoc(examRef), timeoutPromise]);
+
+            if (examSnap.exists()) {
+                const data = examSnap.data();
+                const content = {
+                    id: examId,
+                    title: data.title,
+                    time: data.time,
+                    part1: data.part1 || [],
+                    part2: data.part2 || [],
+                    part3: data.part3 || []
+                };
+                // Cache for future use
+                examContentCache.set(examId, content);
+                console.log('[Firebase] Cached content for exam:', examId);
+                return content;
+            }
+            // Document doesn't exist - don't retry, just return null
+            return null;
+
+        } catch (err) {
+            console.warn(`[Firebase] getExamContent attempt ${i + 1} failed:`, err.message);
+            lastError = err;
+
+            // Wait before retry (exponential backoff: 1s, 2s...)
+            if (i < MAX_RETRIES - 1) {
+                const waitTime = 1000 * Math.pow(2, i);
+                await new Promise(r => setTimeout(r, waitTime));
+            }
+        }
     }
-    return null;
+
+    console.error('[Firebase] All attempts to fetch exam content failed.');
+    throw lastError || new Error('Không thể tải nội dung bài thi (Lỗi kết nối)');
 }
 
 /**
