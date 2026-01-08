@@ -725,6 +725,7 @@
                             guestMap.set(email, {
                                 email: log.userEmail, // Keep original casing
                                 name: log.userName || 'Unknown',
+                                avatar: log.userAvatar || '',
                                 lastActive: log.timestamp,
                                 practiceCount: 0
                             });
@@ -735,6 +736,7 @@
                         if (new Date(log.timestamp) > new Date(guest.lastActive)) {
                             guest.lastActive = log.timestamp;
                             guest.name = log.userName || guest.name;
+                            guest.avatar = log.userAvatar || guest.avatar;
                         }
                     }
                 });
@@ -747,6 +749,7 @@
                             guestMap.set(email, {
                                 email: log.userEmail,
                                 name: log.userName || 'Unknown',
+                                avatar: log.userAvatar || '',
                                 lastActive: log.timestamp,
                                 practiceCount: 0
                             });
@@ -756,6 +759,7 @@
                         if (new Date(log.timestamp) > new Date(guest.lastActive)) {
                             guest.lastActive = log.timestamp;
                             guest.name = log.userName || guest.name;
+                            guest.avatar = log.userAvatar || guest.avatar;
                         }
                     }
                 });
@@ -767,9 +771,19 @@
                     return;
                 }
 
-                refs.guestsTableBody.innerHTML = guests.map(g => `
+                refs.guestsTableBody.innerHTML = guests.map(g => {
+                    const avatarHtml = g.avatar
+                        ? `<img src="${g.avatar}" class="w-8 h-8 rounded-full object-cover" onerror="this.style.display='none'">`
+                        : `<div class="w-8 h-8 bg-gray-100 rounded-full flex items-center justify-center text-gray-600 font-bold text-sm">${(g.name || 'U')[0].toUpperCase()}</div>`;
+
+                    return `
                     <tr class="hover:bg-gray-50">
-                        <td class="px-4 py-3 font-medium text-gray-800">${g.email}</td>
+                        <td class="px-4 py-3">
+                            <div class="flex items-center gap-3">
+                                ${avatarHtml}
+                                <span class="font-medium text-gray-800">${g.email}</span>
+                            </div>
+                        </td>
                         <td class="px-4 py-3 text-gray-600">${g.name}</td>
                         <td class="px-4 py-3 text-gray-500 text-xs">${formatTimeAgo(g.lastActive)}</td>
                         <td class="px-4 py-3 text-center"><span class="px-2 py-1 bg-gray-100 text-gray-600 text-xs font-bold rounded-full">${g.practiceCount}</span></td>
@@ -779,7 +793,7 @@
                             </button>
                         </td>
                     </tr>
-                `).join('');
+                `}).join('');
 
                 // Bind Add buttons
                 refs.guestsTableBody.querySelectorAll('.btn-add-guest-to-user').forEach(btn => {
