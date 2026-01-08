@@ -1515,11 +1515,25 @@ const app = {
                 // Update the card title based on subject
                 const cardTitle = knowledgeMapCard.querySelector('h3');
                 const cardDesc = knowledgeMapCard.querySelector('p');
-                if (cardTitle) {
-                    cardTitle.textContent = subId === 'info' ? 'Mạng Tri Thức Tin học' : 'Bản đồ kiến thức Lịch sử';
-                }
-                if (cardDesc) {
-                    cardDesc.textContent = subId === 'info' ? 'Sơ đồ tư duy • Tài liệu • Video' : 'Sơ đồ tư duy • Video • Thuyết trình • Podcast';
+                const cardBtn = knowledgeMapCard.querySelector('#knowledge-map-btn');
+                const cardIcon = knowledgeMapCard.querySelector('#knowledge-map-icon');
+
+                if (subId === 'info') {
+                    // Tin học - Blue/Purple theme with tech icon
+                    if (cardTitle) cardTitle.textContent = 'Mạng Tri Thức Tin học';
+                    if (cardDesc) cardDesc.textContent = 'Sơ đồ tư duy • Tài liệu • Video';
+                    if (cardBtn) {
+                        cardBtn.className = 'w-full bg-gradient-to-r from-blue-600 via-indigo-600 to-purple-600 p-4 md:p-5 rounded-2xl text-white shadow-lg hover:shadow-xl hover:scale-[1.01] transition-all group';
+                    }
+                    if (cardIcon) cardIcon.textContent = '💻';
+                } else {
+                    // Lịch sử - Orange/Amber theme with map icon
+                    if (cardTitle) cardTitle.textContent = 'Bản đồ kiến thức Lịch sử';
+                    if (cardDesc) cardDesc.textContent = 'Sơ đồ tư duy • Video • Thuyết trình • Podcast';
+                    if (cardBtn) {
+                        cardBtn.className = 'w-full bg-gradient-to-r from-amber-500 via-orange-500 to-red-500 p-4 md:p-5 rounded-2xl text-white shadow-lg hover:shadow-xl hover:scale-[1.01] transition-all group';
+                    }
+                    if (cardIcon) cardIcon.textContent = '🗺️';
                 }
             } else {
                 knowledgeMapCard.classList.add('hidden');
@@ -1606,14 +1620,32 @@ const app = {
         const modal = this.container.querySelector('#knowledge-map-modal');
         if (modal) {
             modal.classList.remove('hidden');
+            const isInfo = this.currentSubjectId === 'info';
+
+            // Update modal header gradient based on subject
+            const modalHeader = modal.querySelector('.bg-gradient-to-r');
+            if (modalHeader) {
+                if (isInfo) {
+                    modalHeader.className = 'bg-gradient-to-r from-blue-600 via-indigo-600 to-purple-600 p-5 text-white';
+                } else {
+                    modalHeader.className = 'bg-gradient-to-r from-amber-500 via-orange-500 to-red-500 p-5 text-white';
+                }
+            }
+
+            // Update modal icon
+            const modalIcon = modal.querySelector('.text-3xl');
+            if (modalIcon) {
+                modalIcon.textContent = isInfo ? '💻' : '🗺️';
+            }
+
             // Update modal title based on subject
             const modalTitle = modal.querySelector('h2');
             const modalDesc = modal.querySelector('p');
             if (modalTitle) {
-                modalTitle.textContent = this.currentSubjectId === 'info' ? 'Mạng Tri Thức Tin học' : 'Bản đồ kiến thức Lịch sử';
+                modalTitle.textContent = isInfo ? 'Mạng Tri Thức Tin học' : 'Bản đồ kiến thức Lịch sử';
             }
             if (modalDesc) {
-                modalDesc.textContent = this.currentSubjectId === 'info'
+                modalDesc.textContent = isInfo
                     ? 'Tài liệu học tập đa dạng cho môn Tin học'
                     : 'Chọn cách tiếp cận kiến thức phù hợp với bạn';
             }
@@ -1719,23 +1751,42 @@ const app = {
             }
         };
 
+        const isInfo = this.currentSubjectId === 'info';
+
+        // Dynamic color classes based on subject
+        const iconGradient = isInfo
+            ? 'bg-gradient-to-br from-blue-500 to-indigo-600'
+            : 'bg-gradient-to-br from-amber-400 to-orange-500';
+        const hoverBorder = isInfo
+            ? 'hover:border-indigo-300 dark:hover:border-indigo-500'
+            : 'hover:border-orange-300 dark:hover:border-orange-500';
+        const hoverText = isInfo
+            ? 'group-hover:text-indigo-600 dark:group-hover:text-indigo-400'
+            : 'group-hover:text-orange-600 dark:group-hover:text-orange-400';
+        const badgeClasses = isInfo
+            ? 'bg-indigo-100 dark:bg-indigo-900/30 text-indigo-600 dark:text-indigo-300'
+            : 'bg-orange-100 dark:bg-orange-900/30 text-orange-600 dark:text-orange-300';
+        const hoverIcon = isInfo
+            ? 'group-hover:text-indigo-400'
+            : 'group-hover:text-orange-400';
+
         contentEl.innerHTML = items.map((item, idx) => `
-            <div class="knowledge-item block p-4 mb-3 bg-slate-50 dark:bg-slate-700/50 rounded-xl border border-slate-200 dark:border-slate-600 hover:border-orange-300 dark:hover:border-orange-500 hover:shadow-md transition-all group cursor-pointer"
+            <div class="knowledge-item block p-4 mb-3 bg-slate-50 dark:bg-slate-700/50 rounded-xl border border-slate-200 dark:border-slate-600 ${hoverBorder} hover:shadow-md transition-all group cursor-pointer"
                  data-url="${item.url}" data-title="${item.title}" data-type="${tab}">
                 <div class="flex items-start gap-4">
-                    <div class="w-12 h-12 bg-gradient-to-br from-amber-400 to-orange-500 rounded-xl flex items-center justify-center text-xl shadow-sm">
+                    <div class="w-12 h-12 ${iconGradient} rounded-xl flex items-center justify-center text-xl shadow-sm">
                         ${getIcon(tab, item)}
                     </div>
                     <div class="flex-1 min-w-0">
-                        <h4 class="font-bold text-slate-800 dark:text-white group-hover:text-orange-600 dark:group-hover:text-orange-400 transition-colors">${item.title}</h4>
+                        <h4 class="font-bold text-slate-800 dark:text-white ${hoverText} transition-colors">${item.title}</h4>
                         <p class="text-sm text-slate-500 dark:text-slate-400 mt-0.5">${item.description}</p>
-                        <span class="inline-block mt-2 text-xs font-medium px-2 py-0.5 bg-orange-100 dark:bg-orange-900/30 text-orange-600 dark:text-orange-300 rounded-full">
+                        <span class="inline-block mt-2 text-xs font-medium px-2 py-0.5 ${badgeClasses} rounded-full">
                             ${getMetadata(tab, item)}
                         </span>
                     </div>
                     <div class="flex items-center gap-1 shrink-0 mt-1">
                         <span class="text-xs text-slate-400 hidden sm:inline">Nhấn để xem</span>
-                        <svg class="w-5 h-5 text-slate-300 dark:text-slate-600 group-hover:text-orange-400 transition-colors" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <svg class="w-5 h-5 text-slate-300 dark:text-slate-600 ${hoverIcon} transition-colors" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"/>
                             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"/>
                         </svg>
@@ -1813,6 +1864,26 @@ const app = {
         embedModal.querySelector('#embed-loading').style.display = 'flex';
         embedModal.querySelector('#embed-iframe').classList.remove('opacity-100');
         embedModal.querySelector('#embed-iframe').src = embedUrl;
+
+        // Update header color based on subject
+        const embedHeader = embedModal.querySelector('.bg-gradient-to-r');
+        const embedSpinner = embedModal.querySelector('.border-t-orange-500, .border-t-indigo-500');
+        const isInfo = this.currentSubjectId === 'info';
+
+        if (embedHeader) {
+            embedHeader.className = isInfo
+                ? 'flex items-center justify-between p-4 border-b border-slate-200 dark:border-slate-700 bg-gradient-to-r from-blue-600 via-indigo-600 to-purple-600'
+                : 'flex items-center justify-between p-4 border-b border-slate-200 dark:border-slate-700 bg-gradient-to-r from-orange-500 to-amber-500';
+        }
+
+        // Update loading spinner color
+        const spinnerEl = embedModal.querySelector('#embed-loading .animate-spin');
+        if (spinnerEl) {
+            spinnerEl.className = isInfo
+                ? 'w-10 h-10 border-4 border-indigo-200 border-t-indigo-500 rounded-full animate-spin'
+                : 'w-10 h-10 border-4 border-orange-200 border-t-orange-500 rounded-full animate-spin';
+        }
+
         embedModal.classList.remove('hidden');
     },
 
