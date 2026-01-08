@@ -1257,6 +1257,10 @@ const app = {
                             console.warn('Cache save error:', saveErr);
                         }
 
+                        // BACKGROUND PRELOAD: Preload top 3 most popular exams after initial render
+                        // This significantly improves first-click experience for popular exams
+                        this.preloadPopularExams(firebaseExams);
+
                         return;
                     }
                 } catch (fbError) {
@@ -1327,6 +1331,39 @@ const app = {
         }
 
         return null;
+    },
+
+    // Preload popular exams in background for faster first-click experience
+    preloadPopularExams(allExams) {
+        // Use requestIdleCallback if available, otherwise use setTimeout
+        const schedulePreload = window.requestIdleCallback || ((cb) => setTimeout(cb, 1000));
+
+        schedulePreload(() => {
+            if (!window.firebaseExams?.getExamContent) return;
+
+            // Sort by attemptCount descending and take top 3
+            const popularExams = [...allExams]
+                .filter(e => e.attemptCount > 0)
+                .sort((a, b) => (b.attemptCount || 0) - (a.attemptCount || 0))
+                .slice(0, 3);
+
+            if (popularExams.length === 0) {
+                console.log('[Preload] No popular exams to preload');
+                return;
+            }
+
+            console.log('[Preload] Starting background preload for', popularExams.length, 'popular exams');
+
+            // Preload with a small delay between each to avoid overwhelming the network
+            popularExams.forEach((exam, index) => {
+                setTimeout(() => {
+                    console.log(`[Preload] Preloading exam ${index + 1}/${popularExams.length}:`, exam.id);
+                    window.firebaseExams.getExamContent(exam.id).catch(() => {
+                        // Silently ignore preload errors - not critical
+                    });
+                }, index * 500); // 500ms delay between each preload
+            });
+        });
     },
 
     // Retry loading subjects (called when user clicks retry button)
@@ -2189,8 +2226,25 @@ const app = {
             el.dataset.examId = exam.id; // Add data attribute for tracking
             el.onclick = () => this.showExamModeModal(subId, exam.id, exam.title);
 
-            // Prefetch removed to optimize bandwidth as requested.
-            // Only load content when user explicitly clicks.
+            // SMART PREFETCH: Load exam content when user hovers for 300ms
+            // This significantly reduces perceived loading time on first click
+            let prefetchTimer = null;
+            el.addEventListener('mouseenter', () => {
+                prefetchTimer = setTimeout(() => {
+                    if (window.firebaseExams?.getExamContent) {
+                        console.log('[Prefetch] Hover detected, preloading exam:', exam.id);
+                        window.firebaseExams.getExamContent(exam.id).catch(() => {
+                            // Silently ignore prefetch errors - not critical
+                        });
+                    }
+                }, 300); // Wait 300ms before prefetch to avoid unnecessary loads on quick scrolls
+            });
+            el.addEventListener('mouseleave', () => {
+                if (prefetchTimer) {
+                    clearTimeout(prefetchTimer);
+                    prefetchTimer = null;
+                }
+            });
 
             const createdDate = exam.createdAt
                 ? `<span class="text-[10px] md:text-xs text-slate-400 dark:text-slate-500 flex items-center"><svg class="w-3 h-3 mr-1 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"/></svg>${new Date(exam.createdAt).toLocaleDateString('vi-VN')}</span>`
