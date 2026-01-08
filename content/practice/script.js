@@ -699,18 +699,22 @@ const musicPlayer = {
         let startX, startY, initialLeft, initialTop;
 
         const startDrag = (e) => {
-            // Ignore if clicking on interactive elements (buttons, inputs) BUT allow dragging on the mini player container itself
-            if (e.target.tagName === 'BUTTON' || e.target.tagName === 'INPUT' || e.target.closest('button') || e.target.closest('input')) return;
+            // 1. Ignore interactive elements (allow dragging on container/text, but not controls)
+            // Added textarea, select, a, summary, label to cover all bases
+            if (e.target.closest('button, input, textarea, select, a, summary, label')) return;
 
-            // Allow dragging if:
-            // 1. We are in Mini Mode (anywhere on the container)
-            // 2. We are in Full Mode AND clicking on the Drag Handle or Header area
-
+            // 2. Check draggable areas based on mode
             const isMini = this.isMinimized;
-            const isHandle = e.target.classList.contains('music-drag-handle');
 
-            // In full view, must click handle or header (top area)
-            if (!isMini && !isHandle && !e.target.closest('.flex.items-start.justify-between')) return;
+            if (!isMini) {
+                // Full Mode: Only drag from Handle or Header
+                const isHandle = e.target.classList.contains('music-drag-handle');
+                // Header container class in index.html: "flex items-start justify-between gap-4 relative z-20"
+                const isHeader = e.target.closest('.flex.items-start.justify-between');
+
+                if (!isHandle && !isHeader) return;
+            }
+            // Mini Mode: Drag anywhere (implied if we passed step 1)
 
             isDragging = true;
             panel.classList.add('is-dragging');
@@ -2021,15 +2025,18 @@ const app = {
                     </div>
                     <div class="shrink-0 flex items-center gap-2">
                         ${highestScoreHtml}
-                        <button onclick="event.stopPropagation(); app.showHistoryModal('${exam.id}', '${exam.title.replace(/'/g, "\\'")}')" 
-                            class="w-8 h-8 md:w-9 md:h-9 rounded-lg bg-indigo-50 dark:bg-indigo-900/30 text-indigo-600 dark:text-indigo-400 flex items-center justify-center hover:bg-indigo-100 dark:hover:bg-indigo-900/50 transition-colors" 
-                            title="Xem lịch sử làm bài">
-                            <svg class="w-4 h-4 md:w-5 md:h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"></path>
-                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h5"></path>
-                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4.93 4.93A10 10 0 1021 12"></path>
-                            </svg>
-                        </button>
+                        <div class="flex flex-col items-center gap-1 group/history cursor-pointer" onclick="event.stopPropagation(); app.showHistoryModal('${exam.id}', '${exam.title.replace(/'/g, "\\'")}')">
+                            <button
+                                class="w-8 h-8 md:w-9 md:h-9 rounded-lg bg-indigo-50 dark:bg-indigo-900/30 text-indigo-600 dark:text-indigo-400 flex items-center justify-center group-hover/history:bg-indigo-100 dark:group-hover/history:bg-indigo-900/50 transition-colors" 
+                                title="Xem lịch sử làm bài">
+                                <svg class="w-4 h-4 md:w-5 md:h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h5"></path>
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4.93 4.93A10 10 0 1021 12"></path>
+                                </svg>
+                            </button>
+                            <span class="text-[9px] font-bold text-slate-400 group-hover/history:text-indigo-500 transition-colors uppercase tracking-wide">Lịch sử</span>
+                        </div>
                         <div class="hidden md:block opacity-0 group-hover:opacity-100 transition-opacity">
                              <svg class="w-5 h-5 text-blue-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"/></svg>
                         </div>
@@ -2637,12 +2644,38 @@ const app = {
     reviewExam() {
         this.isReviewMode = true;
         this.renderTemplate('tpl-taking-exam');
-        document.getElementById('desktop-palette-sidebar').classList.add('hidden');
-        document.getElementById('mobile-footer').classList.add('hidden');
+        // Removed hidden class addition for sidebar/footer to show the Retake button
+        // document.getElementById('desktop-palette-sidebar').classList.add('hidden');
+        // document.getElementById('mobile-footer').classList.add('hidden');
         document.getElementById('review-controls').classList.remove('hidden');
 
         this.renderQuestions(this.currentExam.data);
+        this.renderPalette(this.currentExam.data); // Render palette for navigation
         this.renderMath();
+
+        // Change "Submit" button to "Retake" button
+        const setupRetakeBtn = (btn) => {
+            if (btn) {
+                btn.innerHTML = `
+                    <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h5m10.93 9.93A10 10 0 1120 4.77V4"/></svg>
+                    <span>Làm lại bài thi</span>
+                `;
+                btn.classList.remove('bg-blue-600', 'hover:bg-blue-700');
+                btn.classList.add('bg-indigo-600', 'hover:bg-indigo-700');
+                // Use arrow function to capture 'this' correctly
+                btn.onclick = () => {
+                    if (confirm('Bạn có chắc chắn muốn làm lại bài thi này không?')) {
+                        this.startExam(this.currentExam.subId, this.currentExam.meta.id);
+                    }
+                };
+            }
+        };
+
+        const desktopBtn = document.querySelector('#desktop-palette-sidebar button');
+        const mobileBtn = document.querySelector('#mobile-footer button:last-child'); // usually the submit/submit button is last
+        setupRetakeBtn(desktopBtn);
+        setupRetakeBtn(mobileBtn);
+
 
         const data = this.currentExam.data;
 
@@ -2654,6 +2687,19 @@ const app = {
                 return;
             }
             el.dataset.status = isCorrect ? 'correct' : 'wrong';
+
+            // Color navigation palette
+            [`pal-btn-${uniqueId}`, `mob-pal-btn-${uniqueId}`].forEach(id => {
+                const btn = document.getElementById(id);
+                if (btn) {
+                    btn.classList.remove('bg-white', 'dark:bg-slate-800', 'text-slate-500', 'dark:text-slate-400', 'border-slate-200', 'dark:border-slate-600');
+                    if (isCorrect) {
+                        btn.classList.add('bg-emerald-100', 'dark:bg-emerald-900/50', 'text-emerald-700', 'dark:text-emerald-300', 'border-emerald-300', 'dark:border-emerald-700');
+                    } else {
+                        btn.classList.add('bg-red-100', 'dark:bg-red-900/50', 'text-red-700', 'dark:text-red-300', 'border-red-300', 'dark:border-red-700');
+                    }
+                }
+            });
             el.classList.add(isCorrect ? 'border-green-200' : 'border-red-200');
             if (isCorrect) el.classList.add('dark:border-green-900');
             else el.classList.add('dark:border-red-900');
@@ -3016,12 +3062,36 @@ const app = {
 
         // Render review
         this.renderTemplate('tpl-taking-exam');
-        document.getElementById('desktop-palette-sidebar').classList.add('hidden');
-        document.getElementById('mobile-footer').classList.add('hidden');
+        // Removed hidden class addition to show Retake button
+        // document.getElementById('desktop-palette-sidebar').classList.add('hidden');
+        // document.getElementById('mobile-footer').classList.add('hidden');
         document.getElementById('review-controls').classList.remove('hidden');
 
         this.renderQuestions(this.currentExam.data);
+        this.renderPalette(this.currentExam.data); // Render palette for navigation
         this.renderMath();
+
+        // Change "Submit" button to "Retake" button
+        const setupRetakeBtn = (btn) => {
+            if (btn) {
+                btn.innerHTML = `
+                    <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h5m10.93 9.93A10 10 0 1120 4.77V4"/></svg>
+                    <span>Làm lại bài thi</span>
+                `;
+                btn.classList.remove('bg-blue-600', 'hover:bg-blue-700');
+                btn.classList.add('bg-indigo-600', 'hover:bg-indigo-700');
+                btn.onclick = () => {
+                    if (confirm('Bạn có chắc chắn muốn làm lại bài thi này không?')) {
+                        this.startExam(this.currentExam.subId, this.currentExam.meta.id);
+                    }
+                };
+            }
+        };
+
+        const desktopBtn = document.querySelector('#desktop-palette-sidebar button');
+        const mobileBtn = document.querySelector('#mobile-footer button:last-child');
+        setupRetakeBtn(desktopBtn);
+        setupRetakeBtn(mobileBtn);
 
         // Apply review styling (reuse existing review logic)
         const data = this.currentExam.data;
@@ -3033,6 +3103,19 @@ const app = {
             el.classList.add(isCorrect ? 'border-green-200' : 'border-red-200');
             if (isCorrect) el.classList.add('dark:border-green-900');
             else el.classList.add('dark:border-red-900');
+
+            // Color navigation palette
+            [`pal-btn-${uniqueId}`, `mob-pal-btn-${uniqueId}`].forEach(id => {
+                const btn = document.getElementById(id);
+                if (btn) {
+                    btn.classList.remove('bg-white', 'dark:bg-slate-800', 'text-slate-500', 'dark:text-slate-400', 'border-slate-200', 'dark:border-slate-600');
+                    if (isCorrect) {
+                        btn.classList.add('bg-emerald-100', 'dark:bg-emerald-900/50', 'text-emerald-700', 'dark:text-emerald-300', 'border-emerald-300', 'dark:border-emerald-700');
+                    } else {
+                        btn.classList.add('bg-red-100', 'dark:bg-red-900/50', 'text-red-700', 'dark:text-red-300', 'border-red-300', 'dark:border-red-700');
+                    }
+                }
+            });
         };
 
         // Part 1
