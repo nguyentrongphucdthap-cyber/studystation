@@ -704,8 +704,10 @@
             refs.guestsTableBody.innerHTML = `<tr><td colspan="5" class="px-4 py-6 text-center text-gray-400">Đang quét dữ liệu...</td></tr>`;
             try {
                 // Fetch logs and allowed users in parallel
-                const [pLogs, whitelist] = await Promise.all([
+                // Also fetch user_activity_logs to catch guests who visit but don't practice
+                const [pLogs, activityLogs, whitelist] = await Promise.all([
                     getAllPracticeLogs(),
+                    getUserActivityLogs(500),
                     getAllAllowedUsers()
                 ]);
 
@@ -715,19 +717,41 @@
                 // Analyze logs to find non-whitelisted users
                 const guestMap = new Map();
 
+                // Process Practice Logs
                 pLogs.forEach(log => {
                     const email = log.userEmail?.toLowerCase();
                     if (email && !whitelistEmails.has(email)) {
                         if (!guestMap.has(email)) {
                             guestMap.set(email, {
-                                email: log.userEmail, // Keep original casing for display
+                                email: log.userEmail, // Keep original casing
                                 name: log.userName || 'Unknown',
                                 lastActive: log.timestamp,
                                 practiceCount: 0
                             });
                         }
                         const guest = guestMap.get(email);
-                        guest.practiceCount++;
+                        guest.practiceCount = (guest.practiceCount || 0) + 1;
+                        // Update last active if this log is newer
+                        if (new Date(log.timestamp) > new Date(guest.lastActive)) {
+                            guest.lastActive = log.timestamp;
+                            guest.name = log.userName || guest.name;
+                        }
+                    }
+                });
+
+                // Process Activity Logs
+                activityLogs.forEach(log => {
+                    const email = log.userEmail?.toLowerCase();
+                    if (email && !whitelistEmails.has(email)) {
+                        if (!guestMap.has(email)) {
+                            guestMap.set(email, {
+                                email: log.userEmail,
+                                name: log.userName || 'Unknown',
+                                lastActive: log.timestamp,
+                                practiceCount: 0
+                            });
+                        }
+                        const guest = guestMap.get(email);
                         // Update last active if this log is newer
                         if (new Date(log.timestamp) > new Date(guest.lastActive)) {
                             guest.lastActive = log.timestamp;
