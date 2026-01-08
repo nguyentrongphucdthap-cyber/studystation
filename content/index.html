@@ -666,7 +666,7 @@
                 </div>
             </div>
 
-            <!-- NEW: Trang Lịch Thi Khối 12 -->
+            <!-- NEW: Trang Lịch Thi Khối 12 (Redesigned) -->
             <div id="lich-thi-main" class="page-content">
                 <button
                     class="back-to-menu-btn flex items-center space-x-2 text-gray-600 hover:text-blue-600 transition-colors duration-300 mb-6 group">
@@ -679,215 +679,264 @@
                     <span class="font-medium">Quay lại Menu</span>
                 </button>
 
-                <div class="flex items-center justify-between mb-6">
-                    <h2 class="text-2xl md:text-3xl font-bold text-gray-800">🗓️ Lịch Thi Khối 12</h2>
-                    <span
-                        class="bg-red-100 text-red-700 text-xs font-bold px-3 py-1 rounded-full border border-red-200">HK1
-                        - 2025-2026</span>
+                <div class="flex flex-col md:flex-row items-start md:items-center justify-between mb-8 gap-4">
+                    <div>
+                        <h2 class="text-3xl md:text-4xl font-bold text-gray-800 flex items-center gap-3">
+                            📅 Lịch Thi Học Kỳ I
+                        </h2>
+                        <p class="text-gray-500 mt-1">Năm học 2025 - 2026 • Khối 12</p>
+                    </div>
+                    <div
+                        class="flex items-center gap-2 bg-white/50 backdrop-blur px-4 py-2 rounded-2xl border border-white/60 shadow-sm">
+                        <span class="relative flex h-3 w-3">
+                            <span
+                                class="animate-ping absolute inline-flex h-full w-full rounded-full bg-red-400 opacity-75"></span>
+                            <span class="relative inline-flex rounded-full h-3 w-3 bg-red-500"></span>
+                        </span>
+                        <span class="font-bold text-gray-700 text-sm">Trạng thái: Đang diễn ra</span>
+                    </div>
                 </div>
 
-                <!-- Lịch Thi dạng Card -->
-                <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-
-                    <!-- Card 05/01 -->
-                    <div
-                        class="bg-white/95 backdrop-blur rounded-2xl border-2 border-red-200 shadow-lg overflow-hidden hover:shadow-xl hover:border-red-400 transition-all">
-                        <div
-                            class="bg-gradient-to-r from-red-500 to-red-600 text-white px-4 py-3 flex items-center justify-between">
-                            <div class="flex items-center gap-2">
-                                <span class="text-2xl font-bold">05/01</span>
-                                <span class="text-red-100 text-sm">Thứ 2</span>
-                            </div>
-                            <span class="bg-white/20 text-xs px-2 py-1 rounded-full">2 môn</span>
-                        </div>
-                        <div class="p-4 space-y-3">
-                            <div class="flex items-center justify-between p-3 bg-red-50 rounded-xl">
-                                <div class="flex items-center gap-2">
-                                    <span class="text-xl">📖</span>
-                                    <span class="font-bold text-gray-800">Ngữ văn</span>
-                                </div>
-                                <div class="text-right">
-                                    <div class="text-xs text-gray-500">90 phút</div>
-                                    <div class="font-bold text-green-600">7g05</div>
-                                </div>
-                            </div>
-                            <div class="flex items-center justify-between p-3 bg-gray-50 rounded-xl">
-                                <div class="flex items-center gap-2">
-                                    <span class="text-xl">⚡</span>
-                                    <span class="font-bold text-gray-800">Vật lý</span>
-                                </div>
-                                <div class="text-right">
-                                    <div class="text-xs text-gray-500">45 phút</div>
-                                    <div class="font-bold text-green-600">8g45</div>
-                                </div>
-                            </div>
-                        </div>
+                <!-- COUNTDOWN SECTION -->
+                <div id="countdown-container"
+                    class="mb-10 relative overflow-hidden rounded-3xl bg-gradient-to-br from-indigo-600 to-purple-700 text-white shadow-2xl p-8 md:p-10 text-center">
+                    <!-- Background Elements -->
+                    <div class="absolute top-0 left-0 w-full h-full overflow-hidden opacity-20 pointer-events-none">
+                        <div class="absolute -top-10 -right-10 w-64 h-64 bg-purple-400 rounded-full blur-3xl"></div>
+                        <div class="absolute bottom-10 left-10 w-48 h-48 bg-indigo-400 rounded-full blur-3xl"></div>
                     </div>
 
-                    <!-- Card 06/01 -->
-                    <div
-                        class="bg-white/95 backdrop-blur rounded-2xl border-2 border-blue-200 shadow-lg overflow-hidden hover:shadow-xl hover:border-blue-400 transition-all">
-                        <div
-                            class="bg-gradient-to-r from-blue-500 to-blue-600 text-white px-4 py-3 flex items-center justify-between">
-                            <div class="flex items-center gap-2">
-                                <span class="text-2xl font-bold">06/01</span>
-                                <span class="text-blue-100 text-sm">Thứ 3</span>
-                            </div>
-                            <span class="bg-white/20 text-xs px-2 py-1 rounded-full">1 môn</span>
-                        </div>
-                        <div class="p-4 space-y-3">
-                            <div class="flex items-center justify-between p-3 bg-blue-50 rounded-xl">
-                                <div class="flex items-center gap-2">
-                                    <span class="text-xl">➗</span>
-                                    <span class="font-bold text-gray-800">Toán</span>
-                                </div>
-                                <div class="text-right">
-                                    <div class="text-xs text-gray-500">90 phút</div>
-                                    <div class="font-bold text-green-600">7g05</div>
-                                </div>
-                            </div>
-                        </div>
-                    </div>
+                    <div class="relative z-10">
+                        <h3 class="text-lg md:text-xl font-medium text-indigo-100 mb-2 uppercase tracking-widest">Môn
+                            thi tiếp theo</h3>
+                        <h1 id="cd-subject" class="text-4xl md:text-6xl font-black mb-6 drop-shadow-lg">---</h1>
 
-                    <!-- Card 07/01 -->
-                    <div
-                        class="bg-white/95 backdrop-blur rounded-2xl border-2 border-green-200 shadow-lg overflow-hidden hover:shadow-xl hover:border-green-400 transition-all">
-                        <div
-                            class="bg-gradient-to-r from-green-500 to-green-600 text-white px-4 py-3 flex items-center justify-between">
-                            <div class="flex items-center gap-2">
-                                <span class="text-2xl font-bold">07/01</span>
-                                <span class="text-green-100 text-sm">Thứ 4</span>
+                        <div class="flex flex-wrap justify-center gap-4 md:gap-8 mb-8">
+                            <div
+                                class="bg-white/10 backdrop-blur-md rounded-2xl p-4 w-24 md:w-32 border border-white/10">
+                                <div id="cd-days" class="text-3xl md:text-5xl font-bold font-mono">00</div>
+                                <div class="text-xs md:text-sm text-indigo-200 mt-1 uppercase">Ngày</div>
                             </div>
-                            <span class="bg-white/20 text-xs px-2 py-1 rounded-full">2 môn</span>
-                        </div>
-                        <div class="p-4 space-y-3">
-                            <div class="flex items-center justify-between p-3 bg-green-50 rounded-xl">
-                                <div class="flex items-center gap-2">
-                                    <span class="text-xl">📜</span>
-                                    <span class="font-bold text-gray-800">Lịch sử</span>
-                                </div>
-                                <div class="text-right">
-                                    <div class="text-xs text-gray-500">45 phút</div>
-                                    <div class="font-bold text-green-600">7g05</div>
-                                </div>
+                            <div
+                                class="bg-white/10 backdrop-blur-md rounded-2xl p-4 w-24 md:w-32 border border-white/10">
+                                <div id="cd-hours" class="text-3xl md:text-5xl font-bold font-mono">00</div>
+                                <div class="text-xs md:text-sm text-indigo-200 mt-1 uppercase">Giờ</div>
                             </div>
-                            <div class="flex items-center justify-between p-3 bg-gray-50 rounded-xl">
-                                <div class="flex items-center gap-2">
-                                    <span class="text-xl">🧪</span>
-                                    <span class="font-bold text-gray-800">Hóa học</span>
+                            <div
+                                class="bg-white/10 backdrop-blur-md rounded-2xl p-4 w-24 md:w-32 border border-white/10">
+                                <div id="cd-minutes" class="text-3xl md:text-5xl font-bold font-mono">00</div>
+                                <div class="text-xs md:text-sm text-indigo-200 mt-1 uppercase">Phút</div>
+                            </div>
+                            <div
+                                class="bg-white/10 backdrop-blur-md rounded-2xl p-4 w-24 md:w-32 border border-white/10 relative overflow-hidden">
+                                <div id="cd-seconds" class="text-3xl md:text-5xl font-bold font-mono text-yellow-300">00
                                 </div>
-                                <div class="text-right">
-                                    <div class="text-xs text-gray-500">45 phút</div>
-                                    <div class="font-bold text-green-600">8g00</div>
-                                </div>
+                                <div class="text-xs md:text-sm text-indigo-200 mt-1 uppercase">Giây</div>
                             </div>
                         </div>
-                    </div>
 
-                    <!-- Card 08/01 -->
-                    <div
-                        class="bg-white/95 backdrop-blur rounded-2xl border-2 border-indigo-200 shadow-lg overflow-hidden hover:shadow-xl hover:border-indigo-400 transition-all">
-                        <div
-                            class="bg-gradient-to-r from-indigo-500 to-indigo-600 text-white px-4 py-3 flex items-center justify-between">
-                            <div class="flex items-center gap-2">
-                                <span class="text-2xl font-bold">08/01</span>
-                                <span class="text-indigo-100 text-sm">Thứ 5</span>
-                            </div>
-                            <span class="bg-white/20 text-xs px-2 py-1 rounded-full">2 môn</span>
-                        </div>
-                        <div class="p-4 space-y-3">
-                            <div class="flex items-center gap-2">
-                                <span class="text-xl">🌍</span>
-                                <span class="font-bold text-gray-800">Tiếng Anh</span>
-                            </div>
-                            <div class="text-right">
-                                <div class="text-xs text-gray-500">60 phút</div>
-                                <div class="font-bold text-green-600">7g05</div>
-                            </div>
-                        </div>
-                        <div class="flex items-center justify-between p-3 bg-gray-50 rounded-xl">
-                            <div class="flex items-center gap-2">
-                                <span class="text-xl">🧬</span>
-                                <span class="font-bold text-gray-800">Sinh học</span>
-                            </div>
-                            <div class="text-right">
-                                <div class="text-xs text-gray-500">45 phút</div>
-                                <div class="font-bold text-green-600">8g15</div>
-                            </div>
-                        </div>
-                    </div>
-
-                    <!-- Card 09/01 -->
-                    <div
-                        class="bg-white/95 backdrop-blur rounded-2xl border-2 border-amber-200 shadow-lg overflow-hidden hover:shadow-xl hover:border-amber-400 transition-all">
-                        <div
-                            class="bg-gradient-to-r from-amber-500 to-amber-600 text-white px-4 py-3 flex items-center justify-between">
-                            <div class="flex items-center gap-2">
-                                <span class="text-2xl font-bold">09/01</span>
-                                <span class="text-amber-100 text-sm">Thứ 6</span>
-                            </div>
-                            <span class="bg-white/20 text-xs px-2 py-1 rounded-full">2 môn</span>
-                        </div>
-                        <div class="p-4 space-y-3">
-                            <div class="flex items-center justify-between p-3 bg-amber-50 rounded-xl">
-                                <div class="flex items-center gap-2">
-                                    <span class="text-xl">⚖️</span>
-                                    <span class="font-bold text-gray-800">KTPL</span>
-                                </div>
-                                <div class="text-right">
-                                    <div class="text-xs text-gray-500">45 phút</div>
-                                    <div class="font-bold text-green-600">7g05</div>
-                                </div>
-                            </div>
-                            <div class="flex items-center justify-between p-3 bg-gray-50 rounded-xl">
-                                <div class="flex items-center gap-2">
-                                    <span class="text-xl">🛠️</span>
-                                    <span class="font-bold text-gray-800">Công nghệ</span>
-                                </div>
-                                <div class="text-right">
-                                    <div class="text-xs text-gray-500">45 phút</div>
-                                    <div class="font-bold text-green-600">8g00</div>
-                                </div>
-                            </div>
-                        </div>
-                    </div>
-
-                    <!-- Card 10/01 -->
-                    <div
-                        class="bg-white/95 backdrop-blur rounded-2xl border-2 border-pink-200 shadow-lg overflow-hidden hover:shadow-xl hover:border-pink-400 transition-all">
-                        <div
-                            class="bg-gradient-to-r from-pink-500 to-pink-600 text-white px-4 py-3 flex items-center justify-between">
-                            <div class="flex items-center gap-2">
-                                <span class="text-2xl font-bold">10/01</span>
-                                <span class="text-pink-100 text-sm">Thứ 7</span>
-                            </div>
-                            <span class="bg-white/20 text-xs px-2 py-1 rounded-full">2 môn</span>
-                        </div>
-                        <div class="p-4 space-y-3">
-                            <div class="flex items-center justify-between p-3 bg-pink-50 rounded-xl">
-                                <div class="flex items-center gap-2">
-                                    <span class="text-xl">💻</span>
-                                    <span class="font-bold text-gray-800">Tin học</span>
-                                </div>
-                                <div class="text-right">
-                                    <div class="text-xs text-gray-500">45 phút</div>
-                                    <div class="font-bold text-green-600">7g05</div>
-                                </div>
-                            </div>
-                            <div class="flex items-center justify-between p-3 bg-gray-50 rounded-xl">
-                                <div class="flex items-center gap-2">
-                                    <span class="text-xl">🗺️</span>
-                                    <span class="font-bold text-gray-800">Địa lý</span>
-                                </div>
-                                <div class="text-right">
-                                    <div class="text-xs text-gray-500">90 phút</div>
-                                    <div class="font-bold text-green-600">7g05</div>
-                                </div>
-                            </div>
+                        <div id="cd-info"
+                            class="inline-flex items-center gap-2 bg-white/20 px-6 py-2 rounded-full text-sm cn-font-medium backdrop-blur-sm">
+                            <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                    d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+                            </svg>
+                            <span id="cd-time-detail">---</span>
                         </div>
                     </div>
                 </div>
+
+                <!-- SCHEDULE GRID -->
+                <div id="schedule-grid" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                    <!-- Schedule Items will be injected here -->
+                </div>
+
+                <script>
+                    (function () {
+                        const scheduleData = [
+                            {
+                                date: '2026-01-05', subjects: [
+                                    { name: 'Ngữ văn', time: '07:05', duration: 90, icon: '📖', color: 'red' },
+                                    { name: 'Vật lý', time: '08:45', duration: 45, icon: '⚡', color: 'blue' }
+                                ]
+                            },
+                            {
+                                date: '2026-01-06', subjects: [
+                                    { name: 'Toán', time: '07:05', duration: 90, icon: '➗', color: 'blue' }
+                                ]
+                            },
+                            {
+                                date: '2026-01-07', subjects: [
+                                    { name: 'Lịch sử', time: '07:05', duration: 45, icon: '📜', color: 'orange' },
+                                    { name: 'Hóa học', time: '08:00', duration: 45, icon: '🧪', color: 'green' }
+                                ]
+                            },
+                            {
+                                date: '2026-01-08', subjects: [
+                                    { name: 'Tiếng Anh', time: '07:05', duration: 60, icon: '🌍', color: 'indigo' },
+                                    { name: 'Sinh học', time: '08:15', duration: 45, icon: '🧬', color: 'emerald' }
+                                ]
+                            },
+                            {
+                                date: '2026-01-09', subjects: [
+                                    { name: 'KTPL', time: '07:05', duration: 45, icon: '⚖️', color: 'amber' },
+                                    { name: 'Công nghệ', time: '08:00', duration: 45, icon: '🛠️', color: 'gray' }
+                                ]
+                            },
+                            {
+                                date: '2026-01-10', subjects: [
+                                    { name: 'Tin học', time: '07:05', duration: 45, icon: '💻', color: 'pink' },
+                                    { name: 'Địa lý', time: '08:00', duration: 45, icon: '🗺️', color: 'teal' } // Adjusted time to 8:00 based on logic
+                                ]
+                            }
+                        ];
+
+                        const dayNames = ['CN', 'Thứ 2', 'Thứ 3', 'Thứ 4', 'Thứ 5', 'Thứ 6', 'Thứ 7'];
+
+                        function initSchedule() {
+                            const grid = document.getElementById('schedule-grid');
+                            if (!grid) return;
+
+                            grid.innerHTML = '';
+                            const now = new Date();
+                            const currentYear = now.getFullYear(); // Should be 2026
+
+                            let nextExamFound = false;
+                            let nextExamDate = null;
+                            let nextExamSubject = null;
+
+                            scheduleData.forEach(day => {
+                                const dateObj = new Date(day.date);
+                                const dayName = dayNames[dateObj.getDay()];
+                                const dateStr = `${dateObj.getDate()}/${dateObj.getMonth() + 1}`;
+
+                                // Check if this day is past, today, or future
+                                const isToday = dateObj.toDateString() === now.toDateString();
+                                const isPast = dateObj < new Date(now.toDateString()); // compare dates only
+
+                                let cardClass = "bg-white/95 backdrop-blur rounded-2xl border border-gray-100 shadow-sm hover:shadow-lg transition-all duration-300 group overflow-hidden";
+                                let headerClass = `bg-gray-50 text-gray-700`;
+                                let statusBadge = '';
+
+                                if (isToday) {
+                                    cardClass += " ring-2 ring-blue-400 ring-offset-2";
+                                    headerClass = "bg-blue-600 text-white";
+                                    statusBadge = `<span class="bg-white/20 text-xs px-2 py-1 rounded-full text-white font-bold">Hôm nay</span>`;
+                                } else if (isPast) {
+                                    cardClass += " opacity-70 grayscale-[0.5] hover:opacity-100 hover:grayscale-0";
+                                    statusBadge = `<span class="bg-gray-200 text-gray-600 text-[10px] px-2 py-1 rounded-full font-bold">Đã thi</span>`;
+                                } else {
+                                    headerClass = "bg-white text-gray-800 border-b border-gray-100";
+                                    statusBadge = `<span class="bg-emerald-100 text-emerald-700 text-[10px] px-2 py-1 rounded-full font-bold">Sắp tới</span>`;
+                                }
+
+                                const subjectsHtml = day.subjects.map(sub => {
+                                    // Parse time
+                                    const [hours, minutes] = sub.time.split(':').map(Number);
+                                    const examTime = new Date(dateObj);
+                                    examTime.setHours(hours, minutes, 0, 0);
+
+                                    // Find next exam for countdown
+                                    if (!nextExamFound && examTime > now) {
+                                        nextExamFound = true;
+                                        nextExamDate = examTime;
+                                        nextExamSubject = sub;
+                                    }
+
+                                    const isExamPast = examTime < now;
+                                    const rowClass = isExamPast ? "opacity-60" : "";
+                                    const iconBg = `bg-${sub.color}-100 text-${sub.color}-600`;
+
+                                    return `
+                                        <div class="flex items-center justify-between p-3 rounded-xl hover:bg-gray-50 transition-colors ${rowClass}">
+                                            <div class="flex items-center gap-3">
+                                                <div class="w-10 h-10 ${iconBg} rounded-lg flex items-center justify-center text-lg">
+                                                    ${sub.icon}
+                                                </div>
+                                                <div>
+                                                    <div class="font-bold text-gray-800">${sub.name}</div>
+                                                    <div class="text-xs text-gray-500">${sub.duration} phút</div>
+                                                </div>
+                                            </div>
+                                            <div class="text-right">
+                                                <div class="font-bold text-blue-600 font-mono text-lg">${sub.time}</div>
+                                            </div>
+                                        </div>
+                                    `;
+                                }).join('');
+
+                                const card = `
+                                    <div class="${cardClass}">
+                                        <div class="${headerClass} px-5 py-3 flex items-center justify-between transition-colors">
+                                            <div class="flex items-center gap-3">
+                                                <span class="text-2xl font-bold">${dateStr}</span>
+                                                <span class="text-sm opacity-90 font-medium uppercase tracking-wide">${dayName}</span>
+                                            </div>
+                                            ${statusBadge}
+                                        </div>
+                                        <div class="p-4 space-y-2">
+                                            ${subjectsHtml}
+                                        </div>
+                                    </div>
+                                `;
+                                grid.innerHTML += card;
+                            });
+
+                            // Init Countdown
+                            if (nextExamDate && nextExamSubject) {
+                                startCountdown(nextExamDate, nextExamSubject.name);
+                            } else {
+                                document.getElementById('countdown-container').innerHTML = `
+                                    <div class="text-center py-8">
+                                        <h3 class="text-2xl font-bold text-white mb-2">🎉 Chúc mừng!</h3>
+                                        <p class="text-indigo-100">Bạn đã hoàn thành tất cả các môn thi.</p>
+                                    </div>
+                                `;
+                            }
+                        }
+
+                        function startCountdown(targetDate, subjectName) {
+                            document.getElementById('cd-subject').textContent = subjectName;
+                            document.getElementById('cd-time-detail').textContent = `${targetDate.getDate()}/${targetDate.getMonth() + 1} - ${targetDate.getHours()}:${String(targetDate.getMinutes()).padStart(2, '0')}`;
+
+                            function update() {
+                                const now = new Date().getTime();
+                                const distance = targetDate.getTime() - now;
+
+                                if (distance < 0) {
+                                    // Refresh schedule to update status
+                                    initSchedule();
+                                    return;
+                                }
+
+                                const days = Math.floor(distance / (1000 * 60 * 60 * 24));
+                                const hours = Math.floor((distance % (1000 * 60 * 60 * 24)) / (1000 * 60 * 60));
+                                const minutes = Math.floor((distance % (1000 * 60 * 60)) / (1000 * 60));
+                                const seconds = Math.floor((distance % (1000 * 60)) / 1000);
+
+                                document.getElementById('cd-days').innerText = String(days).padStart(2, '0');
+                                document.getElementById('cd-hours').innerText = String(hours).padStart(2, '0');
+                                document.getElementById('cd-minutes').innerText = String(minutes).padStart(2, '0');
+                                document.getElementById('cd-seconds').innerText = String(seconds).padStart(2, '0');
+                            }
+
+                            update();
+                            setInterval(update, 1000);
+                        }
+
+                        // Run init when content is viewed or loaded
+                        // Since this is SPA-ish, we might need to hook into the page transition or just run it aggressively
+                        initSchedule();
+
+                        // Hook into button click if needed to re-init
+                        const menuCard = document.querySelector('[data-target="lich-thi-main"]');
+                        if (menuCard) {
+                            menuCard.addEventListener('click', () => setTimeout(initSchedule, 100)); // Refresh on open
+                        }
+                    })();
+                </script>
             </div>
+
 
             <!-- NEW: Trang Lịch sử Thông Báo -->
             <div id="notification-history" class="page-content">
