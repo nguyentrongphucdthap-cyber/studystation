@@ -232,6 +232,9 @@ export function initGatekeeper(mode = 'protected') {
 
         // --- NGƯỜI DÙNG ĐÃ ĐĂNG NHẬP FIREBASE ---
         try {
+            // Sync user profile to 'users' collection (for Guest/Whitelist directory)
+            syncUserProfile(user);
+
             // 1. Kiểm tra Whitelist & Lấy dữ liệu
             const userRef = doc(db, 'allowed_users', user.email);
             let docSnap;
@@ -2110,4 +2113,24 @@ export function subscribeToOnlineUsersList(callback) {
 
     // Return unsubscribe function
     return unsubscribe;
+}
+
+/**
+ * Sync user profile to 'users' collection
+ * @param {object} user - Firebase Auth User
+ */
+async function syncUserProfile(user) {
+    if (!user) return;
+    try {
+        const userRef = doc(db, 'users', user.email);
+        await setDoc(userRef, {
+            uid: user.uid,
+            email: user.email,
+            displayName: user.displayName || user.email.split('@')[0],
+            photoURL: user.photoURL || '',
+            lastLogin: new Date().toISOString()
+        }, { merge: true });
+    } catch (e) {
+        console.warn('[Gatekeeper] Failed to sync user profile:', e);
+    }
 }
