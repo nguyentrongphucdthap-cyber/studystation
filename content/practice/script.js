@@ -1507,11 +1507,20 @@ const app = {
         // Setup filter UI
         this.setupExamFilters(Array.from(allTags));
 
-        // Show Knowledge Map card for History subject only
+        // Show Knowledge Map card for History and Tin học (info) subjects
         const knowledgeMapCard = this.container.querySelector('#knowledge-map-card');
         if (knowledgeMapCard) {
-            if (subId === 'history') {
+            if (subId === 'history' || subId === 'info') {
                 knowledgeMapCard.classList.remove('hidden');
+                // Update the card title based on subject
+                const cardTitle = knowledgeMapCard.querySelector('h3');
+                const cardDesc = knowledgeMapCard.querySelector('p');
+                if (cardTitle) {
+                    cardTitle.textContent = subId === 'info' ? 'Mạng Tri Thức Tin học' : 'Bản đồ kiến thức Lịch sử';
+                }
+                if (cardDesc) {
+                    cardDesc.textContent = subId === 'info' ? 'Sơ đồ tư duy • Tài liệu • Video' : 'Sơ đồ tư duy • Video • Thuyết trình • Podcast';
+                }
             } else {
                 knowledgeMapCard.classList.add('hidden');
             }
@@ -1539,7 +1548,7 @@ const app = {
     },
 
     // Knowledge Map Data for History
-    knowledgeMapData: {
+    knowledgeMapDataHistory: {
         mindmap: [
             { title: 'Bài 6', description: 'Sơ đồ tóm tắt bài 6', url: 'https://drive.google.com/file/d/1I3A-D0X-8IHb5-Il6cLzm6CVqCwrSRre/view?usp=sharing', type: 'image' },
             { title: 'Bài 7', description: 'Sơ đồ tóm tắt bài 7', url: 'https://drive.google.com/file/d/1diaYd2DzdyYQtq2iPg_ZNlwX79VPSv6D/view?usp=sharing', type: 'image' },
@@ -1567,8 +1576,29 @@ const app = {
             { title: 'Bài 8', description: 'Podcast dễ nghe', url: 'https://drive.google.com/file/d/1PHSXG3yXzsM5C85o9DeMD1yXRtjwqi8x/view?usp=drive_link', duration: '11:22' },
             { title: 'Bài 9', description: 'Podcast dễ nghe', url: 'https://drive.google.com/file/d/1iINlWPta7iyzc44hdpWkoMPtu3QaKK6x/view?usp=drive_link', duration: '12:47' },
             { title: 'Lịch Sử Thế Giới', description: 'Podcast dễ nghe', url: 'https://drive.google.com/file/d/1phUKo8xsH8behopTANsLbq5d_QB8dgtv/view?usp=drive_link', duration: '11:22' },
-
         ]
+    },
+
+    // Knowledge Map Data for Tin học (Info)
+    knowledgeMapDataInfo: {
+        mindmap: [
+            // Add your Computer Science mindmaps here
+            // Example: { title: 'Chương 1', description: 'Sơ đồ tư duy Chương 1', url: 'https://drive.google.com/file/d/YOUR_FILE_ID/view', type: 'image' },
+        ],
+        video: [
+            // Add your Computer Science videos here
+        ],
+        document: [
+            // Add your Computer Science documents here
+        ]
+    },
+
+    // Get the current knowledge map data based on subject
+    getKnowledgeData() {
+        if (this.currentSubjectId === 'info') {
+            return this.knowledgeMapDataInfo;
+        }
+        return this.knowledgeMapDataHistory;
     },
 
     // Open Knowledge Map Modal
@@ -1576,10 +1606,49 @@ const app = {
         const modal = this.container.querySelector('#knowledge-map-modal');
         if (modal) {
             modal.classList.remove('hidden');
+            // Update modal title based on subject
+            const modalTitle = modal.querySelector('h2');
+            const modalDesc = modal.querySelector('p');
+            if (modalTitle) {
+                modalTitle.textContent = this.currentSubjectId === 'info' ? 'Mạng Tri Thức Tin học' : 'Bản đồ kiến thức Lịch sử';
+            }
+            if (modalDesc) {
+                modalDesc.textContent = this.currentSubjectId === 'info'
+                    ? 'Tài liệu học tập đa dạng cho môn Tin học'
+                    : 'Chọn cách tiếp cận kiến thức phù hợp với bạn';
+            }
+            // Update tabs based on subject
+            this.updateKnowledgeTabsVisibility();
             this.currentKnowledgeTab = 'mindmap';
             this.renderKnowledgeContent('mindmap');
             this.updateKnowledgeTabs();
         }
+    },
+
+    // Update tabs visibility based on subject
+    updateKnowledgeTabsVisibility() {
+        const tabs = this.container.querySelectorAll('.knowledge-tab');
+        const isInfo = this.currentSubjectId === 'info';
+        tabs.forEach(t => {
+            const tab = t.dataset.tab;
+            // For Tin học, show mindmap, video, document; hide presentation, podcast
+            if (isInfo) {
+                if (tab === 'presentation' || tab === 'podcast') {
+                    t.style.display = 'none';
+                } else if (tab === 'document') {
+                    t.style.display = 'block';
+                } else {
+                    t.style.display = 'block';
+                }
+            } else {
+                // For Lịch sử, show all original tabs
+                if (tab === 'document') {
+                    t.style.display = 'none';
+                } else {
+                    t.style.display = 'block';
+                }
+            }
+        });
     },
 
     // Close Knowledge Map Modal
@@ -1614,13 +1683,15 @@ const app = {
         const contentEl = this.container.querySelector('#knowledge-content');
         if (!contentEl) return;
 
-        const items = this.knowledgeMapData[tab] || [];
+        const data = this.getKnowledgeData();
+        const items = data[tab] || [];
 
         if (items.length === 0) {
             contentEl.innerHTML = `
                 <div class="text-center py-12 text-slate-400">
                     <span class="text-4xl block mb-3">📭</span>
                     <p>Chưa có nội dung nào trong mục này</p>
+                    <p class="text-xs mt-2">Nội dung sẽ được cập nhật sớm</p>
                 </div>
             `;
             return;
@@ -1632,6 +1703,7 @@ const app = {
                 case 'video': return '▶️';
                 case 'presentation': return '📊';
                 case 'podcast': return '🎧';
+                case 'document': return '📑';
                 default: return '📚';
             }
         };
@@ -1642,13 +1714,14 @@ const app = {
                 case 'video': return item.duration;
                 case 'presentation': return `${item.slides} slides`;
                 case 'podcast': return item.duration;
+                case 'document': return 'Tài liệu';
                 default: return '';
             }
         };
 
         contentEl.innerHTML = items.map((item, idx) => `
-            <a href="${item.url}" target="_blank" 
-               class="block p-4 mb-3 bg-slate-50 dark:bg-slate-700/50 rounded-xl border border-slate-200 dark:border-slate-600 hover:border-orange-300 dark:hover:border-orange-500 hover:shadow-md transition-all group">
+            <div class="knowledge-item block p-4 mb-3 bg-slate-50 dark:bg-slate-700/50 rounded-xl border border-slate-200 dark:border-slate-600 hover:border-orange-300 dark:hover:border-orange-500 hover:shadow-md transition-all group cursor-pointer"
+                 data-url="${item.url}" data-title="${item.title}" data-type="${tab}">
                 <div class="flex items-start gap-4">
                     <div class="w-12 h-12 bg-gradient-to-br from-amber-400 to-orange-500 rounded-xl flex items-center justify-center text-xl shadow-sm">
                         ${getIcon(tab, item)}
@@ -1660,12 +1733,117 @@ const app = {
                             ${getMetadata(tab, item)}
                         </span>
                     </div>
-                    <svg class="w-5 h-5 text-slate-300 dark:text-slate-600 group-hover:text-orange-400 transition-colors shrink-0 mt-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14"/>
-                    </svg>
+                    <div class="flex items-center gap-1 shrink-0 mt-1">
+                        <span class="text-xs text-slate-400 hidden sm:inline">Nhấn để xem</span>
+                        <svg class="w-5 h-5 text-slate-300 dark:text-slate-600 group-hover:text-orange-400 transition-colors" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"/>
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"/>
+                        </svg>
+                    </div>
                 </div>
-            </a>
+            </div>
         `).join('');
+
+        // Bind click events to open embed viewer
+        contentEl.querySelectorAll('.knowledge-item').forEach(el => {
+            el.addEventListener('click', () => {
+                const url = el.dataset.url;
+                const title = el.dataset.title;
+                const type = el.dataset.type;
+                this.openEmbedViewer(url, title, type);
+            });
+        });
+    },
+
+    // Open Google Drive Embed Viewer
+    openEmbedViewer(url, title, type) {
+        // Convert Google Drive share URL to embed URL
+        const embedUrl = this.convertToEmbedUrl(url, type);
+
+        // Create or get the embed modal
+        let embedModal = document.getElementById('embed-viewer-modal');
+        if (!embedModal) {
+            embedModal = document.createElement('div');
+            embedModal.id = 'embed-viewer-modal';
+            embedModal.className = 'fixed inset-0 bg-slate-900/80 backdrop-blur-sm z-[100] flex items-center justify-center p-4 animate-fade-in';
+            embedModal.innerHTML = `
+                <div class="bg-white dark:bg-slate-800 w-full max-w-5xl h-[90vh] rounded-2xl shadow-2xl overflow-hidden flex flex-col">
+                    <div class="flex items-center justify-between p-4 border-b border-slate-200 dark:border-slate-700 bg-gradient-to-r from-orange-500 to-amber-500">
+                        <h3 id="embed-viewer-title" class="font-bold text-white text-lg truncate"></h3>
+                        <div class="flex items-center gap-2">
+                            <a id="embed-open-new" href="#" target="_blank" class="p-2 bg-white/20 rounded-lg text-white hover:bg-white/30 transition-colors" title="Mở trong tab mới">
+                                <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14"/></svg>
+                            </a>
+                            <button id="embed-close-btn" class="p-2 bg-white/20 rounded-lg text-white hover:bg-white/30 transition-colors">
+                                <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/></svg>
+                            </button>
+                        </div>
+                    </div>
+                    <div id="embed-content" class="flex-1 bg-slate-100 dark:bg-slate-900 relative">
+                        <div id="embed-loading" class="absolute inset-0 flex items-center justify-center">
+                            <div class="flex flex-col items-center gap-3">
+                                <div class="w-10 h-10 border-4 border-orange-200 border-t-orange-500 rounded-full animate-spin"></div>
+                                <p class="text-slate-500 dark:text-slate-400">Đang tải...</p>
+                            </div>
+                        </div>
+                        <iframe id="embed-iframe" class="w-full h-full border-0 opacity-0 transition-opacity" onload="this.classList.add('opacity-100'); document.getElementById('embed-loading').style.display='none';"></iframe>
+                    </div>
+                </div>
+            `;
+            document.body.appendChild(embedModal);
+
+            // Close button event
+            embedModal.querySelector('#embed-close-btn').addEventListener('click', () => {
+                embedModal.classList.add('hidden');
+                embedModal.querySelector('#embed-iframe').src = '';
+            });
+
+            // Close on backdrop click
+            embedModal.addEventListener('click', (e) => {
+                if (e.target === embedModal) {
+                    embedModal.classList.add('hidden');
+                    embedModal.querySelector('#embed-iframe').src = '';
+                }
+            });
+        }
+
+        // Update modal content
+        embedModal.querySelector('#embed-viewer-title').textContent = title;
+        embedModal.querySelector('#embed-open-new').href = url;
+        embedModal.querySelector('#embed-loading').style.display = 'flex';
+        embedModal.querySelector('#embed-iframe').classList.remove('opacity-100');
+        embedModal.querySelector('#embed-iframe').src = embedUrl;
+        embedModal.classList.remove('hidden');
+    },
+
+    // Convert Google Drive URL to embed URL
+    convertToEmbedUrl(url, type) {
+        // Extract file ID from various Google Drive URL formats
+        let fileId = null;
+
+        // Format: /file/d/FILE_ID/view
+        const match1 = url.match(/\/file\/d\/([a-zA-Z0-9_-]+)/);
+        if (match1) fileId = match1[1];
+
+        // Format: id=FILE_ID
+        if (!fileId) {
+            const match2 = url.match(/id=([a-zA-Z0-9_-]+)/);
+            if (match2) fileId = match2[1];
+        }
+
+        if (!fileId) {
+            console.warn('Could not extract file ID from URL:', url);
+            return url;
+        }
+
+        // Return appropriate embed URL based on content type
+        if (type === 'video' || type === 'podcast') {
+            // For video/audio, use preview
+            return `https://drive.google.com/file/d/${fileId}/preview`;
+        } else {
+            // For images, PDFs, presentations - use preview
+            return `https://drive.google.com/file/d/${fileId}/preview`;
+        }
     },
 
     // Setup filter event listeners
