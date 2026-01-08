@@ -384,11 +384,39 @@ function handleAuthError(error, isProtected) {
     clearStorage();
 
     if (isProtected) {
-        alert("Lỗi xác thực: " + error.message);
-        window.location.href = toUrl('index.html');
+        showSafeAlert("Lỗi xác thực: " + error.message).then(() => {
+            window.location.href = toUrl('index.html');
+        });
     } else {
         showErrorUI(error.message);
     }
+}
+
+function showSafeAlert(msg) {
+    return new Promise((resolve) => {
+        if (window.customDialog && typeof window.customDialog.alert === 'function') {
+            window.customDialog.alert('Thông báo', msg).then(resolve);
+        } else {
+            // Fallback beautiful modal
+            const div = document.createElement('div');
+            div.style.cssText = 'position:fixed;top:0;left:0;right:0;bottom:0;background:rgba(0,0,0,0.5);z-index:99999;display:flex;align-items:center;justify-content:center';
+            div.innerHTML = `
+                <div style="background:white;padding:24px;border-radius:16px;max-width:90%;width:340px;box-shadow:0 10px 25px -5px rgba(0,0,0,0.1);text-align:center;font-family:system-ui,-apple-system,sans-serif">
+                    <div style="width:48px;height:48px;background:#fee2e2;border-radius:50%;display:flex;align-items:center;justify-content:center;margin:0 auto 16px">
+                        <svg style="width:24px;height:24px;color:#ef4444" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"/></svg>
+                    </div>
+                    <h3 style="margin:0 0 8px;font-size:18px;font-weight:600;color:#1e293b">Thông báo</h3>
+                    <p style="margin:0 0 24px;color:#64748b;font-size:14px;line-height:1.5">${msg}</p>
+                    <button id="safe-alert-btn" style="width:100%;background:#2563eb;color:white;border:none;padding:12px;border-radius:12px;font-weight:600;font-size:14px;cursor:pointer;transition:background 0.2s">Đã hiểu</button>
+                </div>
+            `;
+            document.body.appendChild(div);
+            // Handle click
+            const btn = div.querySelector('#safe-alert-btn');
+            const cleanup = () => { div.remove(); resolve(); };
+            btn.onclick = cleanup;
+        }
+    });
 }
 
 function showErrorUI(msg) {
