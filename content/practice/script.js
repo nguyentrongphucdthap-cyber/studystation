@@ -1138,21 +1138,18 @@ const app = {
 
     async loadSubjects() {
         try {
-            // Check session cache first (5 minute expiry)
-            const CACHE_KEY = 'studyStation_examCache';
-            const CACHE_EXPIRY = 5 * 60 * 1000; // 5 minutes
+            // Check local cache first for instant load
+            const CACHE_KEY = 'studyStation_examCache_v2'; // v2 to force refresh with new logic
 
             try {
-                const cached = sessionStorage.getItem(CACHE_KEY);
+                const cached = localStorage.getItem(CACHE_KEY);
                 if (cached) {
-                    const { subjects, timestamp } = JSON.parse(cached);
-                    if (Date.now() - timestamp < CACHE_EXPIRY) {
-                        console.log('[Practice] Loaded exams from cache');
+                    const { subjects } = JSON.parse(cached);
+                    // Basic valid check
+                    if (subjects && Object.keys(subjects).length > 0) {
+                        console.log('[Practice] Loaded exams from localStorage (instant)');
                         this.subjects = subjects;
-                        this.subjectLoadError = Object.keys(this.subjects).length ? null : 'Chưa có bài thi nào.';
-                        return;
-                    } else {
-                        console.log('[Practice] Cache expired, will fetch fresh data');
+                        this.goHome(); // Render immediately using cached data
                     }
                 }
             } catch (cacheErr) {
@@ -1248,13 +1245,13 @@ const app = {
 
                         this.subjectLoadError = Object.keys(this.subjects).length ? null : 'Chưa có bài thi nào. Admin có thể thêm bài thi mới.';
 
-                        // Save to session cache for faster subsequent loads (only metadata, no content)
+                        // Save to local cache for instant load next time
                         try {
-                            sessionStorage.setItem(CACHE_KEY, JSON.stringify({
+                            localStorage.setItem(CACHE_KEY, JSON.stringify({
                                 subjects: this.subjects,
                                 timestamp: Date.now()
                             }));
-                            console.log('Saved exams to cache');
+                            console.log('Saved exams to localStorage');
                         } catch (saveErr) {
                             console.warn('Cache save error:', saveErr);
                         }
@@ -1942,18 +1939,8 @@ const app = {
             el.dataset.examId = exam.id; // Add data attribute for tracking
             el.onclick = () => this.showExamModeModal(subId, exam.id, exam.title);
 
-            // Prefetch exam content on hover (only once per exam)
-            el.onmouseenter = () => {
-                if (!this.prefetchedExams) this.prefetchedExams = new Set();
-                if (!this.prefetchedExams.has(exam.id) && !this.examContentDB?.[exam.id]) {
-                    this.prefetchedExams.add(exam.id);
-                    console.log('[Practice] Prefetching exam content on hover:', exam.id);
-                    this.getExamContent(exam.id).catch(() => {
-                        // Silent fail - will try again when actually needed
-                        this.prefetchedExams.delete(exam.id);
-                    });
-                }
-            };
+            // Prefetch removed to optimize bandwidth as requested.
+            // Only load content when user explicitly clicks.
 
             const createdDate = exam.createdAt
                 ? `<span class="text-[10px] md:text-xs text-slate-400 dark:text-slate-500 flex items-center"><svg class="w-3 h-3 mr-1 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"/></svg>${new Date(exam.createdAt).toLocaleDateString('vi-VN')}</span>`
