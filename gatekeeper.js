@@ -209,6 +209,23 @@ export function initGatekeeper(mode = 'protected') {
         document.body.style.overflow = 'hidden'; // Chặn cuộn khi đang load
     }
 
+    // --- EARLY UNLOCK OPTIMIZATION ---
+    // Nếu có session local, mở khóa UI NGAY LẬP TỨC trước khi đợi onAuthStateChanged
+    // Điều này cho phép Practice load từ cache trong khi auth đang xử lý
+    const localSession = localStorage.getItem(SESSION_ID_KEY);
+    let earlyUnlocked = false;
+
+    if (isProtected && localSession && loadingEl) {
+        // Đợi 200ms cho UI render, rồi unlock nếu auth chưa xong
+        setTimeout(() => {
+            if (loadingEl.style.display !== 'none') {
+                console.log('[Gatekeeper] Early unlock: Session exists, unlocking before auth completes');
+                unlockUI(loadingEl);
+                earlyUnlocked = true;
+            }
+        }, 200);
+    }
+
     onAuthStateChanged(auth, async (user) => {
         // Reset role tạm thời để tránh cached sai
         if (!user) {
