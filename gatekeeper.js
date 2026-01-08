@@ -763,17 +763,42 @@ export async function getAllExamsMetadata() {
 
 /**
  * Lấy nội dung chi tiết của 1 exam (lazy loading)
- * Cache kết quả để tránh load lại
+ * Cache kết quả trong MEMORY và LOCALSTORAGE để tránh load lại
+ * LocalStorage cache expires after 1 hour
  */
+const EXAM_CONTENT_CACHE_KEY_PREFIX = 'ss_exam_';
+const EXAM_CONTENT_CACHE_DURATION = 3600000; // 1 hour in milliseconds
+
 export async function getExamContent(examId) {
-    // Check cache first
+    // 1. Check memory cache first (fastest)
     if (examContentCache.has(examId)) {
-        console.log('[Firebase] Returning cached content for exam:', examId);
+        console.log('[Firebase] Returning memory-cached content for exam:', examId);
         return examContentCache.get(examId);
     }
 
-    const MAX_RETRIES = 3;
-    const TIMEOUT_MS = 10000; // 10 seconds timeout per attempt
+    // 2. Check localStorage cache (persists across refreshes)
+    try {
+        const cacheKey = EXAM_CONTENT_CACHE_KEY_PREFIX + examId;
+        const cached = localStorage.getItem(cacheKey);
+        if (cached) {
+            const { data, timestamp } = JSON.parse(cached);
+            if (Date.now() - timestamp < EXAM_CONTENT_CACHE_DURATION) {
+                console.log('[Firebase] Returning localStorage-cached content for exam:', examId);
+                // Also store in memory for faster subsequent access
+                examContentCache.set(examId, data);
+                return data;
+            } else {
+                // Cache expired, remove it
+                localStorage.removeItem(cacheKey);
+            }
+        }
+    } catch (e) {
+        console.warn('[Firebase] localStorage cache read error:', e);
+    }
+
+    // 3. Fetch from Firebase
+    const MAX_RETRIES = 2; // Reduced from 3 to 2 for faster failure
+    const TIMEOUT_MS = 8000; // Reduced from 10s to 8s
     let lastError = null;
 
     for (let i = 0; i < MAX_RETRIES; i++) {
@@ -802,9 +827,24 @@ export async function getExamContent(examId) {
                     part2: data.part2 || [],
                     part3: data.part3 || []
                 };
-                // Cache for future use
+
+                // Cache in memory
                 examContentCache.set(examId, content);
-                console.log('[Firebase] Cached content for exam:', examId);
+                console.log('[Firebase] Cached content in memory for exam:', examId);
+
+                // Cache in localStorage (async, non-blocking)
+                try {
+                    const cacheKey = EXAM_CONTENT_CACHE_KEY_PREFIX + examId;
+                    localStorage.setItem(cacheKey, JSON.stringify({
+                        data: content,
+                        timestamp: Date.now()
+                    }));
+                    console.log('[Firebase] Cached content in localStorage for exam:', examId);
+                } catch (e) {
+                    // localStorage might be full or disabled, ignore
+                    console.warn('[Firebase] localStorage cache write failed:', e);
+                }
+
                 return content;
             }
             // Document doesn't exist - don't retry, just return null
@@ -816,7 +856,7 @@ export async function getExamContent(examId) {
 
             // Wait before retry (exponential backoff: 1s, 2s...)
             if (i < MAX_RETRIES - 1) {
-                const waitTime = 1000 * Math.pow(2, i);
+                const waitTime = 500 * Math.pow(2, i); // Reduced from 1000ms
                 await new Promise(r => setTimeout(r, waitTime));
             }
         }
@@ -824,6 +864,73 @@ export async function getExamContent(examId) {
 
     console.error('[Firebase] All attempts to fetch exam content failed.');
     throw lastError || new Error('Không thể tải nội dung bài thi (Lỗi kết nối)');
+}
+
+/**
+ * Xóa cache nội dung bài thi (memory và localStorage)
+ * Gọi khi cần force refresh hoặc khi admin thay đổi đề thi
+ */
+export function clearExamContentCache(examId = null) {
+    if (examId) {
+        // Clear specific exam
+        examContentCache.delete(examId);
+        try {
+            localStorage.removeItem(EXAM_CONTENT_CACHE_KEY_PREFIX + examId);
+        } catch (e) { }
+        console.log('[Firebase] Cleared cache for exam:', examId);
+    } else {
+        // Clear all exam content caches
+        examContentCache.clear();
+        try {
+            const keysToRemove = [];
+            for (let i = 0; i < localStorage.length; i++) {
+                const key = localStorage.key(i);
+                if (key && key.startsWith(EXAM_CONTENT_CACHE_KEY_PREFIX)) {
+                    keysToRemove.push(key);
+                }
+            }
+            keysToRemove.forEach(key => localStorage.removeItem(key));
+            console.log('[Firebase] Cleared all exam content caches:', keysToRemove.length, 'items');
+        } catch (e) {
+            console.warn('[Firebase] Failed to clear localStorage cache:', e);
+        }
+    }
+}
+
+/**
+ * Dọn dẹp cache hết hạn để tiết kiệm dung lượng localStorage
+ * Nên gọi khi khởi động app
+ */
+export function cleanupExpiredCaches() {
+    try {
+        const keysToRemove = [];
+        const now = Date.now();
+
+        for (let i = 0; i < localStorage.length; i++) {
+            const key = localStorage.key(i);
+            if (key && key.startsWith(EXAM_CONTENT_CACHE_KEY_PREFIX)) {
+                try {
+                    const cached = localStorage.getItem(key);
+                    if (cached) {
+                        const { timestamp } = JSON.parse(cached);
+                        if (now - timestamp > EXAM_CONTENT_CACHE_DURATION) {
+                            keysToRemove.push(key);
+                        }
+                    }
+                } catch (e) {
+                    // Corrupted cache, remove it
+                    keysToRemove.push(key);
+                }
+            }
+        }
+
+        keysToRemove.forEach(key => localStorage.removeItem(key));
+        if (keysToRemove.length > 0) {
+            console.log('[Firebase] Cleaned up', keysToRemove.length, 'expired exam caches');
+        }
+    } catch (e) {
+        console.warn('[Firebase] Cache cleanup failed:', e);
+    }
 }
 
 /**
