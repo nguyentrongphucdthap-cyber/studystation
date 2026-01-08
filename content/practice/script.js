@@ -1185,13 +1185,14 @@ const app = {
                     console.log('[Practice] Loading exams from Firebase...');
 
                     // Use timeout and retry for better reliability
+                    // OPTIMIZED: Reduced timeout from 10s to 5s, retries from 2 to 1
                     const firebaseExams = await retryAsync(async () => {
                         return await withTimeout(
                             window.firebaseExams.getAllExams(),
-                            10000, // 10 seconds timeout
+                            5000, // 5 seconds timeout (reduced from 10s)
                             'Firebase timeout - network too slow'
                         );
-                    }, 2, 1000); // Retry 2 times with 1 second delay
+                    }, 1, 500); // Retry 1 time with 0.5 second delay (reduced from 2, 1s)
 
                     const firebaseSubjects = window.firebaseExams.getSubjects();
 
