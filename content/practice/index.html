@@ -1939,33 +1939,60 @@
         // Initialize Music player immediately (no Firebase dependency)
         if (window.musicPlayer) window.musicPlayer.init();
 
-        // Wait for user auth callback before initializing app
-        // This is more reliable than polling isFirebaseReady()
+        // OPTIMIZATION: Initialize app immediately with cached data (instant render)
+        // Then refresh from Firebase when auth is ready
         let appInitialized = false;
+        let refreshedFromFirebase = false;
 
+        // STEP 1: Try to show UI immediately from cache
+        if (window.app) {
+            console.log('[Practice] Quick start: Initializing app immediately...');
+            appInitialized = true;
+            window.app.init();
+        }
+
+        // STEP 2: When auth is ready, refresh data from Firebase
         onUserChange((user) => {
-            if (appInitialized) return; // Only init once
+            if (refreshedFromFirebase) return; // Only refresh once
 
             if (user) {
-                console.log('[Practice] User authenticated, initializing app...');
-                appInitialized = true;
-                if (window.app) {
+                console.log('[Practice] User authenticated, refreshing data from Firebase...');
+                refreshedFromFirebase = true;
+
+                // Clear exam list cache to force refresh from Firebase
+                if (window.firebaseExams?.clearExamListCache) {
+                    window.firebaseExams.clearExamListCache();
+                }
+
+                // If app wasn't initialized yet (no cache), init now
+                if (!appInitialized && window.app) {
+                    appInitialized = true;
                     window.app.init();
+                } else if (window.app && window.app.loadSubjects) {
+                    // Refresh subjects list from Firebase (background update)
+                    window.app.loadSubjects().then(() => {
+                        // Re-render current view if on home
+                        if (window.app.container?.querySelector('#subject-grid')) {
+                            window.app.goHome();
+                        }
+                    }).catch(err => {
+                        console.warn('[Practice] Background refresh failed:', err);
+                    });
                 }
             }
         });
 
-        // Fallback: If no user callback after 5 seconds, try to init anyway
+        // STEP 3: Fallback timeout reduced from 5s to 2s for faster response
         // (handles case where user is not logged in but page should still show)
         setTimeout(() => {
             if (!appInitialized) {
-                console.warn('[Practice] Auth timeout, initializing app anyway...');
+                console.warn('[Practice] Auth timeout (2s), initializing app anyway...');
                 appInitialized = true;
                 if (window.app) {
                     window.app.init();
                 }
             }
-        }, 5000);
+        }, 2000);
 
         // Mobile viewport height fix for iOS Safari
         (function () {
