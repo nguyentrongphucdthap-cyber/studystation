@@ -174,6 +174,11 @@
                         data-tab="logs">
                         <span class="flex items-center gap-2">📋 Lịch sử</span>
                     </button>
+                    <button id="tab-guests"
+                        class="nav-tab px-4 py-3 text-sm font-semibold text-gray-600 whitespace-nowrap rounded-t-lg hidden"
+                        data-tab="guests">
+                        <span class="flex items-center gap-2">👻 Khách</span>
+                    </button>
                     <button id="tab-practice-logs"
                         class="nav-tab px-4 py-3 text-sm font-semibold text-gray-600 whitespace-nowrap rounded-t-lg hidden"
                         data-tab="practice-logs">
@@ -364,6 +369,40 @@
                 </div>
             </div>
 
+            <!-- Tab: Guests (Super-Admin only) -->
+            <div id="content-guests" class="tab-content">
+                <div class="bg-white rounded-2xl border overflow-hidden">
+                    <div class="p-4 border-b bg-gray-100 flex items-center justify-between">
+                        <div>
+                            <h3 class="font-bold text-gray-800">👻 Người dùng Khách (Guest)</h3>
+                            <p class="text-xs text-gray-500">Phát hiện qua lịch sử làm bài & hoạt động</p>
+                        </div>
+                        <button id="btn-refresh-guests"
+                            class="px-3 py-1.5 bg-gray-600 text-white text-sm font-semibold rounded-lg hover:bg-gray-700">🔄
+                            Làm mới</button>
+                    </div>
+                    <div class="max-h-[500px] overflow-y-auto">
+                        <table class="w-full text-sm">
+                            <thead class="bg-gray-50 sticky top-0">
+                                <tr>
+                                    <th class="px-4 py-3 text-left font-semibold text-gray-600">Email Khách</th>
+                                    <th class="px-4 py-3 text-left font-semibold text-gray-600">Tên hiển thị (Gần nhất)
+                                    </th>
+                                    <th class="px-4 py-3 text-left font-semibold text-gray-600">Hoạt động cuối</th>
+                                    <th class="px-4 py-3 text-center font-semibold text-gray-600">Số bài đã làm</th>
+                                    <th class="px-4 py-3 text-right font-semibold text-gray-600">Hành động</th>
+                                </tr>
+                            </thead>
+                            <tbody id="guests-table-body" class="divide-y divide-gray-100">
+                                <tr>
+                                    <td colspan="5" class="px-4 py-6 text-center text-gray-400">Đang tải...</td>
+                                </tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+
             <div id="content-practice-logs" class="tab-content">
                 <div class="bg-white rounded-2xl border overflow-hidden">
                     <div class="p-4 border-b bg-indigo-50 flex items-center justify-between">
@@ -454,6 +493,9 @@
             statPopular: document.getElementById('stat-popular'),
             tabOnline: document.getElementById('tab-online'),
             tabLogs: document.getElementById('tab-logs'),
+            tabGuests: document.getElementById('tab-guests'),
+            guestsTableBody: document.getElementById('guests-table-body'),
+            btnRefreshGuests: document.getElementById('btn-refresh-guests'),
             tabPracticeLogs: document.getElementById('tab-practice-logs'),
             practiceLogsTableBody: document.getElementById('practice-logs-table-body'),
             btnRefreshPracticeLogs: document.getElementById('btn-refresh-practice-logs')
@@ -657,6 +699,90 @@
             }
         }
 
+        // Load Guests (Super-Admin only)
+        async function loadGuests() {
+            refs.guestsTableBody.innerHTML = `<tr><td colspan="5" class="px-4 py-6 text-center text-gray-400">Đang quét dữ liệu...</td></tr>`;
+            try {
+                // Fetch logs and allowed users in parallel
+                const [pLogs, whitelist] = await Promise.all([
+                    getAllPracticeLogs(),
+                    getAllAllowedUsers()
+                ]);
+
+                // Create Set of whitelisted emails for fast lookup (lowercase)
+                const whitelistEmails = new Set(whitelist.map(u => u.email.toLowerCase()));
+
+                // Analyze logs to find non-whitelisted users
+                const guestMap = new Map();
+
+                pLogs.forEach(log => {
+                    const email = log.userEmail?.toLowerCase();
+                    if (email && !whitelistEmails.has(email)) {
+                        if (!guestMap.has(email)) {
+                            guestMap.set(email, {
+                                email: log.userEmail, // Keep original casing for display
+                                name: log.userName || 'Unknown',
+                                lastActive: log.timestamp,
+                                practiceCount: 0
+                            });
+                        }
+                        const guest = guestMap.get(email);
+                        guest.practiceCount++;
+                        // Update last active if this log is newer
+                        if (new Date(log.timestamp) > new Date(guest.lastActive)) {
+                            guest.lastActive = log.timestamp;
+                            guest.name = log.userName || guest.name;
+                        }
+                    }
+                });
+
+                const guests = Array.from(guestMap.values()).sort((a, b) => new Date(b.lastActive) - new Date(a.lastActive));
+
+                if (guests.length === 0) {
+                    refs.guestsTableBody.innerHTML = `<tr><td colspan="5" class="px-4 py-6 text-center text-gray-400">Không tìm thấy khách nào</td></tr>`;
+                    return;
+                }
+
+                refs.guestsTableBody.innerHTML = guests.map(g => `
+                    <tr class="hover:bg-gray-50">
+                        <td class="px-4 py-3 font-medium text-gray-800">${g.email}</td>
+                        <td class="px-4 py-3 text-gray-600">${g.name}</td>
+                        <td class="px-4 py-3 text-gray-500 text-xs">${formatTimeAgo(g.lastActive)}</td>
+                        <td class="px-4 py-3 text-center"><span class="px-2 py-1 bg-gray-100 text-gray-600 text-xs font-bold rounded-full">${g.practiceCount}</span></td>
+                        <td class="px-4 py-3 text-right">
+                            <button class="btn-add-guest-to-user px-3 py-1.5 bg-emerald-600 text-white text-xs font-bold rounded-lg hover:bg-emerald-700 shadow-sm transition-colors" data-email="${g.email}">
+                                + Thêm vào Whitelist
+                            </button>
+                        </td>
+                    </tr>
+                `).join('');
+
+                // Bind Add buttons
+                refs.guestsTableBody.querySelectorAll('.btn-add-guest-to-user').forEach(btn => {
+                    btn.addEventListener('click', async (e) => {
+                        const email = e.target.dataset.email;
+                        try {
+                            // Pre-fill the form
+                            refs.newUserEmail.value = email;
+                            // Switch to Whitelist tab
+                            document.querySelector('[data-tab="whitelist"]').click();
+                            showToast('Đã điền email vào form thêm người dùng', 'success');
+                            // Highlight the input
+                            refs.newUserEmail.focus();
+                            refs.newUserEmail.classList.add('ring-2', 'ring-emerald-500');
+                            setTimeout(() => refs.newUserEmail.classList.remove('ring-2', 'ring-emerald-500'), 2000);
+                        } catch (err) {
+                            showToast(err.message, 'error');
+                        }
+                    });
+                });
+
+            } catch (e) {
+                console.error(e);
+                refs.guestsTableBody.innerHTML = `<tr><td colspan="5" class="px-4 py-6 text-center text-red-500">Lỗi: ${e.message}</td></tr>`;
+            }
+        }
+
         // Render Online Users
         function renderOnlineUsers(users) {
             refs.onlineCountNumber.textContent = users.length;
@@ -691,6 +817,7 @@
         refs.btnRefreshLogs?.addEventListener('click', loadLogs);
         refs.btnRefreshActivity?.addEventListener('click', loadDashboard);
         refs.btnRefreshPracticeLogs?.addEventListener('click', loadPracticeLogs);
+        refs.btnRefreshGuests?.addEventListener('click', loadGuests);
 
         // Init
         initGatekeeper('protected');
@@ -718,9 +845,11 @@
 
                     refs.tabOnline.classList.remove('hidden');
                     refs.tabLogs.classList.remove('hidden');
+                    refs.tabGuests.classList.remove('hidden');
                     unsubscribeOnline = subscribeToOnlineUsersList(renderOnlineUsers);
                     loadDashboard();
                     loadLogs();
+                    loadGuests();
                 } else {
                     // Admin (not Super-Admin)
                     refs.roleBadge.className = 'px-3 py-1 bg-blue-100 text-blue-700 text-xs font-bold rounded-full border border-blue-200';
