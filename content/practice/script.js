@@ -2658,7 +2658,7 @@ const app = {
             }
         };
 
-        const desktopBtn = document.querySelector('#desktop-palette-sidebar button');
+        const desktopBtn = document.querySelector('#submit-btn-container button');
         const mobileBtn = document.querySelector('#mobile-footer button:last-child'); // usually the submit/submit button is last
         setupRetakeBtn(desktopBtn);
         setupRetakeBtn(mobileBtn);
@@ -3075,7 +3075,7 @@ const app = {
             }
         };
 
-        const desktopBtn = document.querySelector('#desktop-palette-sidebar button');
+        const desktopBtn = document.querySelector('#submit-btn-container button');
         const mobileBtn = document.querySelector('#mobile-footer button:last-child');
         setupRetakeBtn(desktopBtn);
         setupRetakeBtn(mobileBtn);
