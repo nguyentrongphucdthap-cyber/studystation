@@ -208,6 +208,20 @@ export function initGatekeeper(mode = 'protected') {
             return;
         }
 
+        // --- OPTIMISTIC UI UNLOCK (Fix slow load on mobile) ---
+        // Nếu là trang bảo vệ và đã có session local, mở khóa giao diện ngay lập tức
+        // để Practice module có thể load từ cache mà không cần đợi whitelist check (slow network)
+        // Việc kiểm tra whitelist và session sẽ chạy ngầm sau đó.
+        let unlocked = false;
+        const localSession = localStorage.getItem(SESSION_ID_KEY);
+        if (isProtected && localSession && loadingEl && loadingEl.style.display !== 'none') {
+            console.log('[Gatekeeper] Optimistic unlock for standard user');
+            unlockUI(loadingEl);
+            unlocked = true;
+            // Start presence immediately too
+            startPresence();
+        }
+
         // --- NGƯỜI DÙNG ĐÃ ĐĂNG NHẬP FIREBASE ---
         try {
             // 1. Kiểm tra Whitelist & Lấy dữ liệu
@@ -222,7 +236,7 @@ export function initGatekeeper(mode = 'protected') {
                     console.warn('[Gatekeeper] Offline mode - allowing cached access');
                     // Nếu đã có session local, cho phép tiếp tục
                     const localSession = localStorage.getItem(SESSION_ID_KEY);
-                    if (localSession && isProtected) {
+                    if (localSession && isProtected && !unlocked) {
                         unlockUI(loadingEl);
                         startPresence();
                         return;
@@ -297,11 +311,12 @@ export function initGatekeeper(mode = 'protected') {
                 // V3: Chỉ kick nếu có session MỚI HƠN trên CÙNG LOẠI thiết bị
                 setupRealtimeMonitor(userRef, localStorage.getItem(SESSION_ID_KEY), deviceType);
 
-                // Mở khóa giao diện
-                unlockUI(loadingEl);
-
-                // Tự động bắt đầu Presence Tracking
-                startPresence();
+                // Mở khóa giao diện (nếu chưa mở optimistic)
+                if (!unlocked) {
+                    unlockUI(loadingEl);
+                    // Tự động bắt đầu Presence Tracking
+                    startPresence();
+                }
             }
 
         } catch (error) {
