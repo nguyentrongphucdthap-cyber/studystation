@@ -1581,6 +1581,62 @@
     </script>
 
     <!-- DOCS APP LOGIC (Tính năng Tài liệu Dashboard) -->
+    <script>
+        // --- Custom Dialog System (Added for consistent UI) ---
+        window.customDialog = {
+            icons: {
+                warning: `<svg class="w-8 h-8 text-amber-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"/></svg>`,
+                error: `<svg class="w-8 h-8 text-red-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>`,
+                success: `<svg class="w-8 h-8 text-emerald-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>`,
+                info: `<svg class="w-8 h-8 text-blue-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>`,
+            },
+            iconBg: { warning: 'bg-amber-100', error: 'bg-red-100', success: 'bg-emerald-100', info: 'bg-blue-100' },
+            _resolveCallback: null,
+            alert(title, message, type = 'info') {
+                return this.show({ type, title, message, buttons: [{ text: 'Đã hiểu', primary: true, action: 'ok' }] });
+            },
+            show(config) {
+                return new Promise((resolve) => {
+                    const dialog = document.getElementById('custom-dialog');
+                    if (!dialog) { alert(config.message); resolve('ok'); return; }
+                    const iconEl = document.getElementById('dialog-icon');
+                    const titleEl = document.getElementById('dialog-title');
+                    const messageEl = document.getElementById('dialog-message');
+                    const actionsEl = document.getElementById('dialog-actions');
+
+                    const iconType = config.type || 'info';
+                    iconEl.innerHTML = this.icons[iconType] || this.icons.info;
+                    iconEl.className = `w-16 h-16 rounded-full flex items-center justify-center ${this.iconBg[iconType] || this.iconBg.info}`;
+
+                    titleEl.textContent = config.title || '';
+                    messageEl.innerText = config.message || '';
+
+                    actionsEl.innerHTML = '';
+                    (config.buttons || []).forEach(btn => {
+                        const button = document.createElement('button');
+                        button.textContent = btn.text;
+                        const btnClass = btn.primary ?
+                            `flex-1 py-3 px-4 rounded-xl text-white font-bold transition-colors shadow-lg ${config.type === 'error' ? 'bg-red-600 hover:bg-red-700' : 'bg-blue-600 hover:bg-blue-700'}` :
+                            'flex-1 py-3 px-4 rounded-xl font-bold border border-gray-200 text-gray-600 hover:bg-gray-50 transition-colors';
+                        button.className = btnClass;
+                        button.onclick = () => {
+                            this._resolveCallback = null;
+                            dialog.classList.remove('show');
+                            resolve(btn.action);
+                        };
+                        actionsEl.appendChild(button);
+                    });
+
+                    dialog.classList.add('show');
+                    this._resolveCallback = resolve;
+                });
+            },
+            close() {
+                const dialog = document.getElementById('custom-dialog');
+                if (dialog) dialog.classList.remove('show');
+            }
+        };
+    </script>
     <script type="module">
         import { getAllExams, getExamContent } from "../gatekeeper.js";
 
@@ -1588,7 +1644,7 @@
             currentSubject: null,
             pendingDownload: null,
             DOWNLOAD_LIMIT_KEY: 'studyStation_downloadLimit',
-            MAX_DOWNLOADS_PER_DAY: 3,
+            MAX_DOWNLOADS_PER_DAY: 1,
 
             getDownloadInfo() {
                 try {
@@ -1656,7 +1712,7 @@
 
             showDownloadModal(examId, examTitle) {
                 if (!this.canDownload()) {
-                    alert('⚠️ Bạn đã hết lượt tải hôm nay (' + this.MAX_DOWNLOADS_PER_DAY + ' lượt/ngày).\nVui lòng quay lại vào ngày mai!');
+                    window.customDialog.alert('Hết lượt tải', '⚠️ Bạn đã hết lượt tải hôm nay (' + this.MAX_DOWNLOADS_PER_DAY + ' lượt/ngày).\nVui lòng quay lại vào ngày mai!', 'warning');
                     return;
                 }
                 this.pendingDownload = { examId, examTitle };
@@ -1671,7 +1727,11 @@
 
             async confirmDownload() {
                 if (!this.pendingDownload) return;
-                if (!this.canDownload()) { alert('Bạn đã hết lượt tải hôm nay!'); this.closeDownloadModal(); return; }
+                if (!this.canDownload()) {
+                    await window.customDialog.alert('Thông báo', 'Bạn đã hết lượt tải hôm nay!', 'warning');
+                    this.closeDownloadModal();
+                    return;
+                }
 
                 const { examId, examTitle } = this.pendingDownload;
                 const includeAnswers = document.querySelector('input[name="download-answers"]:checked').value === 'yes';
@@ -1692,9 +1752,9 @@
 
                     this.incrementDownloadCount();
                     this.closeDownloadModal();
-                    alert('✅ Tải về thành công!\n📊 Còn ' + this.getRemainingDownloads() + ' lượt tải hôm nay.');
+                    window.customDialog.alert('Thành công', '✅ Tải về thành công!\n📊 Còn ' + this.getRemainingDownloads() + ' lượt tải hôm nay.', 'success');
                 } catch (error) {
-                    alert('❌ Lỗi tải về: ' + error.message);
+                    window.customDialog.alert('Lỗi tải về', error.message, 'error');
                 } finally {
                     confirmBtn.innerHTML = originalContent;
                     confirmBtn.disabled = false;
@@ -1719,7 +1779,7 @@
             },
 
             async downloadAsDOCX(examData, examTitle, includeAnswers, format) {
-                if (!window.docx) { alert('Thư viện tạo file chưa tải xong.'); return; }
+                if (!window.docx) { window.customDialog.alert('Lỗi', 'Thư viện tạo file chưa tải xong.', 'error'); return; }
                 const { Document, Packer, Paragraph, TextRun, HeadingLevel, AlignmentType, convertInchesToTwip } = window.docx;
                 const children = []; const answersKey = []; let qNum = 0;
 
