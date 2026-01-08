@@ -2120,10 +2120,16 @@ const app = {
 
     async startExam(subId, examId) {
         const subject = this.subjects[subId];
-        if (!subject) { alert('Không tìm thấy môn học này.'); return; }
+        if (!subject) {
+            await window.customDialog.alert('Lỗi', 'Không tìm thấy môn học này.', 'error');
+            return;
+        }
         const examMeta = subject.exams.find(e => e.id === examId);
 
-        if (!examMeta) { alert('Không tìm thấy bài thi này.'); return; }
+        if (!examMeta) {
+            await window.customDialog.alert('Lỗi', 'Không tìm thấy bài thi này.', 'error');
+            return;
+        }
 
         // Show loading indicator with exam title
         const loadingHtml = `
@@ -2160,7 +2166,7 @@ const app = {
         document.getElementById('exam-loading-overlay')?.remove();
 
         if (!originalData) {
-            alert('Không thể tải nội dung bài thi. Vui lòng thử lại.');
+            await window.customDialog.alert('Lỗi', 'Không thể tải nội dung bài thi. Vui lòng thử lại.', 'error');
             return;
         }
 
@@ -2650,8 +2656,13 @@ const app = {
                 btn.classList.remove('bg-blue-600', 'hover:bg-blue-700');
                 btn.classList.add('bg-indigo-600', 'hover:bg-indigo-700');
                 // Use arrow function to capture 'this' correctly
-                btn.onclick = () => {
-                    if (confirm('Bạn có chắc chắn muốn làm lại bài thi này không?')) {
+                btn.onclick = async () => {
+                    const result = await window.customDialog.confirm('Xác nhận', 'Bạn có chắc chắn muốn làm lại bài thi này không?', {
+                        confirmText: 'Làm lại',
+                        cancelText: 'Hủy bỏ',
+                        type: 'question'
+                    });
+                    if (result === 'confirm') {
                         this.startExam(this.currentExam.subId, this.currentExam.meta.id);
                     }
                 };
@@ -3031,7 +3042,7 @@ const app = {
         // Find the history item
         const item = this.historyCache?.find(h => h.id === historyId);
         if (!item || !item.examData) {
-            alert('Không thể xem lại bài làm này. Dữ liệu không khả dụng.');
+            await window.customDialog.alert('Lỗi', 'Không thể xem lại bài làm này. Dữ liệu không khả dụng.', 'error');
             return;
         }
 
@@ -3067,8 +3078,13 @@ const app = {
                 `;
                 btn.classList.remove('bg-blue-600', 'hover:bg-blue-700');
                 btn.classList.add('bg-indigo-600', 'hover:bg-indigo-700');
-                btn.onclick = () => {
-                    if (confirm('Bạn có chắc chắn muốn làm lại bài thi này không?')) {
+                btn.onclick = async () => {
+                    const result = await window.customDialog.confirm('Xác nhận', 'Bạn có chắc chắn muốn làm lại bài thi này không?', {
+                        confirmText: 'Làm lại',
+                        cancelText: 'Hủy bỏ',
+                        type: 'question'
+                    });
+                    if (result === 'confirm') {
                         this.startExam(this.currentExam.subId, this.currentExam.meta.id);
                     }
                 };
