@@ -1732,7 +1732,7 @@
         };
     </script>
     <script type="module">
-        import { getAllExams, getExamContent } from "../gatekeeper.js";
+        import { getAllExams, getExamContent, checkIsAdmin, checkIsSuperAdmin } from "../gatekeeper.js";
 
         const docsApp = {
             currentSubject: null,
@@ -1753,16 +1753,30 @@
             },
 
             getRemainingDownloads() {
+                // Admin and Super-Admin have unlimited downloads
+                if (checkIsAdmin() || checkIsSuperAdmin()) {
+                    return Infinity;
+                }
                 return Math.max(0, this.MAX_DOWNLOADS_PER_DAY - this.getDownloadInfo().count);
             },
 
             incrementDownloadCount() {
+                // Don't count downloads for admin/super-admin
+                if (checkIsAdmin() || checkIsSuperAdmin()) {
+                    return;
+                }
                 const info = this.getDownloadInfo();
                 info.count++;
                 try { localStorage.setItem(this.DOWNLOAD_LIMIT_KEY, JSON.stringify(info)); } catch (e) { }
             },
 
-            canDownload() { return this.getRemainingDownloads() > 0; },
+            canDownload() {
+                // Admin and Super-Admin can always download
+                if (checkIsAdmin() || checkIsSuperAdmin()) {
+                    return true;
+                }
+                return this.getRemainingDownloads() > 0;
+            },
 
             async loadExamsForSubject(subjectId, subjectName) {
                 this.currentSubject = { id: subjectId, name: subjectName };
