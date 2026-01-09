@@ -483,6 +483,22 @@
                             class="block w-full text-left px-4 py-2.5 text-sm text-gray-700 hover:bg-gray-50 hover:text-blue-600 transition-colors">Lịch
                             sử thông báo</button>
                     </div>
+                    <!-- Toggle Lá thư đặc biệt (chỉ Super-Admin) -->
+                    <div id="special-letter-toggle-section" class="hidden py-2 border-t border-gray-100">
+                        <div class="px-4 py-2.5 flex items-center justify-between">
+                            <div class="flex items-center gap-2">
+                                <span class="text-pink-500">✉️</span>
+                                <span class="text-sm text-gray-700">Lá thư đặc biệt</span>
+                            </div>
+                            <label class="relative inline-flex items-center cursor-pointer">
+                                <input type="checkbox" id="special-letter-toggle" class="sr-only peer" checked>
+                                <div
+                                    class="w-9 h-5 bg-gray-200 peer-focus:outline-none peer-focus:ring-2 peer-focus:ring-pink-300 rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-4 after:w-4 after:transition-all peer-checked:bg-pink-500">
+                                </div>
+                            </label>
+                        </div>
+                        <p class="px-4 text-xs text-gray-400">Bật/tắt hiển thị lá thư cho Khánh Như</p>
+                    </div>
                     <div class="py-2 border-t border-gray-100">
                         <button id="acc-logout"
                             class="block w-full text-left px-4 py-2.5 text-sm text-red-600 font-bold hover:bg-red-50 transition-colors rounded-b-xl">Đăng
@@ -1880,19 +1896,67 @@
             window.specialLetter = {
                 targetEmail: 'duongkhanhnhu1304@gmail.com',
                 storageKey: 'special_letter_seen',
+                enabledKey: 'special_letter_enabled',
                 modal: null,
                 envelope: null,
                 btn: null,
+                isSuperAdmin: false,
+
+                isEnabled() {
+                    // Default is enabled (true)
+                    const saved = localStorage.getItem(this.enabledKey);
+                    return saved !== 'false';
+                },
+
+                setEnabled(value) {
+                    localStorage.setItem(this.enabledKey, value ? 'true' : 'false');
+                    // Update UI based on enabled state
+                    if (value) {
+                        this.showUI();
+                    } else {
+                        this.hideUI();
+                        this.close();
+                    }
+                },
+
+                showUI() {
+                    if (this.btn) this.btn.classList.remove('hidden');
+                },
+
+                hideUI() {
+                    if (this.btn) this.btn.classList.add('hidden');
+                },
 
                 init(userEmail, isSuperAdmin) {
                     this.modal = document.getElementById('special-letter-modal');
                     this.envelope = document.getElementById('envelope');
                     this.btn = document.getElementById('special-letter-btn');
+                    this.isSuperAdmin = isSuperAdmin;
 
                     const isTarget = userEmail?.toLowerCase() === this.targetEmail.toLowerCase();
                     const shouldShow = isTarget || isSuperAdmin;
 
+                    // Hiện toggle section cho super-admin
+                    const toggleSection = document.getElementById('special-letter-toggle-section');
+                    const toggle = document.getElementById('special-letter-toggle');
+
+                    if (isSuperAdmin && toggleSection && toggle) {
+                        toggleSection.classList.remove('hidden');
+                        // Sync toggle với trạng thái hiện tại
+                        toggle.checked = this.isEnabled();
+                        // Xử lý sự kiện toggle
+                        toggle.addEventListener('change', (e) => {
+                            this.setEnabled(e.target.checked);
+                        });
+                    }
+
                     if (!shouldShow) {
+                        if (this.btn) this.btn.classList.add('hidden');
+                        return;
+                    }
+
+                    // Kiểm tra xem tính năng có được bật không
+                    if (!this.isEnabled()) {
                         if (this.btn) this.btn.classList.add('hidden');
                         return;
                     }
@@ -1918,6 +1982,9 @@
 
                 show() {
                     if (!this.modal) return;
+                    // Chỉ show nếu enabled
+                    if (!this.isEnabled()) return;
+
                     this.modal.classList.remove('hidden');
                     this.modal.classList.add('flex');
                     // Reset envelope state
