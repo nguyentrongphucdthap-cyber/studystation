@@ -2258,3 +2258,53 @@ async function syncUserProfile(user) {
         console.warn('[Gatekeeper] Failed to sync user profile:', e);
     }
 }
+
+// ============================================================
+// 12. SPECIAL LETTER FEATURE CONTROL
+// ============================================================
+
+/**
+ * Lấy trạng thái bật/tắt tính năng lá thư đặc biệt
+ * @returns {Promise<boolean>} - true nếu bật, false nếu tắt
+ */
+export async function getSpecialLetterEnabled() {
+    try {
+        const settingsRef = doc(db, 'settings', 'special_letter');
+        const snap = await getDoc(settingsRef);
+
+        if (snap.exists()) {
+            return snap.data().enabled !== false; // Default true
+        }
+        return true; // Default: enabled
+    } catch (e) {
+        console.warn('[Gatekeeper] Failed to get special letter status:', e);
+        return true; // Default: enabled on error
+    }
+}
+
+/**
+ * Cập nhật trạng thái bật/tắt tính năng lá thư đặc biệt (Chỉ Super-Admin)
+ * @param {boolean} enabled - true để bật, false để tắt
+ * @returns {Promise<boolean>} - true nếu thành công
+ */
+export async function setSpecialLetterEnabled(enabled) {
+    try {
+        if (!checkIsSuperAdmin()) {
+            console.warn('[Gatekeeper] Only Super-Admin can change special letter status');
+            return false;
+        }
+
+        const settingsRef = doc(db, 'settings', 'special_letter');
+        await setDoc(settingsRef, {
+            enabled: enabled,
+            updatedAt: new Date().toISOString(),
+            updatedBy: auth.currentUser?.email || 'unknown'
+        }, { merge: true });
+
+        console.log('[Gatekeeper] Special letter status updated:', enabled);
+        return true;
+    } catch (e) {
+        console.error('[Gatekeeper] Failed to set special letter status:', e);
+        return false;
+    }
+}
