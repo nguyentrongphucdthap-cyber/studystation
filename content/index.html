@@ -1906,9 +1906,15 @@
                     // Tạo trái tim bay
                     this.createFloatingHearts();
 
-                    // Auto show nếu chưa xem lần nào
+                    // Kiểm tra đã xem chưa
                     const seen = localStorage.getItem(this.storageKey);
-                    if (!seen) {
+
+                    // Ẩn badge nếu đã xem rồi
+                    if (seen) {
+                        const badge = this.btn?.querySelector('.letter-badge');
+                        if (badge) badge.style.display = 'none';
+                    } else {
+                        // Chỉ auto show lần đầu tiên
                         setTimeout(() => this.show(), 1500);
                     }
                 },
@@ -1925,21 +1931,29 @@
                     if (!this.modal) return;
                     this.modal.classList.add('hidden');
                     this.modal.classList.remove('flex');
+                    // Đánh dấu đã xem khi đóng modal
+                    this.markAsSeen();
                 },
 
                 openEnvelope() {
                     if (!this.envelope) return;
                     if (!this.envelope.classList.contains('opened')) {
                         this.envelope.classList.add('opened');
+                        // Đánh dấu đã xem khi mở phong bì
+                        this.markAsSeen();
                     }
+                },
+
+                markAsSeen() {
+                    localStorage.setItem(this.storageKey, 'true');
+                    // Ẩn badge
+                    const badge = this.btn?.querySelector('.letter-badge');
+                    if (badge) badge.style.display = 'none';
                 },
 
                 goToMessage(e) {
                     e.stopPropagation();
-                    localStorage.setItem(this.storageKey, 'true');
-                    // Remove badge animation
-                    const badge = this.btn?.querySelector('.letter-badge');
-                    if (badge) badge.style.display = 'none';
+                    this.markAsSeen();
                     // Go to khanh-nhu page
                     window.location.href = './khanh-nhu/index.html';
                 },
