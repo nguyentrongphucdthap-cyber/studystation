@@ -234,17 +234,17 @@
             transform: rotateX(180deg);
         }
 
-        .envelope-heart {
+        .envelope-seal {
             position: absolute;
             top: 50%;
             left: 50%;
             transform: translate(-50%, -50%);
             font-size: 40px;
             z-index: 3;
-            animation: heartbeat 1.5s ease-in-out infinite;
+            animation: pulse-seal 1.5s ease-in-out infinite;
         }
 
-        @keyframes heartbeat {
+        @keyframes pulse-seal {
 
             0%,
             100% {
@@ -567,25 +567,25 @@
                 <!-- Envelope flap (triangle top) -->
                 <div class="envelope-flap"></div>
 
-                <!-- Heart seal -->
-                <div class="envelope-heart">💌</div>
+                <!-- Envelope seal -->
+                <div class="envelope-seal">✉️</div>
 
                 <!-- Letter paper (reveals when opened) -->
                 <div class="letter-paper">
-                    <div class="letter-title">Có người gửi thư cho bạn! 💗</div>
+                    <div class="letter-title">Có người gửi thư cho bạn! ✨</div>
                     <div class="letter-message">
                         Đây là tin nhắn đặc biệt<br>
                         dành riêng cho bạn...<br>
                         <span class="text-pink-500 font-medium">Nhấn để xem nhé!</span>
                     </div>
                     <button class="letter-cta" onclick="window.specialLetter.goToMessage(event)">
-                        💕 Mở tin nhắn
+                        ✨ Mở tin nhắn
                     </button>
                 </div>
             </div>
 
             <!-- Close hint -->
-            <p class="text-center text-pink-200/80 mt-6 text-sm">Nhấn vào phong bì để mở 💕</p>
+            <p class="text-center text-pink-200/80 mt-6 text-sm">Nhấn vào phong bì để mở ✨</p>
         </div>
     </div>
 
