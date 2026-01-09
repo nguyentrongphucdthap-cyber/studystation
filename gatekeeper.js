@@ -797,8 +797,8 @@ export async function getExamContent(examId) {
     }
 
     // 3. Fetch from Firebase
-    const MAX_RETRIES = 2; // Reduced from 3 to 2 for faster failure
-    const TIMEOUT_MS = 8000; // Reduced from 10s to 8s
+    const MAX_RETRIES = 1; // Single attempt for faster response
+    const TIMEOUT_MS = 5000; // 5 seconds timeout
     let lastError = null;
 
     for (let i = 0; i < MAX_RETRIES; i++) {
