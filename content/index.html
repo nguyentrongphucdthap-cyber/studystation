@@ -2316,39 +2316,152 @@
             async downloadAsDOCX(examData, examTitle, includeAnswers, format) {
                 if (!window.docx) { window.customDialog.alert('Lỗi', 'Thư viện tạo file chưa tải xong.', 'error'); return; }
                 const { Document, Packer, Paragraph, TextRun, HeadingLevel, AlignmentType, convertInchesToTwip } = window.docx;
-                const children = []; const answersKey = []; let qNum = 0;
+                const children = []; let qNum = 0;
 
-                children.push(new Paragraph({ children: [new TextRun({ text: examTitle, bold: true, size: 32 })], heading: HeadingLevel.HEADING_1, alignment: AlignmentType.CENTER, spacing: { after: 400 } }));
+                // Header - Tiêu đề bài thi
+                children.push(new Paragraph({
+                    children: [new TextRun({ text: this.convertMathToPlainText(examTitle), bold: true, size: 32, font: 'Times New Roman' })],
+                    heading: HeadingLevel.HEADING_1,
+                    alignment: AlignmentType.CENTER,
+                    spacing: { after: 400 }
+                }));
 
-                const processPart = (partData, partTitle, type) => {
-                    if (!partData || partData.length === 0) return;
-                    children.push(new Paragraph({ children: [new TextRun({ text: partTitle, bold: true, size: 28 })], heading: HeadingLevel.HEADING_2, spacing: { before: 400, after: 200 } }));
-                    partData.forEach(q => {
+                // PHẦN I: TRẮC NGHIỆM
+                if (examData.part1?.length) {
+                    children.push(new Paragraph({
+                        children: [new TextRun({ text: 'PHẦN I: TRẮC NGHIỆM', bold: true, size: 28, font: 'Times New Roman' })],
+                        heading: HeadingLevel.HEADING_2,
+                        spacing: { before: 400, after: 200 }
+                    }));
+
+                    examData.part1.forEach(q => {
                         qNum++;
-                        children.push(new Paragraph({ children: [new TextRun({ text: 'CÃ¢u ' + qNum + ': ', bold: true }), new TextRun({ text: this.convertMathToPlainText(q.text) })], spacing: { before: 200, after: 100 } }));
-                        if (type === 'part1') {
-                            const labels = ['A', 'B', 'C', 'D'];
-                            (q.options || []).forEach((opt, i) => { children.push(new Paragraph({ children: [new TextRun({ text: labels[i] + '. ', bold: true }), new TextRun({ text: this.convertMathToPlainText(opt) })], indent: { left: convertInchesToTwip(0.3) } })); });
-                            answersKey.push({ num: qNum, ans: labels[q.correct] || 'N/A' });
-                        } else if (type === 'part2') {
-                            const subAns = [];
-                            (q.subQuestions || []).forEach(sub => { children.push(new Paragraph({ children: [new TextRun({ text: sub.id + ') ', bold: true }), new TextRun({ text: this.convertMathToPlainText(sub.text) })], indent: { left: convertInchesToTwip(0.3) } })); subAns.push(sub.id + ') ' + (sub.correct ? 'Ä' : 'S')); });
-                            answersKey.push({ num: qNum, ans: subAns.join(', ') });
-                        } else if (type === 'part3') {
-                            children.push(new Paragraph({ children: [new TextRun({ text: 'ÄÃ¡p Ã¡n: _______________' })], indent: { left: convertInchesToTwip(0.3) } }));
-                            answersKey.push({ num: qNum, ans: this.convertMathToPlainText(String(q.correct)) });
+                        // Câu hỏi
+                        children.push(new Paragraph({
+                            children: [
+                                new TextRun({ text: 'Câu ' + qNum + ': ', bold: true, font: 'Times New Roman' }),
+                                new TextRun({ text: this.convertMathToPlainText(q.text), font: 'Times New Roman' })
+                            ],
+                            spacing: { before: 200, after: 100 }
+                        }));
+
+                        // Các đáp án - tô màu xanh nếu là đáp án đúng
+                        const labels = ['A', 'B', 'C', 'D'];
+                        (q.options || []).forEach((opt, i) => {
+                            const isCorrect = includeAnswers && i === q.correct;
+                            children.push(new Paragraph({
+                                children: [
+                                    new TextRun({
+                                        text: labels[i] + '. ',
+                                        bold: true,
+                                        font: 'Times New Roman',
+                                        color: isCorrect ? '0066CC' : '000000'
+                                    }),
+                                    new TextRun({
+                                        text: this.convertMathToPlainText(opt),
+                                        font: 'Times New Roman',
+                                        color: isCorrect ? '0066CC' : '000000',
+                                        bold: isCorrect
+                                    })
+                                ],
+                                indent: { left: convertInchesToTwip(0.3) }
+                            }));
+                        });
+                    });
+                }
+
+                // PHẦN II: ĐÚNG/SAI
+                if (examData.part2?.length) {
+                    children.push(new Paragraph({
+                        children: [new TextRun({ text: 'PHẦN II: ĐÚNG/SAI', bold: true, size: 28, font: 'Times New Roman' })],
+                        heading: HeadingLevel.HEADING_2,
+                        spacing: { before: 400, after: 200 }
+                    }));
+
+                    examData.part2.forEach(q => {
+                        qNum++;
+                        // Câu hỏi chính
+                        children.push(new Paragraph({
+                            children: [
+                                new TextRun({ text: 'Câu ' + qNum + ': ', bold: true, font: 'Times New Roman' }),
+                                new TextRun({ text: this.convertMathToPlainText(q.text), font: 'Times New Roman' })
+                            ],
+                            spacing: { before: 200, after: 100 }
+                        }));
+
+                        // Các câu con với đáp án bên dưới
+                        (q.subQuestions || []).forEach(sub => {
+                            // Câu con
+                            children.push(new Paragraph({
+                                children: [
+                                    new TextRun({ text: sub.id + ') ', bold: true, font: 'Times New Roman' }),
+                                    new TextRun({ text: this.convertMathToPlainText(sub.text), font: 'Times New Roman' })
+                                ],
+                                indent: { left: convertInchesToTwip(0.3) }
+                            }));
+
+                            // Đáp án Đúng/Sai bên dưới nếu includeAnswers
+                            if (includeAnswers) {
+                                children.push(new Paragraph({
+                                    children: [
+                                        new TextRun({
+                                            text: '→ Đáp án: ' + (sub.correct ? 'ĐÚNG' : 'SAI'),
+                                            bold: true,
+                                            font: 'Times New Roman',
+                                            color: '0066CC',
+                                            italics: true
+                                        })
+                                    ],
+                                    indent: { left: convertInchesToTwip(0.5) },
+                                    spacing: { after: 50 }
+                                }));
+                            }
+                        });
+                    });
+                }
+
+                // PHẦN III: TRẢ LỜI NGẮN
+                if (examData.part3?.length) {
+                    children.push(new Paragraph({
+                        children: [new TextRun({ text: 'PHẦN III: TRẢ LỜI NGẮN', bold: true, size: 28, font: 'Times New Roman' })],
+                        heading: HeadingLevel.HEADING_2,
+                        spacing: { before: 400, after: 200 }
+                    }));
+
+                    examData.part3.forEach(q => {
+                        qNum++;
+                        // Câu hỏi
+                        children.push(new Paragraph({
+                            children: [
+                                new TextRun({ text: 'Câu ' + qNum + ': ', bold: true, font: 'Times New Roman' }),
+                                new TextRun({ text: this.convertMathToPlainText(q.text), font: 'Times New Roman' })
+                            ],
+                            spacing: { before: 200, after: 100 }
+                        }));
+
+                        // Đáp án bên dưới
+                        if (includeAnswers) {
+                            children.push(new Paragraph({
+                                children: [
+                                    new TextRun({
+                                        text: '→ Đáp án: ' + this.convertMathToPlainText(String(q.correct)),
+                                        bold: true,
+                                        font: 'Times New Roman',
+                                        color: '0066CC',
+                                        italics: true
+                                    })
+                                ],
+                                indent: { left: convertInchesToTwip(0.3) },
+                                spacing: { after: 50 }
+                            }));
+                        } else {
+                            // Nếu không có đáp án thì để dòng trống để điền
+                            children.push(new Paragraph({
+                                children: [new TextRun({ text: 'Đáp án: _______________', font: 'Times New Roman' })],
+                                indent: { left: convertInchesToTwip(0.3) }
+                            }));
                         }
                     });
-                };
-
-                processPart(examData.part1, 'PHáº¦N I: TRáº®C NGHIá»†M', 'part1');
-                processPart(examData.part2, 'PHáº¦N II: ÄÃšNG/SAI', 'part2');
-                processPart(examData.part3, 'PHáº¦N III: TRáº¢ Lá»œI NGáº®N', 'part3');
-
-                if (includeAnswers && answersKey.length > 0) {
-                    children.push(new Paragraph({ children: [], pageBreakBefore: true }));
-                    children.push(new Paragraph({ children: [new TextRun({ text: 'ÄÃP ÃN', bold: true, size: 32 })], heading: HeadingLevel.HEADING_1, alignment: AlignmentType.CENTER, spacing: { after: 400 } }));
-                    answersKey.forEach(a => { children.push(new Paragraph({ children: [new TextRun({ text: 'CÃ¢u ' + a.num + ': ', bold: true }), new TextRun({ text: a.ans, color: '0066CC' })], spacing: { after: 50 } })); });
                 }
 
                 const doc = new Document({ sections: [{ children }] });
@@ -2371,31 +2484,93 @@
                 const addText = (text, opts = {}) => {
                     doc.setFontSize(opts.size || 12);
                     doc.setFont('helvetica', opts.bold ? 'bold' : 'normal');
+                    if (opts.color) {
+                        doc.setTextColor(opts.color.r || 0, opts.color.g || 0, opts.color.b || 0);
+                    } else {
+                        doc.setTextColor(0, 0, 0);
+                    }
                     doc.splitTextToSize(text, pageWidth - margin * 2 - (opts.indent || 0)).forEach(line => {
                         if (y > 280) { doc.addPage(); y = margin; }
                         doc.text(line, margin + (opts.indent || 0), y);
                         y += (opts.size || 12) * 0.4 + 2;
                     });
+                    doc.setTextColor(0, 0, 0); // Reset color
                 };
+
+                // Màu xanh dương cho đáp án
+                const blueColor = { r: 0, g: 102, b: 204 };
 
                 doc.setFontSize(18); doc.setFont('helvetica', 'bold');
                 doc.text(this.convertMathToPlainText(examTitle), pageWidth / 2, y, { align: 'center' });
                 y += 15;
 
-                let qNum = 0; const answersKey = [];
+                let qNum = 0;
+
+                // PHẦN I: TRẮC NGHIỆM
                 if (examData.part1?.length) {
                     addText('PHAN I: TRAC NGHIEM', { bold: true, size: 14 });
-                    examData.part1.forEach(q => { qNum++; addText('Cau ' + qNum + ': ' + this.convertMathToPlainText(q.text), { size: 11 }); const labels = ['A', 'B', 'C', 'D']; (q.options || []).forEach((opt, i) => addText(labels[i] + '. ' + this.convertMathToPlainText(opt), { indent: 10, size: 10 })); y += 2; answersKey.push({ num: qNum, ans: labels[q.correct] }); });
+                    examData.part1.forEach(q => {
+                        qNum++;
+                        addText('Cau ' + qNum + ': ' + this.convertMathToPlainText(q.text), { size: 11 });
+                        const labels = ['A', 'B', 'C', 'D'];
+                        (q.options || []).forEach((opt, i) => {
+                            const isCorrect = includeAnswers && i === q.correct;
+                            addText(labels[i] + '. ' + this.convertMathToPlainText(opt), {
+                                indent: 10,
+                                size: 10,
+                                bold: isCorrect,
+                                color: isCorrect ? blueColor : null
+                            });
+                        });
+                        y += 2;
+                    });
                 }
+
+                // PHẦN II: ĐÚNG/SAI
                 if (examData.part2?.length) {
-                    y += 5; addText('PHAN II: DUNG/SAI', { bold: true, size: 14 });
-                    examData.part2.forEach(q => { qNum++; addText('Cau ' + qNum + ': ' + this.convertMathToPlainText(q.text), { size: 11 }); const subAns = []; (q.subQuestions || []).forEach(sub => { addText(sub.id + ') ' + this.convertMathToPlainText(sub.text), { indent: 10, size: 10 }); subAns.push(sub.id + ') ' + (sub.correct ? 'D' : 'S')); }); answersKey.push({ num: qNum, ans: subAns.join(', ') }); y += 2; });
+                    y += 5;
+                    addText('PHAN II: DUNG/SAI', { bold: true, size: 14 });
+                    examData.part2.forEach(q => {
+                        qNum++;
+                        addText('Cau ' + qNum + ': ' + this.convertMathToPlainText(q.text), { size: 11 });
+                        (q.subQuestions || []).forEach(sub => {
+                            addText(sub.id + ') ' + this.convertMathToPlainText(sub.text), { indent: 10, size: 10 });
+                            // Đáp án bên dưới mỗi câu con
+                            if (includeAnswers) {
+                                addText('-> Dap an: ' + (sub.correct ? 'DUNG' : 'SAI'), {
+                                    indent: 15,
+                                    size: 9,
+                                    bold: true,
+                                    color: blueColor
+                                });
+                            }
+                        });
+                        y += 2;
+                    });
                 }
+
+                // PHẦN III: TRẢ LỜI NGẮN
                 if (examData.part3?.length) {
-                    y += 5; addText('PHAN III: TRA LOI NGAN', { bold: true, size: 14 });
-                    examData.part3.forEach(q => { qNum++; addText('Cau ' + qNum + ': ' + this.convertMathToPlainText(q.text), { size: 11 }); addText('Dap an: ________', { indent: 10, size: 10 }); answersKey.push({ num: qNum, ans: this.convertMathToPlainText(String(q.correct)) }); y += 2; });
+                    y += 5;
+                    addText('PHAN III: TRA LOI NGAN', { bold: true, size: 14 });
+                    examData.part3.forEach(q => {
+                        qNum++;
+                        addText('Cau ' + qNum + ': ' + this.convertMathToPlainText(q.text), { size: 11 });
+                        // Đáp án bên dưới
+                        if (includeAnswers) {
+                            addText('-> Dap an: ' + this.convertMathToPlainText(String(q.correct)), {
+                                indent: 10,
+                                size: 10,
+                                bold: true,
+                                color: blueColor
+                            });
+                        } else {
+                            addText('Dap an: ________', { indent: 10, size: 10 });
+                        }
+                        y += 2;
+                    });
                 }
-                if (includeAnswers && answersKey.length) { doc.addPage(); y = margin; doc.setFontSize(16); doc.text('DAP AN', pageWidth / 2, y, { align: 'center' }); y += 10; answersKey.forEach(a => addText('Cau ' + a.num + ': ' + a.ans, { size: 11 })); }
+
                 doc.save(this.generateFilename(examTitle, 'pdf'));
             }
         };
