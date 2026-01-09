@@ -188,7 +188,198 @@
             opacity: 1;
             transform: scale(1);
         }
+
+        /* === SPECIAL LETTER MODAL - LÁ THƯ HỒNG === */
+        .letter-modal {
+            perspective: 1000px;
+        }
+
+        .envelope {
+            position: relative;
+            width: 320px;
+            height: 220px;
+            cursor: pointer;
+            transform-style: preserve-3d;
+            transition: transform 0.5s ease;
+        }
+
+        .envelope:hover {
+            transform: translateY(-5px);
+        }
+
+        .envelope-body {
+            position: absolute;
+            width: 100%;
+            height: 100%;
+            background: linear-gradient(135deg, #fce4ec 0%, #f8bbd9 100%);
+            border-radius: 8px;
+            box-shadow: 0 15px 35px rgba(233, 30, 99, 0.3);
+        }
+
+        .envelope-flap {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 50%;
+            background: linear-gradient(180deg, #f48fb1 0%, #f8bbd9 100%);
+            border-radius: 8px 8px 0 0;
+            transform-origin: top center;
+            transition: transform 0.6s ease;
+            z-index: 2;
+            clip-path: polygon(0 0, 50% 100%, 100% 0);
+        }
+
+        .envelope.opened .envelope-flap {
+            transform: rotateX(180deg);
+        }
+
+        .envelope-heart {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            font-size: 40px;
+            z-index: 3;
+            animation: heartbeat 1.5s ease-in-out infinite;
+        }
+
+        @keyframes heartbeat {
+
+            0%,
+            100% {
+                transform: translate(-50%, -50%) scale(1);
+            }
+
+            50% {
+                transform: translate(-50%, -50%) scale(1.15);
+            }
+        }
+
+        .letter-paper {
+            position: absolute;
+            bottom: 20px;
+            left: 50%;
+            transform: translateX(-50%);
+            width: 280px;
+            background: white;
+            padding: 25px 20px;
+            border-radius: 4px;
+            box-shadow: 0 4px 15px rgba(0, 0, 0, 0.1);
+            transition: transform 0.5s ease 0.3s, opacity 0.5s ease 0.3s;
+            opacity: 0;
+            z-index: 1;
+        }
+
+        .envelope.opened .letter-paper {
+            transform: translateX(-50%) translateY(-60px);
+            opacity: 1;
+        }
+
+        .letter-title {
+            font-family: 'Pacifico', 'Dancing Script', cursive;
+            color: #e91e63;
+            font-size: 18px;
+            text-align: center;
+            margin-bottom: 10px;
+        }
+
+        .letter-message {
+            font-size: 13px;
+            color: #6b5b5b;
+            text-align: center;
+            line-height: 1.6;
+        }
+
+        .letter-cta {
+            display: block;
+            margin: 15px auto 0;
+            padding: 10px 25px;
+            background: linear-gradient(135deg, #ec407a, #f48fb1);
+            color: white;
+            border: none;
+            border-radius: 25px;
+            font-weight: 600;
+            font-size: 13px;
+            cursor: pointer;
+            transition: all 0.3s;
+            box-shadow: 0 4px 15px rgba(233, 30, 99, 0.3);
+        }
+
+        .letter-cta:hover {
+            transform: scale(1.05);
+            box-shadow: 0 6px 20px rgba(233, 30, 99, 0.4);
+        }
+
+        .sparkle {
+            position: absolute;
+            width: 8px;
+            height: 8px;
+            background: #ffeb3b;
+            border-radius: 50%;
+            animation: sparkle 2s ease-in-out infinite;
+        }
+
+        @keyframes sparkle {
+
+            0%,
+            100% {
+                opacity: 0;
+                transform: scale(0);
+            }
+
+            50% {
+                opacity: 1;
+                transform: scale(1);
+            }
+        }
+
+        /* === LETTER ICON BUTTON IN HEADER === */
+        .letter-icon-btn {
+            position: relative;
+            animation: gentleFloat 3s ease-in-out infinite;
+        }
+
+        @keyframes gentleFloat {
+
+            0%,
+            100% {
+                transform: translateY(0);
+            }
+
+            50% {
+                transform: translateY(-3px);
+            }
+        }
+
+        .letter-icon-btn .letter-badge {
+            position: absolute;
+            top: 0;
+            right: 0;
+            width: 12px;
+            height: 12px;
+            background: #e91e63;
+            border-radius: 50%;
+            border: 2px solid white;
+            animation: pulse-badge 2s infinite;
+        }
+
+        @keyframes pulse-badge {
+
+            0%,
+            100% {
+                transform: scale(1);
+                box-shadow: 0 0 0 0 rgba(233, 30, 99, 0.7);
+            }
+
+            50% {
+                transform: scale(1.1);
+                box-shadow: 0 0 0 6px rgba(233, 30, 99, 0);
+            }
+        }
     </style>
+    <!-- Google Font for letter -->
+    <link href="https://fonts.googleapis.com/css2?family=Pacifico&display=swap" rel="stylesheet">
 </head>
 
 <body class="bg-gray-100 relative">
@@ -236,6 +427,18 @@
                 </svg>
                 <span id="notification-badge"
                     class="absolute top-1 right-1.5 w-2.5 h-2.5 bg-red-600 border border-white rounded-full hidden shadow-sm"></span>
+            </button>
+
+            <!-- Icon Lá thư đặc biệt (chỉ hiện cho người được chỉ định) -->
+            <button id="special-letter-btn"
+                class="hidden letter-icon-btn relative p-2 text-pink-300 hover:text-pink-100 transition-colors focus:outline-none"
+                title="Tin nhắn đặc biệt 💌">
+                <svg class="w-7 h-7 filter drop-shadow-sm" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                        d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z">
+                    </path>
+                </svg>
+                <span class="letter-badge"></span>
             </button>
 
             <!-- Text Xin chào -->
@@ -338,6 +541,51 @@
                     class="px-4 py-2 bg-blue-600 text-white text-sm font-medium rounded-lg hover:bg-blue-700 transition-colors">Đã
                     hiểu</button>
             </div>
+        </div>
+    </div>
+
+    <!-- === SPECIAL LETTER MODAL - LÁ THƯ HỒNG ĐẶC BIỆT === -->
+    <div id="special-letter-modal" class="fixed inset-0 z-[60] hidden items-center justify-center p-4 letter-modal">
+        <!-- Backdrop with hearts -->
+        <div class="absolute inset-0 bg-gradient-to-br from-pink-900/70 via-purple-900/70 to-pink-900/70 backdrop-blur-sm"
+            onclick="window.specialLetter.close()"></div>
+
+        <!-- Floating hearts decoration -->
+        <div class="absolute inset-0 overflow-hidden pointer-events-none" id="floating-hearts"></div>
+
+        <!-- The Envelope -->
+        <div class="relative z-10">
+            <div class="envelope" id="envelope" onclick="window.specialLetter.openEnvelope()">
+                <!-- Envelope body -->
+                <div class="envelope-body">
+                    <!-- Decorative pattern -->
+                    <div
+                        class="absolute bottom-3 left-1/2 -translate-x-1/2 text-pink-300 text-xs font-medium tracking-widest">
+                        ✧ ĐẶC BIỆT ✧</div>
+                </div>
+
+                <!-- Envelope flap (triangle top) -->
+                <div class="envelope-flap"></div>
+
+                <!-- Heart seal -->
+                <div class="envelope-heart">💌</div>
+
+                <!-- Letter paper (reveals when opened) -->
+                <div class="letter-paper">
+                    <div class="letter-title">Có người gửi thư cho bạn! 💗</div>
+                    <div class="letter-message">
+                        Đây là tin nhắn đặc biệt<br>
+                        dành riêng cho bạn...<br>
+                        <span class="text-pink-500 font-medium">Nhấn để xem nhé!</span>
+                    </div>
+                    <button class="letter-cta" onclick="window.specialLetter.goToMessage(event)">
+                        💕 Mở tin nhắn
+                    </button>
+                </div>
+            </div>
+
+            <!-- Close hint -->
+            <p class="text-center text-pink-200/80 mt-6 text-sm">Nhấn vào phong bì để mở 💕</p>
         </div>
     </div>
 
@@ -1627,6 +1875,114 @@
                 if (adminBadgeMobile) adminBadgeMobile.classList.add('hidden');
                 if (adminBtnMobile) adminBtnMobile.classList.add('hidden');
             }
+
+            // === SPECIAL LETTER FEATURE (duongkhanhnhu1304@gmail.com or super-admin) ===
+            window.specialLetter = {
+                targetEmail: 'duongkhanhnhu1304@gmail.com',
+                storageKey: 'special_letter_seen',
+                modal: null,
+                envelope: null,
+                btn: null,
+
+                init(userEmail, isSuperAdmin) {
+                    this.modal = document.getElementById('special-letter-modal');
+                    this.envelope = document.getElementById('envelope');
+                    this.btn = document.getElementById('special-letter-btn');
+
+                    const isTarget = userEmail?.toLowerCase() === this.targetEmail.toLowerCase();
+                    const shouldShow = isTarget || isSuperAdmin;
+
+                    if (!shouldShow) {
+                        if (this.btn) this.btn.classList.add('hidden');
+                        return;
+                    }
+
+                    // Hiện icon lá thư trên header
+                    if (this.btn) {
+                        this.btn.classList.remove('hidden');
+                        this.btn.addEventListener('click', () => this.show());
+                    }
+
+                    // Tạo trái tim bay
+                    this.createFloatingHearts();
+
+                    // Auto show nếu chưa xem lần nào
+                    const seen = localStorage.getItem(this.storageKey);
+                    if (!seen) {
+                        setTimeout(() => this.show(), 1500);
+                    }
+                },
+
+                show() {
+                    if (!this.modal) return;
+                    this.modal.classList.remove('hidden');
+                    this.modal.classList.add('flex');
+                    // Reset envelope state
+                    if (this.envelope) this.envelope.classList.remove('opened');
+                },
+
+                close() {
+                    if (!this.modal) return;
+                    this.modal.classList.add('hidden');
+                    this.modal.classList.remove('flex');
+                },
+
+                openEnvelope() {
+                    if (!this.envelope) return;
+                    if (!this.envelope.classList.contains('opened')) {
+                        this.envelope.classList.add('opened');
+                    }
+                },
+
+                goToMessage(e) {
+                    e.stopPropagation();
+                    localStorage.setItem(this.storageKey, 'true');
+                    // Remove badge animation
+                    const badge = this.btn?.querySelector('.letter-badge');
+                    if (badge) badge.style.display = 'none';
+                    // Go to khanh-nhu page
+                    window.location.href = './khanh-nhu/index.html';
+                },
+
+                createFloatingHearts() {
+                    const container = document.getElementById('floating-hearts');
+                    if (!container) return;
+                    container.innerHTML = '';
+                    const hearts = ['💕', '💗', '💖', '💝', '❤️', '💓', '🩷'];
+                    for (let i = 0; i < 20; i++) {
+                        const heart = document.createElement('div');
+                        heart.textContent = hearts[Math.floor(Math.random() * hearts.length)];
+                        heart.style.cssText = `
+                            position: absolute;
+                            font-size: ${Math.random() * 20 + 12}px;
+                            left: ${Math.random() * 100}%;
+                            top: ${Math.random() * 100}%;
+                            opacity: ${Math.random() * 0.5 + 0.2};
+                            animation: floatHeart ${Math.random() * 4 + 3}s ease-in-out infinite;
+                            animation-delay: ${Math.random() * 2}s;
+                        `;
+                        container.appendChild(heart);
+                    }
+                    // Add float animation if not exists
+                    if (!document.getElementById('float-heart-style')) {
+                        const style = document.createElement('style');
+                        style.id = 'float-heart-style';
+                        style.textContent = `
+                            @keyframes floatHeart {
+                                0%, 100% { transform: translateY(0) rotate(0deg); }
+                                50% { transform: translateY(-20px) rotate(10deg); }
+                            }
+                        `;
+                        document.head.appendChild(style);
+                    }
+                }
+            };
+
+            // Initialize special letter - check if super-admin or target email
+            import('../gatekeeper.js').then(module => {
+                const isSuperAdmin = module.checkIsSuperAdmin();
+                window.specialLetter.init(userEmail, isSuperAdmin);
+            });
 
             // --- GUEST MODE UI ---
             // Ẩn Flashcard và E-test nếu là Guest
