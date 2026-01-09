@@ -1,0 +1,474 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Will You Forgive Me?</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            background-color: #ffd1dc;
+            /* 更粉嫩的背景色 */
+            margin: 0;
+            padding: 0;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            height: 100vh;
+            overflow: hidden;
+        }
+
+        .container {
+            background-color: #fff5f7;
+            /* 更柔和的容器背景 */
+            padding: 40px;
+            border-radius: 15px;
+            /* 更圆润的边角 */
+            text-align: center;
+            width: 90%;
+            max-width: 600px;
+            border: 6px solid #ffb6c1;
+            /* 更粉嫩的边框 */
+            position: relative;
+            box-shadow: 0 5px 15px rgba(255, 182, 193, 0.3);
+            /* 添加粉色阴影 */
+            overflow: hidden;
+            /* Đảm bảo nút không thoát ra ngoài */
+        }
+
+        h1 {
+            color: #ff69b4;
+            /* 更亮的粉色标题 */
+            font-size: 2.5rem;
+            margin: 30px 0;
+            text-shadow: 1px 1px 2px rgba(255, 105, 180, 0.2);
+            /* 添加文字阴影 */
+        }
+
+        .buttons {
+            display: flex;
+            justify-content: center;
+            gap: 25px;
+            margin-top: 40px;
+            position: relative;
+        }
+
+        button {
+            padding: 12px 45px;
+            background-color: #ffb6c1;
+            /* 更粉嫩的按钮背景 */
+            color: #d4365c;
+            /* 更深的按钮文字颜色 */
+            border: 2px solid #ff69b4;
+            /* 更亮的边框 */
+            border-radius: 10px;
+            /* 更圆润的按钮 */
+            font-size: 18px;
+            font-weight: bold;
+            /* 加粗按钮文字 */
+            cursor: pointer;
+            box-shadow: 0 3px 5px rgba(255, 105, 180, 0.2);
+            /* 添加按钮阴影 */
+            transition: all 0.3s;
+        }
+
+        button:hover {
+            background-color: #ffc0cb;
+            /* 悬停时的按钮颜色 */
+            transform: translateY(-2px);
+            /* 悬停时微微上浮 */
+        }
+
+        #yesBtn {
+            transition: transform 0.3s;
+        }
+
+        #yesBtn:hover {
+            transform: scale(1.1);
+        }
+
+        .cat-image {
+            width: 220px;
+            /* 略微放大图片 */
+            height: auto;
+            margin: 20px auto;
+            display: block;
+            border-radius: 15px;
+            /* 圆角图片 */
+            box-shadow: 0 4px 8px rgba(255, 105, 180, 0.3);
+            /* 添加图片阴影 */
+        }
+
+        #screen2,
+        #screen3 {
+            display: none;
+        }
+
+        /* 添加心形装饰 */
+        .heart-decoration {
+            position: absolute;
+            color: #ffb6c1;
+            font-size: 20px;
+            opacity: 0.6;
+            z-index: -1;
+        }
+
+        /* Nút quay lại home */
+        #homeBtn {
+            display: none;
+            margin-top: 25px;
+            background-color: #ff69b4;
+            color: white;
+            border: none;
+            padding: 12px 30px;
+            animation: fadeIn 0.5s ease-in-out;
+        }
+
+        #homeBtn:hover {
+            background-color: #ff1493;
+        }
+
+        @keyframes fadeIn {
+            from {
+                opacity: 0;
+                transform: translateY(10px);
+            }
+
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        /* Ẩn YouTube player */
+        #youtube-player {
+            position: fixed;
+            top: -9999px;
+            left: -9999px;
+            width: 1px;
+            height: 1px;
+            opacity: 0;
+            pointer-events: none;
+        }
+
+        /* Chữ rơi xuống */
+        .falling-text {
+            position: fixed;
+            top: -50px;
+            font-size: 18px;
+            font-weight: bold;
+            color: #ff69b4;
+            text-shadow: 1px 1px 2px rgba(255, 105, 180, 0.3);
+            pointer-events: none;
+            z-index: 1000;
+            animation: fallDown linear forwards;
+            white-space: nowrap;
+        }
+
+        @keyframes fallDown {
+            0% {
+                transform: translateY(0) rotate(0deg);
+                opacity: 1;
+            }
+
+            100% {
+                transform: translateY(110vh) rotate(20deg);
+                opacity: 0.7;
+            }
+        }
+    </style>
+</head>
+
+<body>
+    <!-- YouTube Player (ẩn) -->
+    <div id="youtube-player"></div>
+
+    <!-- 添加背景装饰 -->
+    <div id="hearts-container"></div>
+
+    <!-- 第一个屏幕 -->
+    <div id="screen1" class="container">
+        <img src="https://m.media-amazon.com/images/I/517i1zjTFNL._AC_UF350,350_QL50_.jpg" alt="Sad kitten"
+            class="cat-image">
+        <h1>Tha thứ cho tui nha</h1>
+        <div class="buttons">
+            <button id="yesBtn1">Được</button>
+            <button id="noBtn1">Không</button>
+        </div>
+    </div>
+
+    <!-- 第二个屏幕：有Yes和No按钮，No按钮会逃跑 -->
+    <div id="screen2" class="container">
+        <img src="https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcTUkw33kuklEYM3GVI5XwSVhIDIyGYKmAvWrQ&s"
+            alt="Sad kitten" class="cat-image">
+        <h1>Đừng mà, Tha thứ cho tui nha</h1>
+        <div class="buttons">
+            <button id="yesBtn">Được</button>
+            <button id="noBtn2">Không</button>
+        </div>
+    </div>
+
+    <!-- 第三个屏幕：感谢页面 -->
+    <div id="screen3" class="container">
+        <img src="https://ih1.redbubble.net/image.4651660779.1679/raf,360x360,075,t,fafafa:ca443f4786.jpg"
+            alt="Happy kitten" class="cat-image">
+        <h1>Phúc biết mà, sẽ tha thứ hihi💗</h1>
+        <button id="homeBtn" onclick="window.location.href='../index.html'">🏠 Quay lại Home</button>
+    </div>
+
+    <script>
+        // 添加装饰性心形到背景
+        function addHearts() {
+            const heartsContainer = document.createElement('div');
+            heartsContainer.style.position = 'fixed';
+            heartsContainer.style.top = '0';
+            heartsContainer.style.left = '0';
+            heartsContainer.style.width = '100%';
+            heartsContainer.style.height = '100%';
+            heartsContainer.style.overflow = 'hidden';
+            heartsContainer.style.zIndex = '-1';
+            document.body.appendChild(heartsContainer);
+
+            for (let i = 0; i < 20; i++) {
+                const heart = document.createElement('div');
+                heart.innerHTML = '💕';
+                heart.className = 'heart-decoration';
+                heart.style.position = 'absolute';
+                heart.style.left = Math.random() * 100 + 'vw';
+                heart.style.top = Math.random() * 100 + 'vh';
+                heart.style.opacity = Math.random() * 0.5;
+                heart.style.fontSize = Math.random() * 15 + 15 + 'px';
+                heartsContainer.appendChild(heart);
+            }
+        }
+
+        // 在页面加载时添加心形
+        window.addEventListener('load', addHearts);
+
+        // 获取元素
+        const screen1 = document.getElementById('screen1');
+        const screen2 = document.getElementById('screen2');
+        const screen3 = document.getElementById('screen3');
+        const noBtn1 = document.getElementById('noBtn1');
+        const noBtn2 = document.getElementById('noBtn2');
+        const yesBtn = document.getElementById('yesBtn');
+        const yesBtn1 = document.getElementById('yesBtn1');
+
+        // Click nút "Được" ở screen1 -> chuyển thẳng đến screen3
+        yesBtn1.addEventListener('click', function () {
+            screen1.style.display = 'none';
+            screen3.style.display = 'block';
+
+            // Hiển thị nút quay lại sau 3 giây
+            setTimeout(function () {
+                document.getElementById('homeBtn').style.display = 'inline-block';
+            }, 3000);
+        });
+
+        // 点击第一个No按钮，显示第二个屏幕
+        let fallingTextInterval = null;
+        let fallingTextTimeout = null;
+
+        noBtn1.addEventListener('click', function () {
+            screen1.style.display = 'none';
+            screen2.style.display = 'block';
+
+            // Sau 5 giây, bắt đầu hiệu ứng chữ rơi
+            fallingTextTimeout = setTimeout(function () {
+                startFallingText();
+            }, 5000);
+        });
+
+        // 点击Yes按钮，显示第三个屏幕
+        yesBtn.addEventListener('click', function () {
+            // Dừng hiệu ứng chữ rơi
+            stopFallingText();
+
+            screen2.style.display = 'none';
+            screen3.style.display = 'block';
+
+            // Hiển thị nút quay lại sau 3 giây
+            setTimeout(function () {
+                document.getElementById('homeBtn').style.display = 'inline-block';
+            }, 3000);
+        });
+
+        // Các câu xin lỗi rơi xuống
+        const fallingMessages = [
+            "Xin lỗi mà 🥺",
+            "🥲",
+            "Tha lỗi đi mà",
+            "Tha thứ là thứ tha",
+            "Người đẹp hong nên giận",
+            "❤️",
+            "Giận thiệt lun hở",
+            "💔",
+            "Hu hu...",
+            "😢",
+            "Mình xin lỗi",
+            "💕"
+        ];
+
+        function createFallingText() {
+            const text = document.createElement('div');
+            text.className = 'falling-text';
+            text.textContent = fallingMessages[Math.floor(Math.random() * fallingMessages.length)];
+
+            // Vị trí ngẫu nhiên theo chiều ngang
+            text.style.left = Math.random() * (window.innerWidth - 150) + 'px';
+
+            // Thời gian rơi ngẫu nhiên (4-7 giây)
+            const duration = Math.random() * 3 + 4;
+            text.style.animationDuration = duration + 's';
+
+            // Kích thước ngẫu nhiên
+            text.style.fontSize = (Math.random() * 10 + 16) + 'px';
+
+            document.body.appendChild(text);
+
+            // Xóa sau khi animation kết thúc
+            setTimeout(() => {
+                text.remove();
+            }, duration * 1000);
+        }
+
+        function startFallingText() {
+            // Tạo chữ rơi mỗi 800ms (tần suất vừa phải)
+            fallingTextInterval = setInterval(createFallingText, 800);
+        }
+
+        function stopFallingText() {
+            // Dừng interval
+            if (fallingTextInterval) {
+                clearInterval(fallingTextInterval);
+                fallingTextInterval = null;
+            }
+            // Dừng timeout
+            if (fallingTextTimeout) {
+                clearTimeout(fallingTextTimeout);
+                fallingTextTimeout = null;
+            }
+            // Xóa tất cả chữ đang rơi
+            document.querySelectorAll('.falling-text').forEach(el => el.remove());
+        }
+
+        // No按钮逃跑效果 - Nút chạy trốn trong toàn màn hình
+        function moveNoButton() {
+            // Lấy kích thước nút
+            const btnRect = noBtn2.getBoundingClientRect();
+            const btnWidth = btnRect.width || 100;
+            const btnHeight = btnRect.height || 45;
+
+            // Lấy kích thước viewport (màn hình trình duyệt)
+            const viewportWidth = window.innerWidth;
+            const viewportHeight = window.innerHeight;
+
+            // Padding an toàn từ viền màn hình
+            const padding = 20;
+
+            // Tính toán phạm vi di chuyển an toàn
+            const minX = padding;
+            const minY = padding;
+            const maxX = viewportWidth - btnWidth - padding;
+            const maxY = viewportHeight - btnHeight - padding;
+
+            // Đảm bảo max > min
+            const safeMaxX = Math.max(maxX, minX);
+            const safeMaxY = Math.max(maxY, minY);
+
+            // Random vị trí mới trong toàn màn hình
+            const newX = Math.floor(Math.random() * (safeMaxX - minX)) + minX;
+            const newY = Math.floor(Math.random() * (safeMaxY - minY)) + minY;
+
+            // Đặt position fixed để nút di chuyển trong viewport
+            noBtn2.style.position = 'fixed';
+            noBtn2.style.left = newX + 'px';
+            noBtn2.style.top = newY + 'px';
+            noBtn2.style.zIndex = '9999'; // Đảm bảo nút luôn ở trên cùng
+        }
+
+        // 鼠标悬停时移动 - Di chuột thì chạy
+        noBtn2.addEventListener('mouseover', moveNoButton);
+
+        // 点击时也移动 - Click cũng chạy
+        noBtn2.addEventListener('click', moveNoButton);
+    </script>
+
+    <!-- YouTube IFrame API -->
+    <script src="https://www.youtube.com/iframe_api"></script>
+    <script>
+        // YouTube Player cho nhạc nền
+        let bgMusicPlayer;
+        const MUSIC_VOLUME = 8; // Âm lượng 8%
+
+        function onYouTubeIframeAPIReady() {
+            bgMusicPlayer = new YT.Player('youtube-player', {
+                videoId: 'GdXaPqkJV9E',
+                playerVars: {
+                    autoplay: 1,
+                    mute: 1, // Bắt đầu muted để bypass autoplay policy
+                    loop: 1,
+                    playlist: 'GdXaPqkJV9E',
+                    controls: 0,
+                    showinfo: 0,
+                    modestbranding: 1,
+                    fs: 0,
+                    cc_load_policy: 0,
+                    iv_load_policy: 3,
+                    autohide: 1,
+                    playsinline: 1
+                },
+                events: {
+                    onReady: onPlayerReady,
+                    onStateChange: onPlayerStateChange
+                }
+            });
+        }
+
+        function onPlayerReady(event) {
+            // Phát video (đang muted nên sẽ autoplay được)
+            event.target.playVideo();
+
+            // Sau 500ms, unmute và set volume
+            setTimeout(() => {
+                event.target.unMute();
+                event.target.setVolume(MUSIC_VOLUME);
+            }, 500);
+        }
+
+        function onPlayerStateChange(event) {
+            // Nếu video kết thúc, phát lại
+            if (event.data === YT.PlayerState.ENDED) {
+                event.target.playVideo();
+            }
+            // Khi bắt đầu phát, đảm bảo unmute
+            if (event.data === YT.PlayerState.PLAYING) {
+                setTimeout(() => {
+                    if (bgMusicPlayer && bgMusicPlayer.isMuted && bgMusicPlayer.isMuted()) {
+                        bgMusicPlayer.unMute();
+                        bgMusicPlayer.setVolume(MUSIC_VOLUME);
+                    }
+                }, 300);
+            }
+        }
+
+        // Backup: Thử unmute khi có tương tác (nếu cần)
+        let hasUnmuted = false;
+        function tryUnmute() {
+            if (hasUnmuted) return;
+            if (bgMusicPlayer && bgMusicPlayer.unMute) {
+                bgMusicPlayer.unMute();
+                bgMusicPlayer.setVolume(MUSIC_VOLUME);
+                bgMusicPlayer.playVideo();
+                hasUnmuted = true;
+            }
+        }
+
+        ['click', 'touchstart', 'mousemove'].forEach(evt => {
+            document.addEventListener(evt, tryUnmute, { once: true });
+        });
+    </script>
+</body>
+
+</html>
