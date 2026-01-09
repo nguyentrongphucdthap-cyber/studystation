@@ -1745,12 +1745,12 @@
 
     <!-- MODULE GATEKEEPER & ADMIN LOGIC -->
     <script type="module">
-        // Import checkIsAdmin và getAllNotifications + Presence functions
         import {
             initGatekeeper,
             onUserChange,
             logoutUser,
             checkIsAdmin,
+            checkIsSuperAdmin,
             checkIsGuest,
             getAllNotifications,
             stopPresence,
@@ -1979,10 +1979,12 @@
             };
 
             // Initialize special letter - check if super-admin or target email
-            import('../gatekeeper.js').then(module => {
-                const isSuperAdmin = module.checkIsSuperAdmin();
+            try {
+                const isSuperAdmin = checkIsSuperAdmin();
                 window.specialLetter.init(userEmail, isSuperAdmin);
-            });
+            } catch (e) {
+                console.log('[SpecialLetter] Init skipped:', e.message);
+            }
 
             // --- GUEST MODE UI ---
             // Ẩn Flashcard và E-test nếu là Guest
