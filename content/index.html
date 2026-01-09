@@ -2250,9 +2250,23 @@
                     window.customDialog.alert('Hết lượt tải', '⚠️ Bạn đã hết lượt tải hôm nay (' + this.MAX_DOWNLOADS_PER_DAY + ' lượt/ngày).\nVui lòng quay lại vào ngày mai!', 'warning');
                     return;
                 }
-                this.pendingDownload = { examId, examTitle };
+                this.pendingDownload = { examId, examTitle, content: null, loading: true };
                 document.getElementById('download-exam-title').textContent = examTitle;
                 document.getElementById('download-exam-modal').classList.remove('hidden');
+
+                // Pre-load exam content ngay khi mở modal (background)
+                getExamContent(examId).then(content => {
+                    if (this.pendingDownload && this.pendingDownload.examId === examId) {
+                        this.pendingDownload.content = content;
+                        this.pendingDownload.loading = false;
+                        console.log('[DocsApp] Pre-loaded exam content:', examId);
+                    }
+                }).catch(err => {
+                    console.warn('[DocsApp] Pre-load failed:', err.message);
+                    if (this.pendingDownload) {
+                        this.pendingDownload.loading = false;
+                    }
+                });
             },
 
             closeDownloadModal() {
@@ -2278,8 +2292,33 @@
                 confirmBtn.disabled = true;
 
                 try {
-                    const timeoutPromise = new Promise((_, reject) => setTimeout(() => reject(new Error('Timeout - Kết nối quá chậm')), 20000));
-                    const examData = await Promise.race([getExamContent(examId), timeoutPromise]);
+                    let examData = null;
+
+                    // Check if pre-loaded content is available
+                    if (this.pendingDownload.content) {
+                        examData = this.pendingDownload.content;
+                        console.log('[DocsApp] Using pre-loaded content');
+                    } else {
+                        // Wait for pre-load or fetch fresh
+                        const startTime = Date.now();
+                        const maxWait = 5000; // Wait max 5s for pre-load
+
+                        // Wait a bit for pre-load to complete
+                        while (this.pendingDownload.loading && (Date.now() - startTime) < maxWait) {
+                            await new Promise(r => setTimeout(r, 100));
+                        }
+
+                        if (this.pendingDownload.content) {
+                            examData = this.pendingDownload.content;
+                            console.log('[DocsApp] Pre-load completed during wait');
+                        } else {
+                            // Fetch fresh with shorter timeout
+                            console.log('[DocsApp] Fetching fresh content...');
+                            const timeoutPromise = new Promise((_, reject) => setTimeout(() => reject(new Error('Kết nối quá chậm, vui lòng thử lại')), 10000));
+                            examData = await Promise.race([getExamContent(examId), timeoutPromise]);
+                        }
+                    }
+
                     if (!examData) throw new Error('Không tìm thấy nội dung bài thi');
 
                     if (format === 'pdf') { await this.downloadAsPDF(examData, examTitle, includeAnswers); }
