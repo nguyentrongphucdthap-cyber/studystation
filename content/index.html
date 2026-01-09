@@ -258,9 +258,9 @@
 
         .letter-paper {
             position: absolute;
-            bottom: 20px;
+            bottom: 10px;
             left: 50%;
-            transform: translateX(-50%);
+            transform: translateX(-50%) translateY(0);
             width: 280px;
             background: white;
             padding: 25px 20px;
@@ -268,12 +268,15 @@
             box-shadow: 0 4px 15px rgba(0, 0, 0, 0.1);
             transition: transform 0.5s ease 0.3s, opacity 0.5s ease 0.3s;
             opacity: 0;
-            z-index: 1;
+            z-index: 0;
+            pointer-events: none;
         }
 
         .envelope.opened .letter-paper {
-            transform: translateX(-50%) translateY(-60px);
+            transform: translateX(-50%) translateY(-80px);
             opacity: 1;
+            pointer-events: auto;
+            z-index: 4;
         }
 
         .letter-title {
@@ -546,12 +549,9 @@
 
     <!-- === SPECIAL LETTER MODAL - LÁ THƯ HỒNG ĐẶC BIỆT === -->
     <div id="special-letter-modal" class="fixed inset-0 z-[60] hidden items-center justify-center p-4 letter-modal">
-        <!-- Backdrop with hearts -->
-        <div class="absolute inset-0 bg-gradient-to-br from-pink-900/70 via-purple-900/70 to-pink-900/70 backdrop-blur-sm"
+        <!-- Backdrop -->
+        <div class="absolute inset-0 bg-gradient-to-br from-pink-900/80 via-purple-900/80 to-pink-900/80 backdrop-blur-sm"
             onclick="window.specialLetter.close()"></div>
-
-        <!-- Floating hearts decoration -->
-        <div class="absolute inset-0 overflow-hidden pointer-events-none" id="floating-hearts"></div>
 
         <!-- The Envelope -->
         <div class="relative z-10">
@@ -1903,9 +1903,6 @@
                         this.btn.addEventListener('click', () => this.show());
                     }
 
-                    // Tạo trái tim bay
-                    this.createFloatingHearts();
-
                     // Kiểm tra đã xem chưa
                     const seen = localStorage.getItem(this.storageKey);
 
@@ -1956,39 +1953,6 @@
                     this.markAsSeen();
                     // Go to khanh-nhu page
                     window.location.href = './khanh-nhu/index.html';
-                },
-
-                createFloatingHearts() {
-                    const container = document.getElementById('floating-hearts');
-                    if (!container) return;
-                    container.innerHTML = '';
-                    const hearts = ['💕', '💗', '💖', '💝', '❤️', '💓', '🩷'];
-                    for (let i = 0; i < 20; i++) {
-                        const heart = document.createElement('div');
-                        heart.textContent = hearts[Math.floor(Math.random() * hearts.length)];
-                        heart.style.cssText = `
-                            position: absolute;
-                            font-size: ${Math.random() * 20 + 12}px;
-                            left: ${Math.random() * 100}%;
-                            top: ${Math.random() * 100}%;
-                            opacity: ${Math.random() * 0.5 + 0.2};
-                            animation: floatHeart ${Math.random() * 4 + 3}s ease-in-out infinite;
-                            animation-delay: ${Math.random() * 2}s;
-                        `;
-                        container.appendChild(heart);
-                    }
-                    // Add float animation if not exists
-                    if (!document.getElementById('float-heart-style')) {
-                        const style = document.createElement('style');
-                        style.id = 'float-heart-style';
-                        style.textContent = `
-                            @keyframes floatHeart {
-                                0%, 100% { transform: translateY(0) rotate(0deg); }
-                                50% { transform: translateY(-20px) rotate(10deg); }
-                            }
-                        `;
-                        document.head.appendChild(style);
-                    }
                 }
             };
 
