@@ -1489,6 +1489,12 @@ const app = {
         this.isReviewMode = false;
         this.stopTimer(); this.timerEl.classList.add('hidden');
         this.renderTemplate('tpl-home');
+
+        // Đảm bảo reset flag "đang làm bài" khi về trang chủ
+        if (window.firebaseExams?.setExamInProgress) {
+            window.firebaseExams.setExamInProgress(false);
+        }
+
         const grid = this.container.querySelector('.grid');
         const subjectEntries = Object.values(this.subjects || {});
 
