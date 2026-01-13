@@ -1340,8 +1340,15 @@ export async function getPracticeHistory(examId) {
 
 /**
  * Lấy điểm cao nhất của tất cả bài thi cho người dùng hiện tại
+ * CACHE-FIRST STRATEGY để load nhanh hơn
  * @returns {Promise<Object>} - Object với examId làm key và { highestScore, attemptCount } làm value
  */
+
+// Memory cache for highest scores
+let highestScoresCache = null;
+let highestScoresCacheTime = 0;
+const HIGHEST_SCORES_CACHE_DURATION = 60000; // 1 minute memory cache
+
 export async function getHighestScores() {
     try {
         const user = auth.currentUser;
@@ -1350,38 +1357,94 @@ export async function getHighestScores() {
             return {};
         }
 
+        // 1. Check memory cache first (instant)
+        if (highestScoresCache && (Date.now() - highestScoresCacheTime < HIGHEST_SCORES_CACHE_DURATION)) {
+            console.log('[getHighestScores] ⚡ Returning memory-cached scores');
+            return highestScoresCache;
+        }
+
         const historyCol = collection(db, 'practice_history');
-        const q = query(historyCol,
-            where('userId', '==', user.uid)
-        );
-        const snapshot = await getDocs(q);
+        const q = query(historyCol, where('userId', '==', user.uid));
 
-        // Group by examId and find highest score
-        const scores = {};
-        snapshot.docs.forEach(doc => {
-            const data = doc.data();
-            const examId = data.examId;
-            const score = data.score || 0;
+        // Helper: Parse snapshot to scores
+        const parseSnapshot = (snapshot) => {
+            const scores = {};
+            snapshot.docs.forEach(doc => {
+                const data = doc.data();
+                const examId = data.examId;
+                const score = data.score || 0;
 
-            if (!scores[examId]) {
-                scores[examId] = {
-                    highestScore: score,
-                    attemptCount: 1
-                };
-            } else {
-                if (score > scores[examId].highestScore) {
-                    scores[examId].highestScore = score;
+                if (!scores[examId]) {
+                    scores[examId] = {
+                        highestScore: score,
+                        attemptCount: 1
+                    };
+                } else {
+                    if (score > scores[examId].highestScore) {
+                        scores[examId].highestScore = score;
+                    }
+                    scores[examId].attemptCount++;
                 }
-                scores[examId].attemptCount++;
-            }
-        });
+            });
+            return scores;
+        };
 
-        console.log('[getHighestScores] Loaded scores for', Object.keys(scores).length, 'exams');
+        // 2. Try IndexedDB cache first (fast)
+        try {
+            console.log('[getHighestScores] Trying IndexedDB cache...');
+            const cachedSnapshot = await getDocsFromCache(q);
+
+            if (!cachedSnapshot.empty) {
+                const scores = parseSnapshot(cachedSnapshot);
+                console.log('[getHighestScores] ⚡ Loaded scores from IndexedDB cache for', Object.keys(scores).length, 'exams');
+
+                // Update memory cache
+                highestScoresCache = scores;
+                highestScoresCacheTime = Date.now();
+
+                // Background sync: fetch from server (non-blocking)
+                getDocs(q).then(serverSnapshot => {
+                    const serverScores = parseSnapshot(serverSnapshot);
+                    if (Object.keys(serverScores).length !== Object.keys(scores).length) {
+                        console.log('[getHighestScores] Background sync updated scores');
+                        highestScoresCache = serverScores;
+                        highestScoresCacheTime = Date.now();
+                    }
+                }).catch(() => {
+                    // Silent fail for background sync
+                });
+
+                return scores;
+            }
+        } catch (cacheErr) {
+            // Cache miss - fall through to network
+            console.log('[getHighestScores] Cache miss, fetching from server...');
+        }
+
+        // 3. Fetch from server
+        console.log('[getHighestScores] Fetching from server...');
+        const snapshot = await getDocs(q);
+        const scores = parseSnapshot(snapshot);
+
+        // Update memory cache
+        highestScoresCache = scores;
+        highestScoresCacheTime = Date.now();
+        console.log('[getHighestScores] Loaded scores for', Object.keys(scores).length, 'exams from server');
+
         return scores;
     } catch (error) {
         console.error('[getHighestScores] FAILED:', error);
         return {};
     }
+}
+
+/**
+ * Xóa cache highest scores (gọi sau khi submit bài thi)
+ */
+export function clearHighestScoresCache() {
+    highestScoresCache = null;
+    highestScoresCacheTime = 0;
+    console.log('[getHighestScores] Cache cleared');
 }
 
 /**
