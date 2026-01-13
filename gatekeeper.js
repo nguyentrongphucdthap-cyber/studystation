@@ -2757,6 +2757,20 @@ export async function getUserProfile() {
 }
 
 /**
+ * Lấy thông tin user hiện tại từ Firebase Auth
+ * @returns {Object|null} User object with displayName, email, photoURL
+ */
+export function getCurrentUser() {
+    if (!auth.currentUser) return null;
+    return {
+        displayName: auth.currentUser.displayName,
+        email: auth.currentUser.email,
+        photoURL: auth.currentUser.photoURL,
+        uid: auth.currentUser.uid
+    };
+}
+
+/**
  * Cập nhật mật khẩu cho user hiện tại (Firebase Auth)
  * @param {string} newPassword 
  */
