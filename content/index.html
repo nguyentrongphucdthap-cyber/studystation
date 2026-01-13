@@ -2774,7 +2774,7 @@
 
     <!-- MODULE USER PROFILE LOGIC -->
     <script type="module">
-        import { getUserProfile, updateUserPassword } from "../gatekeeper.js";
+        import { getUserProfile, updateUserPassword, getCurrentUser } from "../gatekeeper.js";
 
         // Global User Profile Controller
         window.userProfile = {
@@ -2847,15 +2847,15 @@
             },
 
             async loadData() {
-                // First, get basic info from Firebase Auth (always available)
-                const accName = document.getElementById('acc-name');
-                const accEmail = document.getElementById('acc-email');
-                const accAvatar = document.getElementById('acc-avatar');
+                // Get basic info from Firebase Auth directly
+                const authUser = getCurrentUser();
 
-                // Use info already displayed in header (from Firebase Auth)
-                if (accName) this.els.name.textContent = accName.textContent || 'Người dùng';
-                if (accEmail) this.els.email.textContent = accEmail.textContent || '';
-                if (accAvatar && accAvatar.src) this.els.avatar.src = accAvatar.src;
+                if (authUser) {
+                    // Fill basic data from Firebase Auth
+                    this.els.name.textContent = authUser.displayName || 'Người dùng';
+                    this.els.email.textContent = authUser.email || '';
+                    if (authUser.photoURL) this.els.avatar.src = authUser.photoURL;
+                }
 
                 // Try to get additional info from Firestore
                 try {
