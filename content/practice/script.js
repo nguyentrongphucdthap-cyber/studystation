@@ -2522,6 +2522,11 @@ const app = {
         this.isReviewMode = false;
         this.startTime = new Date();
 
+        // Thông báo cho Gatekeeper: Đang làm bài thi (ngăn auto-reload)
+        if (window.firebaseExams?.setExamInProgress) {
+            window.firebaseExams.setExamInProgress(true);
+        }
+
         this.renderTemplate('tpl-taking-exam');
         this.timerEl.classList.remove('hidden');
 
@@ -2845,6 +2850,11 @@ const app = {
         this.stopTimer();
         this.endTime = new Date();
         const durationSeconds = Math.floor((this.endTime - this.startTime) / 1000);
+
+        // Thông báo cho Gatekeeper: Đã kết thúc làm bài (cho phép reload nếu cần)
+        if (window.firebaseExams?.setExamInProgress) {
+            window.firebaseExams.setExamInProgress(false);
+        }
 
         const data = this.currentExam.data;
         let maxScore = 0;
@@ -3634,6 +3644,11 @@ const app = {
         this.startTime = new Date();
         this.timerEl.classList.remove('hidden');
 
+        // Thông báo cho Gatekeeper: Đang làm bài thi (ngăn auto-reload)
+        if (window.firebaseExams?.setExamInProgress) {
+            window.firebaseExams.setExamInProgress(true);
+        }
+
         // Render step-by-step template
         this.renderTemplate('tpl-step-by-step');
 
@@ -4176,6 +4191,12 @@ const app = {
             this.stopTimer();
             this.stepMode.active = false;
             this.timerEl.classList.add('hidden');
+
+            // Thông báo cho Gatekeeper: Đã kết thúc làm bài (cho phép reload nếu cần)
+            if (window.firebaseExams?.setExamInProgress) {
+                window.firebaseExams.setExamInProgress(false);
+            }
+
             this.goHome();
         }
     },
@@ -4185,6 +4206,11 @@ const app = {
         this.stopTimer();
         this.stepMode.active = false;
         this.timerEl.classList.add('hidden');
+
+        // Thông báo cho Gatekeeper: Đã kết thúc làm bài (cho phép reload nếu cần)
+        if (window.firebaseExams?.setExamInProgress) {
+            window.firebaseExams.setExamInProgress(false);
+        }
 
         const { correctCount, skippedCount, questionQueue } = this.stepMode;
         const total = questionQueue.length;
