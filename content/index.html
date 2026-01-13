@@ -599,7 +599,7 @@
         <div class="absolute inset-0 bg-black/60 backdrop-blur-sm transition-opacity"
             onclick="window.userProfile.close()"></div>
         <div
-            class="relative bg-white rounded-3xl shadow-2xl w-full max-w-lg overflow-hidden transform transition-all scale-100 animate-fade-in-up">
+            class="relative bg-white rounded-3xl shadow-2xl w-full max-w-lg overflow-hidden transform transition-all scale-100">
             <!-- Header with Cover -->
             <div class="h-32 bg-gradient-to-r from-blue-600 to-indigo-600 relative">
                 <button onclick="window.userProfile.close()"
@@ -640,7 +640,7 @@
                 </div>
 
                 <!-- Tab: Info -->
-                <div id="tab-content-info" class="space-y-4 animate-fade-in">
+                <div id="tab-content-info" class="space-y-4">
                     <div class="grid grid-cols-2 gap-4">
                         <div class="bg-gray-50 p-3 rounded-xl">
                             <p class="text-xs text-gray-400 uppercase font-bold mb-1">Tên đăng nhập</p>
@@ -678,7 +678,7 @@
                 </div>
 
                 <!-- Tab: Security (Change Pass) -->
-                <div id="tab-content-security" class="hidden space-y-4 animate-fade-in">
+                <div id="tab-content-security" class="hidden space-y-4">
                     <form onsubmit="window.userProfile.changePassword(event)" class="space-y-4">
                         <div>
                             <label class="block text-sm font-bold text-gray-700 mb-1">Mật khẩu mới</label>
@@ -755,7 +755,7 @@
             <p class="text-center text-pink-200/80 mt-6 text-sm">Nhấn vào phong bì để mở ✨</p>
         </div>
     </div>
-    </div> <!-- Safety closing tag -->
+
 
     <!-- Card chính của ứng dụng -->
     <div class="w-full max-w-5xl mx-auto glass-panel mt-24 md:mt-32 mb-10 overflow-hidden rounded-3xl relative">
@@ -2847,22 +2847,37 @@
             },
 
             async loadData() {
-                const profile = await getUserProfile();
-                if (!profile) return;
+                // First, get basic info from Firebase Auth (always available)
+                const accName = document.getElementById('acc-name');
+                const accEmail = document.getElementById('acc-email');
+                const accAvatar = document.getElementById('acc-avatar');
 
-                // Fill data
-                this.els.name.textContent = profile.name || 'Người dùng';
-                this.els.email.textContent = profile.email;
-                if (profile.role) this.els.role.textContent = profile.role.toUpperCase();
+                // Use info already displayed in header (from Firebase Auth)
+                if (accName) this.els.name.textContent = accName.textContent || 'Người dùng';
+                if (accEmail) this.els.email.textContent = accEmail.textContent || '';
+                if (accAvatar && accAvatar.src) this.els.avatar.src = accAvatar.src;
 
-                // Details (from auto-registration or manual update)
-                const details = profile.registrationData || {};
-                this.els.username.textContent = details.username || '--';
-                this.els.class.textContent = details.classRoom || '--';
-                this.els.dob.textContent = details.birthDate || '--';
+                // Try to get additional info from Firestore
+                try {
+                    const profile = await getUserProfile();
+                    if (profile) {
+                        // Override with Firestore data if available
+                        if (profile.name) this.els.name.textContent = profile.name;
+                        if (profile.email) this.els.email.textContent = profile.email;
+                        if (profile.role) this.els.role.textContent = profile.role.toUpperCase();
 
-                const gTranslate = { 'male': 'Nam', 'female': 'Nữ', 'other': 'Khác' };
-                this.els.gender.textContent = gTranslate[details.gender] || details.gender || '--';
+                        // Registration details (from username/password registration)
+                        const details = profile.registrationData || {};
+                        if (details.username) this.els.username.textContent = details.username;
+                        if (details.classRoom) this.els.class.textContent = details.classRoom;
+                        if (details.birthDate) this.els.dob.textContent = details.birthDate;
+
+                        const gTranslate = { 'male': 'Nam', 'female': 'Nữ', 'other': 'Khác' };
+                        if (details.gender) this.els.gender.textContent = gTranslate[details.gender] || details.gender;
+                    }
+                } catch (e) {
+                    console.warn('Could not load profile from Firestore:', e);
+                }
             },
 
             resetForm() {
