@@ -10,7 +10,16 @@
  */
 
 import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-app.js";
-import { getAuth, signInWithPopup, GoogleAuthProvider, signOut, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-auth.js";
+import {
+    getAuth,
+    signInWithPopup,
+    GoogleAuthProvider,
+    signOut,
+    onAuthStateChanged,
+    createUserWithEmailAndPassword,
+    signInWithEmailAndPassword,
+    updateProfile
+} from "https://www.gstatic.com/firebasejs/10.8.0/firebase-auth.js";
 import {
     getFirestore,
     doc,
@@ -2452,7 +2461,8 @@ export async function setSpecialLetterEnabled(enabled) {
 
 /**
  * Gửi yêu cầu đăng ký tài khoản mới
- * Dữ liệu sẽ được lưu vào collection 'pending_registrations' để Admin duyệt
+ * Tạo tài khoản Firebase Auth với email dựa trên username
+ * Lưu thông tin vào pending_registrations để Admin duyệt whitelist
  * @param {Object} data - Thông tin đăng ký
  * @returns {Promise<{success: boolean, error?: string}>}
  */
@@ -2465,34 +2475,72 @@ export async function submitRegistration(data) {
             return { success: false, error: 'Vui lòng điền đầy đủ thông tin.' };
         }
 
+        // Validate username format
+        if (!/^[a-z0-9_]{4,20}$/.test(username)) {
+            return { success: false, error: 'Tên đăng nhập phải từ 4-20 ký tự, chỉ chứa chữ thường, số và dấu gạch dưới.' };
+        }
+
+        // Validate password
+        if (password.length < 6) {
+            return { success: false, error: 'Mật khẩu phải có ít nhất 6 ký tự.' };
+        }
+
+        // Create email from username (Firebase Auth requires email format)
+        const email = `${username.toLowerCase()}@studystation.local`;
+
         // Check if username already exists in pending registrations
         const pendingCol = collection(db, 'pending_registrations');
-        const pendingQuery = query(pendingCol, where('username', '==', username));
+        const pendingQuery = query(pendingCol, where('username', '==', username.toLowerCase()));
         const pendingSnapshot = await getDocs(pendingQuery);
 
         if (!pendingSnapshot.empty) {
             return { success: false, error: 'Tên đăng nhập này đã được đăng ký, đang chờ duyệt.' };
         }
 
-        // Check if username already exists in whitelist
-        const whitelistCol = collection(db, 'whitelist');
-        const whitelistSnapshot = await getDocs(whitelistCol);
-        const existingEmails = whitelistSnapshot.docs.map(d => d.data().email?.toLowerCase());
+        // Check if already in allowed_users
+        try {
+            const allowedUserRef = doc(db, 'allowed_users', email);
+            const allowedUserSnap = await getDoc(allowedUserRef);
+            if (allowedUserSnap.exists()) {
+                return { success: false, error: 'Tên đăng nhập này đã tồn tại.' };
+            }
+        } catch (e) {
+            // Ignore - user doesn't exist yet
+        }
 
-        // Create a fake email for checking (since we use Google Sign-In, 
-        // we'll create a placeholder for the username-based registration)
-        const placeholderEmail = `${username}@studystation.pending`;
+        // Create Firebase Auth account
+        let userCredential;
+        try {
+            userCredential = await createUserWithEmailAndPassword(auth, email, password);
 
-        // Save to pending_registrations collection
+            // Update profile with display name
+            await updateProfile(userCredential.user, {
+                displayName: fullName.trim()
+            });
+
+            console.log('[Registration] Firebase Auth account created:', email);
+        } catch (authError) {
+            console.error('[Registration] Firebase Auth error:', authError);
+
+            if (authError.code === 'auth/email-already-in-use') {
+                return { success: false, error: 'Tên đăng nhập này đã được sử dụng.' };
+            } else if (authError.code === 'auth/weak-password') {
+                return { success: false, error: 'Mật khẩu quá yếu. Vui lòng chọn mật khẩu mạnh hơn.' };
+            } else if (authError.code === 'auth/invalid-email') {
+                return { success: false, error: 'Tên đăng nhập không hợp lệ.' };
+            }
+            return { success: false, error: 'Không thể tạo tài khoản. Vui lòng thử lại.' };
+        }
+
+        // Save to pending_registrations for Admin approval
         const registrationData = {
+            uid: userCredential.user.uid,
             fullName: fullName.trim(),
             birthDate: birthDate,
             gender: gender,
             classRoom: classRoom.trim().toUpperCase(),
             username: username.toLowerCase(),
-            // Hash password (simple base64 encoding for demo - in production use proper hashing)
-            passwordHash: btoa(password),
-            email: placeholderEmail,
+            email: email,
             status: 'pending',
             createdAt: new Date().toISOString(),
             reviewedAt: null,
@@ -2501,12 +2549,55 @@ export async function submitRegistration(data) {
 
         await addDoc(pendingCol, registrationData);
 
+        // Sign out after registration (user needs to wait for approval)
+        await signOut(auth);
+
         console.log('[Registration] New registration submitted:', username);
         return { success: true };
 
     } catch (error) {
         console.error('[Registration] Submit failed:', error);
         return { success: false, error: 'Đã xảy ra lỗi khi gửi đăng ký. Vui lòng thử lại.' };
+    }
+}
+
+/**
+ * Đăng nhập bằng username và password
+ * @param {string} username - Tên đăng nhập
+ * @param {string} password - Mật khẩu
+ * @returns {Promise<{success: boolean, error?: string}>}
+ */
+export async function loginWithUsername(username, password) {
+    try {
+        if (!username || !password) {
+            return { success: false, error: 'Vui lòng nhập tên đăng nhập và mật khẩu.' };
+        }
+
+        // Convert username to email format
+        const email = `${username.toLowerCase()}@studystation.local`;
+
+        // Sign in with Firebase Auth
+        const userCredential = await signInWithEmailAndPassword(auth, email, password);
+
+        console.log('[Login] Username login successful:', username);
+
+        // The onAuthStateChanged will handle the rest (whitelist check, etc.)
+        return { success: true, user: userCredential.user };
+
+    } catch (error) {
+        console.error('[Login] Username login failed:', error);
+
+        if (error.code === 'auth/user-not-found') {
+            return { success: false, error: 'Tài khoản không tồn tại.' };
+        } else if (error.code === 'auth/wrong-password') {
+            return { success: false, error: 'Mật khẩu không đúng.' };
+        } else if (error.code === 'auth/invalid-credential') {
+            return { success: false, error: 'Tên đăng nhập hoặc mật khẩu không đúng.' };
+        } else if (error.code === 'auth/too-many-requests') {
+            return { success: false, error: 'Đã đăng nhập sai quá nhiều lần. Vui lòng thử lại sau.' };
+        }
+
+        return { success: false, error: 'Đăng nhập thất bại. Vui lòng thử lại.' };
     }
 }
 
@@ -2582,7 +2673,7 @@ export async function reviewRegistration(registrationId, approved, role = 'user'
                 }
             };
 
-            await addDoc(collection(db, 'whitelist'), whitelistData);
+            await setDoc(doc(db, 'allowed_users', regData.email), whitelistData);
         }
 
         // Update registration status
