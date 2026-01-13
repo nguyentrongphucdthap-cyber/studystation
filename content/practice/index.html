@@ -1926,7 +1926,8 @@
             clearExamListCache,
             clearExamContentCache,
             cleanupExpiredCaches,
-            onUserChange
+            onUserChange,
+            setExamInProgress
         } from "../../gatekeeper.js";
 
         // Make Firebase functions available globally for the app
@@ -1941,7 +1942,8 @@
             getHighestScores,
             isFirebaseReady,
             clearExamListCache,
-            clearExamContentCache
+            clearExamContentCache,
+            setExamInProgress
         };
 
         // Cleanup expired caches on startup (non-blocking)
