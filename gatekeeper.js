@@ -2497,6 +2497,11 @@ export async function submitRegistration(data) {
                 displayName: fullName.trim()
             });
 
+            // 1b. Force refresh token to ensure claims are ready
+            if (auth.currentUser) {
+                await auth.currentUser.getIdToken(true);
+            }
+
             console.log('[Registration] Firebase Auth account created:', email);
         } catch (authError) {
             console.error('[Registration] Firebase Auth error:', authError);
@@ -2531,8 +2536,8 @@ export async function submitRegistration(data) {
         };
 
         try {
-            // Force refresh token to ensure new claims (if any) are applied,
-            // though standard email claim should be there.
+            // Add a small delay to ensure Firebase Auth propagation
+            await new Promise(resolve => setTimeout(resolve, 1000)); // 1 second delay
             // Using setDoc to create the user profile
             await setDoc(doc(db, 'allowed_users', email), whitelistData);
             console.log('[Registration] User auto-whitelisted:', email);
