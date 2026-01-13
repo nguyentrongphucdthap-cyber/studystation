@@ -2017,6 +2017,13 @@
             const userEmail = user.email || '';
             const userPhoto = user.photoURL || '../favicon.png';
 
+            // Save to global for Profile Modal to use
+            window.currentUserInfo = {
+                displayName: userName,
+                email: userEmail,
+                photoURL: userPhoto
+            };
+
             // Desktop Updates
             if (accName) accName.textContent = userName;
             if (accEmail) accEmail.textContent = userEmail;
@@ -2847,14 +2854,22 @@
             },
 
             async loadData() {
-                // Get basic info from Firebase Auth directly
-                const authUser = getCurrentUser();
+                // Use user info saved by onUserChange callback (guaranteed to exist if user is logged in)
+                const userInfo = window.currentUserInfo;
 
-                if (authUser) {
-                    // Fill basic data from Firebase Auth
-                    this.els.name.textContent = authUser.displayName || 'Người dùng';
-                    this.els.email.textContent = authUser.email || '';
-                    if (authUser.photoURL) this.els.avatar.src = authUser.photoURL;
+                if (userInfo) {
+                    // Fill basic data
+                    this.els.name.textContent = userInfo.displayName || 'Người dùng';
+                    this.els.email.textContent = userInfo.email || '';
+                    if (userInfo.photoURL) this.els.avatar.src = userInfo.photoURL;
+                } else {
+                    // Fallback: try getCurrentUser from gatekeeper
+                    const authUser = getCurrentUser();
+                    if (authUser) {
+                        this.els.name.textContent = authUser.displayName || 'Người dùng';
+                        this.els.email.textContent = authUser.email || '';
+                        if (authUser.photoURL) this.els.avatar.src = authUser.photoURL;
+                    }
                 }
 
                 // Try to get additional info from Firestore
