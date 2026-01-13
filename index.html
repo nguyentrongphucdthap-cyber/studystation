@@ -15,7 +15,6 @@
         rel="stylesheet">
 
     <style>
-        /* --- GIỮ NGUYÊN CSS CỦA STUDYSTATION --- */
         :root {
             --font-main: 'Be Vietnam Pro', sans-serif;
             --bg-body: #F3F4F6;
@@ -24,6 +23,8 @@
             --text-secondary: #6B7280;
             --text-tertiary: #9CA3AF;
             --accent: #2563EB;
+            --accent-hover: #1D4ED8;
+            --success: #10B981;
             --danger: #EF4444;
             --shadow-card: 0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05);
             --radius-xl: 20px;
@@ -38,18 +39,18 @@
             background-color: var(--bg-body);
             background-image: radial-gradient(#E5E7EB 1px, transparent 1px);
             background-size: 24px 24px;
-            height: 100vh;
+            min-height: 100vh;
             margin: 0;
             display: flex;
             justify-content: center;
             align-items: center;
             color: var(--text-primary);
+            padding: 20px;
         }
 
         .wrapper {
             width: 100%;
             max-width: 420px;
-            padding: 20px;
         }
 
         .card {
@@ -63,15 +64,14 @@
 
         h1 {
             font-weight: 700;
-            font-size: 26px;
-            margin: 0 0 10px 0;
+            font-size: 24px;
+            margin: 0 0 8px 0;
             color: var(--text-primary);
         }
 
-        p {
-            font-size: 15px;
+        .subtitle {
+            font-size: 14px;
             color: var(--text-secondary);
-            line-height: 1.5;
             margin: 0 0 24px 0;
         }
 
@@ -83,6 +83,50 @@
             border-radius: 8px;
             margin-bottom: 24px;
             border: 1px solid #FEF3C7;
+        }
+
+        .form-group {
+            margin-bottom: 16px;
+            text-align: left;
+        }
+
+        .form-group label {
+            display: block;
+            font-size: 13px;
+            font-weight: 500;
+            color: var(--text-secondary);
+            margin-bottom: 6px;
+        }
+
+        .form-group input,
+        .form-group select {
+            width: 100%;
+            padding: 12px 14px;
+            border-radius: 10px;
+            border: 1px solid #D1D5DB;
+            font-family: var(--font-main);
+            font-size: 14px;
+            color: var(--text-primary);
+            background: #FFFFFF;
+            transition: all 0.2s;
+        }
+
+        .form-group input:focus,
+        .form-group select:focus {
+            outline: none;
+            border-color: var(--accent);
+            box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.1);
+        }
+
+        .form-group input.error,
+        .form-group select.error {
+            border-color: var(--danger);
+        }
+
+        .form-row {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 12px;
         }
 
         .btn {
@@ -98,11 +142,16 @@
             display: flex;
             align-items: center;
             justify-content: center;
-            gap: 12px;
+            gap: 10px;
         }
 
         .btn:active {
             transform: scale(0.98);
+        }
+
+        .btn:disabled {
+            opacity: 0.7;
+            cursor: not-allowed;
         }
 
         .btn-google {
@@ -112,26 +161,69 @@
             box-shadow: 0 1px 2px 0 rgba(0, 0, 0, 0.05);
         }
 
-        .btn-google:hover {
+        .btn-google:hover:not(:disabled) {
             background: #F9FAFB;
             border-color: #9CA3AF;
         }
 
-        .register-section {
-            margin-top: 24px;
+        .btn-primary {
+            background: var(--accent);
+            color: #FFFFFF;
+        }
+
+        .btn-primary:hover:not(:disabled) {
+            background: var(--accent-hover);
+        }
+
+        .btn-secondary {
+            background: #F3F4F6;
+            color: var(--text-secondary);
+        }
+
+        .btn-secondary:hover:not(:disabled) {
+            background: #E5E7EB;
+        }
+
+        .divider {
+            display: flex;
+            align-items: center;
+            margin: 20px 0;
+            color: var(--text-tertiary);
+            font-size: 13px;
+        }
+
+        .divider::before,
+        .divider::after {
+            content: '';
+            flex: 1;
+            height: 1px;
+            background: #E5E7EB;
+        }
+
+        .divider::before {
+            margin-right: 12px;
+        }
+
+        .divider::after {
+            margin-left: 12px;
+        }
+
+        .switch-section {
+            margin-top: 20px;
             padding-top: 20px;
             border-top: 1px solid #E5E7EB;
             font-size: 14px;
             color: var(--text-secondary);
         }
 
-        .register-link {
+        .switch-link {
             color: var(--accent);
             text-decoration: none;
             font-weight: 600;
+            cursor: pointer;
         }
 
-        .register-link:hover {
+        .switch-link:hover {
             text-decoration: underline;
         }
 
@@ -161,13 +253,18 @@
             font-size: 13px;
             margin-top: 16px;
             text-align: left;
-            display: none;
         }
 
         .alert-error {
             background: #FEF2F2;
             color: #991B1B;
             border: 1px solid #FECACA;
+        }
+
+        .alert-success {
+            background: #ECFDF5;
+            color: #065F46;
+            border: 1px solid #A7F3D0;
         }
 
         .spinner {
@@ -183,6 +280,71 @@
         @keyframes spin {
             to {
                 transform: rotate(360deg);
+            }
+        }
+
+        .password-strength {
+            height: 4px;
+            border-radius: 2px;
+            margin-top: 8px;
+            background: #E5E7EB;
+            overflow: hidden;
+        }
+
+        .password-strength-bar {
+            height: 100%;
+            width: 0%;
+            transition: all 0.3s;
+        }
+
+        .password-strength-bar.weak {
+            width: 33%;
+            background: #EF4444;
+        }
+
+        .password-strength-bar.medium {
+            width: 66%;
+            background: #F59E0B;
+        }
+
+        .password-strength-bar.strong {
+            width: 100%;
+            background: #10B981;
+        }
+
+        .back-btn {
+            position: absolute;
+            top: 16px;
+            left: 16px;
+            width: 36px;
+            height: 36px;
+            border-radius: 10px;
+            background: #F3F4F6;
+            border: none;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: var(--text-secondary);
+            transition: all 0.2s;
+        }
+
+        .back-btn:hover {
+            background: #E5E7EB;
+            color: var(--text-primary);
+        }
+
+        .card-with-back {
+            position: relative;
+        }
+
+        @media (max-width: 480px) {
+            .card {
+                padding: 32px 24px;
+            }
+
+            .form-row {
+                grid-template-columns: 1fr;
             }
         }
     </style>
@@ -219,9 +381,37 @@
                 </div>
 
                 <h1>StudyStation Login</h1>
-                <p class="warning-text">⚠️ Chỉ dành cho tài khoản được cấp quyền (whitelist).</p>
+                <p class="subtitle">Đăng nhập để tiếp tục</p>
             </div>
 
+            <!-- Username/Password Login Form -->
+            <form id="loginForm" autocomplete="off">
+                <div class="form-group">
+                    <label for="loginUsername">Tên đăng nhập</label>
+                    <input type="text" id="loginUsername" name="username" placeholder="Nhập tên đăng nhập"
+                        autocomplete="username">
+                </div>
+
+                <div class="form-group">
+                    <label for="loginPassword">Mật khẩu</label>
+                    <input type="password" id="loginPassword" name="password" placeholder="Nhập mật khẩu"
+                        autocomplete="current-password">
+                </div>
+
+                <button type="submit" id="btnLoginUsername" class="btn btn-primary">
+                    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+                        stroke-linecap="round" stroke-linejoin="round">
+                        <path d="M15 3h4a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2h-4"></path>
+                        <polyline points="10 17 15 12 10 7"></polyline>
+                        <line x1="15" y1="12" x2="3" y2="12"></line>
+                    </svg>
+                    Đăng nhập
+                </button>
+            </form>
+
+            <div class="divider">hoặc</div>
+
+            <!-- Google Login -->
             <button id="btnLogin" class="btn btn-google">
                 <svg width="18" height="18" viewBox="0 0 24 24">
                     <path
@@ -239,24 +429,340 @@
                 </svg>
                 Đăng nhập bằng Google
             </button>
-            <div id="loginError" class="alert alert-error"></div>
 
-            <div class="register-section">
+            <div id="loginError" class="alert alert-error hidden"></div>
+
+            <div class="switch-section">
                 Bạn chưa có tài khoản?
-                <!-- THAY LINK ĐĂNG KÝ CỦA BẠN VÀO ĐÂY -->
-                <a href="https://forms.gle/DiTJpf85bScCrzxT8" target="_blank" class="register-link">Đăng ký truy cập</a>
+                <span class="switch-link" onclick="showRegister()">Đăng ký ngay</span>
             </div>
+        </div>
+
+        <!-- VIEW: REGISTER -->
+        <div id="view-register" class="card card-with-back fade-in hidden">
+            <button class="back-btn" onclick="showLogin()" title="Quay lại">
+                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+                    stroke-linecap="round" stroke-linejoin="round">
+                    <polyline points="15 18 9 12 15 6"></polyline>
+                </svg>
+            </button>
+
+            <div style="margin-bottom: 24px;">
+                <div
+                    style="width: 48px; height: 48px; background: #ECFDF5; border-radius: 12px; margin: 0 auto 16px; display: flex; align-items: center; justify-content: center;">
+                    <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#10B981" stroke-width="2"
+                        stroke-linecap="round" stroke-linejoin="round">
+                        <path d="M16 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"></path>
+                        <circle cx="8.5" cy="7" r="4"></circle>
+                        <line x1="20" y1="8" x2="20" y2="14"></line>
+                        <line x1="23" y1="11" x2="17" y2="11"></line>
+                    </svg>
+                </div>
+
+                <h1>Đăng ký tài khoản</h1>
+                <p class="subtitle">Điền thông tin để tạo tài khoản mới</p>
+            </div>
+
+            <form id="registerForm" autocomplete="off">
+                <div class="form-group">
+                    <label for="fullName">Họ và tên *</label>
+                    <input type="text" id="fullName" name="fullName" placeholder="Nguyễn Văn A" required>
+                </div>
+
+                <div class="form-row">
+                    <div class="form-group">
+                        <label for="birthDate">Ngày sinh *</label>
+                        <input type="date" id="birthDate" name="birthDate" required>
+                    </div>
+                    <div class="form-group">
+                        <label for="gender">Giới tính *</label>
+                        <select id="gender" name="gender" required>
+                            <option value="">-- Chọn --</option>
+                            <option value="male">Nam</option>
+                            <option value="female">Nữ</option>
+                            <option value="other">Khác</option>
+                        </select>
+                    </div>
+                </div>
+
+                <div class="form-group">
+                    <label for="classRoom">Lớp *</label>
+                    <input type="text" id="classRoom" name="classRoom" placeholder="VD: 12A1, 11B2..." required>
+                </div>
+
+                <div class="divider">Thông tin đăng nhập</div>
+
+                <div class="form-group">
+                    <label for="username">Tên đăng nhập *</label>
+                    <input type="text" id="username" name="username" placeholder="Chỉ dùng chữ, số và dấu gạch dưới"
+                        autocomplete="off" required>
+                </div>
+
+                <div class="form-group">
+                    <label for="password">Mật khẩu *</label>
+                    <input type="password" id="password" name="password" placeholder="Tối thiểu 6 ký tự"
+                        autocomplete="new-password" required>
+                    <div class="password-strength">
+                        <div id="passwordStrengthBar" class="password-strength-bar"></div>
+                    </div>
+                </div>
+
+                <div class="form-group">
+                    <label for="confirmPassword">Xác nhận mật khẩu *</label>
+                    <input type="password" id="confirmPassword" name="confirmPassword" placeholder="Nhập lại mật khẩu"
+                        autocomplete="new-password" required>
+                </div>
+
+                <button type="submit" id="btnRegister" class="btn btn-primary" style="margin-top: 8px;">
+                    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+                        stroke-linecap="round" stroke-linejoin="round">
+                        <path d="M16 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"></path>
+                        <circle cx="8.5" cy="7" r="4"></circle>
+                        <line x1="20" y1="8" x2="20" y2="14"></line>
+                        <line x1="23" y1="11" x2="17" y2="11"></line>
+                    </svg>
+                    Đăng ký tài khoản
+                </button>
+            </form>
+
+            <div id="registerMessage" class="alert hidden"></div>
+
+            <div class="switch-section">
+                Đã có tài khoản?
+                <span class="switch-link" onclick="showLogin()">Đăng nhập ngay</span>
+            </div>
+        </div>
+
+        <!-- VIEW: REGISTER SUCCESS -->
+        <div id="view-register-success" class="card fade-in hidden">
+            <div
+                style="width: 64px; height: 64px; background: #ECFDF5; border-radius: 50%; margin: 0 auto 20px; display: flex; align-items: center; justify-content: center;">
+                <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="#10B981" stroke-width="2"
+                    stroke-linecap="round" stroke-linejoin="round">
+                    <polyline points="20 6 9 17 4 12"></polyline>
+                </svg>
+            </div>
+
+            <h1 style="color: #059669;">Đăng ký thành công!</h1>
+            <p style="font-size: 14px; color: var(--text-secondary); margin-bottom: 24px;">
+                Yêu cầu đăng ký của bạn đã được gửi đi. Vui lòng chờ Admin phê duyệt tài khoản.<br><br>
+                <strong>Bạn sẽ nhận được thông báo khi tài khoản được kích hoạt.</strong>
+            </p>
+
+            <button class="btn btn-primary" onclick="showLogin()">
+                Quay lại đăng nhập
+            </button>
         </div>
     </div>
 
-
-
     <!-- LOGIC FIREBASE -->
     <script type="module">
-        import { initGatekeeper, loginWithGoogle } from "./gatekeeper.js";
+        import { initGatekeeper, loginWithGoogle, loginWithUsername, submitRegistration } from "./gatekeeper.js";
+
         initGatekeeper('login');
-        const btn = document.getElementById('btnLogin');
-        if (btn) btn.addEventListener('click', loginWithGoogle);
+
+        // Google login button
+        const btnLogin = document.getElementById('btnLogin');
+        if (btnLogin) btnLogin.addEventListener('click', loginWithGoogle);
+
+        // Username/Password login form
+        const loginForm = document.getElementById('loginForm');
+        const loginError = document.getElementById('loginError');
+
+        loginForm.addEventListener('submit', async function (e) {
+            e.preventDefault();
+
+            const username = document.getElementById('loginUsername').value.trim();
+            const password = document.getElementById('loginPassword').value;
+
+            if (!username || !password) {
+                loginError.textContent = 'Vui lòng nhập tên đăng nhập và mật khẩu.';
+                loginError.classList.remove('hidden');
+                return;
+            }
+
+            // Show loading state
+            const btnLoginUsername = document.getElementById('btnLoginUsername');
+            btnLoginUsername.disabled = true;
+            btnLoginUsername.innerHTML = '<div class="spinner" style="width:18px;height:18px;margin:0;border-width:2px;"></div> Đang đăng nhập...';
+            loginError.classList.add('hidden');
+
+            try {
+                const result = await loginWithUsername(username, password);
+
+                if (!result.success) {
+                    loginError.textContent = result.error || 'Đăng nhập thất bại.';
+                    loginError.classList.remove('hidden');
+                }
+                // If success, onAuthStateChanged will handle redirect
+            } catch (error) {
+                loginError.textContent = error.message || 'Đã xảy ra lỗi. Vui lòng thử lại.';
+                loginError.classList.remove('hidden');
+            } finally {
+                btnLoginUsername.disabled = false;
+                btnLoginUsername.innerHTML = `
+                    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                        <path d="M15 3h4a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2h-4"></path>
+                        <polyline points="10 17 15 12 10 7"></polyline>
+                        <line x1="15" y1="12" x2="3" y2="12"></line>
+                    </svg>
+                    Đăng nhập
+                `;
+            }
+        });
+
+        // Make functions available globally
+        window.showRegister = function () {
+            document.getElementById('view-login').classList.add('hidden');
+            document.getElementById('view-register').classList.remove('hidden');
+            document.getElementById('registerForm').reset();
+            document.getElementById('registerMessage').classList.add('hidden');
+            document.getElementById('passwordStrengthBar').className = 'password-strength-bar';
+        };
+
+        window.showLogin = function () {
+            document.getElementById('view-register').classList.add('hidden');
+            document.getElementById('view-register-success').classList.add('hidden');
+            document.getElementById('view-login').classList.remove('hidden');
+            document.getElementById('loginForm').reset();
+            document.getElementById('loginError').classList.add('hidden');
+        };
+
+        // Password strength indicator
+        const passwordInput = document.getElementById('password');
+        const strengthBar = document.getElementById('passwordStrengthBar');
+
+        passwordInput.addEventListener('input', function () {
+            const password = this.value;
+            let strength = 0;
+
+            if (password.length >= 6) strength++;
+            if (password.length >= 8) strength++;
+            if (/[A-Z]/.test(password)) strength++;
+            if (/[0-9]/.test(password)) strength++;
+            if (/[^A-Za-z0-9]/.test(password)) strength++;
+
+            strengthBar.className = 'password-strength-bar';
+            if (password.length > 0) {
+                if (strength <= 2) strengthBar.classList.add('weak');
+                else if (strength <= 3) strengthBar.classList.add('medium');
+                else strengthBar.classList.add('strong');
+            }
+        });
+
+        // Register form submission
+        const registerForm = document.getElementById('registerForm');
+        const registerMessage = document.getElementById('registerMessage');
+        const btnRegister = document.getElementById('btnRegister');
+
+        registerForm.addEventListener('submit', async function (e) {
+            e.preventDefault();
+
+            // Clear previous errors
+            registerMessage.classList.add('hidden');
+            document.querySelectorAll('.form-group input, .form-group select').forEach(el => {
+                el.classList.remove('error');
+            });
+
+            // Get form data
+            const formData = {
+                fullName: document.getElementById('fullName').value.trim(),
+                birthDate: document.getElementById('birthDate').value,
+                gender: document.getElementById('gender').value,
+                classRoom: document.getElementById('classRoom').value.trim(),
+                username: document.getElementById('username').value.trim().toLowerCase(),
+                password: document.getElementById('password').value,
+                confirmPassword: document.getElementById('confirmPassword').value
+            };
+
+            // Validation
+            let errors = [];
+
+            if (!formData.fullName || formData.fullName.length < 2) {
+                errors.push('Họ tên phải có ít nhất 2 ký tự');
+                document.getElementById('fullName').classList.add('error');
+            }
+
+            if (!formData.birthDate) {
+                errors.push('Vui lòng chọn ngày sinh');
+                document.getElementById('birthDate').classList.add('error');
+            }
+
+            if (!formData.gender) {
+                errors.push('Vui lòng chọn giới tính');
+                document.getElementById('gender').classList.add('error');
+            }
+
+            if (!formData.classRoom) {
+                errors.push('Vui lòng nhập lớp');
+                document.getElementById('classRoom').classList.add('error');
+            }
+
+            if (!formData.username || formData.username.length < 4) {
+                errors.push('Tên đăng nhập phải có ít nhất 4 ký tự');
+                document.getElementById('username').classList.add('error');
+            } else if (!/^[a-z0-9_]+$/.test(formData.username)) {
+                errors.push('Tên đăng nhập chỉ được chứa chữ thường, số và dấu gạch dưới');
+                document.getElementById('username').classList.add('error');
+            }
+
+            if (!formData.password || formData.password.length < 6) {
+                errors.push('Mật khẩu phải có ít nhất 6 ký tự');
+                document.getElementById('password').classList.add('error');
+            }
+
+            if (formData.password !== formData.confirmPassword) {
+                errors.push('Mật khẩu xác nhận không khớp');
+                document.getElementById('confirmPassword').classList.add('error');
+            }
+
+            if (errors.length > 0) {
+                registerMessage.innerHTML = errors.map(e => `• ${e}`).join('<br>');
+                registerMessage.className = 'alert alert-error';
+                registerMessage.classList.remove('hidden');
+                return;
+            }
+
+            // Submit registration
+            btnRegister.disabled = true;
+            btnRegister.innerHTML = '<div class="spinner" style="width:20px;height:20px;margin:0;border-width:2px;"></div> Đang gửi...';
+
+            try {
+                const result = await submitRegistration({
+                    fullName: formData.fullName,
+                    birthDate: formData.birthDate,
+                    gender: formData.gender,
+                    classRoom: formData.classRoom,
+                    username: formData.username,
+                    password: formData.password
+                });
+
+                if (result.success) {
+                    // Show success view
+                    document.getElementById('view-register').classList.add('hidden');
+                    document.getElementById('view-register-success').classList.remove('hidden');
+                } else {
+                    registerMessage.innerHTML = result.error || 'Đã xảy ra lỗi. Vui lòng thử lại.';
+                    registerMessage.className = 'alert alert-error';
+                    registerMessage.classList.remove('hidden');
+                }
+            } catch (error) {
+                registerMessage.innerHTML = error.message || 'Đã xảy ra lỗi. Vui lòng thử lại.';
+                registerMessage.className = 'alert alert-error';
+                registerMessage.classList.remove('hidden');
+            } finally {
+                btnRegister.disabled = false;
+                btnRegister.innerHTML = `
+                    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                        <path d="M16 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"></path>
+                        <circle cx="8.5" cy="7" r="4"></circle>
+                        <line x1="20" y1="8" x2="20" y2="14"></line>
+                        <line x1="23" y1="11" x2="17" y2="11"></line>
+                    </svg>
+                    Đăng ký tài khoản
+                `;
+            }
+        });
     </script>
 </body>
 
