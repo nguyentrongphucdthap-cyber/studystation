@@ -2736,3 +2736,43 @@ export async function deleteRegistration(registrationId) {
         return { success: false, error: 'Đã xảy ra lỗi. Vui lòng thử lại.' };
     }
 }
+
+/**
+ * Lấy thông tin chi tiết của User từ Firestore
+ * @returns {Promise<Object|null>}
+ */
+export async function getUserProfile() {
+    if (!auth.currentUser) return null;
+    try {
+        const email = auth.currentUser.email;
+        const userDoc = await getDoc(doc(db, 'allowed_users', email));
+        if (userDoc.exists()) {
+            return userDoc.data();
+        }
+        return null;
+    } catch (e) {
+        console.error('Error fetching user profile:', e);
+        return null; // Fail gracefully
+    }
+}
+
+/**
+ * Cập nhật mật khẩu cho user hiện tại (Firebase Auth)
+ * @param {string} newPassword 
+ */
+export async function updateUserPassword(newPassword) {
+    if (!auth.currentUser) return { success: false, error: 'Chưa đăng nhập' };
+    try {
+        await updatePassword(auth.currentUser, newPassword);
+        return { success: true };
+    } catch (error) {
+        console.error('Error changing password:', error);
+        if (error.code === 'auth/requires-recent-login') {
+            return { success: false, error: 'Quyền truy cập đã hết hạn. Vui lòng đăng xuất và đăng nhập lại để đổi mật khẩu.' };
+        }
+        if (error.code === 'auth/weak-password') {
+            return { success: false, error: 'Mật khẩu quá yếu (tối thiểu 6 ký tự).' };
+        }
+        return { success: false, error: `Lỗi: ${error.message}` };
+    }
+}
