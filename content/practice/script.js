@@ -1138,24 +1138,6 @@ const app = {
 
     async loadSubjects() {
         try {
-            // Check local cache first for instant load
-            const CACHE_KEY = 'studyStation_examCache_v2'; // v2 to force refresh with new logic
-
-            try {
-                const cached = localStorage.getItem(CACHE_KEY);
-                if (cached) {
-                    const { subjects } = JSON.parse(cached);
-                    // Basic valid check
-                    if (subjects && Object.keys(subjects).length > 0) {
-                        console.log('[Practice] Loaded exams from localStorage (instant)');
-                        this.subjects = subjects;
-                        this.goHome(); // Render immediately using cached data
-                    }
-                }
-            } catch (cacheErr) {
-                console.warn('[Practice] Cache read error:', cacheErr);
-            }
-
             // Helper: Promise with timeout
             const withTimeout = (promise, ms, errorMsg) => {
                 return Promise.race([
@@ -1185,14 +1167,13 @@ const app = {
                     console.log('[Practice] Loading exams from Firebase...');
 
                     // Use timeout and retry for better reliability
-                    // OPTIMIZED: Reduced timeout from 10s to 5s, retries from 2 to 1
                     const firebaseExams = await retryAsync(async () => {
                         return await withTimeout(
                             window.firebaseExams.getAllExams(),
-                            5000, // 5 seconds timeout (reduced from 10s)
+                            8000, // 8 seconds timeout
                             'Firebase timeout - network too slow'
                         );
-                    }, 1, 500); // Retry 1 time with 0.5 second delay (reduced from 2, 1s)
+                    }, 2, 1000); // Retry 2 times with 1 second delay
 
                     const firebaseSubjects = window.firebaseExams.getSubjects();
 
@@ -1245,17 +1226,6 @@ const app = {
                         });
 
                         this.subjectLoadError = Object.keys(this.subjects).length ? null : 'Chưa có bài thi nào. Admin có thể thêm bài thi mới.';
-
-                        // Save to local cache for instant load next time
-                        try {
-                            localStorage.setItem(CACHE_KEY, JSON.stringify({
-                                subjects: this.subjects,
-                                timestamp: Date.now()
-                            }));
-                            console.log('Saved exams to localStorage');
-                        } catch (saveErr) {
-                            console.warn('Cache save error:', saveErr);
-                        }
 
                         // BACKGROUND PRELOAD: Preload top 3 most popular exams after initial render
                         // This significantly improves first-click experience for popular exams
@@ -1370,15 +1340,9 @@ const app = {
     async retryLoadSubjects() {
         console.log('[Practice] Retrying to load subjects...');
 
-        // Clear all caches
-        try {
-            sessionStorage.removeItem('studyStation_examCache');
-            // Also clear Firebase cache
-            if (window.firebaseExams?.clearExamListCache) {
-                window.firebaseExams.clearExamListCache();
-            }
-        } catch (e) {
-            console.warn('[Practice] Cache clear error:', e);
+        // Clear memory cache in gatekeeper
+        if (window.firebaseExams?.clearExamListCache) {
+            window.firebaseExams.clearExamListCache();
         }
 
         // Show loading state
