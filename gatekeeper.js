@@ -11,7 +11,25 @@
 
 import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-app.js";
 import { getAuth, signInWithPopup, GoogleAuthProvider, signOut, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-auth.js";
-import { getFirestore, doc, getDoc, updateDoc, onSnapshot, collection, getDocs, addDoc, deleteDoc, setDoc, increment, query, where } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js";
+import {
+    getFirestore,
+    doc,
+    getDoc,
+    updateDoc,
+    onSnapshot,
+    collection,
+    getDocs,
+    addDoc,
+    deleteDoc,
+    setDoc,
+    increment,
+    query,
+    where,
+    enableIndexedDbPersistence,
+    CACHE_SIZE_UNLIMITED,
+    getDocsFromCache,
+    getDocFromCache
+} from "https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js";
 import { getDatabase, ref, set, onValue, onDisconnect, serverTimestamp, remove, get } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-database.js";
 
 // ============================================================
@@ -32,6 +50,30 @@ const auth = getAuth(app);
 const db = getFirestore(app);
 const rtdb = getDatabase(app); // Realtime Database for presence
 const provider = new GoogleAuthProvider();
+
+// ============================================================
+// 1.5 ENABLE FIRESTORE OFFLINE PERSISTENCE
+// ============================================================
+// Bật offline persistence để tăng tốc độ load:
+// - Lần đầu: Fetch từ network → Cache vào IndexedDB
+// - Lần sau: Trả về cached data NGAY LẬP TỨC → Sync với server trong background
+// - Hoạt động offline
+// - Tự động quản lý cache (không cần code thủ công)
+enableIndexedDbPersistence(db, { forceOwnership: false })
+    .then(() => {
+        console.log('[Firebase] Offline persistence enabled - faster loading!');
+    })
+    .catch((err) => {
+        if (err.code === 'failed-precondition') {
+            // Có thể xảy ra khi mở nhiều tab
+            console.warn('[Firebase] Persistence failed: Multiple tabs open');
+        } else if (err.code === 'unimplemented') {
+            // Browser không hỗ trợ
+            console.warn('[Firebase] Persistence not supported in this browser');
+        } else {
+            console.warn('[Firebase] Persistence error:', err);
+        }
+    });
 
 // ============================================================
 // 2. CONSTANTS & STORAGE HELPERS
@@ -734,39 +776,79 @@ export function isFirebaseReady() {
 
 /**
  * Lấy tất cả exams từ Firestore (CHỈ METADATA - không part1/part2/part3)
- * Có cache để tránh gọi Firebase liên tục
+ * CACHE-FIRST STRATEGY:
+ * 1. Đọc từ IndexedDB cache trước (nhanh)
+ * 2. Nếu cache miss → fetch từ server
+ * 3. Background sync để cập nhật cache
  */
 export async function getAllExams() {
-    // Check cache first
+    // Check memory cache first (fastest)
     if (examListCache && (Date.now() - examListCacheTime < EXAM_LIST_CACHE_DURATION)) {
-        console.log('[Firebase] Returning cached exam list');
+        console.log('[Firebase] Returning memory-cached exam list');
         return examListCache;
     }
 
-    console.log('[Firebase] Fetching exam list from Firestore...');
     const examsCol = collection(db, 'exams');
+
+    // Helper: Parse snapshot to exam list
+    const parseSnapshot = (snapshot) => {
+        return snapshot.docs.map(doc => {
+            const data = doc.data();
+            return {
+                id: doc.id,
+                subjectId: data.subjectId,
+                title: data.title,
+                time: data.time || 50,
+                examCode: data.examCode || '',
+                createdAt: data.createdAt || '',
+                author: data.author || '',
+                attemptCount: data.attemptCount || 0,
+                tags: data.tags || []
+            };
+        });
+    };
+
+    try {
+        // Try to get from IndexedDB cache first (FAST - usually < 50ms)
+        console.log('[Firebase] Trying IndexedDB cache first...');
+        const cachedSnapshot = await getDocsFromCache(examsCol);
+
+        if (!cachedSnapshot.empty) {
+            const exams = parseSnapshot(cachedSnapshot);
+            console.log('[Firebase] ⚡ Loaded', exams.length, 'exams from IndexedDB cache (instant)');
+
+            // Update memory cache
+            examListCache = exams;
+            examListCacheTime = Date.now();
+
+            // Background sync: fetch from server to update cache (non-blocking)
+            getDocs(examsCol).then(serverSnapshot => {
+                const serverExams = parseSnapshot(serverSnapshot);
+                if (serverExams.length !== exams.length) {
+                    console.log('[Firebase] Background sync updated exam list:', serverExams.length, 'exams');
+                    examListCache = serverExams;
+                    examListCacheTime = Date.now();
+                }
+            }).catch(() => {
+                // Silent fail for background sync
+            });
+
+            return exams;
+        }
+    } catch (cacheErr) {
+        // Cache miss or error - fall through to network fetch
+        console.log('[Firebase] Cache miss, fetching from server...');
+    }
+
+    // Fetch from server (slower - usually 200-500ms)
+    console.log('[Firebase] Fetching exam list from server...');
     const snapshot = await getDocs(examsCol);
+    const exams = parseSnapshot(snapshot);
 
-    // Chỉ lấy metadata cần thiết, KHÔNG lấy part1/part2/part3
-    const exams = snapshot.docs.map(doc => {
-        const data = doc.data();
-        return {
-            id: doc.id,
-            subjectId: data.subjectId,
-            title: data.title,
-            time: data.time || 50,
-            examCode: data.examCode || '',
-            createdAt: data.createdAt || '',
-            author: data.author || '',
-            attemptCount: data.attemptCount || 0,
-            tags: data.tags || []
-        };
-    });
-
-    // Cache the result
+    // Update memory cache
     examListCache = exams;
     examListCacheTime = Date.now();
-    console.log('[Firebase] Fetched and cached', exams.length, 'exams');
+    console.log('[Firebase] Fetched and cached', exams.length, 'exams from server');
 
     return exams;
 }
@@ -812,72 +894,78 @@ export async function getAllExamsMetadata() {
 
 /**
  * Lấy nội dung chi tiết của 1 exam (lazy loading)
- * Cache kết quả trong MEMORY - tự động clear khi refresh trang
- * KHÔNG dùng localStorage để tránh data stale và các vấn đề quota
+ * CACHE-FIRST STRATEGY:
+ * 1. Check memory cache (fastest)
+ * 2. Try IndexedDB cache (fast - ~50ms)
+ * 3. Fetch from server (slower - 200-500ms)
  */
-
 export async function getExamContent(examId) {
-    // Check memory cache first (fastest)
+    // 1. Check memory cache first (instant)
     if (examContentCache.has(examId)) {
-        console.log('[Firebase] Returning memory-cached content for exam:', examId);
+        console.log('[Firebase] ⚡ Returning memory-cached content for exam:', examId);
         return examContentCache.get(examId);
     }
 
-    // Fetch from Firebase
-    const MAX_RETRIES = 1; // Single attempt for faster response
-    const TIMEOUT_MS = 5000; // 5 seconds timeout
-    let lastError = null;
+    const examRef = doc(db, 'exams', examId);
 
-    for (let i = 0; i < MAX_RETRIES; i++) {
-        try {
-            console.log(`[Firebase] Fetching exam content for: ${examId} (Attempt ${i + 1}/${MAX_RETRIES})`);
+    // Helper: Parse doc to content
+    const parseDoc = (examSnap) => {
+        if (!examSnap.exists()) return null;
+        const data = examSnap.data();
+        return {
+            id: examId,
+            title: data.title,
+            time: data.time,
+            part1: data.part1 || [],
+            part2: data.part2 || [],
+            part3: data.part3 || []
+        };
+    };
 
-            // Create a timeout promise to race against the network request
-            const timeoutPromise = new Promise((_, reject) => {
-                const id = setTimeout(() => {
-                    clearTimeout(id);
-                    reject(new Error('Network timeout - connection too slow'));
-                }, TIMEOUT_MS);
-            });
+    // 2. Try IndexedDB cache (fast)
+    try {
+        console.log('[Firebase] Trying IndexedDB cache for exam:', examId);
+        const cachedSnap = await getDocFromCache(examRef);
 
-            const examRef = doc(db, 'exams', examId);
-            // Race between getDoc and timeout
-            const examSnap = await Promise.race([getDoc(examRef), timeoutPromise]);
+        if (cachedSnap.exists()) {
+            const content = parseDoc(cachedSnap);
+            console.log('[Firebase] ⚡ Loaded exam from IndexedDB cache:', examId);
 
-            if (examSnap.exists()) {
-                const data = examSnap.data();
-                const content = {
-                    id: examId,
-                    title: data.title,
-                    time: data.time,
-                    part1: data.part1 || [],
-                    part2: data.part2 || [],
-                    part3: data.part3 || []
-                };
+            // Update memory cache
+            examContentCache.set(examId, content);
 
-                // Cache in memory only
-                examContentCache.set(examId, content);
-                console.log('[Firebase] Cached content in memory for exam:', examId);
-
-                return content;
-            }
-            // Document doesn't exist - don't retry, just return null
-            return null;
-
-        } catch (err) {
-            console.warn(`[Firebase] getExamContent attempt ${i + 1} failed:`, err.message);
-            lastError = err;
-
-            // Wait before retry (exponential backoff: 500ms, 1s...)
-            if (i < MAX_RETRIES - 1) {
-                const waitTime = 500 * Math.pow(2, i);
-                await new Promise(r => setTimeout(r, waitTime));
-            }
+            return content;
         }
+    } catch (cacheErr) {
+        // Cache miss - fall through to network
+        console.log('[Firebase] Cache miss for exam:', examId);
     }
 
-    console.error('[Firebase] All attempts to fetch exam content failed.');
-    throw lastError || new Error('Không thể tải nội dung bài thi (Lỗi kết nối)');
+    // 3. Fetch from server
+    const TIMEOUT_MS = 8000; // 8 seconds timeout
+
+    try {
+        console.log('[Firebase] Fetching exam content from server:', examId);
+
+        const timeoutPromise = new Promise((_, reject) => {
+            setTimeout(() => reject(new Error('Network timeout')), TIMEOUT_MS);
+        });
+
+        const examSnap = await Promise.race([getDoc(examRef), timeoutPromise]);
+        const content = parseDoc(examSnap);
+
+        if (content) {
+            // Cache in memory
+            examContentCache.set(examId, content);
+            console.log('[Firebase] Cached exam content in memory:', examId);
+        }
+
+        return content;
+
+    } catch (err) {
+        console.error('[Firebase] Failed to fetch exam content:', err.message);
+        throw new Error('Không thể tải nội dung bài thi. Vui lòng thử lại.');
+    }
 }
 
 /**
