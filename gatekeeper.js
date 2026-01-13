@@ -2460,9 +2460,9 @@ export async function setSpecialLetterEnabled(enabled) {
 // ============================================================
 
 /**
- * Gửi yêu cầu đăng ký tài khoản mới
- * Tạo tài khoản Firebase Auth với email dựa trên username
- * Lưu thông tin vào pending_registrations để Admin duyệt whitelist
+ * Gửi yêu cầu đăng ký tài khoản mới - TỰ ĐỘNG PHÊ DUYỆT (AUTO-APPROVE)
+ * Tạo tài khoản Firebase Auth và thêm ngay vào whitelist (allowed_users)
+ * User có thể sử dụng ngay lập tức không cần Admin duyệt
  * @param {Object} data - Thông tin đăng ký
  * @returns {Promise<{success: boolean, error?: string}>}
  */
@@ -2485,35 +2485,24 @@ export async function submitRegistration(data) {
             return { success: false, error: 'Mật khẩu phải có ít nhất 6 ký tự.' };
         }
 
-        // Create email from username (Firebase Auth requires email format)
+        // Create email from username
         const email = `${username.toLowerCase()}@studystation.local`;
 
-        // Check if username already exists in pending registrations
-        const pendingCol = collection(db, 'pending_registrations');
-        const pendingQuery = query(pendingCol, where('username', '==', username.toLowerCase()));
-        const pendingSnapshot = await getDocs(pendingQuery);
-
-        if (!pendingSnapshot.empty) {
-            return { success: false, error: 'Tên đăng nhập này đã được đăng ký, đang chờ duyệt.' };
-        }
-
         // Check if already in allowed_users
+        // Note: Firebase Auth check below handles duplication, but this gives a clearer error early
         try {
             const allowedUserRef = doc(db, 'allowed_users', email);
             const allowedUserSnap = await getDoc(allowedUserRef);
             if (allowedUserSnap.exists()) {
                 return { success: false, error: 'Tên đăng nhập này đã tồn tại.' };
             }
-        } catch (e) {
-            // Ignore - user doesn't exist yet
-        }
+        } catch (e) { }
 
-        // Create Firebase Auth account
+        // 1. Create Firebase Auth account
         let userCredential;
         try {
             userCredential = await createUserWithEmailAndPassword(auth, email, password);
 
-            // Update profile with display name
             await updateProfile(userCredential.user, {
                 displayName: fullName.trim()
             });
@@ -2532,27 +2521,57 @@ export async function submitRegistration(data) {
             return { success: false, error: 'Không thể tạo tài khoản. Vui lòng thử lại.' };
         }
 
-        // Save to pending_registrations for Admin approval
-        const registrationData = {
-            uid: userCredential.user.uid,
-            fullName: fullName.trim(),
-            birthDate: birthDate,
-            gender: gender,
-            classRoom: classRoom.trim().toUpperCase(),
-            username: username.toLowerCase(),
+        // 2. AUTO-APPROVE: Add directly to Allowed Users (Whitelist)
+        const whitelistData = {
             email: email,
-            status: 'pending',
-            createdAt: new Date().toISOString(),
-            reviewedAt: null,
-            reviewedBy: null
+            name: fullName.trim(),
+            role: 'user', // Default role
+            addedAt: new Date().toISOString(),
+            addedBy: 'system_auto_register',
+            registrationData: {
+                username: username.toLowerCase(),
+                birthDate: birthDate,
+                gender: gender,
+                classRoom: classRoom.trim().toUpperCase()
+            },
+            // Initialize session data
+            sessions: {},
+            last_login: new Date().toISOString(),
+            login_count: 1
         };
 
-        await addDoc(pendingCol, registrationData);
+        try {
+            await setDoc(doc(db, 'allowed_users', email), whitelistData);
+            console.log('[Registration] User auto-whitelisted:', email);
+        } catch (dbError) {
+            console.error('[Registration] Failed to write whitelist:', dbError);
+            // Non-fatal, admin can fix later verify, but user might be 'Guest' temporarily
+        }
 
-        // Sign out after registration (user needs to wait for approval)
-        await signOut(auth);
+        // 3. Log to pending_registrations for history (marked as approved)
+        try {
+            const registrationData = {
+                uid: userCredential.user.uid,
+                fullName: fullName.trim(),
+                birthDate: birthDate,
+                gender: gender,
+                classRoom: classRoom.trim().toUpperCase(),
+                username: username.toLowerCase(),
+                email: email,
+                status: 'auto-approved', // Status approved directly
+                createdAt: new Date().toISOString(),
+                reviewedAt: new Date().toISOString(),
+                reviewedBy: 'system'
+            };
+            await addDoc(collection(db, 'pending_registrations'), registrationData);
+        } catch (logError) {
+            // Ignore logging error
+        }
 
-        console.log('[Registration] New registration submitted:', username);
+        // 4. Do NOT sign out. The user is now logged in and whitelisted.
+        // The onAuthStateChanged listener in initGatekeeper will handle the redirection.
+
+        console.log('[Registration] Registration successful and logged in:', username);
         return { success: true };
 
     } catch (error) {
