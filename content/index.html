@@ -476,7 +476,7 @@
                         <a id="admin-link" href="./admin/index.html"
                             class="hidden block px-4 py-2.5 text-sm text-red-600 font-bold hover:bg-red-50 transition-colors">⚡
                             Trang Quản Trị</a>
-                        <a href="#"
+                        <a href="javascript:void(0)" onclick="window.userProfile.open()" id="btn-open-profile"
                             class="block px-4 py-2.5 text-sm text-gray-700 hover:bg-gray-50 hover:text-blue-600 transition-colors">Hồ
                             sơ cá nhân</a>
                         <button id="menu-history-btn"
@@ -2742,6 +2742,142 @@
             window.docsApp = docsApp;
         </script>
 
+        <!-- MODULE USER PROFILE LOGIC -->
+        <script type="module">
+            import { getUserProfile, updateUserPassword } from "../gatekeeper.js";
+
+            // Global User Profile Controller
+            window.userProfile = {
+                modal: document.getElementById('user-profile-modal'),
+
+                // Elements Cache
+                els: {},
+
+                initElements() {
+                    this.els = {
+                        avatar: document.getElementById('profile-avatar'),
+                        name: document.getElementById('profile-name'),
+                        email: document.getElementById('profile-email'),
+                        role: document.getElementById('profile-role-badge'),
+
+                        username: document.getElementById('profile-username'),
+                        class: document.getElementById('profile-class'),
+                        dob: document.getElementById('profile-dob'),
+                        gender: document.getElementById('profile-gender'),
+
+                        tabInfo: document.getElementById('tab-btn-info'),
+                        tabSecurity: document.getElementById('tab-btn-security'),
+                        contentInfo: document.getElementById('tab-content-info'),
+                        contentSecurity: document.getElementById('tab-content-security'),
+
+                        passError: document.getElementById('password-error'),
+                        passSuccess: document.getElementById('password-success'),
+                        btnChangePass: document.getElementById('btn-change-pass')
+                    };
+                },
+
+                async open() {
+                    if (!this.els.avatar) this.initElements();
+
+                    // Show modal
+                    this.modal.classList.remove('hidden');
+                    this.modal.classList.add('flex');
+
+                    // Reset State
+                    this.switchTab('info');
+                    this.resetForm();
+
+                    // Load data
+                    await this.loadData();
+
+                    // Close dropdown if open (finding global closeDropdown function if accessible, else UI click)
+                    const accDropdown = document.getElementById('acc-dropdown');
+                    if (accDropdown) accDropdown.classList.add('hidden');
+                },
+
+                close() {
+                    this.modal.classList.add('hidden');
+                    this.modal.classList.remove('flex');
+                },
+
+                switchTab(tab) {
+                    if (!this.els.tabInfo) this.initElements();
+
+                    if (tab === 'info') {
+                        this.els.tabInfo.className = "flex-1 pb-3 text-sm font-bold text-blue-600 border-b-2 border-blue-600 transition-colors focus:outline-none";
+                        this.els.tabSecurity.className = "flex-1 pb-3 text-sm font-bold text-gray-400 hover:text-gray-600 transition-colors focus:outline-none";
+                        this.els.contentInfo.classList.remove('hidden');
+                        this.els.contentSecurity.classList.add('hidden');
+                    } else {
+                        this.els.tabInfo.className = "flex-1 pb-3 text-sm font-bold text-gray-400 hover:text-gray-600 transition-colors focus:outline-none";
+                        this.els.tabSecurity.className = "flex-1 pb-3 text-sm font-bold text-blue-600 border-b-2 border-blue-600 transition-colors focus:outline-none";
+                        this.els.contentInfo.classList.add('hidden');
+                        this.els.contentSecurity.classList.remove('hidden');
+                    }
+                },
+
+                async loadData() {
+                    const profile = await getUserProfile();
+                    if (!profile) return;
+
+                    // Fill data
+                    this.els.name.textContent = profile.name || 'Người dùng';
+                    this.els.email.textContent = profile.email;
+                    if (profile.role) this.els.role.textContent = profile.role.toUpperCase();
+
+                    // Details (from auto-registration or manual update)
+                    const details = profile.registrationData || {};
+                    this.els.username.textContent = details.username || '--';
+                    this.els.class.textContent = details.classRoom || '--';
+                    this.els.dob.textContent = details.birthDate || '--';
+
+                    const gTranslate = { 'male': 'Nam', 'female': 'Nữ', 'other': 'Khác' };
+                    this.els.gender.textContent = gTranslate[details.gender] || details.gender || '--';
+                },
+
+                resetForm() {
+                    if (document.getElementById('new-password')) document.getElementById('new-password').value = '';
+                    if (document.getElementById('confirm-new-password')) document.getElementById('confirm-new-password').value = '';
+                    if (this.els.passError) this.els.passError.classList.add('hidden');
+                    if (this.els.passSuccess) this.els.passSuccess.classList.add('hidden');
+                },
+
+                async changePassword(e) {
+                    e.preventDefault();
+                    const p1 = document.getElementById('new-password').value;
+                    const p2 = document.getElementById('confirm-new-password').value;
+
+                    if (p1 !== p2) {
+                        this.showError('Mật khẩu xác nhận không khớp.');
+                        return;
+                    }
+
+                    this.els.btnChangePass.disabled = true;
+                    this.els.btnChangePass.textContent = 'Đang cập nhật...';
+                    this.els.passError.classList.add('hidden');
+
+                    const result = await updateUserPassword(p1);
+
+                    if (result.success) {
+                        this.els.passSuccess.textContent = 'Đổi mật khẩu thành công!';
+                        this.els.passSuccess.classList.remove('hidden');
+                        // Clear inputs
+                        document.getElementById('new-password').value = '';
+                        document.getElementById('confirm-new-password').value = '';
+                    } else {
+                        this.showError(result.error);
+                    }
+
+                    this.els.btnChangePass.disabled = false;
+                    this.els.btnChangePass.textContent = 'Cập nhật mật khẩu';
+                },
+
+                showError(msg) {
+                    this.els.passError.textContent = msg;
+                    this.els.passError.classList.remove('hidden');
+                }
+            };
+        </script>
 </body>
 
 </html>
