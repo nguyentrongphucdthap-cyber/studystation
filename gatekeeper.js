@@ -424,26 +424,27 @@ function handleNotLoggedIn(isProtected, loadingEl) {
 }
 
 function handleAuthError(error, isProtected) {
-    // Xử lý đặc biệt cho lỗi offline - không đá user
+    // Xử lý đặc biệt cho lỗi offline - không đá user, không auto-reload
     const isOfflineError = error.message?.includes('offline') ||
         error.message?.includes('network') ||
         error.code === 'unavailable';
 
     if (isOfflineError) {
-        console.warn('[Gatekeeper] Offline error detected, not logging out');
-        // Hiển thị thông báo nhẹ nhàng hơn
+        console.warn('[Gatekeeper] Offline error detected, continuing with cached data');
+        // Hiển thị thông báo nhẹ nhàng, KHÔNG AUTO-RELOAD để tránh vòng lặp
         const loadingEl = document.getElementById('gatekeeper-loading');
         if (loadingEl) {
             loadingEl.innerHTML = `
                 <div style="text-align:center;padding:20px">
                     <div style="font-size:48px;margin-bottom:16px">📶</div>
-                    <div style="font-weight:600;font-size:18px;margin-bottom:8px">Mất kết nối mạng</div>
-                    <div style="color:#94a3b8;font-size:14px">Đang thử kết nối lại...</div>
+                    <div style="font-weight:600;font-size:18px;margin-bottom:8px">Kết nối không ổn định</div>
+                    <div style="color:#94a3b8;font-size:14px;margin-bottom:16px">Đang sử dụng dữ liệu đã lưu</div>
+                    <button onclick="location.reload()" style="background:#2563eb;color:white;border:none;padding:10px 20px;border-radius:8px;font-weight:600;cursor:pointer">Tải lại trang</button>
                 </div>
             `;
+            loadingEl.style.display = 'flex';
         }
-        // Thử lại sau 3 giây
-        setTimeout(() => window.location.reload(), 3000);
+        // KHÔNG AUTO-RELOAD - để user tự quyết định
         return;
     }
 
@@ -603,7 +604,21 @@ function showSessionKickModal(deviceType) {
 // V3: Chỉ kick nếu có session MỚI HƠN trên CÙNG LOẠI thiết bị
 // Cho phép: 1 desktop + 1 mobile cùng lúc
 // Không cho phép: 2 desktop hoặc 2 mobile cùng lúc
+// V4: Thêm debounce cho role change để tránh reload liên tục
+let roleChangeDebounceTimer = null;
+let lastKnownRole = null;
+let isExamInProgress = false; // Flag để ngăn reload khi đang làm bài
+
+// Expose function để Practice module có thể set flag
+export function setExamInProgress(inProgress) {
+    isExamInProgress = inProgress;
+    console.log('[Gatekeeper] Exam in progress:', inProgress);
+}
+
 function setupRealtimeMonitor(userRef, currentLocalSession, currentDeviceType) {
+    // Initialize lastKnownRole
+    lastKnownRole = sessionStorage.getItem(USER_ROLE_KEY);
+
     onSnapshot(userRef, (snap) => {
         if (!snap.exists()) return; // User bị xóa khỏi whitelist
 
@@ -622,7 +637,14 @@ function setupRealtimeMonitor(userRef, currentLocalSession, currentDeviceType) {
             const localTime = parseInt(currentLocalSession, 10);
 
             // Chỉ kick nếu có đăng nhập MỚI HƠN trên CÙNG LOẠI thiết bị
+            // VÀ không đang làm bài thi
             if (!isNaN(serverTime) && !isNaN(localTime) && serverTime > localTime) {
+                // Nếu đang làm bài thi, không kick ngay lập tức
+                if (isExamInProgress) {
+                    console.log('[Gatekeeper] Session change detected but exam in progress, deferring kick');
+                    return;
+                }
+
                 console.log('[Gatekeeper] Newer session detected on same device type:', {
                     deviceType: currentDeviceType,
                     serverTime,
@@ -643,18 +665,45 @@ function setupRealtimeMonitor(userRef, currentLocalSession, currentDeviceType) {
             }
         }
 
-        // 2. Check Role Update (Cập nhật quyền ngay lập tức)
+        // 2. Check Role Update với DEBOUNCE để tránh reload liên tục
         const newRole = data.role || DEFAULT_ROLE;
-        const oldRole = sessionStorage.getItem(USER_ROLE_KEY);
+        const currentStoredRole = sessionStorage.getItem(USER_ROLE_KEY);
 
-        if (newRole !== oldRole) {
-            console.log("Role updated from server:", newRole);
+        // Chỉ xử lý nếu role thực sự thay đổi VÀ khác với lần cuối check
+        if (newRole !== currentStoredRole && newRole !== lastKnownRole) {
+            console.log('[Gatekeeper] Role change detected:', { old: currentStoredRole, new: newRole, lastKnown: lastKnownRole });
+
+            // Update lastKnownRole để tránh trigger lại
+            lastKnownRole = newRole;
             setUserRole(newRole);
-            window.location.reload();
+
+            // Nếu đang làm bài thi, KHÔNG reload
+            if (isExamInProgress) {
+                console.log('[Gatekeeper] Role changed but exam in progress, skipping reload');
+                return;
+            }
+
+            // Debounce reload - chỉ reload sau 2 giây nếu không có thay đổi mới
+            if (roleChangeDebounceTimer) {
+                clearTimeout(roleChangeDebounceTimer);
+            }
+
+            roleChangeDebounceTimer = setTimeout(() => {
+                // Double-check role still different before reload
+                const finalCheck = sessionStorage.getItem(USER_ROLE_KEY);
+                if (finalCheck !== currentStoredRole && !isExamInProgress) {
+                    console.log('[Gatekeeper] Role change confirmed, reloading page');
+                    window.location.reload();
+                } else {
+                    console.log('[Gatekeeper] Role change cancelled (reverted or exam started)');
+                }
+            }, 2000); // 2 second debounce
         }
     }, (error) => {
-        // Xử lý lỗi realtime listener (offline)
-        console.warn('[Gatekeeper] Realtime listener error:', error.message);
+        // Xử lý lỗi realtime listener (offline) - KHÔNG LOG SPAM
+        if (!error.message?.includes('offline')) {
+            console.warn('[Gatekeeper] Realtime listener error:', error.message);
+        }
         // Không làm gì cả - user vẫn được dùng bình thường
     });
 }
