@@ -2445,3 +2445,181 @@ export async function setSpecialLetterEnabled(enabled) {
         return false;
     }
 }
+
+// ============================================================
+// REGISTRATION SYSTEM
+// ============================================================
+
+/**
+ * Gửi yêu cầu đăng ký tài khoản mới
+ * Dữ liệu sẽ được lưu vào collection 'pending_registrations' để Admin duyệt
+ * @param {Object} data - Thông tin đăng ký
+ * @returns {Promise<{success: boolean, error?: string}>}
+ */
+export async function submitRegistration(data) {
+    try {
+        const { fullName, birthDate, gender, classRoom, username, password } = data;
+
+        // Validate required fields
+        if (!fullName || !birthDate || !gender || !classRoom || !username || !password) {
+            return { success: false, error: 'Vui lòng điền đầy đủ thông tin.' };
+        }
+
+        // Check if username already exists in pending registrations
+        const pendingCol = collection(db, 'pending_registrations');
+        const pendingQuery = query(pendingCol, where('username', '==', username));
+        const pendingSnapshot = await getDocs(pendingQuery);
+
+        if (!pendingSnapshot.empty) {
+            return { success: false, error: 'Tên đăng nhập này đã được đăng ký, đang chờ duyệt.' };
+        }
+
+        // Check if username already exists in whitelist
+        const whitelistCol = collection(db, 'whitelist');
+        const whitelistSnapshot = await getDocs(whitelistCol);
+        const existingEmails = whitelistSnapshot.docs.map(d => d.data().email?.toLowerCase());
+
+        // Create a fake email for checking (since we use Google Sign-In, 
+        // we'll create a placeholder for the username-based registration)
+        const placeholderEmail = `${username}@studystation.pending`;
+
+        // Save to pending_registrations collection
+        const registrationData = {
+            fullName: fullName.trim(),
+            birthDate: birthDate,
+            gender: gender,
+            classRoom: classRoom.trim().toUpperCase(),
+            username: username.toLowerCase(),
+            // Hash password (simple base64 encoding for demo - in production use proper hashing)
+            passwordHash: btoa(password),
+            email: placeholderEmail,
+            status: 'pending',
+            createdAt: new Date().toISOString(),
+            reviewedAt: null,
+            reviewedBy: null
+        };
+
+        await addDoc(pendingCol, registrationData);
+
+        console.log('[Registration] New registration submitted:', username);
+        return { success: true };
+
+    } catch (error) {
+        console.error('[Registration] Submit failed:', error);
+        return { success: false, error: 'Đã xảy ra lỗi khi gửi đăng ký. Vui lòng thử lại.' };
+    }
+}
+
+/**
+ * Lấy danh sách đăng ký đang chờ duyệt (Chỉ Admin)
+ * @returns {Promise<Array>}
+ */
+export async function getPendingRegistrations() {
+    try {
+        if (!checkIsAdmin()) {
+            console.warn('[Registration] Only Admin can view pending registrations');
+            return [];
+        }
+
+        const pendingCol = collection(db, 'pending_registrations');
+        const q = query(pendingCol, where('status', '==', 'pending'));
+        const snapshot = await getDocs(q);
+
+        const registrations = snapshot.docs.map(doc => ({
+            id: doc.id,
+            ...doc.data()
+        }));
+
+        // Sort by createdAt descending
+        registrations.sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt));
+
+        console.log('[Registration] Loaded', registrations.length, 'pending registrations');
+        return registrations;
+
+    } catch (error) {
+        console.error('[Registration] Failed to load pending registrations:', error);
+        return [];
+    }
+}
+
+/**
+ * Duyệt hoặc từ chối đăng ký (Chỉ Admin)
+ * @param {string} registrationId - ID của đăng ký
+ * @param {boolean} approved - true để duyệt, false để từ chối
+ * @param {string} role - Role nếu được duyệt (mặc định 'user')
+ * @returns {Promise<{success: boolean, error?: string}>}
+ */
+export async function reviewRegistration(registrationId, approved, role = 'user') {
+    try {
+        if (!checkIsAdmin()) {
+            return { success: false, error: 'Chỉ Admin mới có quyền duyệt đăng ký.' };
+        }
+
+        const regRef = doc(db, 'pending_registrations', registrationId);
+        const regSnap = await getDoc(regRef);
+
+        if (!regSnap.exists()) {
+            return { success: false, error: 'Không tìm thấy đăng ký này.' };
+        }
+
+        const regData = regSnap.data();
+
+        if (approved) {
+            // Add to whitelist
+            // Note: Since we use Google Sign-In, the user will need to sign in with Google
+            // We'll create a placeholder that can be matched later
+            const whitelistData = {
+                email: regData.email,
+                name: regData.fullName,
+                role: role,
+                addedAt: new Date().toISOString(),
+                addedBy: auth.currentUser?.email || 'admin',
+                registrationData: {
+                    username: regData.username,
+                    birthDate: regData.birthDate,
+                    gender: regData.gender,
+                    classRoom: regData.classRoom
+                }
+            };
+
+            await addDoc(collection(db, 'whitelist'), whitelistData);
+        }
+
+        // Update registration status
+        await updateDoc(regRef, {
+            status: approved ? 'approved' : 'rejected',
+            reviewedAt: new Date().toISOString(),
+            reviewedBy: auth.currentUser?.email || 'admin',
+            assignedRole: approved ? role : null
+        });
+
+        console.log('[Registration] Registration', registrationId, approved ? 'approved' : 'rejected');
+        return { success: true };
+
+    } catch (error) {
+        console.error('[Registration] Review failed:', error);
+        return { success: false, error: 'Đã xảy ra lỗi. Vui lòng thử lại.' };
+    }
+}
+
+/**
+ * Xóa đăng ký (Chỉ Admin)
+ * @param {string} registrationId - ID của đăng ký
+ * @returns {Promise<{success: boolean, error?: string}>}
+ */
+export async function deleteRegistration(registrationId) {
+    try {
+        if (!checkIsAdmin()) {
+            return { success: false, error: 'Chỉ Admin mới có quyền xóa đăng ký.' };
+        }
+
+        await deleteDoc(doc(db, 'pending_registrations', registrationId));
+
+        console.log('[Registration] Registration deleted:', registrationId);
+        return { success: true };
+
+    } catch (error) {
+        console.error('[Registration] Delete failed:', error);
+        return { success: false, error: 'Đã xảy ra lỗi. Vui lòng thử lại.' };
+    }
+}
