@@ -2488,16 +2488,6 @@ export async function submitRegistration(data) {
         // Create email from username
         const email = `${username.toLowerCase()}@studystation.local`;
 
-        // Check if already in allowed_users
-        // Note: Firebase Auth check below handles duplication, but this gives a clearer error early
-        try {
-            const allowedUserRef = doc(db, 'allowed_users', email);
-            const allowedUserSnap = await getDoc(allowedUserRef);
-            if (allowedUserSnap.exists()) {
-                return { success: false, error: 'Tên đăng nhập này đã tồn tại.' };
-            }
-        } catch (e) { }
-
         // 1. Create Firebase Auth account
         let userCredential;
         try {
@@ -2518,7 +2508,7 @@ export async function submitRegistration(data) {
             } else if (authError.code === 'auth/invalid-email') {
                 return { success: false, error: 'Tên đăng nhập không hợp lệ.' };
             }
-            return { success: false, error: 'Không thể tạo tài khoản. Vui lòng thử lại.' };
+            return { success: false, error: `Lỗi tạo tài khoản: ${authError.message}` };
         }
 
         // 2. AUTO-APPROVE: Add directly to Allowed Users (Whitelist)
@@ -2541,11 +2531,19 @@ export async function submitRegistration(data) {
         };
 
         try {
+            // Force refresh token to ensure new claims (if any) are applied,
+            // though standard email claim should be there.
+            // Using setDoc to create the user profile
             await setDoc(doc(db, 'allowed_users', email), whitelistData);
             console.log('[Registration] User auto-whitelisted:', email);
         } catch (dbError) {
             console.error('[Registration] Failed to write whitelist:', dbError);
-            // Non-fatal, admin can fix later verify, but user might be 'Guest' temporarily
+            // Alert user but don't fail complete flow if auth worked
+            // return { success: false, error: `Lỗi kích hoạt tài khoản: ${dbError.message}` };
+
+            // Nếu lỗi ghi whitelist nhưng auth đã tạo xong -> User thành Guest
+            // Ta có thể retry hoặc báo lỗi. Ở đây ta sẽ return lỗi để user biết.
+            return { success: false, error: `Tài khoản đã tạo nhưng lỗi kích hoạt: ${dbError.code}. Vui lòng liên hệ Admin.` };
         }
 
         // 3. Log to pending_registrations for history (marked as approved)
@@ -2565,7 +2563,7 @@ export async function submitRegistration(data) {
             };
             await addDoc(collection(db, 'pending_registrations'), registrationData);
         } catch (logError) {
-            // Ignore logging error
+            console.warn('[Registration] Failed to log pending:', logError);
         }
 
         // 4. Do NOT sign out. The user is now logged in and whitelisted.
@@ -2576,7 +2574,7 @@ export async function submitRegistration(data) {
 
     } catch (error) {
         console.error('[Registration] Submit failed:', error);
-        return { success: false, error: 'Đã xảy ra lỗi khi gửi đăng ký. Vui lòng thử lại.' };
+        return { success: false, error: `Đã xảy ra lỗi hệ thống: ${error.message}` };
     }
 }
 
