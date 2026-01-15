@@ -522,7 +522,8 @@
                                 </path>
                             </svg>
                         </div>
-                        <span class="text-lg font-bold text-gray-800 tracking-wide group-hover:text-red-700">Bài
+                        <span
+                            class="text-lg font-bold text-white tracking-wide drop-shadow group-hover:text-yellow-300">Bài
                             Thi</span>
                     </div>
 
@@ -538,7 +539,8 @@
                                     d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"></path>
                             </svg>
                         </div>
-                        <span class="text-lg font-bold text-gray-800 tracking-wide group-hover:text-red-700">Lịch
+                        <span
+                            class="text-lg font-bold text-white tracking-wide drop-shadow group-hover:text-yellow-300">Lịch
                             Thi</span>
                     </div>
 
@@ -552,7 +554,8 @@
                                     d="M3 7v10a2 2 0 002 2h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2z"></path>
                             </svg>
                         </div>
-                        <span class="text-lg font-bold text-gray-800 tracking-wide group-hover:text-red-700">Tài
+                        <span
+                            class="text-lg font-bold text-white tracking-wide drop-shadow group-hover:text-yellow-300">Tài
                             Liệu</span>
                     </div>
 
@@ -569,7 +572,7 @@
                             </svg>
                         </div>
                         <span
-                            class="text-lg font-bold text-gray-800 tracking-wide group-hover:text-red-700">Flashcard</span>
+                            class="text-lg font-bold text-white tracking-wide drop-shadow group-hover:text-yellow-300">Flashcard</span>
                     </div>
 
                     <!-- Card E-test -->
@@ -584,7 +587,7 @@
                             </svg>
                         </div>
                         <span
-                            class="text-lg font-bold text-gray-800 tracking-wide group-hover:text-red-700">E-test</span>
+                            class="text-lg font-bold text-white tracking-wide drop-shadow group-hover:text-yellow-300">E-test</span>
                         <span
                             class="absolute top-4 right-4 text-[10px] font-bold bg-white/50 px-2 py-0.5 rounded-full text-indigo-700">EN</span>
                     </div>
@@ -596,7 +599,7 @@
             <div id="on-thi-main" class="page-content">
                 <!-- Nút Quay lại Menu -->
                 <button
-                    class="back-to-menu-btn flex items-center space-x-2 text-gray-600 hover:text-blue-600 transition-colors duration-300 mb-6 group">
+                    class="back-to-menu-btn flex items-center space-x-2 text-white/80 hover:text-yellow-300 transition-colors duration-300 mb-6 group">
                     <svg class="w-5 h-5 transition-transform duration-300 group-hover:-translate-x-1" fill="none"
                         stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
@@ -605,7 +608,7 @@
                     </svg>
                     <span class="font-medium">Quay lại Menu</span>
                 </button>
-                <h2 class="text-3xl md:text-4xl font-bold text-gray-800 mb-8">Chọn môn học (Ôn thi)</h2>
+                <h2 class="text-3xl md:text-4xl font-bold text-white mb-8 drop-shadow-lg">Chọn môn học (Ôn thi)</h2>
 
                 <div class="grid grid-cols-2 gap-6">
                     <a href="./practice/vat-li.html"
@@ -635,7 +638,7 @@
             <div id="tai-lieu-main" class="page-content">
                 <button
                     onclick="document.getElementById('docs-exam-list').classList.add('hidden'); document.getElementById('docs-subject-grid').classList.remove('hidden');"
-                    class="back-to-menu-btn flex items-center space-x-2 text-gray-600 hover:text-blue-600 transition-colors duration-300 mb-6 group">
+                    class="back-to-menu-btn flex items-center space-x-2 text-white/80 hover:text-yellow-300 transition-colors duration-300 mb-6 group">
                     <svg class="w-5 h-5 transition-transform duration-300 group-hover:-translate-x-1" fill="none"
                         stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
@@ -644,7 +647,7 @@
                     </svg>
                     <span class="font-medium">Quay lại Danh sách môn</span>
                 </button>
-                <h2 class="text-3xl md:text-4xl font-bold text-gray-800 mb-8">Kho Tài Liệu Exam</h2>
+                <h2 class="text-3xl md:text-4xl font-bold text-white mb-8 drop-shadow-lg">Kho Tài Liệu Exam</h2>
 
                 <!-- Grid Môn Học -->
                 <div id="docs-subject-grid" class="grid grid-cols-2 md:grid-cols-3 gap-6">
@@ -718,8 +721,9 @@
                 <!-- Danh sách đề thi (Ẩn mặc định) -->
                 <div id="docs-exam-list" class="hidden animate-fade-in">
                     <div class="flex items-center justify-between mb-6">
-                        <h3 id="docs-selected-subject" class="text-2xl font-bold text-blue-600">Môn học</h3>
-                        <div class="text-sm text-gray-500">Chọn đề thi để tải về</div>
+                        <h3 id="docs-selected-subject" class="text-2xl font-bold text-yellow-300 drop-shadow">Môn học
+                        </h3>
+                        <div class="text-sm text-white/70">Chọn đề thi để tải về</div>
                     </div>
                     <div id="docs-exam-container" class="grid grid-cols-1 md:grid-cols-2 gap-4">
                         <!-- Exam cards will be injected here -->
@@ -2434,8 +2438,12 @@
             },
 
             async loadData() {
+                // Ensure elements are initialized
+                if (!this.els.name) this.initElements();
+
                 // Use user info saved by onUserChange callback (guaranteed to exist if user is logged in)
                 const userInfo = window.currentUserInfo;
+                console.log('[UserProfile] currentUserInfo:', userInfo);
 
                 if (userInfo) {
                     // Fill basic data from Firebase Auth
@@ -2445,6 +2453,7 @@
                 } else {
                     // Fallback: try getCurrentUser from gatekeeper
                     const authUser = getCurrentUser();
+                    console.log('[UserProfile] getCurrentUser fallback:', authUser);
                     if (authUser) {
                         this.els.name.textContent = authUser.displayName || 'Người dùng';
                         this.els.email.textContent = authUser.email || '';
@@ -2455,12 +2464,17 @@
                 // Try to get additional info from Firestore
                 try {
                     const profile = await getUserProfile();
+                    console.log('[UserProfile] Firestore profile:', profile);
+
                     if (profile) {
                         // Check if user registered via username/password (has registrationData)
                         const details = profile.registrationData || {};
                         const isLocalAccount = profile.email?.endsWith('@studystation.local');
 
-                        // For username/password users: use fullName from registration
+                        console.log('[UserProfile] registrationData:', details);
+                        console.log('[UserProfile] isLocalAccount:', isLocalAccount);
+
+                        // For username/password users: use fullName from registration or profile.name
                         if (details.fullName) {
                             this.els.name.textContent = details.fullName;
                         } else if (profile.name) {
@@ -2494,6 +2508,13 @@
                             this.els.dob.textContent = 'Chưa cập nhật';
                             this.els.gender.textContent = 'Chưa cập nhật';
                         }
+                    } else {
+                        console.warn('[UserProfile] No profile found in Firestore');
+                        // User not in allowed_users - show defaults
+                        this.els.username.textContent = '--';
+                        this.els.class.textContent = '--';
+                        this.els.dob.textContent = '--';
+                        this.els.gender.textContent = '--';
                     }
                 } catch (e) {
                     console.warn('Could not load profile from Firestore:', e);
