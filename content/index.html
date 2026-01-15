@@ -219,201 +219,7 @@
             opacity: 1;
             transform: scale(1);
         }
-
-        /* === SPECIAL LETTER MODAL - LÁ THƯ HỒNG === */
-        .letter-modal {
-            perspective: 1000px;
-        }
-
-        .envelope {
-            position: relative;
-            width: 320px;
-            height: 220px;
-            cursor: pointer;
-            transform-style: preserve-3d;
-            transition: transform 0.5s ease;
-        }
-
-        .envelope:hover {
-            transform: translateY(-5px);
-        }
-
-        .envelope-body {
-            position: absolute;
-            width: 100%;
-            height: 100%;
-            background: linear-gradient(135deg, #fce4ec 0%, #f8bbd9 100%);
-            border-radius: 8px;
-            box-shadow: 0 15px 35px rgba(233, 30, 99, 0.3);
-        }
-
-        .envelope-flap {
-            position: absolute;
-            top: 0;
-            left: 0;
-            width: 100%;
-            height: 50%;
-            background: linear-gradient(180deg, #f48fb1 0%, #f8bbd9 100%);
-            border-radius: 8px 8px 0 0;
-            transform-origin: top center;
-            transition: transform 0.6s ease;
-            z-index: 2;
-            clip-path: polygon(0 0, 50% 100%, 100% 0);
-        }
-
-        .envelope.opened .envelope-flap {
-            transform: rotateX(180deg);
-        }
-
-        .envelope-seal {
-            position: absolute;
-            top: 50%;
-            left: 50%;
-            transform: translate(-50%, -50%);
-            font-size: 40px;
-            z-index: 3;
-            animation: pulse-seal 1.5s ease-in-out infinite;
-        }
-
-        @keyframes pulse-seal {
-
-            0%,
-            100% {
-                transform: translate(-50%, -50%) scale(1);
-            }
-
-            50% {
-                transform: translate(-50%, -50%) scale(1.15);
-            }
-        }
-
-        .letter-paper {
-            position: absolute;
-            bottom: 10px;
-            left: 50%;
-            transform: translateX(-50%) translateY(0);
-            width: 280px;
-            background: white;
-            padding: 25px 20px;
-            border-radius: 4px;
-            box-shadow: 0 4px 15px rgba(0, 0, 0, 0.1);
-            transition: transform 0.5s ease 0.3s, opacity 0.5s ease 0.3s;
-            opacity: 0;
-            z-index: 0;
-            pointer-events: none;
-        }
-
-        .envelope.opened .letter-paper {
-            transform: translateX(-50%) translateY(-80px);
-            opacity: 1;
-            pointer-events: auto;
-            z-index: 4;
-        }
-
-        .letter-title {
-            font-family: 'Pacifico', 'Dancing Script', cursive;
-            color: #e91e63;
-            font-size: 18px;
-            text-align: center;
-            margin-bottom: 10px;
-        }
-
-        .letter-message {
-            font-size: 13px;
-            color: #6b5b5b;
-            text-align: center;
-            line-height: 1.6;
-        }
-
-        .letter-cta {
-            display: block;
-            margin: 15px auto 0;
-            padding: 10px 25px;
-            background: linear-gradient(135deg, #ec407a, #f48fb1);
-            color: white;
-            border: none;
-            border-radius: 25px;
-            font-weight: 600;
-            font-size: 13px;
-            cursor: pointer;
-            transition: all 0.3s;
-            box-shadow: 0 4px 15px rgba(233, 30, 99, 0.3);
-        }
-
-        .letter-cta:hover {
-            transform: scale(1.05);
-            box-shadow: 0 6px 20px rgba(233, 30, 99, 0.4);
-        }
-
-        .sparkle {
-            position: absolute;
-            width: 8px;
-            height: 8px;
-            background: #ffeb3b;
-            border-radius: 50%;
-            animation: sparkle 2s ease-in-out infinite;
-        }
-
-        @keyframes sparkle {
-
-            0%,
-            100% {
-                opacity: 0;
-                transform: scale(0);
-            }
-
-            50% {
-                opacity: 1;
-                transform: scale(1);
-            }
-        }
-
-        /* === LETTER ICON BUTTON IN HEADER === */
-        .letter-icon-btn {
-            position: relative;
-            animation: gentleFloat 3s ease-in-out infinite;
-        }
-
-        @keyframes gentleFloat {
-
-            0%,
-            100% {
-                transform: translateY(0);
-            }
-
-            50% {
-                transform: translateY(-3px);
-            }
-        }
-
-        .letter-icon-btn .letter-badge {
-            position: absolute;
-            top: 0;
-            right: 0;
-            width: 12px;
-            height: 12px;
-            background: #e91e63;
-            border-radius: 50%;
-            border: 2px solid white;
-            animation: pulse-badge 2s infinite;
-        }
-
-        @keyframes pulse-badge {
-
-            0%,
-            100% {
-                transform: scale(1);
-                box-shadow: 0 0 0 0 rgba(233, 30, 99, 0.7);
-            }
-
-            50% {
-                transform: scale(1.1);
-                box-shadow: 0 0 0 6px rgba(233, 30, 99, 0);
-            }
-        }
     </style>
-    <!-- Google Font for letter -->
-    <link href="https://fonts.googleapis.com/css2?family=Pacifico&display=swap" rel="stylesheet">
 </head>
 
 <body class="bg-gray-100 relative">
@@ -463,17 +269,7 @@
                     class="absolute top-1 right-1.5 w-2.5 h-2.5 bg-red-600 border border-white rounded-full hidden shadow-sm"></span>
             </button>
 
-            <!-- Icon Lá thư đặc biệt (chỉ hiện cho người được chỉ định) -->
-            <button id="special-letter-btn"
-                class="hidden letter-icon-btn relative p-2 text-pink-300 hover:text-pink-100 transition-colors focus:outline-none"
-                title="Tin nhắn đặc biệt 💌">
-                <svg class="w-7 h-7 filter drop-shadow-sm" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-                        d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z">
-                    </path>
-                </svg>
-                <span class="letter-badge"></span>
-            </button>
+
 
             <!-- Text Xin chào -->
             <div class="hidden md:flex flex-col items-end text-right mr-1">
@@ -514,22 +310,7 @@
                             class="block w-full text-left px-4 py-2.5 text-sm text-gray-700 hover:bg-gray-50 hover:text-blue-600 transition-colors">Lịch
                             sử thông báo</button>
                     </div>
-                    <!-- Toggle Lá thư đặc biệt (chỉ Super-Admin) -->
-                    <div id="special-letter-toggle-section" class="hidden py-2 border-t border-gray-100">
-                        <div class="px-4 py-2.5 flex items-center justify-between">
-                            <div class="flex items-center gap-2">
-                                <span class="text-pink-500">✉️</span>
-                                <span class="text-sm text-gray-700">Lá thư đặc biệt</span>
-                            </div>
-                            <label class="relative inline-flex items-center cursor-pointer">
-                                <input type="checkbox" id="special-letter-toggle" class="sr-only peer" checked>
-                                <div
-                                    class="w-9 h-5 bg-gray-200 peer-focus:outline-none peer-focus:ring-2 peer-focus:ring-pink-300 rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-4 after:w-4 after:transition-all peer-checked:bg-pink-500">
-                                </div>
-                            </label>
-                        </div>
-                        <p class="px-4 text-xs text-gray-400">Bật/tắt hiển thị lá thư cho Khánh Như</p>
-                    </div>
+
                     <div class="py-2 border-t border-gray-100">
                         <button id="acc-logout"
                             class="block w-full text-left px-4 py-2.5 text-sm text-red-600 font-bold hover:bg-red-50 transition-colors rounded-b-xl">Đăng
@@ -714,47 +495,7 @@
         </div>
     </div>
 
-    <!-- === SPECIAL LETTER MODAL - LÁ THƯ HỒNG ĐẶC BIỆT === -->
-    <div id="special-letter-modal" class="fixed inset-0 z-[60] hidden items-center justify-center p-4 letter-modal">
-        <!-- Backdrop -->
-        <div class="absolute inset-0 bg-gradient-to-br from-pink-900/80 via-purple-900/80 to-pink-900/80 backdrop-blur-sm"
-            onclick="window.specialLetter.close()"></div>
 
-        <!-- The Envelope -->
-        <div class="relative z-10">
-            <div class="envelope" id="envelope" onclick="window.specialLetter.openEnvelope()">
-                <!-- Envelope body -->
-                <div class="envelope-body">
-                    <!-- Decorative pattern -->
-                    <div
-                        class="absolute bottom-3 left-1/2 -translate-x-1/2 text-pink-300 text-xs font-medium tracking-widest">
-                        ✧ ĐẶC BIỆT ✧</div>
-                </div>
-
-                <!-- Envelope flap (triangle top) -->
-                <div class="envelope-flap"></div>
-
-                <!-- Envelope seal -->
-                <div class="envelope-seal">✉️</div>
-
-                <!-- Letter paper (reveals when opened) -->
-                <div class="letter-paper">
-                    <div class="letter-title">Có người gửi thư cho bạn! ✨</div>
-                    <div class="letter-message">
-                        Đây là tin nhắn đặc biệt<br>
-                        dành riêng cho bạn...<br>
-                        <span class="text-pink-500 font-medium">Nhấn để xem nhé!</span>
-                    </div>
-                    <button class="letter-cta" onclick="window.specialLetter.goToMessage(event)">
-                        ✨ Mở tin nhắn
-                    </button>
-                </div>
-            </div>
-
-            <!-- Close hint -->
-            <p class="text-center text-pink-200/80 mt-6 text-sm">Nhấn vào phong bì để mở ✨</p>
-        </div>
-    </div>
 
 
     <!-- Card chính của ứng dụng -->
@@ -1926,9 +1667,7 @@
             getAllNotifications,
             stopPresence,
             subscribeToOnlineUsers,
-            cleanupOldPresence,
-            getSpecialLetterEnabled,
-            setSpecialLetterEnabled
+            cleanupOldPresence
         } from "../gatekeeper.js";
 
         // Placeholder for logUserActivity (will be dynamically loaded)
@@ -2056,166 +1795,6 @@
                 if (adminBtnMobile) adminBtnMobile.classList.add('hidden');
             }
 
-            // === SPECIAL LETTER FEATURE (duongkhanhnhu1304@gmail.com or super-admin) ===
-            window.specialLetter = {
-                targetEmail: 'duongkhanhnhu1304@gmail.com',
-                storageKey: 'special_letter_seen',
-                modal: null,
-                envelope: null,
-                btn: null,
-                isSuperAdmin: false,
-                _enabled: true, // Cache trạng thái
-
-                async loadEnabledStatus() {
-                    try {
-                        this._enabled = await getSpecialLetterEnabled();
-                    } catch (e) {
-                        console.warn('[SpecialLetter] Failed to load status, using default:', e);
-                        this._enabled = true;
-                    }
-                    return this._enabled;
-                },
-
-                isEnabled() {
-                    return this._enabled;
-                },
-
-                async setEnabled(value) {
-                    const success = await setSpecialLetterEnabled(value);
-                    if (success) {
-                        this._enabled = value;
-                        // Update UI based on enabled state
-                        if (value) {
-                            this.showUI();
-                        } else {
-                            this.hideUI();
-                            this.close();
-                        }
-                    }
-                    return success;
-                },
-
-                showUI() {
-                    if (this.btn) this.btn.classList.remove('hidden');
-                },
-
-                hideUI() {
-                    if (this.btn) this.btn.classList.add('hidden');
-                },
-
-                async init(userEmail, isSuperAdmin) {
-                    this.modal = document.getElementById('special-letter-modal');
-                    this.envelope = document.getElementById('envelope');
-                    this.btn = document.getElementById('special-letter-btn');
-                    this.isSuperAdmin = isSuperAdmin;
-
-                    const isTarget = userEmail?.toLowerCase() === this.targetEmail.toLowerCase();
-                    const shouldShow = isTarget || isSuperAdmin;
-
-                    // Load trạng thái từ Firebase
-                    await this.loadEnabledStatus();
-
-                    // Hiện toggle section cho super-admin
-                    const toggleSection = document.getElementById('special-letter-toggle-section');
-                    const toggle = document.getElementById('special-letter-toggle');
-
-                    if (isSuperAdmin && toggleSection && toggle) {
-                        toggleSection.classList.remove('hidden');
-                        // Sync toggle với trạng thái hiện tại từ Firebase
-                        toggle.checked = this._enabled;
-                        // Xử lý sự kiện toggle
-                        toggle.addEventListener('change', async (e) => {
-                            const newValue = e.target.checked;
-                            toggle.disabled = true; // Disable while saving
-                            const success = await this.setEnabled(newValue);
-                            if (!success) {
-                                // Revert if failed
-                                toggle.checked = !newValue;
-                            }
-                            toggle.disabled = false;
-                        });
-                    }
-
-                    if (!shouldShow) {
-                        if (this.btn) this.btn.classList.add('hidden');
-                        return;
-                    }
-
-                    // Kiểm tra xem tính năng có được bật không (từ Firebase)
-                    if (!this._enabled) {
-                        if (this.btn) this.btn.classList.add('hidden');
-                        return;
-                    }
-
-                    // Hiện icon lá thư trên header
-                    if (this.btn) {
-                        this.btn.classList.remove('hidden');
-                        this.btn.addEventListener('click', () => this.show());
-                    }
-
-                    // Kiểm tra đã xem chưa (local - chỉ cho mỗi người dùng)
-                    const seen = localStorage.getItem(this.storageKey);
-
-                    // Ẩn badge nếu đã xem rồi
-                    if (seen) {
-                        const badge = this.btn?.querySelector('.letter-badge');
-                        if (badge) badge.style.display = 'none';
-                    } else {
-                        // Chỉ auto show lần đầu tiên
-                        setTimeout(() => this.show(), 1500);
-                    }
-                },
-
-                show() {
-                    if (!this.modal) return;
-                    // Chỉ show nếu enabled
-                    if (!this._enabled) return;
-
-                    this.modal.classList.remove('hidden');
-                    this.modal.classList.add('flex');
-                    // Reset envelope state
-                    if (this.envelope) this.envelope.classList.remove('opened');
-                },
-
-                close() {
-                    if (!this.modal) return;
-                    this.modal.classList.add('hidden');
-                    this.modal.classList.remove('flex');
-                    // Đánh dấu đã xem khi đóng modal
-                    this.markAsSeen();
-                },
-
-                openEnvelope() {
-                    if (!this.envelope) return;
-                    if (!this.envelope.classList.contains('opened')) {
-                        this.envelope.classList.add('opened');
-                        // Đánh dấu đã xem khi mở phong bì
-                        this.markAsSeen();
-                    }
-                },
-
-                markAsSeen() {
-                    localStorage.setItem(this.storageKey, 'true');
-                    // Ẩn badge
-                    const badge = this.btn?.querySelector('.letter-badge');
-                    if (badge) badge.style.display = 'none';
-                },
-
-                goToMessage(e) {
-                    e.stopPropagation();
-                    this.markAsSeen();
-                    // Go to khanh-nhu page
-                    window.location.href = './khanh-nhu/index.html';
-                }
-            };
-
-            // Initialize special letter - check if super-admin or target email
-            try {
-                const isSuperAdmin = checkIsSuperAdmin();
-                window.specialLetter.init(userEmail, isSuperAdmin);
-            } catch (e) {
-                console.log('[SpecialLetter] Init skipped:', e.message);
-            }
 
             // --- GUEST MODE UI ---
             // Ẩn Flashcard và E-test nếu là Guest
@@ -2858,7 +2437,7 @@
                 const userInfo = window.currentUserInfo;
 
                 if (userInfo) {
-                    // Fill basic data
+                    // Fill basic data from Firebase Auth
                     this.els.name.textContent = userInfo.displayName || 'Người dùng';
                     this.els.email.textContent = userInfo.email || '';
                     if (userInfo.photoURL) this.els.avatar.src = userInfo.photoURL;
@@ -2876,19 +2455,44 @@
                 try {
                     const profile = await getUserProfile();
                     if (profile) {
-                        // Override with Firestore data if available
-                        if (profile.name) this.els.name.textContent = profile.name;
-                        if (profile.email) this.els.email.textContent = profile.email;
+                        // Check if user registered via username/password (has registrationData)
+                        const details = profile.registrationData || {};
+                        const isLocalAccount = profile.email?.endsWith('@studystation.local');
+
+                        // For username/password users: use fullName from registration
+                        if (details.fullName) {
+                            this.els.name.textContent = details.fullName;
+                        } else if (profile.name) {
+                            this.els.name.textContent = profile.name;
+                        }
+
+                        // Hide email for local accounts (fake email), show "Tài khoản nội bộ" instead
+                        if (isLocalAccount) {
+                            this.els.email.textContent = 'Tài khoản nội bộ';
+                            this.els.email.classList.add('text-blue-500', 'font-medium');
+                        } else if (profile.email) {
+                            this.els.email.textContent = profile.email;
+                            this.els.email.classList.remove('text-blue-500', 'font-medium');
+                        }
+
+                        // Role badge
                         if (profile.role) this.els.role.textContent = profile.role.toUpperCase();
 
                         // Registration details (from username/password registration)
-                        const details = profile.registrationData || {};
                         if (details.username) this.els.username.textContent = details.username;
                         if (details.classRoom) this.els.class.textContent = details.classRoom;
                         if (details.birthDate) this.els.dob.textContent = details.birthDate;
 
                         const gTranslate = { 'male': 'Nam', 'female': 'Nữ', 'other': 'Khác' };
                         if (details.gender) this.els.gender.textContent = gTranslate[details.gender] || details.gender;
+
+                        // For Google users without registration data, show appropriate placeholders
+                        if (!isLocalAccount && !details.username) {
+                            this.els.username.textContent = 'Google Account';
+                            this.els.class.textContent = 'Chưa cập nhật';
+                            this.els.dob.textContent = 'Chưa cập nhật';
+                            this.els.gender.textContent = 'Chưa cập nhật';
+                        }
                     }
                 } catch (e) {
                     console.warn('Could not load profile from Firestore:', e);
