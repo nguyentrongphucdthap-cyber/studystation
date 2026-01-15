@@ -2524,6 +2524,7 @@ export async function submitRegistration(data) {
             addedAt: new Date().toISOString(),
             addedBy: 'system_auto_register',
             registrationData: {
+                fullName: fullName.trim(),
                 username: username.toLowerCase(),
                 birthDate: birthDate,
                 gender: gender,
@@ -2688,6 +2689,7 @@ export async function reviewRegistration(registrationId, approved, role = 'user'
                 addedAt: new Date().toISOString(),
                 addedBy: auth.currentUser?.email || 'admin',
                 registrationData: {
+                    fullName: regData.fullName,
                     username: regData.username,
                     birthDate: regData.birthDate,
                     gender: regData.gender,
