@@ -827,7 +827,7 @@
             <!-- NEW: Trang Lịch Thi Khối 12 (Redesigned) -->
             <div id="lich-thi-main" class="page-content">
                 <button
-                    class="back-to-menu-btn flex items-center space-x-2 text-gray-600 hover:text-blue-600 transition-colors duration-300 mb-6 group">
+                    class="back-to-menu-btn flex items-center space-x-2 text-white/80 hover:text-yellow-300 transition-colors duration-300 mb-6 group">
                     <svg class="w-5 h-5 transition-transform duration-300 group-hover:-translate-x-1" fill="none"
                         stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
@@ -839,10 +839,10 @@
 
                 <div class="flex flex-col md:flex-row items-start md:items-center justify-between mb-8 gap-4">
                     <div>
-                        <h2 class="text-3xl md:text-4xl font-bold text-gray-800 flex items-center gap-3">
+                        <h2 class="text-3xl md:text-4xl font-bold text-white flex items-center gap-3 drop-shadow-lg">
                             📅 Lịch Thi Học Kỳ I
                         </h2>
-                        <p class="text-gray-500 mt-1">Năm học 2025 - 2026 • Khối 12</p>
+                        <p class="text-yellow-200 mt-1">Năm học 2025 - 2026 • Khối 12</p>
                     </div>
                     <div
                         class="flex items-center gap-2 bg-white/50 backdrop-blur px-4 py-2 rounded-2xl border border-white/60 shadow-sm">
@@ -851,7 +851,7 @@
                                 class="animate-ping absolute inline-flex h-full w-full rounded-full bg-red-400 opacity-75"></span>
                             <span class="relative inline-flex rounded-full h-3 w-3 bg-red-500"></span>
                         </span>
-                        <span class="font-bold text-gray-700 text-sm">Trạng thái: Đang diễn ra</span>
+                        <span class="font-bold text-gray-800 text-sm">Trạng thái: Đang diễn ra</span>
                     </div>
                 </div>
 
@@ -1218,23 +1218,24 @@
                 const item = document.createElement('div');
                 item.classList.add('falling-item');
 
-                // Random Tet icons: Peach Blossom, Apricot Blossom, Red Envelope, Lantern, Sparkles
-                const icons = ['🌸', '🌼', '🧧', '🏮', '✨'];
+                // Tet-only icons: Red Envelope (Lì xì), Lantern (Đèn lồng), Peach Blossom (Hoa đào)
+                const icons = ['🧧', '🏮', '🌸'];
                 item.innerText = icons[Math.floor(Math.random() * icons.length)];
 
                 item.style.left = Math.random() * 100 + 'vw';
-                item.style.animationDuration = Math.random() * 4 + 3 + 's'; // 3-7s
-                item.style.opacity = Math.random() * 0.6 + 0.4;
-                item.style.fontSize = Math.random() * 20 + 15 + 'px';
+                item.style.animationDuration = Math.random() * 5 + 4 + 's'; // 4-9s (slower)
+                item.style.opacity = Math.random() * 0.5 + 0.3; // Slightly more transparent
+                item.style.fontSize = Math.random() * 18 + 14 + 'px'; // Slightly smaller
 
                 document.body.appendChild(item);
 
                 setTimeout(() => {
                     item.remove();
-                }, 7000);
+                }, 9000);
             }
 
-            setInterval(createFallingItem, 300);
+            // Reduced frequency: create item every 2 seconds instead of 300ms
+            setInterval(createFallingItem, 2000);
 
             // --- DATA THÔNG BÁO (sẽ được load từ Firebase) ---
             let notifications = [];
