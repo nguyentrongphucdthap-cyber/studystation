@@ -1,0 +1,435 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>EduDoc Premium - THPT Tân Hồng</title>
+    <!-- Google Fonts: Inter (400, 500, 600, 700) -->
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <!-- Mammoth.js để chuyển đổi .docx sang HTML -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/mammoth/1.6.0/mammoth.browser.min.js"></script>
+    
+    <style>
+        :root {
+            --primary: #2563eb;
+            --primary-dark: #1e40af;
+            --surface: #ffffff;
+            --background: #fdfdfd;
+            --accent-bg: #f1f5f9;
+            --text-main: #0f172a;
+            --text-muted: #64748b;
+            --glass: rgba(255, 255, 255, 0.8);
+            --radius-lg: 24px;
+            --radius-md: 16px;
+            --shadow-sm: 0 1px 3px rgba(0,0,0,0.1);
+            --shadow-premium: 0 10px 15px -3px rgba(0, 0, 0, 0.04), 0 4px 6px -4px rgba(0, 0, 0, 0.04);
+        }
+
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+            -webkit-font-smoothing: antialiased;
+        }
+
+        body {
+            font-family: 'Inter', sans-serif;
+            background-color: var(--background);
+            color: var(--text-main);
+            line-height: 1.6;
+            overflow-x: hidden;
+        }
+
+        /* --- Glassmorphism Navigation --- */
+        nav {
+            position: sticky;
+            top: 0;
+            z-index: 100;
+            background: var(--glass);
+            backdrop-filter: blur(12px);
+            -webkit-backdrop-filter: blur(12px);
+            border-bottom: 1px solid rgba(226, 232, 240, 0.8);
+            padding: 1rem 2rem;
+            transition: all 0.3s ease;
+        }
+
+        .nav-container {
+            max-width: 1200px;
+            margin: 0 auto;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+        }
+
+        .school-brand {
+            font-size: 0.95rem;
+            font-weight: 700;
+            color: var(--primary-dark);
+            text-transform: uppercase;
+            letter-spacing: 1.2px;
+            text-align: center;
+        }
+
+        /* --- Hero Section (Premium Look) --- */
+        .hero-section {
+            padding: 2.5rem 1.5rem 0 1.5rem;
+            max-width: 1250px;
+            margin: 0 auto;
+            animation: fadeInDown 0.8s ease-out;
+        }
+
+        .hero-banner {
+            position: relative;
+            height: 380px;
+            overflow: hidden;
+            border-radius: var(--radius-lg);
+            background-color: #0f172a;
+            box-shadow: 0 20px 50px rgba(0, 0, 0, 0.08);
+        }
+
+        .hero-banner img.banner-bg {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+            filter: brightness(0.9);
+            transition: transform 10s linear;
+        }
+        
+        .hero-banner:hover img.banner-bg {
+            transform: scale(1.1);
+        }
+
+        /* --- Main Layout --- */
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 4rem 1.5rem;
+        }
+
+        .section-header {
+            margin-bottom: 3.5rem;
+        }
+
+        .section-header h2 {
+            font-size: 2rem;
+            font-weight: 700;
+            color: var(--text-main);
+            letter-spacing: -0.02em;
+        }
+
+        /* Modern Grid */
+        .doc-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(320px, 1fr));
+            gap: 2.5rem;
+        }
+
+        /* Card Stylings */
+        .doc-card {
+            background: var(--surface);
+            border-radius: var(--radius-md);
+            border: 1px solid transparent;
+            padding: 1.25rem;
+            transition: all 0.4s cubic-bezier(0.2, 1, 0.2, 1);
+            cursor: pointer;
+            position: relative;
+        }
+
+        .doc-card:hover {
+            background: #fff;
+            border-color: #f1f5f9;
+            transform: translateY(-10px);
+            box-shadow: 0 30px 60px -12px rgba(0,0,0,0.08), 0 18px 36px -18px rgba(0,0,0,0.05);
+        }
+
+        .card-img-container {
+            width: 100%;
+            height: 220px;
+            border-radius: calc(var(--radius-md) - 4px);
+            overflow: hidden;
+            margin-bottom: 1.5rem;
+        }
+
+        .card-img-container img {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+            transition: transform 0.8s ease;
+        }
+
+        .doc-card:hover .card-img-container img {
+            transform: scale(1.1);
+        }
+
+        .tag-pill {
+            display: inline-flex;
+            padding: 4px 12px;
+            background: var(--accent-bg);
+            color: var(--text-muted);
+            font-size: 0.75rem;
+            font-weight: 600;
+            border-radius: 100px;
+            margin-bottom: 1rem;
+            transition: all 0.3s ease;
+        }
+
+        .doc-card:hover .tag-pill {
+            background: var(--primary);
+            color: white;
+        }
+
+        .doc-card h3 {
+            font-size: 1.35rem;
+            font-weight: 600;
+            margin-bottom: 0.75rem;
+            color: var(--text-main);
+        }
+
+        .doc-card p {
+            font-size: 0.95rem;
+            color: var(--text-muted);
+            display: -webkit-box;
+            -webkit-line-clamp: 2;
+            -webkit-box-orient: vertical;
+            overflow: hidden;
+            margin-bottom: 1.5rem;
+        }
+
+        .btn-action {
+            display: inline-flex;
+            align-items: center;
+            font-weight: 600;
+            color: var(--primary);
+            font-size: 0.9rem;
+            transition: gap 0.3s;
+        }
+
+        .doc-card:hover .btn-action {
+            gap: 12px;
+        }
+
+        /* --- Viewer (Reading Mode) --- */
+        #viewer-section {
+            display: none;
+            max-width: 900px;
+            margin: 0 auto;
+            animation: fadeInUp 0.5s ease-out;
+        }
+
+        .viewer-nav {
+            display: flex;
+            align-items: center;
+            margin-bottom: 2rem;
+            padding: 0.5rem;
+            cursor: pointer;
+            color: var(--text-muted);
+            font-weight: 500;
+            transition: color 0.2s;
+        }
+
+        .viewer-nav:hover { color: var(--primary); }
+
+        .reading-paper {
+            background: white;
+            padding: 4.5rem;
+            border-radius: var(--radius-lg);
+            box-shadow: 0 40px 100px rgba(0,0,0,0.03);
+            border: 1px solid #f8fafc;
+            min-height: 800px;
+        }
+
+        #word-content-area {
+            font-size: 1.15rem;
+            color: #334155;
+            line-height: 1.8;
+        }
+
+        #word-content-area h1 { font-size: 2.25rem; margin-bottom: 2rem; color: var(--text-main); font-weight: 700; }
+        #word-content-area p { margin-bottom: 1.25rem; }
+
+        /* --- Animations --- */
+        @keyframes fadeInDown {
+            from { opacity: 0; transform: translateY(-20px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+        @keyframes fadeInUp {
+            from { opacity: 0; transform: translateY(30px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        footer {
+            text-align: center;
+            padding: 5rem 2rem;
+            background: #fff;
+            border-top: 1px solid #f1f5f9;
+        }
+
+        .footer-school-info {
+            font-size: 0.9rem;
+            color: var(--text-muted);
+            max-width: 400px;
+            margin: 1.5rem auto 0;
+            font-weight: 400;
+        }
+
+        /* Mobile Adjustments */
+        @media (max-width: 768px) {
+            .hero-banner { height: 260px; border-radius: 16px; }
+            .reading-paper { padding: 2rem; }
+            .school-brand { font-size: 0.8rem; }
+            .doc-grid { grid-template-columns: 1fr; }
+            nav { padding: 1rem; }
+        }
+    </style>
+</head>
+<body>
+
+    <!-- Sticky Glass Navigation -->
+    <nav id="main-nav">
+        <div class="nav-container">
+            <div class="school-brand">
+                Sở GD&ĐT Đồng Tháp — Trường THPT Tân Hồng
+            </div>
+        </div>
+    </nav>
+
+    <!-- Hero Banner (Contained) -->
+    <section class="hero-section" id="hero-section">
+        <div class="hero-banner">
+            <!-- Thay bằng ảnh thực tế của trường nếu có -->
+            <img src="https://images.unsplash.com/photo-1541339907198-e08756edd811?w=1600&q=80" alt="Banner THPT Tân Hồng" class="banner-bg">
+        </div>
+    </section>
+
+    <div class="container">
+        
+        <!-- Màn hình danh sách tài liệu -->
+        <div id="selection-screen">
+            <div class="section-header">
+                <h2>Văn bản & Tài liệu</h2>
+            </div>
+
+            <div class="doc-grid">
+                <!-- Card 1 -->
+                <div class="doc-card" onclick="viewDoc('tailieu1.docx', 'Văn bản hướng dẫn chuyên môn')">
+                    <div class="card-img-container">
+                        <img src="https://images.unsplash.com/photo-1517842645767-c639042777db?w=600&q=80" alt="Văn bản">
+                    </div>
+                    <div class="doc-content">
+                        <span class="tag-pill">Chuyên môn</span>
+                        <h3>Hướng dẫn 01/HD-THPT</h3>
+                        <p>Hướng dẫn chi tiết về công tác kiểm tra, đánh giá định kỳ và hồ sơ chuyên môn năm học mới.</p>
+                        <div class="btn-action">
+                            Đọc nội dung
+                            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><line x1="5" y1="12" x2="19" y2="12"></line><polyline points="12 5 19 12 12 19"></polyline></svg>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Card 2 -->
+                <div class="doc-card" onclick="viewDoc('tailieu2.docx', 'Quy chế làm việc nội bộ')">
+                    <div class="card-img-container">
+                        <img src="https://images.unsplash.com/photo-1554224155-169641357599?w=600&q=80" alt="Quy chế">
+                    </div>
+                    <div class="doc-content">
+                        <span class="tag-pill">Quy chế</span>
+                        <h3>Quy chế làm việc 2024</h3>
+                        <p>Quy định về thời gian, trách nhiệm và quyền hạn của cán bộ công chức trong đơn vị.</p>
+                        <div class="btn-action">
+                            Đọc nội dung
+                            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><line x1="5" y1="12" x2="19" y2="12"></line><polyline points="12 5 19 12 12 19"></polyline></svg>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Card 3 -->
+                <div class="doc-card" onclick="viewDoc('tailieu3.docx', 'Thông báo chung')">
+                    <div class="card-img-container">
+                        <img src="https://images.unsplash.com/photo-1506784365847-bbad939e9335?w=600&q=80" alt="Thông báo">
+                    </div>
+                    <div class="doc-content">
+                        <span class="tag-pill">Thông báo</span>
+                        <h3>Kế hoạch tháng 02/2026</h3>
+                        <p>Lịch công tác chi tiết cho các tổ bộ môn và hoạt động ngoại khóa của nhà trường.</p>
+                        <div class="btn-action">
+                            Đọc nội dung
+                            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><line x1="5" y1="12" x2="19" y2="12"></line><polyline points="12 5 19 12 12 19"></polyline></svg>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Màn hình đọc tài liệu (Reading Mode) -->
+        <div id="viewer-section">
+            <div class="viewer-nav" onclick="backToList()">
+                <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><line x1="19" y1="12" x2="5" y2="12"></line><polyline points="12 19 5 12 12 5"></polyline></svg>
+                <span style="margin-left: 12px;">Quay lại danh sách văn bản</span>
+            </div>
+            
+            <div class="reading-paper">
+                <article id="word-content-area">
+                    <!-- Nội dung Word render tại đây -->
+                </article>
+            </div>
+        </div>
+
+    </div>
+
+    <footer>
+        <p style="font-weight: 600; color: var(--text-main);">THPT TÂN HỒNG</p>
+        <div class="footer-school-info">
+            Hệ thống quản lý văn bản số trực tuyến.<br>
+            Cập nhật lần cuối: 2026
+        </div>
+    </footer>
+
+    <script>
+        function viewDoc(file, title) {
+            const hero = document.getElementById('hero-section');
+            const selection = document.getElementById('selection-screen');
+            const viewer = document.getElementById('viewer-section');
+            const content = document.getElementById('word-content-area');
+
+            // Hiệu ứng ẩn mượt mà
+            selection.style.display = 'none';
+            hero.style.display = 'none';
+            viewer.style.display = 'block';
+
+            content.innerHTML = '<div style="text-align:center; padding: 100px; color: #94a3b8;">Đang xử lý dữ liệu tài liệu...</div>';
+
+            fetch(file)
+                .then(res => {
+                    if (!res.ok) throw new Error("Tệp không tồn tại trên máy chủ.");
+                    return res.arrayBuffer();
+                })
+                .then(buffer => {
+                    return mammoth.convertToHtml({ arrayBuffer: buffer });
+                })
+                .then(result => {
+                    content.innerHTML = `
+                        <h1>${title}</h1>
+                        <div class="content-body">${result.value}</div>
+                    `;
+                })
+                .catch(err => {
+                    content.innerHTML = `
+                        <div style="text-align:center; padding: 100px;">
+                            <h3 style="color:#ef4444;">Không thể mở văn bản</h3>
+                            <p style="color:#64748b; margin-top:10px;">${err.message}</p>
+                        </div>
+                    `;
+                });
+            
+            window.scrollTo({ top: 0, behavior: 'smooth' });
+        }
+
+        function backToList() {
+            document.getElementById('hero-section').style.display = 'block';
+            document.getElementById('selection-screen').style.display = 'block';
+            document.getElementById('viewer-section').style.display = 'none';
+            window.scrollTo({ top: 0, behavior: 'smooth' });
+        }
+    </script>
+</body>
+</html>
