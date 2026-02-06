@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>EduDoc Premium - THPT Tân Hồng</title>
+    <title>EduDoc Premium - THPT Tân Hồng - 12A2</title>
     <!-- Google Fonts: Inter (400, 500, 600, 700) -->
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
     <!-- Mammoth.js để chuyển đổi .docx sang HTML -->
@@ -68,6 +68,19 @@
             text-transform: uppercase;
             letter-spacing: 1.2px;
             text-align: center;
+            display: flex;
+            flex-wrap: wrap;
+            justify-content: center;
+            gap: 8px;
+        }
+
+        .school-brand span.separator {
+            opacity: 0.3;
+            font-weight: 400;
+        }
+
+        .school-brand .highlight-unit {
+            color: var(--primary);
         }
 
         /* --- Hero Section (Premium Look) --- */
@@ -288,7 +301,7 @@
     <nav id="main-nav">
         <div class="nav-container">
             <div class="school-brand">
-                Sở GD&ĐT Đồng Tháp — Trường THPT Tân Hồng
+                Sở GD&ĐT Đồng Tháp <span class="separator">—</span> Trường THPT Tân Hồng <span class="separator">—</span> <span class="highlight-unit">Chi đoàn 12A2</span>
             </div>
         </div>
     </nav>
@@ -296,7 +309,6 @@
     <!-- Hero Banner (Contained) -->
     <section class="hero-section" id="hero-section">
         <div class="hero-banner">
-            <!-- Thay bằng ảnh thực tế của trường nếu có -->
             <img src="https://images.unsplash.com/photo-1541339907198-e08756edd811?w=1600&q=80" alt="Banner THPT Tân Hồng" class="banner-bg">
         </div>
     </section>
@@ -306,53 +318,53 @@
         <!-- Màn hình danh sách tài liệu -->
         <div id="selection-screen">
             <div class="section-header">
-                <h2>Văn bản & Tài liệu</h2>
+                <h2>Báo cáo chi tiết dự án STEM</h2>
             </div>
 
             <div class="doc-grid">
-                <!-- Card 1 -->
-                <div class="doc-card" onclick="viewDoc('tailieu1.docx', 'Văn bản hướng dẫn chuyên môn')">
+                <!-- Card 1: Study Station -->
+                <div class="doc-card" onclick="viewDoc('studystation.docx', 'Tài liệu Study Station')">
                     <div class="card-img-container">
-                        <img src="https://images.unsplash.com/photo-1517842645767-c639042777db?w=600&q=80" alt="Văn bản">
+                        <img src="https://images.unsplash.com/photo-1434030216411-0b793f4b4173?w=600&q=80" alt="Study Station">
                     </div>
                     <div class="doc-content">
-                        <span class="tag-pill">Chuyên môn</span>
-                        <h3>Hướng dẫn 01/HD-THPT</h3>
-                        <p>Hướng dẫn chi tiết về công tác kiểm tra, đánh giá định kỳ và hồ sơ chuyên môn năm học mới.</p>
+                        <span class="tag-pill">Không gian học tập</span>
+                        <h3>Study Station</h3>
+                        <p>Hướng dẫn khai thác không gian tự học và các tài nguyên số hỗ trợ nghiên cứu tại trạm học tập.</p>
                         <div class="btn-action">
-                            Đọc nội dung
+                            Xem báo cáo chi tiết
                             <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><line x1="5" y1="12" x2="19" y2="12"></line><polyline points="12 5 19 12 12 19"></polyline></svg>
                         </div>
                     </div>
                 </div>
 
-                <!-- Card 2 -->
-                <div class="doc-card" onclick="viewDoc('tailieu2.docx', 'Quy chế làm việc nội bộ')">
+                <!-- Card 2: Tình Thế -->
+                <div class="doc-card" onclick="viewDoc('tinhthe.docx', 'Báo cáo Tình Thế')">
                     <div class="card-img-container">
-                        <img src="https://images.unsplash.com/photo-1554224155-169641357599?w=600&q=80" alt="Quy chế">
+                        <img src="https://images.unsplash.com/photo-1454165833767-0274b24f2d9b?w=600&q=80" alt="Tình Thế">
                     </div>
                     <div class="doc-content">
-                        <span class="tag-pill">Quy chế</span>
-                        <h3>Quy chế làm việc 2024</h3>
-                        <p>Quy định về thời gian, trách nhiệm và quyền hạn của cán bộ công chức trong đơn vị.</p>
+                        <span class="tag-pill">Phân tích</span>
+                        <h3>Tình Thế</h3>
+                        <p>Bản báo cáo chi tiết về tình hình thực tế và các phương án xử lý tình huống trong công tác quản lý văn bản.</p>
                         <div class="btn-action">
-                            Đọc nội dung
+                            Xem báo cáo chi tiết
                             <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><line x1="5" y1="12" x2="19" y2="12"></line><polyline points="12 5 19 12 12 19"></polyline></svg>
                         </div>
                     </div>
                 </div>
 
-                <!-- Card 3 -->
-                <div class="doc-card" onclick="viewDoc('tailieu3.docx', 'Thông báo chung')">
+                <!-- Card 3: Dreamy Girl -->
+                <div class="doc-card" onclick="viewDoc('dreamygirl.docx', 'Chuyên đề Dreamy Girl')">
                     <div class="card-img-container">
-                        <img src="https://images.unsplash.com/photo-1506784365847-bbad939e9335?w=600&q=80" alt="Thông báo">
+                        <img src="https://images.unsplash.com/photo-1494790108377-be9c29b29330?w=600&q=80" alt="Dreamy Girl">
                     </div>
                     <div class="doc-content">
-                        <span class="tag-pill">Thông báo</span>
-                        <h3>Kế hoạch tháng 02/2026</h3>
-                        <p>Lịch công tác chi tiết cho các tổ bộ môn và hoạt động ngoại khóa của nhà trường.</p>
+                        <span class="tag-pill">Văn hóa & Nghệ thuật</span>
+                        <h3>Dreamy Girl</h3>
+                        <p>Tài liệu tổng hợp về các dự án sáng tạo và hoạt động văn hóa nghệ thuật của cộng đồng học sinh.</p>
                         <div class="btn-action">
-                            Đọc nội dung
+                            Xem báo cáo chi tiết
                             <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><line x1="5" y1="12" x2="19" y2="12"></line><polyline points="12 5 19 12 12 19"></polyline></svg>
                         </div>
                     </div>
@@ -377,7 +389,7 @@
     </div>
 
     <footer>
-        <p style="font-weight: 600; color: var(--text-main);">THPT TÂN HỒNG</p>
+        <p style="font-weight: 600; color: var(--text-main);">THPT TÂN HỒNG — CHI ĐOÀN 12A2</p>
         <div class="footer-school-info">
             Hệ thống quản lý văn bản số trực tuyến.<br>
             Cập nhật lần cuối: 2026
@@ -391,7 +403,7 @@
             const viewer = document.getElementById('viewer-section');
             const content = document.getElementById('word-content-area');
 
-            // Hiệu ứng ẩn mượt mà
+            // Ẩn các thành phần khác và hiện trình xem
             selection.style.display = 'none';
             hero.style.display = 'none';
             viewer.style.display = 'block';
@@ -417,6 +429,7 @@
                         <div style="text-align:center; padding: 100px;">
                             <h3 style="color:#ef4444;">Không thể mở văn bản</h3>
                             <p style="color:#64748b; margin-top:10px;">${err.message}</p>
+                            <p style="color:#94a3b8; font-size:0.9rem; margin-top:10px;">Đảm bảo tệp <b>${file}</b> đã được đặt trong cùng thư mục.</p>
                         </div>
                     `;
                 });
