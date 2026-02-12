@@ -1,0 +1,8 @@
+{
+    "rules": {
+        "presence": {
+            ".read": "auth != null",
+            ".write": "auth != null"
+        }
+    }
+}

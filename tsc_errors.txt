@@ -1,0 +1,48 @@
+﻿src/components/ui/Toast.tsx(51,41): error TS2322: Type '({ title, message, type, duration }: Omit<Toast, "id"> & { duration?: number; }) => void' is not assignable to type '(opts: { title: string; message?: string | undefined; type?: ToastType | undefined; duration?: number | undefined; }) => void'.
+  Types of parameters '__0' and 'opts' are incompatible.
+    Type '{ title: string; message?: string | undefined; type?: ToastType | undefined; duration?: number | undefined; }' is not assignable to type 'Omit<Toast, "id"> & { duration?: number | undefined; }'.
+      Type '{ title: string; message?: string | undefined; type?: ToastType | undefined; duration?: number | undefined; }' is not assignable to type 'Omit<Toast, "id">'.
+        Types of property 'type' are incompatible.
+          Type 'ToastType | undefined' is not assignable to type 'ToastType'.
+            Type 'undefined' is not assignable to type 'ToastType'.
+src/pages/admin/AdminDashboard.tsx(2,27): error TS6133: 'useNavigate' is declared but its value is never read.
+src/pages/admin/AdminDashboard.tsx(10,1): error TS6133: 'ExamMetadata' is declared but its value is never read.
+src/pages/admin/AdminDashboard.tsx(13,28): error TS6133: 'Settings' is declared but its value is never read.
+src/pages/admin/AdminDashboard.tsx(18,12): error TS6133: 'stats' is declared but its value is never read.
+src/pages/admin/AdminDashboard.tsx(22,12): error TS6133: 'loading' is declared but its value is never read.
+src/pages/admin/AdminEtest.tsx(8,10): error TS6133: 'Plus' is declared but its value is never read.
+src/pages/admin/AdminPractice.tsx(2,35): error TS6133: 'updateExam' is declared but its value is never read.
+src/pages/admin/AdminPractice.tsx(7,1): error TS6133: 'cn' is declared but its value is never read.
+src/pages/admin/AdminPractice.tsx(8,29): error TS6196: 'Exam' is declared but never used.
+src/pages/admin/AdminPractice.tsx(8,35): error TS6196: 'Part1Question' is declared but never used.
+src/pages/admin/AdminPractice.tsx(8,50): error TS6196: 'Part2Question' is declared but never used.
+src/pages/admin/AdminPractice.tsx(8,65): error TS6196: 'Part3Question' is declared but never used.
+src/pages/admin/AdminPractice.tsx(10,5): error TS6133: 'Plus' is declared but its value is never read.
+src/pages/admin/AdminPractice.tsx(10,11): error TS6133: 'Pencil' is declared but its value is never read.
+src/pages/admin/AdminPractice.tsx(10,53): error TS6133: 'Clock' is declared but its value is never read.
+src/pages/admin/AdminPractice.tsx(10,60): error TS6133: 'BookOpen' is declared but its value is never read.
+src/pages/admin/AdminPractice.tsx(79,31): error TS6133: 'exam' is declared but its value is never read.
+src/pages/admin/AdminStudents.tsx(2,81): error TS6133: 'getWhitelistLogs' is declared but its value is never read.
+src/pages/admin/AdminStudents.tsx(7,14): error TS6133: 'formatVietnamTime' is declared but its value is never read.
+src/pages/etest/EtestExam.tsx(8,26): error TS6196: 'EtestSection' is declared but never used.
+src/pages/etest/EtestExam.tsx(10,45): error TS6133: 'Eye' is declared but its value is never read.
+src/pages/etest/EtestExam.tsx(10,50): error TS6133: 'Highlighter' is declared but its value is never read.
+src/pages/etest/EtestExam.tsx(11,5): error TS6133: 'StickyNote' is declared but its value is never read.
+src/pages/etest/EtestExam.tsx(17,7): error TS6133: 'highlightColors' is declared but its value is never read.
+src/pages/etest/EtestExam.tsx(31,22): error TS2554: Expected 1 arguments, but got 0.
+src/pages/practice/PracticeExam.tsx(20,5): error TS6133: 'ChevronLeft' is declared but its value is never read.
+src/pages/practice/PracticeExam.tsx(21,5): error TS6133: 'ChevronRight' is declared but its value is never read.
+src/pages/practice/PracticeExam.tsx(41,22): error TS2554: Expected 1 arguments, but got 0.
+src/pages/practice/PracticeHome.tsx(5,1): error TS6133: 'Button' is declared but its value is never read.
+src/pages/practice/PracticeHome.tsx(10,5): error TS6133: 'Filter' is declared but its value is never read.
+src/pages/practice/PracticeHome.tsx(12,5): error TS6133: 'Star' is declared but its value is never read.
+src/pages/practice/PracticeHome.tsx(15,5): error TS6133: 'ChevronRight' is declared but its value is never read.
+src/pages/practice/PracticeHome.tsx(165,5): error TS6133: 'subjectName' is declared but its value is never read.
+src/pages/vocab/VocabPage.tsx(7,55): error TS6133: 'XCircle' is declared but its value is never read.
+src/pages/vocab/VocabPage.tsx(64,57): error TS6133: 'type' is declared but its value is never read.
+src/services/auth.service.ts(20,5): error TS6133: 'serverTimestamp' is declared but its value is never read.
+src/services/auth.service.ts(21,5): error TS6133: 'where' is declared but its value is never read.
+src/services/auth.service.ts(24,5): error TS6133: 'updateDoc' is declared but its value is never read.
+src/services/auth.service.ts(33,5): error TS6133: 'get' is declared but its value is never read.
+src/services/etest.service.ts(10,5): error TS6133: 'query' is declared but its value is never read.
+src/services/etest.service.ts(11,5): error TS6133: 'orderBy' is declared but its value is never read.
