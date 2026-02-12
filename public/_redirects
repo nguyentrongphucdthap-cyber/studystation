@@ -1,3 +1,4 @@
 # Cloudflare Pages Redirects
-# SPA fallback — redirect all non-file requests to index.html for React Router
+# Explicitly handle index.html to prevent infinite loop
+/index.html /index.html 200
 /* /index.html 200
