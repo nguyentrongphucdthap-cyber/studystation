@@ -1,4 +1,0 @@
-# Cloudflare Pages Redirects
-# Explicitly handle index.html to prevent infinite loop
-/index.html /index.html 200
-/* /index.html 200
