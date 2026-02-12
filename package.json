@@ -9,7 +9,7 @@
     "preview": "vite preview",
     "typecheck": "tsc --noEmit",
     "lint": "eslint .",
-    "deploy": "npm run build && npx wrangler pages deploy dist --project-name=studystation",
+    "deploy": "npm run build && npx wrangler deploy --project-name=studystation",
     "preview:cf": "npx wrangler pages dev dist",
     "test": "vitest",
     "test:ui": "vitest --ui"
