@@ -9,12 +9,19 @@ export default function EtestHome() {
     const [exams, setExams] = useState<EtestExam[]>([]);
     const [loading, setLoading] = useState(true);
     const [search, setSearch] = useState('');
+    const [error, setError] = useState<string | null>(null);
 
     useEffect(() => {
-        getAllEtestExams().then((data) => {
-            setExams(data);
-            setLoading(false);
-        });
+        getAllEtestExams()
+            .then((data) => {
+                setExams(data);
+                setLoading(false);
+            })
+            .catch((err) => {
+                console.error('[Etest] Fetch error:', err);
+                setError('Không thể tải bài E-test. Vui lòng kiểm tra quyền truy cập hoặc kết nối mạng.');
+                setLoading(false);
+            });
     }, []);
 
     const filtered = search.trim()
@@ -29,6 +36,26 @@ export default function EtestHome() {
 
     if (loading) {
         return <div className="flex items-center justify-center py-20"><Spinner size="lg" label="Đang tải..." /></div>;
+    }
+
+    if (error) {
+        return (
+            <div className="text-center py-20 px-6">
+                <div className="bg-red-50 border border-red-200 rounded-xl p-6 text-red-600 max-w-md mx-auto">
+                    <p className="font-semibold mb-2">Lỗi tải dữ liệu</p>
+                    <p className="text-sm opacity-90 mb-4">{error}</p>
+                    <button
+                        onClick={() => navigate('/')}
+                        className="text-sm font-medium hover:underline flex items-center justify-center gap-2 mx-auto"
+                    >
+                        <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 19l-7-7m0 0l7-7m-7 7h18" />
+                        </svg>
+                        Quay lại Menu
+                    </button>
+                </div>
+            </div>
+        );
     }
 
     return (

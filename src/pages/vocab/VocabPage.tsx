@@ -19,6 +19,7 @@ export default function VocabPage() {
     const [currentIndex, setCurrentIndex] = useState(0);
     const [flipped, setFlipped] = useState(false);
     const [learnedIds, setLearnedIds] = useState<Set<number>>(new Set());
+    const [error, setError] = useState<string | null>(null);
 
     // Matching state
     const [matchWords, setMatchWords] = useState<VocabWord[]>([]);
@@ -27,7 +28,16 @@ export default function VocabPage() {
     const [wrongPair, setWrongPair] = useState<string | null>(null);
 
     useEffect(() => {
-        getAllVocabSets().then((data) => { setSets(data); setLoading(false); });
+        getAllVocabSets()
+            .then((data) => {
+                setSets(data);
+                setLoading(false);
+            })
+            .catch((err) => {
+                console.error('[Vocab] Fetch error:', err);
+                setError('Không thể tải danh sách từ vựng. Chỉ thành viên chính thức mới có quyền truy cập phần này.');
+                setLoading(false);
+            });
     }, []);
 
     const categories = [
@@ -85,6 +95,24 @@ export default function VocabPage() {
     }, [selectedWord, matchedPairs, matchWords]);
 
     if (loading) return <div className="flex items-center justify-center py-20"><Spinner size="lg" label="Đang tải..." /></div>;
+
+    if (error) {
+        return (
+            <div className="text-center py-20 px-6">
+                <div className="bg-red-50 border border-red-200 rounded-xl p-6 text-red-600 max-w-md mx-auto">
+                    <p className="font-semibold mb-2">Lỗi truy cập</p>
+                    <p className="text-sm opacity-90 mb-4">{error}</p>
+                    <Button
+                        variant="ghost"
+                        className="text-red-600 hover:bg-red-100 mx-auto"
+                        onClick={() => window.location.href = '/'}
+                    >
+                        Quay lại trang chủ
+                    </Button>
+                </div>
+            </div>
+        );
+    }
 
     // ==================== HOME ====================
     if (view === 'home') {

@@ -101,7 +101,7 @@ export function AdminOverview() {
     return (
         <div className="space-y-4">
             <h2 className="text-lg font-bold flex items-center gap-2">
-                <BarChart3 className="h-5 w-5 text-primary" /> Tổng quan hệ thống
+                <BarChart3 className="h-5 w-5 text-primary" /> Khu vực Giáo Viên — Tổng quan
             </h2>
             <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-4">
                 <StatBox label="Đề thi Practice" value={stats.totalExams} icon="📐" />

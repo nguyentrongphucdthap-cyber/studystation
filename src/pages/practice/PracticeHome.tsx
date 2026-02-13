@@ -3,6 +3,11 @@ import { useNavigate, useSearchParams } from 'react-router-dom';
 import { getAllExams, getSubjects, getHighestScores } from '@/services/exam.service';
 import { Spinner } from '@/components/ui/Spinner';
 import type { ExamMetadata, HighestScores } from '@/types';
+import {
+    Calculator, FlaskConical, Dna, Clock,
+    Monitor, Atom, Languages, Book,
+    ArrowLeft, Search, Trophy, Globe, Scale
+} from 'lucide-react';
 
 export default function PracticeHome() {
     const navigate = useNavigate();
@@ -11,6 +16,7 @@ export default function PracticeHome() {
     const [scores, setScores] = useState<HighestScores>({});
     const [loading, setLoading] = useState(true);
     const [searchQuery, setSearchQuery] = useState('');
+    const [error, setError] = useState<string | null>(null);
 
     const subjects = getSubjects();
     const activeSubject = searchParams.get('subject') || '';
@@ -26,6 +32,7 @@ export default function PracticeHome() {
                 setScores(highScores);
             } catch (err) {
                 console.error('[Practice] Load error:', err);
+                setError('Không thể tải danh sách đề thi. Vui lòng kiểm tra kết nối mạng hoặc quyền truy cập.');
             }
             setLoading(false);
         }
@@ -46,6 +53,23 @@ export default function PracticeHome() {
         return filtered;
     }, [exams, activeSubject, searchQuery]);
 
+    // Icon mapping for subjects
+    const getSubjectIcon = (id: string) => {
+        switch (id) {
+            case 'toan': return { icon: <Calculator className="h-6 w-6 text-red-500" />, bg: 'bg-red-50' };
+            case 'ly': return { icon: <Atom className="h-6 w-6 text-indigo-500" />, bg: 'bg-indigo-50' };
+            case 'hoa': return { icon: <FlaskConical className="h-6 w-6 text-blue-500" />, bg: 'bg-blue-50' };
+            case 'sinh': return { icon: <Dna className="h-6 w-6 text-emerald-500" />, bg: 'bg-emerald-50' };
+            case 'van': return { icon: <Book className="h-6 w-6 text-rose-500" />, bg: 'bg-rose-50' };
+            case 'su': return { icon: <Clock className="h-6 w-6 text-orange-500" />, bg: 'bg-orange-50' };
+            case 'dia': return { icon: <Globe className="h-6 w-6 text-cyan-500" />, bg: 'bg-cyan-50' };
+            case 'anh': return { icon: <Languages className="h-6 w-6 text-pink-500" />, bg: 'bg-pink-50' };
+            case 'gdcd': return { icon: <Scale className="h-6 w-6 text-teal-500" />, bg: 'bg-teal-50' };
+            case 'tin': return { icon: <Monitor className="h-6 w-6 text-purple-500" />, bg: 'bg-purple-50' };
+            default: return { icon: <Book className="h-6 w-6 text-gray-500" />, bg: 'bg-gray-50' };
+        }
+    };
+
     if (loading) {
         return (
             <div className="flex items-center justify-center py-20">
@@ -54,26 +78,65 @@ export default function PracticeHome() {
         );
     }
 
-    // If no subject selected, show subject selection (like original)
+    if (error) {
+        return (
+            <div className="text-center py-20 px-6">
+                <div className="bg-red-50 border border-red-200 rounded-xl p-6 text-red-600 max-w-md mx-auto">
+                    <p className="font-semibold mb-2">Lỗi tải dữ liệu</p>
+                    <p className="text-sm opacity-90 mb-4">{error}</p>
+                    <button
+                        onClick={() => navigate('/')}
+                        className="text-sm font-medium hover:underline flex items-center justify-center gap-2 mx-auto"
+                    >
+                        <ArrowLeft className="w-4 h-4" />
+                        Quay lại Menu
+                    </button>
+                </div>
+            </div>
+        );
+    }
+
+    // If no subject selected, show subject selection (Redesigned)
     if (!activeSubject) {
         return (
-            <div>
-                {/* Back to Menu */}
-                <BackButton onClick={() => navigate('/')} label="Quay lại Menu" />
+            <div className="space-y-6">
+                {/* Header Card */}
+                <div className="bg-white rounded-2xl p-6 md:p-8 shadow-sm border border-gray-100 flex flex-col md:flex-row md:items-center justify-between gap-4">
+                    <div>
+                        <h2 className="text-2xl md:text-3xl font-bold text-gray-900">Ôn thi THPT QG 2025</h2>
+                        <p className="text-gray-500 mt-1 text-sm md:text-base">
+                            Cấu trúc đề mới nhất. Tích hợp công thức Toán/Lý/Hóa.
+                        </p>
+                    </div>
+                    <button
+                        onClick={() => navigate('/')}
+                        className="bg-blue-600 hover:bg-blue-700 text-white px-5 py-2.5 rounded-xl font-semibold transition-all flex items-center gap-2 shadow-lg shadow-blue-500/20 active:scale-95 shrink-0 self-start md:self-center"
+                    >
+                        <ArrowLeft className="h-4 w-4" />
+                        Quay lại trang chủ
+                    </button>
+                </div>
 
-                <h2 className="text-3xl md:text-4xl font-bold text-gray-800 mb-8">Chọn môn học</h2>
-
-                <div className="grid grid-cols-2 gap-6">
+                {/* Grid of Subjects */}
+                <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4 md:gap-5">
                     {subjects.map((sub) => {
                         const count = exams.filter((e) => e.subjectId === sub.id).length;
+                        const { icon, bg } = getSubjectIcon(sub.id);
                         return (
                             <button
                                 key={sub.id}
                                 onClick={() => setSearchParams({ subject: sub.id })}
-                                className={`subject-card p-6 text-white rounded-xl cursor-pointer text-left ${sub.gradient || 'bg-gradient-to-br from-blue-500 to-blue-600'}`}
+                                className="group bg-white p-6 rounded-2xl border border-gray-100 shadow-sm hover:shadow-md hover:border-blue-200 transition-all flex flex-col items-center text-center relative overflow-hidden active:scale-95"
                             >
-                                <h3 className="text-xl md:text-2xl font-semibold mb-2">{sub.name}</h3>
-                                <p className="font-light text-sm opacity-90">{count} đề thi</p>
+                                <div className={`w-14 h-14 rounded-2xl ${bg} flex items-center justify-center mb-4 group-hover:scale-110 transition-transform`}>
+                                    {icon}
+                                </div>
+                                <h3 className="text-base font-bold text-gray-800 mb-1 group-hover:text-blue-600 transition-colors">
+                                    {sub.name}
+                                </h3>
+                                <p className="text-xs text-gray-400 font-medium bg-gray-50 px-2 py-0.5 rounded-full">
+                                    {count} đề thi
+                                </p>
                             </button>
                         );
                     })}
@@ -86,32 +149,48 @@ export default function PracticeHome() {
     const currentSubject = subjects.find(s => s.id === activeSubject);
 
     return (
-        <div>
-            {/* Back to subjects */}
-            <BackButton onClick={() => setSearchParams({})} label="Quay lại chọn môn" />
+        <div className="space-y-6">
+            {/* Header for exam list */}
+            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 bg-white p-5 rounded-2xl border border-gray-100 shadow-sm">
+                <div className="flex items-center gap-3">
+                    <button
+                        onClick={() => setSearchParams({})}
+                        className="p-2 hover:bg-gray-100 rounded-lg text-gray-500 transition-colors"
+                        title="Quay lại"
+                    >
+                        <ArrowLeft className="h-5 w-5" />
+                    </button>
+                    <div>
+                        <h2 className="text-xl font-bold text-gray-900">{currentSubject?.name || activeSubject}</h2>
+                        <p className="text-xs text-gray-500 uppercase tracking-wider font-semibold">
+                            {filteredExams.length} đề thi hiện có
+                        </p>
+                    </div>
+                </div>
 
-            <h2 className="text-3xl md:text-4xl font-bold text-gray-800 mb-6">
-                {currentSubject?.name || activeSubject}
-            </h2>
-
-            {/* Search */}
-            <div className="mb-6">
-                <input
-                    type="text"
-                    value={searchQuery}
-                    onChange={(e) => setSearchQuery(e.target.value)}
-                    placeholder="Tìm kiếm đề thi..."
-                    className="w-full px-3 py-2 border border-gray-300 rounded-lg shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-400 focus:border-blue-400 text-sm"
-                />
+                {/* Compact Search */}
+                <div className="relative flex-1 max-w-xs">
+                    <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-gray-400" />
+                    <input
+                        type="text"
+                        value={searchQuery}
+                        onChange={(e) => setSearchQuery(e.target.value)}
+                        placeholder="Tìm đề thi..."
+                        className="w-full pl-9 pr-3 py-2 bg-gray-50 border border-gray-100 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500 focus:bg-white transition-all text-sm"
+                    />
+                </div>
             </div>
 
-            {/* Exam list */}
+            {/* Exam list grid */}
             {filteredExams.length === 0 ? (
-                <div className="text-center py-12 text-gray-400">
-                    <p>Không tìm thấy đề thi nào.</p>
+                <div className="bg-white rounded-2xl p-12 text-center border border-gray-100 shadow-sm">
+                    <div className="w-16 h-16 bg-gray-50 rounded-full flex items-center justify-center mx-auto mb-4">
+                        <Search className="h-8 w-8 text-gray-300" />
+                    </div>
+                    <p className="text-gray-400 font-medium">Không tìm thấy đề thi nào khớp với từ khóa.</p>
                 </div>
             ) : (
-                <ul className="space-y-4">
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                     {filteredExams.map((exam) => {
                         const totalQ = (exam.questionCount?.part1 || 0) +
                             (exam.questionCount?.part2 || 0) +
@@ -119,47 +198,35 @@ export default function PracticeHome() {
                         const highScore = scores[exam.id];
 
                         return (
-                            <li key={exam.id}>
-                                <button
-                                    onClick={() => navigate(`/practice/${exam.id}`)}
-                                    className="w-full text-left p-4 bg-gray-50 border border-gray-200 rounded-xl hover:border-blue-400 hover:bg-blue-50 transition-all group"
-                                >
-                                    <div className="flex items-center justify-between">
-                                        <div>
-                                            <h3 className="text-base font-semibold text-gray-800 group-hover:text-blue-600 transition-colors">
-                                                {exam.title}
-                                            </h3>
-                                            <p className="text-sm text-gray-500 mt-1">
-                                                {totalQ} câu · {exam.time} phút · {exam.attemptCount || 0} lượt thi
-                                            </p>
-                                        </div>
-                                        {highScore && (
-                                            <div className="text-sm font-bold text-amber-600 bg-amber-50 px-3 py-1 rounded-full border border-amber-200">
-                                                🏆 {highScore.highestScore.toFixed(1)}
-                                            </div>
-                                        )}
+                            <button
+                                key={exam.id}
+                                onClick={() => navigate(`/practice/${exam.id}`)}
+                                className="group relative bg-white p-5 rounded-2xl border border-gray-100 shadow-sm hover:shadow-md hover:border-blue-200 transition-all text-left flex flex-col justify-between active:scale-[0.98]"
+                            >
+                                <div>
+                                    <h3 className="text-base font-bold text-gray-800 line-clamp-1 group-hover:text-blue-600 transition-colors">
+                                        {exam.title}
+                                    </h3>
+                                    <div className="flex items-center gap-3 mt-2 text-xs text-gray-500 font-medium">
+                                        <span className="flex items-center gap-1"><Clock className="h-3 w-3" /> {exam.time} phút</span>
+                                        <span className="flex items-center gap-1"><Book className="h-3 w-3" /> {totalQ} câu</span>
+                                        <span className="flex items-center gap-1">{exam.attemptCount || 0} lượt thi</span>
                                     </div>
-                                </button>
-                            </li>
+                                </div>
+
+                                {highScore && (
+                                    <div className="mt-4 flex items-center justify-between border-t border-gray-50 pt-3">
+                                        <span className="text-[10px] text-gray-400 font-bold uppercase tracking-wider">Điểm cao nhất</span>
+                                        <div className="flex items-center gap-1.5 text-xs font-bold text-amber-600 bg-amber-50 px-2 py-0.5 rounded-lg border border-amber-100">
+                                            <Trophy className="h-3 w-3" /> {highScore.highestScore.toFixed(1)}
+                                        </div>
+                                    </div>
+                                )}
+                            </button>
                         );
                     })}
-                </ul>
+                </div>
             )}
         </div>
-    );
-}
-
-// Shared back button component (matches original design)
-function BackButton({ onClick, label }: { onClick: () => void; label: string }) {
-    return (
-        <button
-            onClick={onClick}
-            className="flex items-center space-x-2 text-gray-600 hover:text-blue-600 transition-colors duration-300 mb-6 group"
-        >
-            <svg className="w-5 h-5 transition-transform duration-300 group-hover:-translate-x-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 19l-7-7m0 0l7-7m-7 7h18" />
-            </svg>
-            <span className="font-medium">{label}</span>
-        </button>
     );
 }

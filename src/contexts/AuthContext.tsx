@@ -60,6 +60,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
                 // Check whitelist & role
                 const { isAllowed, role: userRole } = await checkWhitelist(fbUser.email || '');
                 const finalRole = isAllowed ? (userRole as UserRole) : 'guest';
+                console.log('[Auth] User authenticated:', fbUser.email, 'Role:', finalRole);
                 setRole(finalRole);
                 setUserRole(finalRole);
 
