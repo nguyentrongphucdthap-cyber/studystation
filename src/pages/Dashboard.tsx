@@ -1,277 +1,110 @@
-import { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '@/contexts/AuthContext';
-import { getAllExams, getSubjects, getHighestScores } from '@/services/exam.service';
-import { getAllNotifications } from '@/services/notification.service';
-import { cn } from '@/lib/utils';
-import type { ExamMetadata, Notification as NotifType, HighestScores } from '@/types';
-import {
-    GraduationCap,
-    FileText,
-    Languages,
-    Bell,
-    TrendingUp,
-    Clock,
-    BookOpen,
-    ChevronRight,
-    Sparkles,
-} from 'lucide-react';
-import { Spinner } from '@/components/ui/Spinner';
-import { Button } from '@/components/ui/Button';
 
 export default function Dashboard() {
     const { user } = useAuth();
     const navigate = useNavigate();
-    const [exams, setExams] = useState<ExamMetadata[]>([]);
-    const [notifications, setNotifications] = useState<NotifType[]>([]);
-    const [scores, setScores] = useState<HighestScores>({});
-    const [loading, setLoading] = useState(true);
 
-    const subjects = getSubjects();
-
-    useEffect(() => {
-        async function loadDashboard() {
-            try {
-                const [examList, notifs, highScores] = await Promise.all([
-                    getAllExams(),
-                    getAllNotifications(),
-                    getHighestScores(),
-                ]);
-                setExams(examList);
-                setNotifications(notifs.slice(0, 5));
-                setScores(highScores);
-            } catch (err) {
-                console.error('[Dashboard] Load error:', err);
-            }
-            setLoading(false);
-        }
-        loadDashboard();
-    }, []);
-
-    const totalExams = exams.length;
-    const completedExams = Object.keys(scores).length;
-    const avgScore = completedExams > 0
-        ? Math.round(Object.values(scores).reduce((sum, s) => sum + s.highestScore, 0) / completedExams * 10) / 10
-        : 0;
-
-    if (loading) {
-        return (
-            <div className="flex items-center justify-center py-20">
-                <Spinner size="lg" label="Đang tải..." />
-            </div>
-        );
-    }
+    const menuItems = [
+        {
+            label: 'Bài thi',
+            icon: (
+                <svg className="w-10 h-10" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.747 0 3.332.477 4.5 1.253v13C19.832 18.477 18.246 18 16.5 18c-1.746 0-3.332.477-4.5 1.253" />
+                </svg>
+            ),
+            color: 'bg-blue-100 text-blue-600',
+            onClick: () => navigate('/practice'),
+        },
+        {
+            label: 'Thời Khoá Biểu',
+            icon: (
+                <svg className="w-10 h-10" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
+                </svg>
+            ),
+            color: 'bg-green-100 text-green-600',
+            onClick: () => { /* Coming soon */ },
+            comingSoon: true,
+        },
+        {
+            label: 'Lịch thi',
+            icon: (
+                <svg className="w-10 h-10" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
+                </svg>
+            ),
+            color: 'bg-red-100 text-red-600',
+            onClick: () => { /* Coming soon */ },
+            comingSoon: true,
+        },
+        {
+            label: 'Tài liệu',
+            icon: (
+                <svg className="w-10 h-10" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 7v10a2 2 0 002 2h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2z" />
+                </svg>
+            ),
+            color: 'bg-indigo-100 text-indigo-600',
+            onClick: () => { /* Coming soon */ },
+            comingSoon: true,
+        },
+        {
+            label: 'E-test',
+            icon: (
+                <svg className="w-10 h-10" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9.663 17h4.673M12 3v1m6.364 1.636l-.707.707M21 12h-1M4 12H3m3.343-5.657l-.707-.707m12.728 0l-.707.707M6.343 17.657l-.707.707m12.728 0l-.707-.707" />
+                </svg>
+            ),
+            color: 'bg-purple-100 text-purple-600',
+            onClick: () => navigate('/etest'),
+        },
+        {
+            label: 'Flashcard',
+            icon: (
+                <svg className="w-10 h-10" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M7 21h10a2 2 0 002-2V9.414a1 1 0 00-.293-.707l-5.414-5.414A1 1 0 0012.586 3H7a2 2 0 00-2 2v14a2 2 0 002 2z" />
+                </svg>
+            ),
+            color: 'bg-yellow-100 text-yellow-600',
+            onClick: () => navigate('/vocab'),
+        },
+    ];
 
     return (
-        <div className="space-y-6">
-            {/* Welcome header */}
-            <div className="rounded-2xl bg-gradient-to-r from-primary/10 via-blue-500/5 to-indigo-500/10 p-6 dark:from-primary/20 dark:via-blue-600/10 dark:to-indigo-600/20">
-                <div className="flex items-center gap-3">
-                    <Sparkles className="h-6 w-6 text-primary" />
-                    <div>
-                        <h1 className="text-xl font-bold text-foreground">
-                            Xin chào, {user?.displayName || 'bạn'}! 👋
-                        </h1>
-                        <p className="text-sm text-muted-foreground mt-0.5">
-                            Chúc bạn một buổi học hiệu quả!
-                        </p>
-                    </div>
-                </div>
+        <div>
+            {/* Header */}
+            <div className="flex flex-col md:flex-row items-start md:items-center justify-between mb-4 md:mb-6">
+                <h1 className="text-3xl md:text-4xl font-bold text-gray-800">
+                    Study<span className="text-blue-400">Station</span>
+                </h1>
+                <p className="text-base md:text-lg text-gray-600 mt-2 md:mt-0">
+                    Xin chào{user?.displayName ? `, ${user.displayName.split(' ').pop()}` : ''}, hãy chọn một mục để bắt đầu!
+                </p>
             </div>
 
-            {/* Stats cards */}
-            <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">
-                <StatCard
-                    label="Tổng đề thi"
-                    value={totalExams}
-                    icon={BookOpen}
-                    color="text-blue-600 bg-blue-100 dark:bg-blue-900/30"
-                />
-                <StatCard
-                    label="Đã làm"
-                    value={completedExams}
-                    icon={GraduationCap}
-                    color="text-emerald-600 bg-emerald-100 dark:bg-emerald-900/30"
-                />
-                <StatCard
-                    label="Điểm TB"
-                    value={avgScore}
-                    icon={TrendingUp}
-                    color="text-amber-600 bg-amber-100 dark:bg-amber-900/30"
-                    suffix="/10"
-                />
-                <StatCard
-                    label="Lượt thi"
-                    value={exams.reduce((sum, e) => sum + (e.attemptCount || 0), 0)}
-                    icon={Clock}
-                    color="text-purple-600 bg-purple-100 dark:bg-purple-900/30"
-                />
-            </div>
-
-            {/* Quick access modules */}
-            <div>
-                <h2 className="mb-3 text-lg font-bold">📚 Truy cập nhanh</h2>
-                <div className="grid grid-cols-1 gap-3 sm:grid-cols-3">
-                    <QuickAccessCard
-                        title="Luyện thi"
-                        description="Làm bài trắc nghiệm các môn"
-                        icon={GraduationCap}
-                        color="from-blue-500 to-blue-600"
-                        onClick={() => navigate('/practice')}
-                    />
-                    <QuickAccessCard
-                        title="E-test"
-                        description="Bài đọc hiểu tiếng Anh"
-                        icon={FileText}
-                        color="from-emerald-500 to-teal-600"
-                        onClick={() => navigate('/etest')}
-                    />
-                    <QuickAccessCard
-                        title="Từ vựng"
-                        description="Flashcard & matching game"
-                        icon={Languages}
-                        color="from-purple-500 to-indigo-600"
-                        onClick={() => navigate('/vocab')}
-                    />
-                </div>
-            </div>
-
-            {/* Two-column: Recent exams + Notifications */}
-            <div className="grid grid-cols-1 gap-6 lg:grid-cols-2">
-                {/* Recent exams by subject */}
-                <div className="rounded-xl border border-border bg-card p-4">
-                    <div className="mb-3 flex items-center justify-between">
-                        <h3 className="font-bold">📐 Đề thi theo môn</h3>
-                        <Button variant="ghost" size="sm" onClick={() => navigate('/practice')}>
-                            Xem tất cả <ChevronRight className="h-3 w-3" />
-                        </Button>
-                    </div>
-                    <div className="grid grid-cols-2 gap-2 sm:grid-cols-3">
-                        {subjects.map((sub) => {
-                            const count = exams.filter((e) => e.subjectId === sub.id).length;
-                            return (
-                                <button
-                                    key={sub.id}
-                                    onClick={() => navigate(`/practice?subject=${sub.id}`)}
-                                    className="flex items-center gap-2 rounded-lg border border-border/50 p-2.5 text-left transition-all hover:bg-accent hover:shadow-sm"
-                                >
-                                    <span className="text-xl">{sub.icon}</span>
-                                    <div className="min-w-0 flex-1">
-                                        <p className="text-sm font-medium truncate">{sub.name}</p>
-                                        <p className="text-xs text-muted-foreground">{count} đề</p>
-                                    </div>
-                                </button>
-                            );
-                        })}
-                    </div>
-                </div>
-
-                {/* Notifications */}
-                <div className="rounded-xl border border-border bg-card p-4">
-                    <div className="mb-3 flex items-center gap-2">
-                        <Bell className="h-4 w-4 text-primary" />
-                        <h3 className="font-bold">Thông báo</h3>
-                    </div>
-                    {notifications.length === 0 ? (
-                        <p className="py-8 text-center text-sm text-muted-foreground">
-                            Không có thông báo mới
-                        </p>
-                    ) : (
-                        <div className="space-y-2">
-                            {notifications.map((notif) => (
-                                <div
-                                    key={notif.id}
-                                    className="rounded-lg border border-border/50 p-3 transition-colors hover:bg-accent/50"
-                                >
-                                    <div className="flex items-start gap-2">
-                                        <NotifBadge category={notif.category} />
-                                        <div className="min-w-0 flex-1">
-                                            <p className="text-sm font-medium truncate">{notif.title}</p>
-                                            <p className="text-xs text-muted-foreground line-clamp-2">{notif.content}</p>
-                                        </div>
-                                    </div>
-                                </div>
-                            ))}
+            {/* 3x2 Grid Menu */}
+            <div className="grid grid-cols-3 gap-4 md:gap-6">
+                {menuItems.map((item) => (
+                    <button
+                        key={item.label}
+                        onClick={item.onClick}
+                        className="menu-card p-4 bg-white border border-gray-200 rounded-xl cursor-pointer hover:border-blue-500 aspect-square"
+                    >
+                        <div className="flex flex-col items-center justify-center h-full space-y-2 text-center">
+                            <div className={`p-3 rounded-full ${item.color}`}>
+                                {item.icon}
+                            </div>
+                            <span className="text-sm md:text-xl font-semibold text-gray-800">
+                                {item.label}
+                            </span>
+                            {item.comingSoon && (
+                                <span className="text-[10px] text-gray-400 font-medium">Sắp ra mắt</span>
+                            )}
                         </div>
-                    )}
-                </div>
+                    </button>
+                ))}
             </div>
         </div>
-    );
-}
-
-// ============================================================
-// SUB-COMPONENTS
-// ============================================================
-
-function StatCard({
-    label,
-    value,
-    icon: Icon,
-    color,
-    suffix = '',
-}: {
-    label: string;
-    value: number;
-    icon: typeof BookOpen;
-    color: string;
-    suffix?: string;
-}) {
-    return (
-        <div className="rounded-xl border border-border/50 bg-card p-4 transition-all hover:shadow-md">
-            <div className={cn('mb-2 inline-flex rounded-lg p-2', color)}>
-                <Icon className="h-4 w-4" />
-            </div>
-            <p className="text-2xl font-bold text-foreground">
-                {value}{suffix}
-            </p>
-            <p className="text-xs text-muted-foreground">{label}</p>
-        </div>
-    );
-}
-
-function QuickAccessCard({
-    title,
-    description,
-    icon: Icon,
-    color,
-    onClick,
-}: {
-    title: string;
-    description: string;
-    icon: typeof GraduationCap;
-    color: string;
-    onClick: () => void;
-}) {
-    return (
-        <button
-            onClick={onClick}
-            className="group relative overflow-hidden rounded-xl p-5 text-left text-white shadow-lg transition-all hover:scale-[1.02] hover:shadow-xl active:scale-[0.98]"
-        >
-            <div className={cn('absolute inset-0 bg-gradient-to-br', color)} />
-            <div className="relative z-10">
-                <Icon className="mb-3 h-8 w-8 opacity-90 group-hover:opacity-100 transition-opacity" />
-                <h3 className="text-lg font-bold">{title}</h3>
-                <p className="mt-0.5 text-sm opacity-80">{description}</p>
-            </div>
-            <div className="absolute -bottom-4 -right-4 h-20 w-20 rounded-full bg-white/10" />
-        </button>
-    );
-}
-
-const notifCategoryColors: Record<string, string> = {
-    update: 'bg-blue-100 text-blue-700',
-    new: 'bg-emerald-100 text-emerald-700',
-    fix: 'bg-amber-100 text-amber-700',
-    remove: 'bg-red-100 text-red-700',
-    edit: 'bg-purple-100 text-purple-700',
-    info: 'bg-gray-100 text-gray-700',
-};
-
-function NotifBadge({ category }: { category: string }) {
-    return (
-        <span className={cn('inline-flex rounded-full px-2 py-0.5 text-[10px] font-bold uppercase', notifCategoryColors[category] || notifCategoryColors.info)}>
-            {category}
-        </span>
     );
 }

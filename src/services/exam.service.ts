@@ -300,16 +300,16 @@ export function clearHighestScoresCache() {
 
 export function getSubjects() {
     return [
-        { id: 'toan', name: 'Toán', icon: '📐', color: '#3B82F6' },
-        { id: 'ly', name: 'Vật Lý', icon: '⚡', color: '#F59E0B' },
-        { id: 'hoa', name: 'Hóa Học', icon: '🧪', color: '#10B981' },
-        { id: 'sinh', name: 'Sinh Học', icon: '🧬', color: '#8B5CF6' },
-        { id: 'van', name: 'Ngữ Văn', icon: '📖', color: '#EF4444' },
-        { id: 'su', name: 'Lịch Sử', icon: '🏛️', color: '#D97706' },
-        { id: 'dia', name: 'Địa Lý', icon: '🌍', color: '#06B6D4' },
-        { id: 'anh', name: 'Tiếng Anh', icon: '🇬🇧', color: '#EC4899' },
-        { id: 'gdcd', name: 'GDCD', icon: '⚖️', color: '#14B8A6' },
-        { id: 'tin', name: 'Tin Học', icon: '💻', color: '#6366F1' },
+        { id: 'toan', name: 'Toán', icon: '📐', color: '#3B82F6', gradient: 'bg-gradient-to-br from-blue-500 to-blue-600' },
+        { id: 'ly', name: 'Vật Lý', icon: '⚡', color: '#F59E0B', gradient: 'bg-gradient-to-br from-amber-400 to-orange-500' },
+        { id: 'hoa', name: 'Hóa Học', icon: '🧪', color: '#10B981', gradient: 'bg-gradient-to-br from-emerald-500 to-green-600' },
+        { id: 'sinh', name: 'Sinh Học', icon: '🧬', color: '#8B5CF6', gradient: 'bg-gradient-to-br from-purple-500 to-violet-600' },
+        { id: 'van', name: 'Ngữ Văn', icon: '📖', color: '#EF4444', gradient: 'bg-gradient-to-br from-red-400 to-rose-500' },
+        { id: 'su', name: 'Lịch Sử', icon: '🏛️', color: '#D97706', gradient: 'bg-gradient-to-br from-yellow-500 to-amber-600' },
+        { id: 'dia', name: 'Địa Lý', icon: '🌍', color: '#06B6D4', gradient: 'bg-gradient-to-br from-cyan-500 to-teal-600' },
+        { id: 'anh', name: 'Tiếng Anh', icon: '🇬🇧', color: '#EC4899', gradient: 'bg-gradient-to-br from-pink-500 to-rose-600' },
+        { id: 'gdcd', name: 'GDCD', icon: '⚖️', color: '#14B8A6', gradient: 'bg-gradient-to-br from-teal-400 to-emerald-500' },
+        { id: 'tin', name: 'Tin Học', icon: '💻', color: '#6366F1', gradient: 'bg-gradient-to-br from-indigo-500 to-violet-600' },
     ];
 }
 

@@ -1,28 +1,17 @@
-import { Outlet, NavLink, useNavigate } from 'react-router-dom';
+import { Outlet, useNavigate, useLocation } from 'react-router-dom';
 import { useAuth } from '@/contexts/AuthContext';
 import { useEffect, useState } from 'react';
 import { subscribeToOnlineUsers } from '@/services/auth.service';
-import {
-    BookOpen,
-    GraduationCap,
-    Languages,
-    FileText,
-    Settings,
-    LogOut,
-    Users,
-    Menu,
-    X,
-    ChevronDown,
-} from 'lucide-react';
-import { cn } from '@/lib/utils';
-
+import { LogOut, Settings, Users } from 'lucide-react';
 
 export function AppLayout() {
-    const { user, isAdmin, isSuperAdmin, isGuest, logout } = useAuth();
+    const { user, isAdmin, isSuperAdmin, logout } = useAuth();
     const navigate = useNavigate();
+    const location = useLocation();
     const [onlineCount, setOnlineCount] = useState(0);
-    const [showMenu, setShowMenu] = useState(false);
-    const [showMobileNav, setShowMobileNav] = useState(false);
+
+    // Check if we're in admin section - admin keeps its own layout style
+    const isAdminRoute = location.pathname.startsWith('/admin');
 
     useEffect(() => {
         const unsubscribe = subscribeToOnlineUsers(setOnlineCount);
@@ -34,150 +23,107 @@ export function AppLayout() {
         navigate('/login');
     };
 
-    const navLinks = [
-        { to: '/', label: 'Dashboard', icon: BookOpen, show: !isGuest },
-        { to: '/practice', label: 'Luyện thi', icon: GraduationCap, show: true },
-        { to: '/etest', label: 'E-test', icon: FileText, show: !isGuest },
-        { to: '/vocab', label: 'Từ vựng', icon: Languages, show: !isGuest },
-        { to: '/admin', label: 'Admin', icon: Settings, show: isAdmin },
-    ].filter((l) => l.show);
-
-    return (
-        <div className="min-h-screen bg-background">
-            {/* Header */}
-            <header className="sticky top-0 z-40 border-b border-border/40 bg-background/80 backdrop-blur-xl">
-                <div className="mx-auto flex h-14 max-w-7xl items-center justify-between px-4">
-                    {/* Left: Logo + Mobile menu */}
-                    <div className="flex items-center gap-3">
+    // Admin routes use a wider layout
+    if (isAdminRoute) {
+        return (
+            <div className="min-h-screen bg-gray-100">
+                {/* Admin header */}
+                <header className="sticky top-0 z-40 border-b border-gray-200 bg-white/90 backdrop-blur">
+                    <div className="mx-auto flex h-14 max-w-7xl items-center justify-between px-4">
                         <button
-                            className="lg:hidden"
-                            onClick={() => setShowMobileNav(!showMobileNav)}
+                            onClick={() => navigate('/')}
+                            className="flex items-center gap-2 font-bold text-lg"
                         >
-                            {showMobileNav ? <X className="h-5 w-5" /> : <Menu className="h-5 w-5" />}
+                            <Settings className="h-5 w-5 text-blue-600" />
+                            <span className="text-gray-800">Admin Panel</span>
                         </button>
-                        <NavLink to="/" className="flex items-center gap-2 font-bold text-lg">
-                            <span className="text-2xl">📚</span>
-                            <span className="hidden sm:inline bg-gradient-to-r from-primary to-blue-400 bg-clip-text text-transparent">
-                                StudyStation
+                        <div className="flex items-center gap-3">
+                            <span className="text-xs text-gray-500">
+                                🟢 {onlineCount} online
                             </span>
-                        </NavLink>
+                            <button
+                                onClick={handleLogout}
+                                className="text-sm text-red-600 hover:underline flex items-center gap-1"
+                            >
+                                <LogOut className="h-4 w-4" /> Đăng xuất
+                            </button>
+                        </div>
+                    </div>
+                </header>
+                <main className="mx-auto max-w-7xl px-4 py-6">
+                    <Outlet />
+                </main>
+            </div>
+        );
+    }
+
+    // Main app layout: centered white card (matches original)
+    return (
+        <div className="min-h-screen bg-gray-100">
+            {/* Main Card Container */}
+            <div className="w-full max-w-3xl mx-auto bg-white rounded-lg shadow-lg my-4 md:my-8">
+                {/* Top bar inside card */}
+                <div className="flex items-center justify-between px-6 pt-5 md:px-10 md:pt-6">
+                    {/* User info */}
+                    <div className="flex items-center gap-2">
+                        {user?.photoURL ? (
+                            <img
+                                src={user.photoURL}
+                                alt="avatar"
+                                className="h-8 w-8 rounded-full object-cover ring-2 ring-gray-200"
+                            />
+                        ) : (
+                            <div className="flex h-8 w-8 items-center justify-center rounded-full bg-blue-100 text-xs font-bold text-blue-600">
+                                {user?.displayName?.charAt(0) || '?'}
+                            </div>
+                        )}
+                        <div className="hidden sm:block">
+                            <p className="text-sm font-medium text-gray-800 truncate max-w-[150px]">
+                                {user?.displayName || 'User'}
+                            </p>
+                            <p className="text-xs text-gray-400">🟢 {onlineCount} online</p>
+                        </div>
                     </div>
 
-                    {/* Center: Nav links (desktop) */}
-                    <nav className="hidden lg:flex items-center gap-1">
-                        {navLinks.map(({ to, label, icon: Icon }) => (
-                            <NavLink
-                                key={to}
-                                to={to}
-                                end={to === '/'}
-                                className={({ isActive }) =>
-                                    cn(
-                                        'flex items-center gap-2 rounded-lg px-3 py-2 text-sm font-medium transition-all duration-200',
-                                        isActive
-                                            ? 'bg-primary/10 text-primary'
-                                            : 'text-muted-foreground hover:bg-accent hover:text-accent-foreground'
-                                    )
-                                }
-                            >
-                                <Icon className="h-4 w-4" />
-                                {label}
-                            </NavLink>
-                        ))}
-                    </nav>
-
-                    {/* Right: Online count + User menu */}
-                    <div className="flex items-center gap-3">
-                        {/* Online indicator */}
-                        <div className="flex items-center gap-1.5 text-xs text-muted-foreground">
-                            <span className="relative flex h-2 w-2">
-                                <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-emerald-400 opacity-75" />
-                                <span className="relative inline-flex h-2 w-2 rounded-full bg-emerald-500" />
-                            </span>
-                            <span className="hidden sm:inline">{onlineCount}</span>
-                        </div>
-
-                        {/* User dropdown */}
-                        <div className="relative">
+                    {/* Actions */}
+                    <div className="flex items-center gap-2">
+                        {isAdmin && (
                             <button
-                                onClick={() => setShowMenu(!showMenu)}
-                                className="flex items-center gap-2 rounded-lg px-2 py-1.5 hover:bg-accent transition-colors"
+                                onClick={() => navigate('/admin')}
+                                className="text-xs text-gray-500 hover:text-blue-600 flex items-center gap-1 px-2 py-1.5 rounded-lg hover:bg-gray-50 transition-colors"
                             >
-                                {user?.photoURL ? (
-                                    <img
-                                        src={user.photoURL}
-                                        alt="avatar"
-                                        className="h-7 w-7 rounded-full object-cover ring-2 ring-border"
-                                    />
-                                ) : (
-                                    <div className="flex h-7 w-7 items-center justify-center rounded-full bg-primary/10 text-xs font-bold text-primary">
-                                        {user?.displayName?.charAt(0) || '?'}
-                                    </div>
-                                )}
-                                <span className="hidden md:inline text-sm font-medium max-w-[120px] truncate">
-                                    {user?.displayName || 'User'}
-                                </span>
-                                <ChevronDown className="h-3 w-3 text-muted-foreground" />
+                                <Settings className="h-3.5 w-3.5" /> Admin
                             </button>
-
-                            {showMenu && (
-                                <>
-                                    <div className="fixed inset-0 z-40" onClick={() => setShowMenu(false)} />
-                                    <div className="absolute right-0 top-full z-50 mt-2 w-56 rounded-xl border border-border bg-card p-1.5 shadow-xl">
-                                        <div className="border-b border-border px-3 py-2 mb-1">
-                                            <p className="text-sm font-medium truncate">{user?.displayName}</p>
-                                            <p className="text-xs text-muted-foreground truncate">{user?.email}</p>
-                                        </div>
-                                        {isSuperAdmin && (
-                                            <button
-                                                onClick={() => { navigate('/admin/students'); setShowMenu(false); }}
-                                                className="flex w-full items-center gap-2 rounded-lg px-3 py-2 text-sm text-muted-foreground hover:bg-accent hover:text-accent-foreground transition-colors"
-                                            >
-                                                <Users className="h-4 w-4" /> Quản lý học sinh
-                                            </button>
-                                        )}
-                                        <button
-                                            onClick={() => { handleLogout(); setShowMenu(false); }}
-                                            className="flex w-full items-center gap-2 rounded-lg px-3 py-2 text-sm text-red-600 hover:bg-red-50 dark:hover:bg-red-900/20 transition-colors"
-                                        >
-                                            <LogOut className="h-4 w-4" /> Đăng xuất
-                                        </button>
-                                    </div>
-                                </>
-                            )}
-                        </div>
+                        )}
+                        {isSuperAdmin && (
+                            <button
+                                onClick={() => navigate('/admin/students')}
+                                className="text-xs text-gray-500 hover:text-blue-600 flex items-center gap-1 px-2 py-1.5 rounded-lg hover:bg-gray-50 transition-colors"
+                            >
+                                <Users className="h-3.5 w-3.5" />
+                            </button>
+                        )}
+                        <button
+                            onClick={handleLogout}
+                            className="text-xs text-red-500 hover:text-red-700 flex items-center gap-1 px-2 py-1.5 rounded-lg hover:bg-red-50 transition-colors"
+                        >
+                            <LogOut className="h-3.5 w-3.5" /> Đăng xuất
+                        </button>
                     </div>
                 </div>
 
-                {/* Mobile nav */}
-                {showMobileNav && (
-                    <nav className="border-t border-border bg-card px-4 py-2 lg:hidden">
-                        {navLinks.map(({ to, label, icon: Icon }) => (
-                            <NavLink
-                                key={to}
-                                to={to}
-                                end={to === '/'}
-                                onClick={() => setShowMobileNav(false)}
-                                className={({ isActive }) =>
-                                    cn(
-                                        'flex items-center gap-3 rounded-lg px-3 py-2.5 text-sm font-medium transition-colors',
-                                        isActive
-                                            ? 'bg-primary/10 text-primary'
-                                            : 'text-muted-foreground hover:bg-accent'
-                                    )
-                                }
-                            >
-                                <Icon className="h-4 w-4" />
-                                {label}
-                            </NavLink>
-                        ))}
-                    </nav>
-                )}
-            </header>
+                {/* Main content area */}
+                <main className="w-full p-6 md:p-10 min-h-[500px]">
+                    <div className="page-fade-in">
+                        <Outlet />
+                    </div>
+                </main>
+            </div>
 
-            {/* Main content */}
-            <main className="mx-auto max-w-7xl px-4 py-6">
-                <Outlet />
-            </main>
+            {/* Credits footer */}
+            <div className="text-center text-[12px] text-gray-400 pb-6">
+                <p>Designed & Developed by <strong className="text-gray-500 font-semibold">Trọng Phúc</strong> | From Concept to Content by <strong className="text-gray-500 font-semibold">Phương Kiều</strong></p>
+            </div>
         </div>
     );
 }

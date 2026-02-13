@@ -4,11 +4,13 @@
 
 @layer base {
     :root {
-        --background: 0 0% 100%;
+        --background: 0 0% 96%;
+        /* #F3F4F6 bg-gray-100 */
         --foreground: 222.2 84% 4.9%;
         --card: 0 0% 100%;
         --card-foreground: 222.2 84% 4.9%;
         --primary: 221.2 83.2% 53.3%;
+        /* #2563EB */
         --primary-foreground: 210 40% 98%;
         --secondary: 210 40% 96.1%;
         --secondary-foreground: 222.2 47.4% 11.2%;
@@ -22,26 +24,6 @@
         --input: 214.3 31.8% 91.4%;
         --ring: 221.2 83.2% 53.3%;
         --radius: 0.75rem;
-    }
-
-    .dark {
-        --background: 222.2 84% 4.9%;
-        --foreground: 210 40% 98%;
-        --card: 222.2 84% 4.9%;
-        --card-foreground: 210 40% 98%;
-        --primary: 217.2 91.2% 59.8%;
-        --primary-foreground: 222.2 47.4% 11.2%;
-        --secondary: 217.2 32.6% 17.5%;
-        --secondary-foreground: 210 40% 98%;
-        --muted: 217.2 32.6% 17.5%;
-        --muted-foreground: 215 20.2% 65.1%;
-        --accent: 217.2 32.6% 17.5%;
-        --accent-foreground: 210 40% 98%;
-        --destructive: 0 62.8% 30.6%;
-        --destructive-foreground: 210 40% 98%;
-        --border: 217.2 32.6% 17.5%;
-        --input: 217.2 32.6% 17.5%;
-        --ring: 224.3 76.3% 48%;
     }
 }
 
@@ -72,16 +54,50 @@
     @apply bg-muted-foreground/40;
 }
 
-/* Smooth page transitions */
-.page-enter {
-    opacity: 0;
-    transform: translateY(10px);
+/* Page fade-in animation (from original) */
+@keyframes pageFadeIn {
+    from {
+        opacity: 0;
+        transform: translateY(20px);
+    }
+
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
 }
 
-.page-enter-active {
-    opacity: 1;
-    transform: translateY(0);
-    transition: opacity 300ms ease-out, transform 300ms ease-out;
+.page-fade-in {
+    animation: pageFadeIn 0.5s cubic-bezier(0.25, 0.46, 0.45, 0.94) forwards;
+}
+
+/* Card click animation (from original) */
+@keyframes cardClick {
+    0% {
+        transform: scale(1);
+    }
+
+    40% {
+        transform: scale(0.95);
+    }
+
+    100% {
+        transform: scale(1);
+    }
+}
+
+.card-click {
+    animation: cardClick 0.35s ease;
+}
+
+/* Menu card hover effect (from original) */
+.menu-card {
+    transition: transform 0.3s ease, box-shadow 0.3s ease;
+}
+
+.menu-card:hover {
+    transform: translateY(-5px);
+    box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05);
 }
 
 /* MathJax overrides */
@@ -98,4 +114,83 @@
 
 .animate-spin-slow {
     animation: spin 1.5s linear infinite;
+}
+
+/* Quiz question styling (from original) */
+.quiz-question {
+    background-color: #f9fafb;
+    padding: 1rem;
+    border-radius: 0.75rem;
+    margin-bottom: 1.5rem;
+    border: 1px solid #e5e7eb;
+}
+
+.question-text {
+    font-size: 1rem;
+    font-weight: 600;
+    margin-bottom: 1rem;
+    color: #1f2937;
+}
+
+.options-container label {
+    display: block;
+    padding: 0.75rem;
+    background-color: #ffffff;
+    border: 1px solid #d1d5db;
+    border-radius: 0.5rem;
+    margin-bottom: 0.75rem;
+    cursor: pointer;
+    transition: border-color 0.2s ease, background-color 0.2s ease;
+}
+
+.options-container label:hover {
+    background-color: #f9fafb;
+}
+
+.options-container input[type="radio"]:checked+span {
+    font-weight: 600;
+    color: #2563eb;
+}
+
+.options-container label input {
+    margin-right: 0.75rem;
+}
+
+/* Results styling (from original) */
+.review-item {
+    border: 1px solid #e5e7eb;
+    border-radius: 0.75rem;
+    padding: 1rem;
+    margin-bottom: 1rem;
+}
+
+.review-item.correct {
+    background-color: #f0fdf4;
+    border-color: #bbf7d0;
+}
+
+.review-item.incorrect {
+    background-color: #fef2f2;
+    border-color: #fecaca;
+}
+
+@media (min-width: 640px) {
+    .quiz-question {
+        padding: 1.5rem;
+    }
+
+    .question-text {
+        font-size: 1.125rem;
+    }
+
+    .options-container label {
+        padding: 0.75rem 1rem;
+    }
+}
+
+/* Login page dot pattern background */
+.login-bg {
+    background-color: #F3F4F6;
+    background-image: radial-gradient(#E5E7EB 1px, transparent 1px);
+    background-size: 24px 24px;
 }
