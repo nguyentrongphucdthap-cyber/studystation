@@ -197,45 +197,75 @@ function getConvoDocRef(userEmail: string, partnerKey: string) {
     return doc(db, 'chats', userEmail, 'convos', partnerKey);
 }
 
-export async function sendChatMessage(conversationId: string, text: string): Promise<void> {
+// In-memory cache for conversation logs to avoid reading doc every time
+const convoLogCache: Record<string, string> = {};
+
+export async function sendChatMessage(conversationId: string, text: string): Promise<ChatMessage | null> {
     const currentEmail = getCurrentEmail();
-    if (!currentEmail || !text.trim()) return;
+    if (!currentEmail || !text.trim()) return null;
 
     // Get both user emails from conversationId
     const parts = conversationId.split('__');
     const myKey = sanitizeEmail(currentEmail);
     const partnerKey = parts.find(p => p !== myKey) ?? parts[0] ?? '';
 
-    const line = encodeMsg(Date.now(), currentEmail, text.trim()) + MSG_LINE_BREAK;
+    const timestamp = Date.now();
+    const line = encodeMsg(timestamp, currentEmail, text.trim()) + MSG_LINE_BREAK;
+
+    // Construct optimistic message
+    const optimisticMsg: ChatMessage = {
+        id: `msg_${Date.now()}_${timestamp}`,
+        text: text.trim(),
+        senderEmail: currentEmail,
+        senderName: getCurrentName(),
+        timestamp,
+        role: 'user'
+    };
 
     // Append to both users' docs (so each user has their own copy)
-
     for (const owner of parts) {
         // Unsanitize to get email for doc path
         const ownerEmail = owner.replace(/_at_/g, '@').replace(/,/g, '.');
         const partnerEmail = (owner === myKey ? partnerKey : myKey).replace(/_at_/g, '@').replace(/,/g, '.');
+
+        // Use cache key: ownerEmail_partnerKey
+        const cacheKey = `${ownerEmail}_${owner === myKey ? partnerKey : myKey}`;
         const docRef = getConvoDocRef(ownerEmail, owner === myKey ? partnerKey : myKey);
 
         try {
-            const snap = await getDoc(docRef);
+            let currentLog = convoLogCache[cacheKey];
+
+            // If cache miss, fetch doc
+            if (currentLog === undefined) {
+                const snap = await getDoc(docRef);
+                currentLog = snap.exists() ? snap.data()?.log || '' : '';
+            }
+
+            const newLog = currentLog + line;
+            convoLogCache[cacheKey] = newLog; // Update cache
+
             const participants = [ownerEmail.toLowerCase(), partnerEmail.toLowerCase()].sort();
             const payload = {
-                log: (snap.exists() ? snap.data()?.log || '' : '') + line,
-                updatedAt: Date.now(),
+                log: newLog,
+                updatedAt: timestamp,
                 participants,
                 ownerEmail: ownerEmail.toLowerCase(),
                 partnerEmail: partnerEmail.toLowerCase()
             };
 
-            if (snap.exists()) {
+            if (currentLog) {
                 await updateDoc(docRef, payload);
             } else {
                 await setDoc(docRef, payload);
             }
         } catch (err) {
             console.warn(`[Chat] Failed to update convo for ${ownerEmail}:`, err);
+            // Invalidate cache on error
+            delete convoLogCache[cacheKey];
         }
     }
+
+    return optimisticMsg;
 }
 
 export function subscribeToMessages(conversationId: string, callback: (messages: ChatMessage[]) => void) {

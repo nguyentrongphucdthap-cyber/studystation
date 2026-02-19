@@ -506,7 +506,32 @@ function ChatTab({ user, onUnreadChange }: { user: { email: string; displayName:
             }
         } else {
             const convId = getConversationId(user.email, activeChat);
-            await sendChatMessage(convId, text);
+
+            // Optimistic update
+            const tempId = `temp_${Date.now()}`;
+            const optimisticMsg: ChatMessage = {
+                id: tempId,
+                text,
+                senderEmail: user.email,
+                senderName: user.displayName || 'User',
+                timestamp: Date.now(),
+                role: 'user',
+            };
+
+            // Add to UI immediately
+            setMessages(prev => [...prev, optimisticMsg]);
+
+            try {
+                // Send to server (service now handles caching)
+                const realMsg = await sendChatMessage(convId, text);
+
+                // Replace temp msg with real one if needed, or let subscription handle it
+                // ensuring no duplicates if subscription causes re-render fast
+            } catch (err) {
+                console.error('Failed to send message:', err);
+                // Remove optimistic message if failed
+                setMessages(prev => prev.filter(m => m.id !== tempId));
+            }
         }
     };
 
