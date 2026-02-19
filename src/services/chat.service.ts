@@ -5,15 +5,11 @@
 import {
     ref,
     set,
-    push,
     onValue,
     remove,
-    query,
-    orderByChild,
-    limitToLast,
     get,
 } from 'firebase/database';
-import { doc, getDoc } from 'firebase/firestore';
+import { doc, getDoc, setDoc, updateDoc, onSnapshot, collection, query } from 'firebase/firestore';
 import { auth, rtdb, db } from '@/config/firebase';
 import type { ChatMessage, Friend } from '@/types';
 
@@ -88,6 +84,7 @@ export async function sendFriendRequest(targetEmail: string): Promise<{ success:
         await set(ref(rtdb, `hub/friends/${myKey}/${friendKey}`), {
             email: normalizedTarget,
             displayName: targetDisplayName,
+            photoURL: targetData?.photoURL || null,
             status: 'pending_sent',
             addedAt: new Date().toISOString(),
         });
@@ -96,6 +93,7 @@ export async function sendFriendRequest(targetEmail: string): Promise<{ success:
         await set(ref(rtdb, `hub/friends/${friendKey}/${myKey}`), {
             email: normalizedCurrent,
             displayName: getCurrentName(),
+            photoURL: auth.currentUser?.photoURL || null,
             status: 'pending_received',
             addedAt: new Date().toISOString(),
         });
@@ -153,95 +151,172 @@ export function subscribeFriends(callback: (friends: Friend[]) => void) {
 }
 
 // ============================================================
-// MESSAGING
+// MESSAGING — Firestore compact text format
+// Structure: chats/{userEmail}/convos/{partnerEmail}
+// Each doc has a `log` field: "timestamp|sender|text\n" per line
 // ============================================================
+
+const MSG_SEPARATOR = '|';
+const MSG_LINE_BREAK = '\n';
+
+/** Encode a message line */
+function encodeMsg(timestamp: number, senderEmail: string, text: string, role?: string): string {
+    // Escape pipe and newline in text
+    const safeText = text.replace(/\|/g, '\\|').replace(/\n/g, '\\n');
+    const parts = [timestamp, senderEmail, safeText];
+    if (role) parts.push(role);
+    return parts.join(MSG_SEPARATOR);
+}
+
+/** Decode a log string into ChatMessage array */
+function decodeLog(log: string): ChatMessage[] {
+    if (!log || !log.trim()) return [];
+    return log.trim().split(MSG_LINE_BREAK).filter(Boolean).map((line, idx) => {
+        const parts = line.split(MSG_SEPARATOR);
+        const timestamp = parseInt(parts[0] || '0');
+        const senderEmail = parts[1] || '';
+        // Rejoin remaining parts in case text had escaped pipes
+        const lastPart = parts[parts.length - 1] ?? '';
+        const hasRole = parts.length > 3 && ['user', 'mago'].includes(lastPart);
+        let text = parts.slice(2, hasRole ? parts.length - 1 : parts.length).join('|');
+        text = text.replace(/\\\|/g, '|').replace(/\\n/g, '\n');
+        const role = hasRole ? lastPart as 'user' | 'mago' : undefined;
+        return {
+            id: `msg_${idx}_${timestamp}`,
+            text,
+            senderEmail,
+            senderName: senderEmail.split('@')[0] || senderEmail,
+            timestamp,
+            ...(role ? { role } : {}),
+        };
+    });
+}
+
+/** Get the Firestore doc ref for a conversation */
+function getConvoDocRef(userEmail: string, partnerKey: string) {
+    return doc(db, 'chats', userEmail, 'convos', partnerKey);
+}
 
 export async function sendChatMessage(conversationId: string, text: string): Promise<void> {
     const currentEmail = getCurrentEmail();
     if (!currentEmail || !text.trim()) return;
 
-    const messagesRef = ref(rtdb, `hub/conversations/${conversationId}/messages`);
-    await push(messagesRef, {
-        text: text.trim(),
-        senderEmail: currentEmail,
-        senderName: getCurrentName(),
-        timestamp: Date.now(),
-    });
+    // Get both user emails from conversationId
+    const parts = conversationId.split('__');
+    const myKey = sanitizeEmail(currentEmail);
+    const partnerKey = parts.find(p => p !== myKey) ?? parts[0] ?? '';
+
+    const line = encodeMsg(Date.now(), currentEmail, text.trim()) + MSG_LINE_BREAK;
+
+    // Append to both users' docs (so each user has their own copy)
+
+    for (const owner of parts) {
+        // Unsanitize to get email for doc path
+        const ownerEmail = owner.replace(/_at_/g, '@').replace(/,/g, '.');
+        const pKey = owner === myKey ? partnerKey : myKey;
+        const docRef = getConvoDocRef(ownerEmail, pKey);
+        const snap = await getDoc(docRef);
+        if (snap.exists()) {
+            await updateDoc(docRef, { log: (snap.data().log || '') + line, updatedAt: Date.now() });
+        } else {
+            await setDoc(docRef, { log: line, updatedAt: Date.now() });
+        }
+    }
 }
 
 export function subscribeToMessages(conversationId: string, callback: (messages: ChatMessage[]) => void) {
-    const messagesRef = query(
-        ref(rtdb, `hub/conversations/${conversationId}/messages`),
-        orderByChild('timestamp'),
-        limitToLast(100)
-    );
+    const currentEmail = getCurrentEmail();
+    if (!currentEmail) { callback([]); return () => { }; }
 
-    return onValue(messagesRef, (snap) => {
-        const data = snap.val();
-        if (!data) { callback([]); return; }
+    const myKey = sanitizeEmail(currentEmail);
+    const parts = conversationId.split('__');
+    const partnerKey = parts.find(p => p !== myKey) ?? parts[0] ?? '';
 
-        const messages: ChatMessage[] = Object.entries(data).map(([id, val]) => {
-            const v = val as Omit<ChatMessage, 'id'>;
-            return { id, ...v };
+    const docRef = getConvoDocRef(currentEmail, partnerKey);
+
+    // Use Firestore onSnapshot for real-time
+    return onSnapshot(docRef, (snap) => {
+        if (!snap.exists()) { callback([]); return; }
+        const data = snap.data();
+        callback(decodeLog(data?.log || ''));
+    }, (err) => {
+        console.warn('[Chat] Firestore listener error (permission?):', err.message);
+        callback([]);
+    });
+}
+
+/** Subscribe to all conversations for the current user in one listener */
+export function subscribeToAllConvos(callback: (lastMessages: Record<string, ChatMessage>) => void) {
+    const currentEmail = getCurrentEmail();
+    if (!currentEmail) { callback({}); return () => { }; }
+
+    const colRef = collection(db, 'chats', currentEmail, 'convos');
+    const q = query(colRef);
+
+    return onSnapshot(q, (snap) => {
+        const results: Record<string, ChatMessage> = {};
+        snap.forEach(docSnap => {
+            const data = docSnap.data();
+            const msgs = decodeLog(data.log || '');
+            const last = msgs[msgs.length - 1];
+            if (last) {
+                results[docSnap.id] = last;
+            }
         });
-        callback(messages);
+        callback(results);
+    }, (err) => {
+        console.warn('[Chat] Firestore collection listener error:', err.message);
+        callback({});
     });
 }
 
 // ============================================================
-// MAGO AI CHAT (stored in RTDB for persistence)
+// MAGO AI CHAT — stored in Firestore at chats/{email}/convos/mago
 // ============================================================
 
 export async function sendMagoMessage(text: string): Promise<void> {
     const currentEmail = getCurrentEmail();
     if (!currentEmail || !text.trim()) return;
 
-    const sanitized = sanitizeEmail(currentEmail);
-    const messagesRef = ref(rtdb, `hub/mago_chats/${sanitized}/messages`);
-    await push(messagesRef, {
-        text: text.trim(),
-        senderEmail: currentEmail,
-        senderName: getCurrentName(),
-        role: 'user',
-        timestamp: Date.now(),
-    });
+    const line = encodeMsg(Date.now(), currentEmail, text.trim(), 'user') + MSG_LINE_BREAK;
+    const docRef = getConvoDocRef(currentEmail, 'mago');
+
+    const snap = await getDoc(docRef);
+    if (snap.exists()) {
+        await updateDoc(docRef, { log: (snap.data().log || '') + line, updatedAt: Date.now() });
+    } else {
+        await setDoc(docRef, { log: line, updatedAt: Date.now() });
+    }
 }
 
 export async function saveMagoResponse(text: string): Promise<void> {
     const currentEmail = getCurrentEmail();
     if (!currentEmail) return;
 
-    const sanitized = sanitizeEmail(currentEmail);
-    const messagesRef = ref(rtdb, `hub/mago_chats/${sanitized}/messages`);
-    await push(messagesRef, {
-        text: text.trim(),
-        senderEmail: 'mago@studystation.site',
-        senderName: 'Mago ✨',
-        role: 'mago',
-        timestamp: Date.now(),
-    });
+    const line = encodeMsg(Date.now(), 'mago@studystation.site', text.trim(), 'mago') + MSG_LINE_BREAK;
+    const docRef = getConvoDocRef(currentEmail, 'mago');
+
+    const snap = await getDoc(docRef);
+    if (snap.exists()) {
+        await updateDoc(docRef, { log: (snap.data().log || '') + line, updatedAt: Date.now() });
+    } else {
+        await setDoc(docRef, { log: line, updatedAt: Date.now() });
+    }
 }
 
 export function subscribeToMagoMessages(callback: (messages: ChatMessage[]) => void) {
     const currentEmail = getCurrentEmail();
     if (!currentEmail) { callback([]); return () => { }; }
 
-    const sanitized = sanitizeEmail(currentEmail);
-    const messagesRef = query(
-        ref(rtdb, `hub/mago_chats/${sanitized}/messages`),
-        orderByChild('timestamp'),
-        limitToLast(50)
-    );
+    const docRef = getConvoDocRef(currentEmail, 'mago');
 
-    return onValue(messagesRef, (snap) => {
-        const data = snap.val();
-        if (!data) { callback([]); return; }
-
-        const messages: ChatMessage[] = Object.entries(data).map(([id, val]) => {
-            const v = val as Omit<ChatMessage, 'id'>;
-            return { id, ...v };
-        });
-        callback(messages);
+    return onSnapshot(docRef, (snap) => {
+        if (!snap.exists()) { callback([]); return; }
+        const data = snap.data();
+        callback(decodeLog(data?.log || ''));
+    }, (err) => {
+        console.warn('[Chat] Mago Firestore listener error (permission?):', err.message);
+        callback([]);
     });
 }
 

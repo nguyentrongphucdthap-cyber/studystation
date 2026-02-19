@@ -103,5 +103,21 @@ service cloud.firestore {
       allow read: if isLoggedIn();
       allow write: if isAdmin();
     }
+
+    // ============================================
+    // CHAT SYSTEM
+    // ============================================
+
+    match /chats/{ownerEmail}/convos/{partnerKey} {
+      // Users can only read their own chat logs
+      allow read: if isLoggedIn() && request.auth.token.email == ownerEmail;
+      
+      // Users can write to their own logs OR to the log in their partner's tree where they are the partnerKey
+      // Note: partnerKey is sanitized (email.replace('@', '_at_').replace('.', ','))
+      allow write: if isLoggedIn() && (
+        request.auth.token.email == ownerEmail || 
+        request.auth.token.email.replace('@', '_at_').replace('.', ',') == partnerKey
+      );
+    }
   }
 }

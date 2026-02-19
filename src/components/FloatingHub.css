@@ -321,6 +321,7 @@
     gap: 8px;
     margin-bottom: 10px;
     animation: chatMsgIn 0.2s ease;
+    align-items: flex-end;
 }
 
 .chat-message.sent {
@@ -339,15 +340,28 @@
     font-size: 11px;
     font-weight: 700;
     flex-shrink: 0;
+    overflow: hidden;
+}
+
+.chat-message .chat-avatar img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+}
+
+/* The wrapper div around bubble + timestamp */
+.chat-message>div:not(.chat-avatar) {
+    max-width: 80%;
+    min-width: 0;
 }
 
 .chat-message .chat-bubble {
-    max-width: 80%;
     padding: 8px 12px;
     border-radius: 14px;
     font-size: 13px;
     line-height: 1.5;
     word-break: break-word;
+    white-space: pre-wrap;
 }
 
 .chat-message.received .chat-bubble {

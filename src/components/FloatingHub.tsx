@@ -35,6 +35,7 @@ import {
     getConversationId,
     MAGO_SYSTEM_PROMPT,
     subscribeFriendPresence,
+    subscribeToAllConvos,
 } from '@/services/chat.service';
 import { generateAIContent, type AIChatMessage } from '@/services/ai.service';
 import type { ChatMessage, Friend } from '@/types';
@@ -317,7 +318,7 @@ function formatMsgTime(ts: number): string {
     return `${d.getHours().toString().padStart(2, '0')}:${d.getMinutes().toString().padStart(2, '0')}`;
 }
 
-function ChatTab({ user, onUnreadChange }: { user: { email: string; displayName: string | null }; onUnreadChange?: (count: number) => void }) {
+function ChatTab({ user, onUnreadChange }: { user: { email: string; displayName: string | null; photoURL?: string | null }; onUnreadChange?: (count: number) => void }) {
     const [friends, setFriends] = useState<Friend[]>([]);
     const [activeChat, setActiveChat] = useState<string | null>(null);
     const [messages, setMessages] = useState<ChatMessage[]>([]);
@@ -389,36 +390,13 @@ function ChatTab({ user, onUnreadChange }: { user: { email: string; displayName:
         if (activeChat) markAsRead(activeChat);
     }, [activeChat, messages, markAsRead]);
 
-    // Subscribe to last messages for each friend + Mago (for list preview)
+    // Subscribe to all conversations last messages in one go (more efficient/stable)
     useEffect(() => {
-        const unsubs: (() => void)[] = [];
-        const accepted = friends.filter(f => f.status === 'accepted');
-
-        // Mago last message
-        try {
-            const unsubMago = subscribeToMagoMessages((msgs) => {
-                const last = msgs[msgs.length - 1];
-                if (last) {
-                    setLastMessages(prev => ({ ...prev, mago: last }));
-                }
-            });
-            unsubs.push(unsubMago);
-        } catch { /* Mago RTDB may not be available */ }
-
-        // Friends last messages
-        for (const f of accepted) {
-            const convId = getConversationId(user.email, f.email);
-            const unsub = subscribeToMessages(convId, (msgs) => {
-                const last = msgs[msgs.length - 1];
-                if (last) {
-                    setLastMessages(prev => ({ ...prev, [f.email]: last }));
-                }
-            });
-            unsubs.push(unsub);
-        }
-
-        return () => unsubs.forEach(u => u());
-    }, [friends, user.email]);
+        const unsub = subscribeToAllConvos((updates) => {
+            setLastMessages(prev => ({ ...prev, ...updates }));
+        });
+        return () => unsub();
+    }, [user.email]);
 
     // Compute unread count and notify parent
     useEffect(() => {
@@ -639,8 +617,8 @@ function ChatTab({ user, onUnreadChange }: { user: { email: string; displayName:
                                 return (
                                     <div key={f.email} className={`chat-contact-item ${hasUnread ? 'unread' : ''}`} onClick={() => setActiveChat(f.email)}>
                                         <div className="chat-contact-avatar-wrap">
-                                            <div className="chat-contact-avatar" style={{ background: '#e0e7ff', color: '#4f46e5' }}>
-                                                {f.displayName.charAt(0).toUpperCase()}
+                                            <div className="chat-contact-avatar" style={{ background: '#e0e7ff', color: '#4f46e5', overflow: 'hidden' }}>
+                                                {f.photoURL ? <img src={f.photoURL} alt="" style={{ width: '100%', height: '100%', objectFit: 'cover' }} /> : f.displayName.charAt(0).toUpperCase()}
                                             </div>
                                             <span className={`chat-status-dot ${isOnline ? 'online' : 'offline'}`} />
                                         </div>
@@ -711,8 +689,8 @@ function ChatTab({ user, onUnreadChange }: { user: { email: string; displayName:
                         <div className="chat-header-avatar mago-avatar" style={{ width: 28, height: 28, fontSize: 14 }}>🧙</div>
                     ) : (
                         <div className="chat-contact-avatar-wrap" style={{ width: 28, height: 28 }}>
-                            <div className="chat-header-avatar" style={{ background: '#e0e7ff', color: '#4f46e5', width: 28, height: 28, fontSize: 11 }}>
-                                {chatPartnerName.charAt(0).toUpperCase()}
+                            <div className="chat-header-avatar" style={{ background: '#e0e7ff', color: '#4f46e5', width: 28, height: 28, fontSize: 11, overflow: 'hidden' }}>
+                                {chatPartner?.photoURL ? <img src={chatPartner.photoURL} alt="" style={{ width: '100%', height: '100%', objectFit: 'cover', borderRadius: '50%' }} /> : chatPartnerName.charAt(0).toUpperCase()}
                             </div>
                             <span className={`chat-status-dot small ${isPartnerOnline ? 'online' : 'offline'}`} />
                         </div>
@@ -742,8 +720,13 @@ function ChatTab({ user, onUnreadChange }: { user: { email: string; displayName:
                     return (
                         <div key={msg.id} className={`chat-message ${isSent ? 'sent' : 'received'} ${isMago ? 'mago' : ''}`}>
                             {!isSent && (
-                                <div className="chat-avatar" style={isMago ? { background: 'linear-gradient(135deg, #8b5cf6, #ec4899)' } : {}}>
-                                    {isMago ? '🧙' : msg.senderName.charAt(0).toUpperCase()}
+                                <div className="chat-avatar" style={isMago ? { background: 'linear-gradient(135deg, #8b5cf6, #ec4899)' } : { overflow: 'hidden' }}>
+                                    {isMago ? '🧙' : (() => {
+                                        const partner = friends.find(f => f.email === msg.senderEmail);
+                                        return partner?.photoURL
+                                            ? <img src={partner.photoURL} alt="" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+                                            : msg.senderName.charAt(0).toUpperCase();
+                                    })()}
                                 </div>
                             )}
                             <div>
