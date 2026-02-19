@@ -11,8 +11,7 @@ service cloud.firestore {
     }
     
     function isInWhitelist() {
-      return isLoggedIn() && 
-             exists(/databases/$(database)/documents/allowed_users/$(request.auth.token.email));
+      return isLoggedIn() && exists(/databases/$(database)/documents/allowed_users/$(request.auth.token.email));
     }
     
     function getUserRole() {
@@ -20,170 +19,89 @@ service cloud.firestore {
     }
     
     function isAdmin() {
-      return isInWhitelist() && 
-             (getUserRole().matches('.*admin.*') || getUserRole().matches('.*super-admin.*'));
+      return isInWhitelist() && (getUserRole().matches('.*admin.*') || getUserRole().matches('.*super-admin.*'));
     }
-    
-    function isSuperAdmin() {
-      return isInWhitelist() && getUserRole().matches('.*super-admin.*');
-    }
-    
+
     // ============================================
-    // ALLOWED USERS (Whitelist)
-    // Session Management v3
+    // AUTH & USERS
     // ============================================
     
     match /allowed_users/{email} {
       allow read: if isLoggedIn() && (request.auth.token.email == email || isAdmin());
-      
-      allow update: if isLoggedIn() && (
-        isSuperAdmin() ||
-        request.auth.token.email == email
-      );
-      
-      // DEBUG: Allow any logged in user to create (bypassing email check)
-      allow create: if isLoggedIn();
-      
+      allow create: if isAdmin() || (isLoggedIn() && request.auth.token.email == email); // Self-registration allowed if email matches
+      allow update: if isLoggedIn() && (request.auth.token.email == email || isAdmin());
       allow delete: if isAdmin();
     }
-    
-    // ============================================
-    // WHITELIST LOGS
-    // ============================================
-    
-    match /whitelist_logs/{logId} {
-      allow read, write: if isAdmin();
-    }
-    
-    // ============================================
-    // USER ACTIVITY LOGS (Dashboard tracking)
-    // ============================================
-    
-    match /user_activity_logs/{logId} {
-      allow read: if isAdmin();
-      allow create: if isLoggedIn() && 
-                       request.resource.data.userEmail == request.auth.token.email;
-    }
-    
-    // ============================================
-    // NOTIFICATIONS
-    // ============================================
-    
-    match /notifications/{notifId} {
-      allow read: if isLoggedIn();
-      allow write: if isAdmin();
-    }
-    
-    // ============================================
-    // PRACTICE EXAMS
-    // ============================================
-    
-    match /exams/{examId} {
-      allow read: if isLoggedIn();
-      allow create, delete: if isAdmin();
-      allow update: if isAdmin() || 
-        (isLoggedIn() && 
-         request.resource.data.diff(resource.data).affectedKeys().hasOnly(['attemptCount']));
-    }
-    
-    // ============================================
-    // E-TEST EXAMS (Restricted to Whitelist)
-    // ============================================
-    
-    match /etest_exams/{examId} {
-      allow read: if isInWhitelist();
-      allow write: if isAdmin();
-    }
-    
-    // ============================================
-    // VOCAB SETS (Restricted to Whitelist)
-    // ============================================
-    
-    match /vocab_sets/{setId} {
-      allow read: if isInWhitelist();
-      allow write: if isAdmin();
-    }
-    
-    // ============================================
-    // USER DATA
-    // ============================================
-    
-    match /user_data/{userId} {
-      allow read, write: if isLoggedIn() && request.auth.uid == userId;
-    }
-    
-    match /user_data/{userId}/{subcollection=**} {
-      allow read, write: if isLoggedIn() && request.auth.uid == userId;
-    }
-
-    // ============================================
-    // ALL USERS DIRECTORY (Guests + Whitelisted)
-    // ============================================
     
     match /users/{email} {
       allow read: if isLoggedIn();
       allow write: if isLoggedIn() && request.auth.token.email == email;
     }
-    
+
     // ============================================
-    // PRACTICE LOGS
+    // EXAMS & CONTENT (Practice, E-Test, Vocab)
     // ============================================
     
-    match /practice_logs/{logId} {
-      // Admin reads all, user reads their own logs
-      allow read: if isAdmin() || 
-        (isLoggedIn() && resource.data.userEmail == request.auth.token.email);
-      // Any logged in user (including Guest) can create logs
-      allow create: if isLoggedIn();
-      // Only update score for own logs
-      allow update: if isLoggedIn() && 
-        resource.data.userEmail == request.auth.token.email &&
-        request.resource.data.diff(resource.data).affectedKeys()
-          .hasOnly(['score', 'correctCount', 'totalQuestions', 'durationSeconds']);
+    // Practice Exams
+    match /exams/{examId} {
+      allow read: if isLoggedIn();
+      allow create, delete: if isAdmin();
+      allow update: if isAdmin() || (isLoggedIn() && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['attemptCount']));
     }
     
+    match /exam_contents/{examId} {
+      allow read: if isLoggedIn();
+      allow write: if isAdmin();
+    }
+
+    // E-Test & Vocab
+    match /etest_exams/{examId} {
+      allow read: if isInWhitelist();
+      allow write: if isAdmin();
+    }
+    
+    match /vocab_sets/{setId} {
+      allow read: if isInWhitelist();
+      allow write: if isAdmin();
+    }
+
     // ============================================
-    // PRACTICE HISTORY
+    // USER ACTIVITY & TRACKING
     // ============================================
     
     match /practice_history/{historyId} {
-      allow read: if isLoggedIn() && (
-        resource.data.userId == request.auth.uid || 
-        isAdmin()
-      );
-      allow create: if isLoggedIn() && 
-        request.resource.data.userId == request.auth.uid;
+      allow read: if isLoggedIn() && (resource.data.userId == request.auth.uid || isAdmin());
+      allow create: if isLoggedIn() && request.resource.data.userId == request.auth.uid;
     }
     
+    match /practice_logs/{logId} {
+      allow read: if isAdmin() || (isLoggedIn() && resource.data.userEmail == request.auth.token.email);
+      allow create: if isLoggedIn();
+      allow update: if isLoggedIn() && resource.data.userEmail == request.auth.token.email;
+    }
+
+    match /user_activity_logs/{logId} {
+      allow read: if isAdmin();
+      allow create: if isLoggedIn() && request.resource.data.userEmail == request.auth.token.email;
+    }
+    
+    match /whitelist_logs/{logId} {
+      allow read, write: if isAdmin();
+    }
+
     // ============================================
-    // EXAM FEEDBACKS
+    // SYSTEM & FEEDBACK
     // ============================================
     
     match /feedbacks/{examId}/comments/{commentId} {
       allow read: if isLoggedIn();
       allow create: if isLoggedIn();
-      allow update, delete: if isLoggedIn() && 
-        (request.auth.uid == resource.data.userId || isAdmin());
+      allow update, delete: if isLoggedIn() && (request.auth.uid == resource.data.userId || isAdmin());
     }
     
-    // ============================================
-    // SETTINGS (App-wide settings)
-    // ============================================
-    
-    match /settings/{settingId} {
+    match /notifications/{notifId} {
       allow read: if isLoggedIn();
-      allow write: if isSuperAdmin();
-    }
-    
-    // ============================================
-    // PENDING REGISTRATIONS (User registration requests)
-    // ============================================
-    
-    match /pending_registrations/{regId} {
-      // Anyone can create a registration request (no login required)
-      allow create: if true;
-      // Admin can read, update, and delete
-      allow read, update, delete: if isAdmin();
+      allow write: if isAdmin();
     }
   }
 }

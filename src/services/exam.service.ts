@@ -11,8 +11,8 @@ import {
     orderBy,
     where,
     limit as firestoreLimit,
-    getDocFromCache,
     increment,
+    writeBatch,
     type DocumentData,
     type QueryDocumentSnapshot,
 } from 'firebase/firestore';
@@ -42,11 +42,12 @@ export async function getAllExams(): Promise<ExamMetadata[]> {
         return examListCache;
     }
 
-    // Try IndexedDB cache first, then server
     try {
         const snapshot = await getDocs(collection(db, 'exams'));
         const exams = snapshot.docs.map((d: QueryDocumentSnapshot<DocumentData>) => {
             const data = d.data();
+            // In the new structure, exams collection only contains metadata.
+            // Old documents might contain full data, but we only extract metadata here.
             return {
                 id: d.id,
                 title: data.title,
@@ -54,8 +55,9 @@ export async function getAllExams(): Promise<ExamMetadata[]> {
                 time: data.time,
                 attemptCount: data.attemptCount || 0,
                 createdAt: data.createdAt,
+                updatedAt: data.updatedAt,
                 examCode: data.examCode,
-                questionCount: {
+                questionCount: data.questionCount || {
                     part1: (data.part1 || []).length,
                     part2: (data.part2 || []).length,
                     part3: (data.part3 || []).length,
@@ -73,38 +75,62 @@ export async function getAllExams(): Promise<ExamMetadata[]> {
 }
 
 export async function getExamContent(examId: string): Promise<Exam | null> {
-    // Check memory cache
+    // 1. Check memory cache
     if (examContentCache.has(examId)) {
         return examContentCache.get(examId) || null;
     }
 
+    // 2. Check localStorage cache
     try {
-        // Try cache first
-        let examSnap;
-        try {
-            examSnap = await getDocFromCache(doc(db, 'exams', examId));
-        } catch {
-            examSnap = await getDoc(doc(db, 'exams', examId));
+        const cached = localStorage.getItem(`exam_content_${examId}`);
+        if (cached) {
+            const parsed = JSON.parse(cached);
+            // Optional: check version/timestamp here
+            examContentCache.set(examId, parsed);
+            return parsed;
+        }
+    } catch (e) {
+        console.warn('[Exam] Cache read failed', e);
+    }
+
+    try {
+        // 3. Try to fetch from exam_contents (New Structure)
+        let contentSnap = await getDoc(doc(db, 'exam_contents', examId));
+        let examData: Partial<Exam> = {};
+
+        if (contentSnap.exists()) {
+            examData = contentSnap.data();
+            // Fetch metadata to complete the object
+            const metaSnap = await getDoc(doc(db, 'exams', examId));
+            if (metaSnap.exists()) {
+                const meta = metaSnap.data();
+                examData = { ...meta, ...examData };
+            }
+        } else {
+            // 4. Fallback to exams collection (Old Structure)
+            const oldSnap = await getDoc(doc(db, 'exams', examId));
+            if (!oldSnap.exists()) return null;
+            examData = oldSnap.data();
         }
 
-        if (!examSnap.exists()) return null;
-
-        const data = examSnap.data();
         const exam: Exam = {
-            id: examSnap.id,
-            title: data.title,
-            subjectId: data.subjectId,
-            time: data.time,
-            part1: data.part1 || [],
-            part2: data.part2 || [],
-            part3: data.part3 || [],
-            attemptCount: data.attemptCount || 0,
-            createdAt: data.createdAt,
-            createdBy: data.createdBy,
-            examCode: data.examCode,
+            id: examId,
+            title: examData.title || '',
+            subjectId: examData.subjectId || '',
+            time: examData.time || 50,
+            part1: examData.part1 || [],
+            part2: examData.part2 || [],
+            part3: examData.part3 || [],
+            attemptCount: examData.attemptCount || 0,
+            createdAt: examData.createdAt || '',
+            createdBy: examData.createdBy || '',
+            examCode: examData.examCode,
         };
 
+        // Update caches
         examContentCache.set(examId, exam);
+        localStorage.setItem(`exam_content_${examId}`, JSON.stringify(exam));
+
         return exam;
     } catch (error) {
         console.error('[Exam] Failed to fetch exam content:', error);
@@ -113,7 +139,7 @@ export async function getExamContent(examId: string): Promise<Exam | null> {
 }
 
 export async function createExam(examData: Omit<Exam, 'id'>, customId?: string): Promise<string> {
-    // Generate ID: {subjectId}-{XXX}
+    // 1. Generate ID
     let examId = customId;
     if (!examId) {
         const existingExams = await getAllExams();
@@ -122,28 +148,96 @@ export async function createExam(examData: Omit<Exam, 'id'>, customId?: string):
         examId = `${examData.subjectId}-${nextNum}`;
     }
 
-    await setDoc(doc(db, 'exams', examId), {
-        ...examData,
+    const { part1, part2, part3, ...metadata } = examData;
+    const now = new Date().toISOString();
+
+    // 2. Use Batch to save metadata and content separately (Atomic)
+    const batch = writeBatch(db);
+
+    // Meta doc: exams/ID
+    const metaRef = doc(db, 'exams', examId);
+    batch.set(metaRef, {
+        ...metadata,
+        // Keep part1/2/3 in meta temporarily for backward compatibility
+        part1: part1 || [],
+        part2: part2 || [],
+        part3: part3 || [],
+        questionCount: {
+            part1: (part1 || []).length,
+            part2: (part2 || []).length,
+            part3: (part3 || []).length,
+        },
         attemptCount: 0,
-        createdAt: new Date().toISOString(),
+        createdAt: now,
+        updatedAt: now,
         createdBy: auth.currentUser?.email || 'unknown',
     });
+
+    // Content doc: exam_contents/ID
+    const contentRef = doc(db, 'exam_contents', examId);
+    batch.set(contentRef, {
+        part1: part1 || [],
+        part2: part2 || [],
+        part3: part3 || [],
+    });
+
+    await batch.commit();
 
     clearExamListCache();
     return examId;
 }
 
 export async function updateExam(examId: string, examData: Partial<Exam>): Promise<void> {
-    const { id: _id, ...data } = examData;
-    await updateDoc(doc(db, 'exams', examId), data);
+    const { id: _id, part1, part2, part3, ...metadata } = examData;
+    const now = new Date().toISOString();
+
+    const batch = writeBatch(db);
+
+    // 1. Update metadata and content in 'exams' collection
+    if (Object.keys(metadata).length > 0 || part1 || part2 || part3) {
+        const metaRef = doc(db, 'exams', examId);
+        const updatePayload: any = { ...metadata, updatedAt: now };
+
+        if (part1 || part2 || part3) {
+            if (part1) updatePayload.part1 = part1;
+            if (part2) updatePayload.part2 = part2;
+            if (part3) updatePayload.part3 = part3;
+
+            updatePayload.questionCount = {
+                part1: part1 ? part1.length : (metadata as any).questionCount?.part1,
+                part2: part2 ? part2.length : (metadata as any).questionCount?.part2,
+                part3: part3 ? part3.length : (metadata as any).questionCount?.part3,
+            };
+        }
+        batch.update(metaRef, updatePayload);
+    }
+
+    // 2. Update exam_contents collection
+    if (part1 || part2 || part3) {
+        const contentRef = doc(db, 'exam_contents', examId);
+        const contentPayload: any = {};
+        if (part1) contentPayload.part1 = part1;
+        if (part2) contentPayload.part2 = part2;
+        if (part3) contentPayload.part3 = part3;
+        batch.set(contentRef, contentPayload, { merge: true });
+    }
+
+    await batch.commit();
+
     clearExamListCache();
     clearExamContentCache(examId);
+    localStorage.removeItem(`exam_content_${examId}`);
 }
 
 export async function deleteExam(examId: string): Promise<void> {
-    await deleteDoc(doc(db, 'exams', examId));
+    const batch = writeBatch(db);
+    batch.delete(doc(db, 'exams', examId));
+    batch.delete(doc(db, 'exam_contents', examId));
+    await batch.commit();
+
     clearExamListCache();
     clearExamContentCache(examId);
+    localStorage.removeItem(`exam_content_${examId}`);
 }
 
 export function clearExamListCache() {

@@ -5,7 +5,8 @@ import { Spinner } from '@/components/ui/Spinner';
 import { Button } from '@/components/ui/Button';
 import { Dialog, ConfirmDialog } from '@/components/ui/Dialog';
 import type { EtestExam } from '@/types';
-import { Trash2, Upload, Search } from 'lucide-react';
+import { Trash2, Upload, Search, Wand2 } from 'lucide-react';
+import { SmartImportDialog } from '@/components/admin/SmartImportDialog';
 
 export default function AdminEtest() {
     const { toast } = useToast();
@@ -13,6 +14,7 @@ export default function AdminEtest() {
     const [loading, setLoading] = useState(true);
     const [search, setSearch] = useState('');
     const [showImport, setShowImport] = useState(false);
+    const [showSmartImport, setShowSmartImport] = useState(false);
     const [jsonInput, setJsonInput] = useState('');
     const [deleteTarget, setDeleteTarget] = useState<string | null>(null);
 
@@ -33,6 +35,17 @@ export default function AdminEtest() {
         } catch { toast({ title: 'JSON không hợp lệ', type: 'error' }); }
     };
 
+    const handleSmartImport = async (data: any) => {
+        try {
+            await createEtestExam({ title: data.title, tag: data.tag, time: data.time || 60, sections: data.sections });
+            toast({ title: 'Đã tạo bài E-test!', type: 'success' });
+            await loadExams();
+        } catch (err) {
+            toast({ title: 'Lỗi', message: 'Không thể tạo bài E-test.', type: 'error' });
+            throw err;
+        }
+    };
+
     const handleDelete = async (id: string) => {
         await deleteEtestExam(id);
         toast({ title: 'Đã xóa', type: 'success' });
@@ -46,7 +59,12 @@ export default function AdminEtest() {
         <div className="space-y-4">
             <div className="flex items-center justify-between">
                 <h2 className="text-lg font-bold">📝 Quản lý E-test</h2>
-                <Button onClick={() => setShowImport(true)}><Upload className="h-4 w-4" /> Import</Button>
+                <div className="flex gap-2">
+                    <Button variant="outline" onClick={() => setShowSmartImport(true)} className="border-primary text-primary hover:bg-primary/10">
+                        <Wand2 className="h-4 w-4" /> AI Smart Import
+                    </Button>
+                    <Button onClick={() => setShowImport(true)}><Upload className="h-4 w-4" /> Import</Button>
+                </div>
             </div>
             <div className="relative max-w-md">
                 <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
@@ -88,6 +106,13 @@ export default function AdminEtest() {
                 </div>
             </Dialog>
             <ConfirmDialog open={!!deleteTarget} onClose={() => setDeleteTarget(null)} onConfirm={() => deleteTarget && handleDelete(deleteTarget)} title="Xóa bài E-test?" message="Không thể hoàn tác." confirmText="Xóa" variant="destructive" />
+
+            <SmartImportDialog
+                open={showSmartImport}
+                onClose={() => setShowSmartImport(false)}
+                onImport={handleSmartImport}
+                type="etest"
+            />
         </div>
     );
 }

@@ -11,6 +11,7 @@ const LoginPage = lazy(() => import('@/pages/Login'));
 const Dashboard = lazy(() => import('@/pages/Dashboard'));
 const PracticeHome = lazy(() => import('@/pages/practice/PracticeHome'));
 const PracticeExam = lazy(() => import('@/pages/practice/PracticeExam'));
+const Schedule = lazy(() => import('@/pages/Schedule'));
 const EtestHome = lazy(() => import('@/pages/etest/EtestHome'));
 const EtestExam = lazy(() => import('@/pages/etest/EtestExam'));
 const VocabPage = lazy(() => import('@/pages/vocab/VocabPage'));
@@ -20,6 +21,7 @@ const AdminEtest = lazy(() => import('@/pages/admin/AdminEtest'));
 const AdminVocab = lazy(() => import('@/pages/admin/AdminVocab'));
 const AdminNotifications = lazy(() => import('@/pages/admin/AdminNotifications'));
 const AdminStudents = lazy(() => import('@/pages/admin/AdminStudents'));
+const AdminSchedule = lazy(() => import('@/pages/admin/AdminSchedule')); // Added Schedule
 
 // Lazy-load AdminOverview from same file
 const AdminOverview = lazy(() =>
@@ -51,6 +53,9 @@ function App() {
                                 <Route path="/practice" element={<PracticeHome />} />
                                 <Route path="/practice/:examId" element={<PracticeExam />} />
 
+                                {/* Schedule (Student) */}
+                                <Route path="/schedule" element={<Schedule />} />
+
                                 {/* E-test */}
                                 <Route path="/etest" element={<EtestHome />} />
                                 <Route path="/etest/:examId" element={<EtestExam />} />
@@ -70,6 +75,7 @@ function App() {
                                     <Route path="/admin/practice" element={<AdminPractice />} />
                                     <Route path="/admin/etest" element={<AdminEtest />} />
                                     <Route path="/admin/vocab" element={<AdminVocab />} />
+                                    <Route path="/admin/schedule" element={<AdminSchedule />} />
                                     <Route path="/admin/notifications" element={<AdminNotifications />} />
                                     <Route
                                         path="/admin/students"

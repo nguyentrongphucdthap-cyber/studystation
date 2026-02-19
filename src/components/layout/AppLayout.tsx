@@ -2,7 +2,9 @@ import { Outlet, useNavigate, useLocation } from 'react-router-dom';
 import { useAuth } from '@/contexts/AuthContext';
 import { useEffect, useState, useRef } from 'react';
 import { subscribeToOnlineUsers } from '@/services/auth.service';
+import { cn } from '@/lib/utils';
 import { LogOut, Settings, Bell, ChevronDown, Music4, BarChart3 } from 'lucide-react';
+import { FloatingHub } from '@/components/FloatingHub';
 
 export function AppLayout() {
     const { user, isAdmin, logout } = useAuth();
@@ -53,7 +55,7 @@ export function AppLayout() {
                             <span className="text-gray-800">Khu vực Giáo Viên</span>
                         </button>
                         <div className="flex items-center gap-3">
-                            <span className="text-xs text-gray-500">🟢 {onlineCount} online</span>
+                            <span className="text-xs text-gray-500">🟢 {onlineCount} đang trực tuyến</span>
                             <button onClick={() => navigate('/')} className="text-sm text-gray-500 hover:text-blue-600 transition-colors">
                                 ← Trang chủ
                             </button>
@@ -66,6 +68,7 @@ export function AppLayout() {
                 <main className="mx-auto max-w-7xl px-4 py-6">
                     <Outlet />
                 </main>
+                <FloatingHub />
             </div>
         );
     }
@@ -122,7 +125,9 @@ export function AppLayout() {
     );
 
     // --- Dashboard: full-screen Tet background ---
-    if (isDashboard) {
+    const isSchedule = location.pathname === '/schedule';
+
+    if (isDashboard || isSchedule) {
         return (
             <div className="min-h-screen bg-[#8B0000] relative overflow-hidden flex flex-col">
                 {/* Tet decorations */}
@@ -147,21 +152,37 @@ export function AppLayout() {
 
                 {/* Header */}
                 <header className="relative z-20 flex items-center justify-between px-5 md:px-8 py-4 shrink-0">
-                    <div className="flex items-center gap-3">
-                        {/* Logo */}
-                        <div className="h-10 w-10 bg-white/15 backdrop-blur rounded-xl flex items-center justify-center border border-white/20">
-                            <span className="text-white text-lg font-bold">S</span>
-                        </div>
-                        <div>
-                            <h1 className="text-lg md:text-xl font-bold text-white leading-tight">
-                                Study Station <span className="text-sm">🇻🇳</span>
-                            </h1>
-                            <div className="flex items-center gap-1.5 mt-0.5">
-                                <span className="w-2 h-2 rounded-full bg-green-400 shrink-0" style={{ boxShadow: '0 0 6px rgba(74,222,128,0.6)' }} />
-                                <span className="text-[11px] text-white/70 font-medium">{onlineCount} người đang học</span>
+                    {isSchedule ? (
+                        <div className="flex items-center gap-4">
+                            <button
+                                onClick={() => navigate('/')}
+                                className="h-10 w-10 bg-white/10 hover:bg-white/20 backdrop-blur rounded-xl flex items-center justify-center border border-white/20 transition-all group"
+                            >
+                                <ChevronDown className="h-6 w-6 text-white rotate-90 group-hover:-translate-x-0.5 transition-transform" />
+                            </button>
+                            <div>
+                                <h1 className="text-lg md:text-xl font-bold text-white leading-tight">Thời Khóa Biểu</h1>
+                                <p className="text-xs text-white/60">Theo dõi lịch học</p>
                             </div>
                         </div>
-                    </div>
+                    ) : (
+                        <div className="flex items-center gap-3">
+                            {/* Logo */}
+                            <div className="h-10 w-10 bg-white/15 backdrop-blur rounded-xl flex items-center justify-center border border-white/20">
+                                <span className="text-white text-lg font-bold">S</span>
+                            </div>
+                            <div>
+                                <h1 className="text-lg md:text-xl font-bold text-white leading-tight">
+                                    Study Station <span className="text-sm">🇻🇳</span>
+                                </h1>
+                                <div className="flex items-center gap-1.5 mt-0.5">
+                                    <span className="w-2 h-2 rounded-full bg-green-400 shrink-0" style={{ boxShadow: '0 0 6px rgba(74,222,128,0.6)' }} />
+                                    <span className="text-[11px] text-white/70 font-medium">{onlineCount} người đang học</span>
+                                </div>
+                            </div>
+                        </div>
+                    )}
+
                     <div className="flex items-center gap-2">
                         <button className="p-2 rounded-full text-white/60 hover:text-white hover:bg-white/10 transition-all" title="Thông báo">
                             <Bell className="h-4 w-4" />
@@ -174,15 +195,18 @@ export function AppLayout() {
                     </div>
                 </header>
 
-                {/* Menu content — flex-1 to fill remaining height and center vertically */}
-                <main className="relative z-10 flex-1 flex items-center justify-center px-4">
-                    <div className="w-full max-w-[580px]">
+                {/* Menu content */}
+                <main className={`relative z-10 flex-1 flex ${isSchedule ? 'items-start justify-center pt-8' : 'items-center justify-center'} px-4 overflow-y-auto`}>
+                    <div className={`w-full ${isSchedule ? 'max-w-7xl pb-10' : 'max-w-[580px]'}`}>
                         <Outlet />
                     </div>
                 </main>
+                <FloatingHub />
             </div>
         );
     }
+
+    const isExamPage = location.pathname.includes('/practice/') || location.pathname.includes('/etest/');
 
     // --- Sub-pages: modern white header layout ---
     return (
@@ -206,7 +230,10 @@ export function AppLayout() {
                 </div>
             </header>
 
-            <main className="w-full max-w-5xl mx-auto px-4 py-6 md:py-10 min-h-[calc(100vh-160px)]">
+            <main className={cn(
+                "w-full mx-auto px-4 py-6 md:py-10 min-h-[calc(100vh-160px)] transition-all duration-300",
+                isExamPage ? "max-w-7xl" : "max-w-5xl"
+            )}>
                 <div className="page-fade-in">
                     <Outlet />
                 </div>
@@ -215,6 +242,7 @@ export function AppLayout() {
             <footer className="text-center text-[12px] text-gray-400 py-8 border-t border-gray-100 mt-10">
                 <p>Designed & Developed by <strong className="text-gray-500 font-semibold">Trọng Phúc</strong> | From Concept to Content by <strong className="text-gray-500 font-semibold">Phương Kiều</strong></p>
             </footer>
+            <FloatingHub />
         </div>
     );
 }

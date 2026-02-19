@@ -1,4 +1,5 @@
 import { useEffect, useRef, type ReactNode } from 'react';
+import { createPortal } from 'react-dom';
 import { cn } from '@/lib/utils';
 import { X } from 'lucide-react';
 import { Button } from './Button';
@@ -35,8 +36,8 @@ export function Dialog({ open, onClose, children, className, closeOnOverlay = tr
 
     if (!open) return null;
 
-    return (
-        <div className="fixed inset-0 z-50 flex items-center justify-center">
+    return createPortal(
+        <div className="fixed inset-0 z-[100] flex items-center justify-center">
             {/* Overlay */}
             <div
                 className="fixed inset-0 bg-black/60 backdrop-blur-sm animate-in fade-in duration-200"
@@ -46,20 +47,21 @@ export function Dialog({ open, onClose, children, className, closeOnOverlay = tr
             <div
                 ref={dialogRef}
                 className={cn(
-                    'relative z-10 w-full max-w-lg rounded-xl bg-card p-6 shadow-2xl',
+                    'relative z-[110] w-[95%] max-w-lg rounded-2xl bg-card p-6 shadow-2xl',
                     'animate-in zoom-in-95 duration-200',
                     className
                 )}
             >
                 <button
                     onClick={onClose}
-                    className="absolute right-4 top-4 rounded-sm opacity-70 transition-opacity hover:opacity-100"
+                    className="absolute right-4 top-4 rounded-full p-1 opacity-70 transition-opacity hover:opacity-100 hover:bg-muted"
                 >
                     <X className="h-4 w-4" />
                 </button>
                 {children}
             </div>
-        </div>
+        </div>,
+        document.body
     );
 }
 

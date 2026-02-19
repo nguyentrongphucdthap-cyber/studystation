@@ -293,35 +293,102 @@ export async function getWhitelistLogs(limitCount = 50) {
 }
 
 // ============================================================
-// PRESENCE TRACKING (Realtime Database)
+// PRESENCE TRACKING (Realtime Database) — Heartbeat-based
 // ============================================================
 
+const HEARTBEAT_INTERVAL_MS = 60_000; // Update heartbeat every 60s
+const STALE_THRESHOLD_MS = 120_000;   // Consider user offline after 2min without heartbeat
+
 let presenceRef: ReturnType<typeof ref> | null = null;
+let heartbeatInterval: ReturnType<typeof setInterval> | null = null;
+let presenceCleanupBound: (() => void) | null = null;
+let visibilityHandlerBound: (() => void) | null = null;
+
+function getPresenceData(user: { email: string | null; displayName: string | null; photoURL: string | null }, deviceType: string) {
+    return {
+        email: user.email,
+        displayName: user.displayName,
+        photoURL: user.photoURL,
+        deviceType,
+        lastHeartbeat: rtdbTimestamp(),
+        status: 'online',
+    };
+}
 
 export async function startPresence() {
     const user = auth.currentUser;
     if (!user) return;
 
+    // Clean up any previous presence
+    await stopPresence();
+
     const deviceType = getDeviceType();
     presenceRef = ref(rtdb, `presence/${user.uid}_${deviceType}`);
+    const data = getPresenceData(user, deviceType);
 
+    // Listen to connection state
     const connectedRef = ref(rtdb, '.info/connected');
     onValue(connectedRef, (snap) => {
         if (snap.val() === true && presenceRef) {
             onDisconnect(presenceRef).remove();
-            set(presenceRef, {
-                email: user.email,
-                displayName: user.displayName,
-                photoURL: user.photoURL,
-                deviceType,
-                lastSeen: rtdbTimestamp(),
-                status: 'online',
-            });
+            set(presenceRef, data);
         }
     });
+
+    // Heartbeat: update lastHeartbeat every 60s
+    heartbeatInterval = setInterval(() => {
+        if (presenceRef && auth.currentUser) {
+            set(presenceRef, getPresenceData(auth.currentUser, deviceType)).catch(() => { });
+        }
+    }, HEARTBEAT_INTERVAL_MS);
+
+    // Cleanup on page unload
+    presenceCleanupBound = () => {
+        if (presenceRef) {
+            // Use remove (best-effort) — onDisconnect is backup
+            remove(presenceRef).catch(() => { });
+            presenceRef = null;
+        }
+        if (heartbeatInterval) {
+            clearInterval(heartbeatInterval);
+            heartbeatInterval = null;
+        }
+    };
+    window.addEventListener('beforeunload', presenceCleanupBound);
+
+    // Pause heartbeat when tab hidden, resume when visible
+    visibilityHandlerBound = () => {
+        if (document.visibilityState === 'hidden') {
+            // Stop heartbeat; the entry will go stale after 2min
+            if (heartbeatInterval) {
+                clearInterval(heartbeatInterval);
+                heartbeatInterval = null;
+            }
+        } else if (document.visibilityState === 'visible') {
+            // Resume: immediately heartbeat + restart interval
+            if (presenceRef && auth.currentUser) {
+                set(presenceRef, getPresenceData(auth.currentUser, deviceType)).catch(() => { });
+            }
+            if (!heartbeatInterval) {
+                heartbeatInterval = setInterval(() => {
+                    if (presenceRef && auth.currentUser) {
+                        set(presenceRef, getPresenceData(auth.currentUser, deviceType)).catch(() => { });
+                    }
+                }, HEARTBEAT_INTERVAL_MS);
+            }
+        }
+    };
+    document.addEventListener('visibilitychange', visibilityHandlerBound);
 }
 
 export async function stopPresence() {
+    // Clear heartbeat interval
+    if (heartbeatInterval) {
+        clearInterval(heartbeatInterval);
+        heartbeatInterval = null;
+    }
+
+    // Remove presence from RTDB
     if (presenceRef) {
         try {
             await remove(presenceRef);
@@ -330,33 +397,110 @@ export async function stopPresence() {
         }
         presenceRef = null;
     }
+
+    // Remove event listeners
+    if (presenceCleanupBound) {
+        window.removeEventListener('beforeunload', presenceCleanupBound);
+        presenceCleanupBound = null;
+    }
+    if (visibilityHandlerBound) {
+        document.removeEventListener('visibilitychange', visibilityHandlerBound);
+        visibilityHandlerBound = null;
+    }
 }
 
+// Server time offset for accurate heartbeat checking
+let serverTimeOffset = 0;
+const offsetRef = ref(rtdb, '.info/serverTimeOffset');
+onValue(offsetRef, (snap) => {
+    serverTimeOffset = snap.val() || 0;
+});
+
+function getClientAdjustedTime() {
+    return Date.now() + serverTimeOffset;
+}
+
+/**
+ * Filter entries that have a valid lastHeartbeat within the stale threshold.
+ * Returns count of genuinely active UNIQUE users (by email).
+ */
+function countActiveEntries(data: Record<string, { email: string; lastHeartbeat?: number }> | null): number {
+    if (!data) return 0;
+    const now = getClientAdjustedTime();
+    const activeEmails = new Set<string>();
+
+    for (const entry of Object.values(data)) {
+        // lastHeartbeat is a server timestamp (ms since epoch)
+        if (entry.lastHeartbeat && (now - entry.lastHeartbeat) < STALE_THRESHOLD_MS) {
+            if (entry.email) activeEmails.add(entry.email.toLowerCase());
+        }
+    }
+    return activeEmails.size;
+}
+
+function getActiveUsers(data: Record<string, { email: string; displayName: string; deviceType: string; lastHeartbeat?: number }> | null): Array<{ email: string; displayName: string; deviceType: string }> {
+    if (!data) return [];
+    const now = getClientAdjustedTime();
+    const users: Array<{ email: string; displayName: string; deviceType: string }> = [];
+    const processedEmails = new Set<string>();
+
+    for (const entry of Object.values(data)) {
+        if (entry.lastHeartbeat && (now - entry.lastHeartbeat) < STALE_THRESHOLD_MS) {
+            const email = entry.email?.toLowerCase() || '';
+            if (!processedEmails.has(email)) {
+                users.push({ email: entry.email, displayName: entry.displayName, deviceType: entry.deviceType });
+                processedEmails.add(email);
+            }
+        }
+    }
+    return users;
+}
+
+/**
+ * Subscribe to online user count with heartbeat-based filtering.
+ * Re-evaluates stale entries every 60s even without RTDB changes.
+ */
 export function subscribeToOnlineUsers(callback: (count: number) => void) {
     const presenceListRef = ref(rtdb, 'presence');
-    return onValue(presenceListRef, (snap) => {
-        const data = snap.val();
-        callback(data ? Object.keys(data).length : 0);
+    let latestData: Record<string, { email: string; lastHeartbeat?: number }> | null = null;
+
+    // Real-time listener
+    const unsubscribeRtdb = onValue(presenceListRef, (snap) => {
+        latestData = snap.val();
+        callback(countActiveEntries(latestData));
     });
+
+    // Re-evaluate every 60s to expire stale entries
+    const recheckInterval = setInterval(() => {
+        callback(countActiveEntries(latestData));
+    }, HEARTBEAT_INTERVAL_MS);
+
+    // Return cleanup function
+    return () => {
+        unsubscribeRtdb();
+        clearInterval(recheckInterval);
+    };
 }
 
 export function subscribeToOnlineUsersList(
     callback: (users: Array<{ email: string; displayName: string; deviceType: string }>) => void
 ) {
     const presenceListRef = ref(rtdb, 'presence');
-    return onValue(presenceListRef, (snap) => {
-        const data = snap.val();
-        if (!data) {
-            callback([]);
-            return;
-        }
-        const users = Object.values(data) as Array<{
-            email: string;
-            displayName: string;
-            deviceType: string;
-        }>;
-        callback(users);
+    let latestData: Record<string, { email: string; displayName: string; deviceType: string; lastHeartbeat?: number }> | null = null;
+
+    const unsubscribeRtdb = onValue(presenceListRef, (snap) => {
+        latestData = snap.val();
+        callback(getActiveUsers(latestData));
     });
+
+    const recheckInterval = setInterval(() => {
+        callback(getActiveUsers(latestData));
+    }, HEARTBEAT_INTERVAL_MS);
+
+    return () => {
+        unsubscribeRtdb();
+        clearInterval(recheckInterval);
+    };
 }
 
 // ============================================================

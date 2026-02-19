@@ -7,10 +7,11 @@ import {
     getSubjects,
 } from '@/services/exam.service';
 import { useAuth } from '@/contexts/AuthContext';
-import { cn, formatTime, renderMathJax } from '@/lib/utils';
+import { cn, formatTime } from '@/lib/utils';
 import { Spinner } from '@/components/ui/Spinner';
 import { Button } from '@/components/ui/Button';
 import { AlertDialog, ConfirmDialog } from '@/components/ui/Dialog';
+import { LatexContent } from '@/components/ui/LatexContent';
 import type { Exam, Part1Question, Part2Question, Part3Question } from '@/types';
 import {
     ArrowLeft,
@@ -68,12 +69,7 @@ export default function PracticeExam() {
         load();
     }, [examId]);
 
-    // MathJax rendering
-    useEffect(() => {
-        if (exam && mode !== 'ready') {
-            setTimeout(renderMathJax, 100);
-        }
-    }, [exam, mode]);
+    // Loading effect is enough
 
     // Timer
     useEffect(() => {
@@ -235,162 +231,283 @@ export default function PracticeExam() {
     if (mode === 'taking') {
         const isTimeLow = timeLeft < 300; // < 5 min
 
+        // Helper to scroll to question
+        const scrollToQuestion = (id: string | number) => {
+            const el = document.getElementById(`q-${id}`);
+            if (el) {
+                const offset = 100; // Account for sticky header
+                const bodyRect = document.body.getBoundingClientRect().top;
+                const elementRect = el.getBoundingClientRect().top;
+                const elementPosition = elementRect - bodyRect;
+                const offsetPosition = elementPosition - offset;
+
+                window.scrollTo({
+                    top: offsetPosition,
+                    behavior: 'smooth'
+                });
+            }
+        };
+
         return (
-            <div className="mx-auto max-w-3xl">
+            <div className="mx-auto w-full px-4 lg:px-8">
                 {/* Timer header */}
-                <div className="sticky top-14 z-30 -mx-4 mb-4 border-b border-border bg-background/95 px-4 py-3 backdrop-blur-sm">
+                <div className="sticky top-14 z-30 -mx-4 mb-6 border-b border-border bg-background/95 px-4 py-3 backdrop-blur-sm lg:-mx-8 lg:px-8">
                     <div className="flex items-center justify-between">
-                        <h2 className="text-sm font-medium truncate max-w-[200px] sm:max-w-none">{exam.title}</h2>
+                        <div className="flex items-center gap-4">
+                            <button onClick={() => setShowSubmitConfirm(true)} className="p-1 hover:bg-muted rounded-full">
+                                <ArrowLeft className="h-5 w-5" />
+                            </button>
+                            <h2 className="text-sm font-bold truncate max-w-[150px] sm:max-w-none lg:text-base">{exam.title}</h2>
+                        </div>
                         <div className="flex items-center gap-3">
                             <div className={cn(
-                                'flex items-center gap-1.5 rounded-full px-3 py-1 text-sm font-mono font-bold',
+                                'flex items-center gap-1.5 rounded-full px-4 py-1.5 text-sm font-mono font-bold',
                                 isTimeLow ? 'bg-red-100 text-red-700 animate-pulse dark:bg-red-900/30 dark:text-red-400' : 'bg-muted text-foreground'
                             )}>
-                                <Clock className="h-3.5 w-3.5" />
+                                <Clock className="h-4 w-4" />
                                 {formatTime(timeLeft)}
                             </div>
-                            <Button size="sm" onClick={() => setShowSubmitConfirm(true)}>
+                            <Button size="sm" onClick={() => setShowSubmitConfirm(true)} className="hidden sm:flex">
                                 <Send className="h-3.5 w-3.5" /> Nộp bài
                             </Button>
                         </div>
                     </div>
                 </div>
 
-                {/* Questions */}
-                <div className="space-y-6">
-                    {/* Part 1: Multiple Choice */}
-                    {(exam.part1?.length || 0) > 0 && (
-                        <section>
-                            <h3 className="mb-3 text-lg font-bold text-primary">
-                                Phần 1: Trắc nghiệm ({exam.part1?.length} câu)
-                            </h3>
-                            <div className="space-y-4">
-                                {exam.part1?.map((q) => (
-                                    <div key={q.id} className="rounded-xl border border-border bg-card p-4">
-                                        <p className="mb-3 font-medium">
-                                            <span className="mr-2 inline-flex h-6 w-6 items-center justify-center rounded-full bg-primary/10 text-xs font-bold text-primary">
-                                                {q.id}
-                                            </span>
-                                            <span dangerouslySetInnerHTML={{ __html: q.text }} />
-                                        </p>
-                                        {q.image && (
-                                            <img src={q.image} alt="" className="mb-3 max-h-48 rounded-lg" />
-                                        )}
-                                        <div className="grid grid-cols-1 gap-2 sm:grid-cols-2">
-                                            {q.options.map((opt, idx) => (
+                <div className="flex flex-col gap-6 lg:flex-row lg:items-start">
+                    {/* Main Content: Questions */}
+                    <div className="flex-1 space-y-8">
+                        {/* Part 1: Multiple Choice */}
+                        {(exam.part1?.length || 0) > 0 && (
+                            <section>
+                                <div className="mb-4 flex items-center gap-2 border-l-4 border-primary pl-3">
+                                    <h3 className="text-xl font-bold">Phần 1: Trắc nghiệm</h3>
+                                    <span className="text-sm text-muted-foreground">({exam.part1?.length} câu)</span>
+                                </div>
+                                <div className="space-y-6">
+                                    {exam.part1?.map((q, idx) => (
+                                        <div key={q.id} id={`q-p1-${q.id}`} className="rounded-2xl border border-border bg-card p-5 shadow-sm transition-all hover:shadow-md">
+                                            <p className="mb-4 text-base font-semibold leading-relaxed">
+                                                <span className="mr-3 inline-flex h-7 w-7 items-center justify-center rounded-lg bg-primary/10 text-xs font-bold text-primary">
+                                                    {idx + 1}
+                                                </span>
+                                                <LatexContent content={q.text} />
+                                            </p>
+                                            {q.image && (
+                                                <div className="mb-4 flex justify-center">
+                                                    <img src={q.image} alt="" className="max-h-64 rounded-xl object-contain shadow-sm" />
+                                                </div>
+                                            )}
+                                            <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
+                                                {q.options.map((opt, oIdx) => (
+                                                    <button
+                                                        key={oIdx}
+                                                        onClick={() => setPart1Answers({ ...part1Answers, [q.id]: oIdx })}
+                                                        className={cn(
+                                                            'group flex items-center rounded-xl border-2 p-4 text-left text-sm transition-all duration-200',
+                                                            part1Answers[q.id] === oIdx
+                                                                ? 'border-primary bg-primary/5 text-primary shadow-sm ring-1 ring-primary/20'
+                                                                : 'border-transparent bg-muted/30 hover:border-primary/30 hover:bg-muted/50'
+                                                        )}
+                                                    >
+                                                        <span className={cn(
+                                                            'mr-3 flex h-6 w-6 shrink-0 items-center justify-center rounded-md border text-[10px] font-bold transition-colors',
+                                                            part1Answers[q.id] === oIdx
+                                                                ? 'border-primary bg-primary text-primary-foreground'
+                                                                : 'border-muted-foreground/30 bg-background text-muted-foreground group-hover:border-primary/50'
+                                                        )}>
+                                                            {String.fromCharCode(65 + oIdx)}
+                                                        </span>
+                                                        <LatexContent content={opt} />
+                                                    </button>
+                                                ))}
+                                            </div>
+                                        </div>
+                                    ))}
+                                </div>
+                            </section>
+                        )}
+
+                        {/* Part 2: True/False */}
+                        {(exam.part2?.length || 0) > 0 && (
+                            <section>
+                                <div className="mb-4 flex items-center gap-2 border-l-4 border-primary pl-3">
+                                    <h3 className="text-xl font-bold">Phần 2: Đúng/Sai</h3>
+                                    <span className="text-sm text-muted-foreground">({exam.part2?.length} câu)</span>
+                                </div>
+                                <div className="space-y-6">
+                                    {exam.part2?.map((q, idx) => (
+                                        <div key={q.id} id={`q-p2-${q.id}`} className="rounded-2xl border border-border bg-card p-5 shadow-sm">
+                                            <p className="mb-4 text-base font-semibold leading-relaxed">
+                                                <span className="mr-3 inline-flex h-7 w-7 items-center justify-center rounded-lg bg-primary/10 text-xs font-bold text-primary">
+                                                    {(exam.part1?.length || 0) + idx + 1}
+                                                </span>
+                                                <LatexContent content={q.text} />
+                                            </p>
+                                            <div className="space-y-3">
+                                                {q.subQuestions.map((sq) => {
+                                                    const key = `${q.id}-${sq.id}`;
+                                                    return (
+                                                        <div key={key} className="flex flex-col gap-3 rounded-xl border border-border/50 bg-muted/20 p-4 sm:flex-row sm:items-center">
+                                                            <div className="flex flex-1 items-start gap-2">
+                                                                <span className="mt-0.5 text-xs font-black text-primary/60 uppercase">{sq.id})</span>
+                                                                <LatexContent content={sq.text} className="text-sm leading-relaxed" />
+                                                            </div>
+                                                            <div className="flex shrink-0 items-center gap-2">
+                                                                <button
+                                                                    onClick={() => setPart2Answers({ ...part2Answers, [key]: true })}
+                                                                    className={cn(
+                                                                        'flex h-10 w-12 items-center justify-center rounded-lg text-sm font-bold transition-all',
+                                                                        part2Answers[key] === true
+                                                                            ? 'bg-emerald-600 text-white shadow-md shadow-emerald-200 dark:shadow-none'
+                                                                            : 'bg-background hover:bg-emerald-50 text-muted-foreground border border-border'
+                                                                    )}
+                                                                >
+                                                                    Đ
+                                                                </button>
+                                                                <button
+                                                                    onClick={() => setPart2Answers({ ...part2Answers, [key]: false })}
+                                                                    className={cn(
+                                                                        'flex h-10 w-12 items-center justify-center rounded-lg text-sm font-bold transition-all',
+                                                                        part2Answers[key] === false
+                                                                            ? 'bg-red-600 text-white shadow-md shadow-red-200 dark:shadow-none'
+                                                                            : 'bg-background hover:bg-red-50 text-muted-foreground border border-border'
+                                                                    )}
+                                                                >
+                                                                    S
+                                                                </button>
+                                                            </div>
+                                                        </div>
+                                                    );
+                                                })}
+                                            </div>
+                                        </div>
+                                    ))}
+                                </div>
+                            </section>
+                        )}
+
+                        {/* Part 3: Short Answer */}
+                        {(exam.part3?.length || 0) > 0 && (
+                            <section>
+                                <div className="mb-4 flex items-center gap-2 border-l-4 border-primary pl-3">
+                                    <h3 className="text-xl font-bold">Phần 3: Trả lời ngắn</h3>
+                                    <span className="text-sm text-muted-foreground">({exam.part3?.length} câu)</span>
+                                </div>
+                                <div className="space-y-6">
+                                    {exam.part3?.map((q, idx) => (
+                                        <div key={q.id} id={`q-p3-${q.id}`} className="rounded-2xl border border-border bg-card p-5 shadow-sm">
+                                            <p className="mb-4 text-base font-semibold leading-relaxed">
+                                                <span className="mr-3 inline-flex h-7 w-7 items-center justify-center rounded-lg bg-primary/10 text-xs font-bold text-primary">
+                                                    {(exam.part1?.length || 0) + (exam.part2?.length || 0) + idx + 1}
+                                                </span>
+                                                <LatexContent content={q.text} />
+                                            </p>
+                                            <div className="relative">
+                                                <input
+                                                    type="text"
+                                                    value={part3Answers[q.id] || ''}
+                                                    onChange={(e) => setPart3Answers({ ...part3Answers, [q.id]: e.target.value })}
+                                                    placeholder="Nhập câu trả lời của bạn..."
+                                                    className="w-full rounded-xl border border-input bg-background px-4 py-3 text-sm font-medium outline-none transition-all focus:border-primary focus:ring-4 focus:ring-primary/10"
+                                                />
+                                            </div>
+                                        </div>
+                                    ))}
+                                </div>
+                            </section>
+                        )}
+                    </div>
+
+                    {/* Sidebar: Table of Contents */}
+                    <aside className="sticky top-[120px] w-full shrink-0 lg:w-[300px]">
+                        <div className="rounded-2xl border border-border bg-card p-5 shadow-lg">
+                            <h4 className="mb-4 flex items-center gap-2 text-sm font-bold uppercase tracking-wider text-muted-foreground">
+                                <BookOpen className="h-4 w-4" /> Mục lục câu hỏi
+                            </h4>
+
+                            <div className="space-y-6">
+                                {/* Part 1 TOC */}
+                                {(exam.part1?.length || 0) > 0 && (
+                                    <div>
+                                        <div className="mb-2 text-[11px] font-bold text-muted-foreground uppercase tracking-tight">Phần 1: Trắc nghiệm</div>
+                                        <div className="grid grid-cols-5 gap-2">
+                                            {exam.part1?.map((q, idx) => (
                                                 <button
-                                                    key={idx}
-                                                    onClick={() => setPart1Answers({ ...part1Answers, [q.id]: idx })}
+                                                    key={q.id}
+                                                    onClick={() => scrollToQuestion(`p1-${q.id}`)}
                                                     className={cn(
-                                                        'rounded-lg border p-3 text-left text-sm transition-all',
-                                                        part1Answers[q.id] === idx
-                                                            ? 'border-primary bg-primary/10 text-primary font-medium'
-                                                            : 'border-border hover:border-primary/30 hover:bg-accent'
+                                                        'flex h-9 items-center justify-center rounded-lg text-xs font-bold transition-all',
+                                                        part1Answers[q.id] !== undefined
+                                                            ? 'bg-primary text-primary-foreground shadow-sm'
+                                                            : 'bg-muted text-muted-foreground hover:bg-accent hover:text-foreground border border-transparent'
                                                     )}
                                                 >
-                                                    <span className="mr-2 font-bold text-xs">
-                                                        {String.fromCharCode(65 + idx)}.
-                                                    </span>
-                                                    <span dangerouslySetInnerHTML={{ __html: opt }} />
+                                                    {idx + 1}
                                                 </button>
                                             ))}
                                         </div>
                                     </div>
-                                ))}
-                            </div>
-                        </section>
-                    )}
+                                )}
 
-                    {/* Part 2: True/False */}
-                    {(exam.part2?.length || 0) > 0 && (
-                        <section>
-                            <h3 className="mb-3 text-lg font-bold text-primary">
-                                Phần 2: Đúng/Sai ({exam.part2?.length} câu)
-                            </h3>
-                            <div className="space-y-4">
-                                {exam.part2?.map((q) => (
-                                    <div key={q.id} className="rounded-xl border border-border bg-card p-4">
-                                        <p className="mb-3 font-medium">
-                                            <span className="mr-2 inline-flex h-6 w-6 items-center justify-center rounded-full bg-primary/10 text-xs font-bold text-primary">
-                                                {q.id}
-                                            </span>
-                                            <span dangerouslySetInnerHTML={{ __html: q.text }} />
-                                        </p>
-                                        <div className="space-y-2">
-                                            {q.subQuestions.map((sq) => {
-                                                const key = `${q.id}-${sq.id}`;
+                                {/* Part 2 TOC */}
+                                {(exam.part2?.length || 0) > 0 && (
+                                    <div>
+                                        <div className="mb-2 text-[11px] font-bold text-muted-foreground uppercase tracking-tight">Phần 2: Đúng / Sai</div>
+                                        <div className="grid grid-cols-5 gap-2">
+                                            {exam.part2?.map((q, idx) => {
+                                                const isDone = q.subQuestions.every(sq => part2Answers[`${q.id}-${sq.id}`] !== undefined);
+                                                const someDone = q.subQuestions.some(sq => part2Answers[`${q.id}-${sq.id}`] !== undefined);
                                                 return (
-                                                    <div key={key} className="flex items-center gap-3 rounded-lg border border-border p-3">
-                                                        <span className="text-xs font-bold text-muted-foreground uppercase">{sq.id})</span>
-                                                        <p className="flex-1 text-sm" dangerouslySetInnerHTML={{ __html: sq.text }} />
-                                                        <div className="flex gap-1.5">
-                                                            <button
-                                                                onClick={() => setPart2Answers({ ...part2Answers, [key]: true })}
-                                                                className={cn(
-                                                                    'rounded-md px-3 py-1 text-xs font-medium transition-all',
-                                                                    part2Answers[key] === true
-                                                                        ? 'bg-emerald-600 text-white'
-                                                                        : 'bg-muted text-muted-foreground hover:bg-emerald-100'
-                                                                )}
-                                                            >
-                                                                Đ
-                                                            </button>
-                                                            <button
-                                                                onClick={() => setPart2Answers({ ...part2Answers, [key]: false })}
-                                                                className={cn(
-                                                                    'rounded-md px-3 py-1 text-xs font-medium transition-all',
-                                                                    part2Answers[key] === false
-                                                                        ? 'bg-red-600 text-white'
-                                                                        : 'bg-muted text-muted-foreground hover:bg-red-100'
-                                                                )}
-                                                            >
-                                                                S
-                                                            </button>
-                                                        </div>
-                                                    </div>
+                                                    <button
+                                                        key={q.id}
+                                                        onClick={() => scrollToQuestion(`p2-${q.id}`)}
+                                                        className={cn(
+                                                            'flex h-9 items-center justify-center rounded-lg text-xs font-bold transition-all',
+                                                            isDone ? 'bg-primary text-primary-foreground shadow-sm' :
+                                                                someDone ? 'bg-primary/20 text-primary border border-primary/30' :
+                                                                    'bg-muted text-muted-foreground hover:bg-accent border border-transparent'
+                                                        )}
+                                                    >
+                                                        {(exam.part1?.length || 0) + idx + 1}
+                                                    </button>
                                                 );
                                             })}
                                         </div>
                                     </div>
-                                ))}
-                            </div>
-                        </section>
-                    )}
+                                )}
 
-                    {/* Part 3: Short Answer */}
-                    {(exam.part3?.length || 0) > 0 && (
-                        <section>
-                            <h3 className="mb-3 text-lg font-bold text-primary">
-                                Phần 3: Trả lời ngắn ({exam.part3?.length} câu)
-                            </h3>
-                            <div className="space-y-4">
-                                {exam.part3?.map((q) => (
-                                    <div key={q.id} className="rounded-xl border border-border bg-card p-4">
-                                        <p className="mb-3 font-medium">
-                                            <span className="mr-2 inline-flex h-6 w-6 items-center justify-center rounded-full bg-primary/10 text-xs font-bold text-primary">
-                                                {q.id}
-                                            </span>
-                                            <span dangerouslySetInnerHTML={{ __html: q.text }} />
-                                        </p>
-                                        <input
-                                            type="text"
-                                            value={part3Answers[q.id] || ''}
-                                            onChange={(e) => setPart3Answers({ ...part3Answers, [q.id]: e.target.value })}
-                                            placeholder="Nhập câu trả lời..."
-                                            className="w-full rounded-lg border border-input bg-background px-4 py-2.5 text-sm outline-none focus:border-primary focus:ring-2 focus:ring-primary/20"
-                                        />
+                                {/* Part 3 TOC */}
+                                {(exam.part3?.length || 0) > 0 && (
+                                    <div>
+                                        <div className="mb-2 text-[11px] font-bold text-muted-foreground uppercase tracking-tight">Phần 3: Trả lời ngắn</div>
+                                        <div className="grid grid-cols-5 gap-2">
+                                            {exam.part3?.map((q, idx) => (
+                                                <button
+                                                    key={q.id}
+                                                    onClick={() => scrollToQuestion(`p3-${q.id}`)}
+                                                    className={cn(
+                                                        'flex h-9 items-center justify-center rounded-lg text-xs font-bold transition-all',
+                                                        part3Answers[q.id]?.trim()
+                                                            ? 'bg-primary text-primary-foreground shadow-sm'
+                                                            : 'bg-muted text-muted-foreground hover:bg-accent border border-transparent'
+                                                    )}
+                                                >
+                                                    {(exam.part1?.length || 0) + (exam.part2?.length || 0) + idx + 1}
+                                                </button>
+                                            ))}
+                                        </div>
                                     </div>
-                                ))}
+                                )}
                             </div>
-                        </section>
-                    )}
-                </div>
 
-                {/* Bottom submit */}
-                <div className="mt-6 text-center">
-                    <Button size="lg" onClick={() => setShowSubmitConfirm(true)}>
-                        <Send className="h-4 w-4" /> Nộp bài
-                    </Button>
+                            <div className="mt-8 pt-5 border-t border-border">
+                                <Button className="w-full" onClick={() => setShowSubmitConfirm(true)}>
+                                    <Send className="mr-2 h-4 w-4" /> Nộp bài thi
+                                </Button>
+                            </div>
+                        </div>
+                    </aside>
                 </div>
 
                 <ConfirmDialog
@@ -453,7 +570,7 @@ export default function PracticeExam() {
                                 {isCorrect ? <CheckCircle className="h-4 w-4 text-emerald-600" /> : <XCircle className="h-4 w-4 text-red-600" />}
                                 <span className="text-xs font-bold text-muted-foreground">Câu {q.id}</span>
                             </div>
-                            <p className="text-sm mb-2" dangerouslySetInnerHTML={{ __html: q.text }} />
+                            <LatexContent content={q.text} className="text-sm mb-2 block" />
                             <div className="grid grid-cols-1 gap-1 sm:grid-cols-2">
                                 {q.options.map((opt, idx) => (
                                     <div key={idx} className={cn(
@@ -462,7 +579,7 @@ export default function PracticeExam() {
                                             idx === part1Answers[q.id] && idx !== q.correct ? 'bg-red-200/60 text-red-800 line-through dark:bg-red-800/30 dark:text-red-300' :
                                                 'text-muted-foreground'
                                     )}>
-                                        {String.fromCharCode(65 + idx)}. <span dangerouslySetInnerHTML={{ __html: opt }} />
+                                        {String.fromCharCode(65 + idx)}. <LatexContent content={opt} />
                                     </div>
                                 ))}
                             </div>
@@ -475,7 +592,7 @@ export default function PracticeExam() {
                     <div key={q.id} className="rounded-xl border border-border bg-card p-4">
                         <p className="text-sm font-medium mb-2">
                             <span className="text-xs text-muted-foreground">Câu {q.id}:</span>{' '}
-                            <span dangerouslySetInnerHTML={{ __html: q.text }} />
+                            <LatexContent content={q.text} />
                         </p>
                         {q.subQuestions.map((sq) => {
                             const key = `${q.id}-${sq.id}`;
@@ -486,7 +603,7 @@ export default function PracticeExam() {
                                     'flex items-center justify-between rounded-md px-3 py-1.5 text-xs',
                                     isCorrect ? 'text-emerald-700' : 'text-red-600'
                                 )}>
-                                    <span>{sq.id}) <span dangerouslySetInnerHTML={{ __html: sq.text }} /></span>
+                                    <span>{sq.id}) <LatexContent content={sq.text} /></span>
                                     <span>
                                         {isCorrect ? <CheckCircle className="h-3 w-3 inline" /> : <XCircle className="h-3 w-3 inline" />}
                                         {' '}Đáp án: {sq.correct ? 'Đ' : 'S'}
@@ -511,7 +628,7 @@ export default function PracticeExam() {
                                 {isCorrect ? <CheckCircle className="h-4 w-4 text-emerald-600" /> : <XCircle className="h-4 w-4 text-red-600" />}
                                 <span className="text-xs text-muted-foreground">Câu {q.id}</span>
                             </div>
-                            <p className="text-sm mb-1" dangerouslySetInnerHTML={{ __html: q.text }} />
+                            <LatexContent content={q.text} className="text-sm mb-1 block" />
                             <p className="text-xs">
                                 <span className="text-muted-foreground">Bạn: </span>
                                 <span className={isCorrect ? 'text-emerald-700 font-medium' : 'text-red-600 line-through'}>{part3Answers[q.id] || '(bỏ trống)'}</span>

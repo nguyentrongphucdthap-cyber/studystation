@@ -10,6 +10,7 @@ import {
     ArrowLeft, Clock, CheckCircle, XCircle,
     Sun, Moon, ChevronLeft, ChevronRight, Send, RotateCcw,
 } from 'lucide-react';
+import { LatexContent } from '@/components/ui/LatexContent';
 
 type ExamView = 'ready' | 'taking' | 'result';
 type TabView = 'passage' | 'questions';
@@ -148,7 +149,7 @@ export default function EtestExamPage() {
     const isTimeLow = timeLeft < 300;
 
     return (
-        <div className={cn('mx-auto max-w-6xl', darkMode && 'dark')}>
+        <div className={cn('mx-auto w-full', darkMode && 'dark')}>
             {/* Header */}
             <div className="sticky top-14 z-30 -mx-4 mb-4 border-b border-border bg-background/95 px-4 py-3 backdrop-blur-sm">
                 <div className="flex items-center justify-between">
@@ -199,7 +200,7 @@ export default function EtestExamPage() {
             <div className="flex gap-4">
                 {/* Passage */}
                 <div className={cn('flex-1 rounded-xl border border-border bg-card p-5', mobileTab !== 'passage' && 'hidden lg:block')}>
-                    <div className="prose prose-sm max-w-none dark:prose-invert" dangerouslySetInnerHTML={{ __html: section?.passage || '' }} />
+                    <LatexContent content={section?.passage || ''} className="prose prose-sm max-w-none dark:prose-invert block" />
                 </div>
 
                 {/* Questions */}
@@ -210,7 +211,7 @@ export default function EtestExamPage() {
                             <div key={qi} className="rounded-xl border border-border bg-card p-4">
                                 <p className="mb-3 text-sm font-medium">
                                     <span className="mr-2 inline-flex h-5 w-5 items-center justify-center rounded-full bg-emerald-100 text-[10px] font-bold text-emerald-700">{qi + 1}</span>
-                                    {q.text}
+                                    <LatexContent content={q.text} />
                                 </p>
                                 <div className="space-y-1.5">
                                     {q.options.map((opt, oi) => (
@@ -224,7 +225,7 @@ export default function EtestExamPage() {
                                                     : 'border-border hover:bg-accent'
                                             )}
                                         >
-                                            {String.fromCharCode(65 + oi)}. {opt}
+                                            {String.fromCharCode(65 + oi)}. <LatexContent content={opt} />
                                         </button>
                                     ))}
                                 </div>

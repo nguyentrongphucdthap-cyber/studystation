@@ -3,6 +3,26 @@
         "presence": {
             ".read": "auth != null",
             ".write": "auth != null"
+        },
+        "hub": {
+            "friends": {
+                "$userKey": {
+                    ".read": "auth != null",
+                    ".write": "auth != null"
+                }
+            },
+            "conversations": {
+                "$conversationId": {
+                    ".read": "auth != null",
+                    ".write": "auth != null"
+                }
+            },
+            "mago_chats": {
+                "$userKey": {
+                    ".read": "auth != null",
+                    ".write": "auth != null"
+                }
+            }
         }
     }
 }

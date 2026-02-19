@@ -243,3 +243,47 @@ export interface ActivityLog {
     timestamp: string;
     deviceType?: string;
 }
+
+// ============================================================
+// SCHEDULE TYPES
+// ============================================================
+
+export interface ScheduleDay {
+    day: string; // 'Thứ 2' | 'Thứ 3' ...
+    morning: string[]; // 5 periods
+    afternoon: string[]; // 5 periods
+}
+
+export interface ScheduleConfig {
+    id: string; // 'default'
+    days: ScheduleDay[];
+    updatedAt?: string;
+    updatedBy?: string;
+}
+
+// ============================================================
+// CHAT & HUB TYPES
+// ============================================================
+
+export interface ChatMessage {
+    id: string;
+    text: string;
+    senderEmail: string;
+    senderName: string;
+    timestamp: number;
+    role?: 'user' | 'mago'; // for AI messages
+}
+
+export interface Friend {
+    email: string;
+    displayName: string;
+    photoURL?: string;
+    status: 'pending_sent' | 'pending_received' | 'accepted';
+    addedAt: string;
+}
+
+export interface HubThemeSettings {
+    mode: 'light' | 'dark';
+    accentColor: string;
+    fontSize: 'small' | 'medium' | 'large';
+}
