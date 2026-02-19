@@ -19,11 +19,11 @@ import type { ChatMessage, Friend } from '@/types';
 
 /** Sanitize email for use as Firebase RTDB key */
 export function sanitizeEmail(email: string): string {
-    return email.replace(/\./g, ',').replace(/@/g, '_at_');
+    return email.toLowerCase().replace(/\./g, ',').replace(/@/g, '_at_');
 }
 
 function getCurrentEmail(): string {
-    return auth.currentUser?.email || '';
+    return auth.currentUser?.email?.toLowerCase() || '';
 }
 
 function getCurrentName(): string {
@@ -32,7 +32,7 @@ function getCurrentName(): string {
 
 /** Generate deterministic conversation ID from two emails */
 export function getConversationId(email1: string, email2: string): string {
-    const sorted = [sanitizeEmail(email1), sanitizeEmail(email2)].sort();
+    const sorted = [sanitizeEmail(email1.toLowerCase()), sanitizeEmail(email2.toLowerCase())].sort();
     return `${sorted[0]}__${sorted[1]}`;
 }
 

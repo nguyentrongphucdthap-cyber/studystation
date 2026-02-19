@@ -412,9 +412,10 @@ function ChatTab({ user, onUnreadChange }: { user: { email: string; displayName:
 
         // Friend unreads
         for (const f of friends.filter(f => f.status === 'accepted')) {
-            const last = lastMessages[f.email];
-            if (last && last.senderEmail !== user.email) {
-                const lastRead = readTs[f.email] || 0;
+            const emailLower = f.email.toLowerCase();
+            const last = lastMessages[emailLower];
+            if (last && last.senderEmail.toLowerCase() !== user.email.toLowerCase()) {
+                const lastRead = readTs[emailLower] || 0;
                 if (last.timestamp > lastRead) total++;
             }
         }
@@ -610,10 +611,11 @@ function ChatTab({ user, onUnreadChange }: { user: { email: string; displayName:
                         <div className="chat-section">
                             <p className="chat-section-label">Bạn bè</p>
                             {friends.filter(f => f.status === 'accepted').map(f => {
-                                const last = lastMessages[f.email];
-                                const isOnline = onlineMap[f.email.toLowerCase()] || false;
-                                const lastRead = readTs[f.email] || 0;
-                                const hasUnread = last && last.senderEmail !== user.email && last.timestamp > lastRead;
+                                const emailLower = f.email.toLowerCase();
+                                const last = lastMessages[emailLower];
+                                const isOnline = onlineMap[emailLower] || false;
+                                const lastRead = readTs[emailLower] || 0;
+                                const hasUnread = last && last.senderEmail.toLowerCase() !== user.email.toLowerCase() && last.timestamp > lastRead;
                                 return (
                                     <div key={f.email} className={`chat-contact-item ${hasUnread ? 'unread' : ''}`} onClick={() => setActiveChat(f.email)}>
                                         <div className="chat-contact-avatar-wrap">
