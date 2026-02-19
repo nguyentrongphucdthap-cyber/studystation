@@ -274,7 +274,9 @@ export function subscribeToAllConvos(callback: (lastMessages: Record<string, Cha
             const msgs = decodeLog(data.log || '');
             const last = msgs[msgs.length - 1];
             if (last) {
-                results[docSnap.id] = last;
+                // Map sanitized key back to email for UI lookup (e.g. user_at_gmail,com -> user@gmail.com)
+                const email = docSnap.id === 'mago' ? 'mago' : docSnap.id.toLowerCase().replace(/_at_/g, '@').replace(/,/g, '.');
+                results[email] = last;
             }
         });
         callback(results);

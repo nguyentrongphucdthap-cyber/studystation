@@ -627,7 +627,7 @@ function ChatTab({ user, onUnreadChange }: { user: { email: string; displayName:
                                         <div className="chat-contact-info">
                                             <p className={`chat-contact-name ${hasUnread ? 'bold' : ''}`}>{f.displayName}</p>
                                             <p className={`chat-contact-preview ${hasUnread ? 'unread-text' : ''}`}>
-                                                {last ? (last.senderEmail === user.email ? `Bạn: ${last.text}` : last.text) : f.email}
+                                                {last ? (last.senderEmail.toLowerCase() === user.email.toLowerCase() ? `Bạn: ${last.text}` : last.text) : f.email}
                                             </p>
                                         </div>
                                         <div className="chat-contact-meta">
@@ -717,14 +717,14 @@ function ChatTab({ user, onUnreadChange }: { user: { email: string; displayName:
                     </div>
                 )}
                 {messages.map(msg => {
-                    const isSent = msg.senderEmail === user.email;
+                    const isSent = msg.senderEmail.toLowerCase() === user.email.toLowerCase();
                     const isMago = msg.role === 'mago';
                     return (
                         <div key={msg.id} className={`chat-message ${isSent ? 'sent' : 'received'} ${isMago ? 'mago' : ''}`}>
                             {!isSent && (
                                 <div className="chat-avatar" style={isMago ? { background: 'linear-gradient(135deg, #8b5cf6, #ec4899)' } : { overflow: 'hidden' }}>
                                     {isMago ? '🧙' : (() => {
-                                        const partner = friends.find(f => f.email === msg.senderEmail);
+                                        const partner = friends.find(f => f.email.toLowerCase() === msg.senderEmail.toLowerCase());
                                         return partner?.photoURL
                                             ? <img src={partner.photoURL} alt="" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
                                             : msg.senderName.charAt(0).toUpperCase();
