@@ -925,7 +925,7 @@ function NotesTab({ userEmail }: { userEmail: string }) {
             id: Date.now().toString(),
             title: 'Ghi chú mới',
             content: '',
-            color: NOTE_COLORS[notes.length % NOTE_COLORS.length],
+            color: NOTE_COLORS[notes.length % NOTE_COLORS.length] || '#8b5cf6',
             createdAt: Date.now(),
             updatedAt: Date.now(),
         };

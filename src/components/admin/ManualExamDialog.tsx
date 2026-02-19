@@ -27,7 +27,7 @@ export function ManualExamDialog({ open, onClose, onSave, initialSubject }: Manu
     const [loading, setLoading] = useState(false);
     const [meta, setMeta] = useState({
         title: '',
-        subjectId: initialSubject || (subjects.length > 0 ? subjects[0].id : ''),
+        subjectId: initialSubject || subjects[0]?.id || '',
         time: 50,
     });
 
@@ -79,7 +79,7 @@ export function ManualExamDialog({ open, onClose, onSave, initialSubject }: Manu
             setPart1([]);
             setPart2([]);
             setPart3([]);
-            setMeta({ title: '', subjectId: initialSubject || (subjects.length > 0 ? subjects[0].id : ''), time: 50 });
+            setMeta({ title: '', subjectId: initialSubject || subjects[0]?.id || '', time: 50 });
         } catch (error) {
             console.error(error);
         } finally {
