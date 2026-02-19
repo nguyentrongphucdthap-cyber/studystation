@@ -109,15 +109,28 @@ service cloud.firestore {
     // ============================================
 
     match /chats/{ownerEmail}/convos/{partnerKey} {
-      // Users can only read their own chat logs
-      allow read: if isLoggedIn() && request.auth.token.email == ownerEmail;
+      // Allow read if user is the owner OR is one of the participants
+      allow read: if isLoggedIn() && (
+        request.auth.token.email == ownerEmail || 
+        request.auth.token.email in resource.data.participants
+      );
       
-      // Users can write to their own logs OR to the log in their partner's tree where they are the partnerKey
-      // Note: partnerKey is sanitized (email.replace('@', '_at_').replace('.', ','))
+      // Allow write (create/update) if user is the owner OR is in the participants list
       allow write: if isLoggedIn() && (
         request.auth.token.email == ownerEmail || 
-        request.auth.token.email.replace('@', '_at_').replace('.', ',') == partnerKey
+        request.auth.token.email in request.resource.data.participants ||
+        (resource != null && request.auth.token.email in resource.data.participants)
       );
+    }
+
+    match /users/{email} {
+      allow read: if isLoggedIn();
+      allow write: if isLoggedIn() && request.auth.token.email == email;
+    }
+    
+    match /allowed_users/{email} {
+      allow read: if isLoggedIn();
+      allow write: if isAdmin();
     }
   }
 }

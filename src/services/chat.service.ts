@@ -213,13 +213,27 @@ export async function sendChatMessage(conversationId: string, text: string): Pro
     for (const owner of parts) {
         // Unsanitize to get email for doc path
         const ownerEmail = owner.replace(/_at_/g, '@').replace(/,/g, '.');
-        const pKey = owner === myKey ? partnerKey : myKey;
-        const docRef = getConvoDocRef(ownerEmail, pKey);
-        const snap = await getDoc(docRef);
-        if (snap.exists()) {
-            await updateDoc(docRef, { log: (snap.data().log || '') + line, updatedAt: Date.now() });
-        } else {
-            await setDoc(docRef, { log: line, updatedAt: Date.now() });
+        const partnerEmail = (owner === myKey ? partnerKey : myKey).replace(/_at_/g, '@').replace(/,/g, '.');
+        const docRef = getConvoDocRef(ownerEmail, owner === myKey ? partnerKey : myKey);
+
+        try {
+            const snap = await getDoc(docRef);
+            const participants = [ownerEmail.toLowerCase(), partnerEmail.toLowerCase()].sort();
+            const payload = {
+                log: (snap.exists() ? snap.data()?.log || '' : '') + line,
+                updatedAt: Date.now(),
+                participants,
+                ownerEmail: ownerEmail.toLowerCase(),
+                partnerEmail: partnerEmail.toLowerCase()
+            };
+
+            if (snap.exists()) {
+                await updateDoc(docRef, payload);
+            } else {
+                await setDoc(docRef, payload);
+            }
+        } catch (err) {
+            console.warn(`[Chat] Failed to update convo for ${ownerEmail}:`, err);
         }
     }
 }
@@ -282,10 +296,19 @@ export async function sendMagoMessage(text: string): Promise<void> {
     const docRef = getConvoDocRef(currentEmail, 'mago');
 
     const snap = await getDoc(docRef);
+    const participants = [currentEmail.toLowerCase(), 'mago@studystation.site'];
+    const payload = {
+        log: (snap.exists() ? snap.data()?.log || '' : '') + line,
+        updatedAt: Date.now(),
+        participants,
+        ownerEmail: currentEmail.toLowerCase(),
+        partnerEmail: 'mago@studystation.site'
+    };
+
     if (snap.exists()) {
-        await updateDoc(docRef, { log: (snap.data().log || '') + line, updatedAt: Date.now() });
+        await updateDoc(docRef, payload);
     } else {
-        await setDoc(docRef, { log: line, updatedAt: Date.now() });
+        await setDoc(docRef, payload);
     }
 }
 
@@ -297,10 +320,19 @@ export async function saveMagoResponse(text: string): Promise<void> {
     const docRef = getConvoDocRef(currentEmail, 'mago');
 
     const snap = await getDoc(docRef);
+    const participants = [currentEmail.toLowerCase(), 'mago@studystation.site'];
+    const payload = {
+        log: (snap.exists() ? snap.data()?.log || '' : '') + line,
+        updatedAt: Date.now(),
+        participants,
+        ownerEmail: currentEmail.toLowerCase(),
+        partnerEmail: 'mago@studystation.site'
+    };
+
     if (snap.exists()) {
-        await updateDoc(docRef, { log: (snap.data().log || '') + line, updatedAt: Date.now() });
+        await updateDoc(docRef, payload);
     } else {
-        await setDoc(docRef, { log: line, updatedAt: Date.now() });
+        await setDoc(docRef, payload);
     }
 }
 
