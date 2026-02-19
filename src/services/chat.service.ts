@@ -233,12 +233,18 @@ export async function sendChatMessage(conversationId: string, text: string): Pro
         const docRef = getConvoDocRef(ownerEmail, owner === myKey ? partnerKey : myKey);
 
         try {
+            console.log(`[Chat] Processing write for owner: ${ownerEmail} (Ref: chats/${ownerEmail}/convos/${owner === myKey ? partnerKey : myKey})`);
+
             let currentLog = convoLogCache[cacheKey];
 
             // If cache miss, fetch doc
             if (currentLog === undefined) {
+                console.log(`[Chat] Cache miss for ${cacheKey}, fetching doc...`);
                 const snap = await getDoc(docRef);
                 currentLog = snap.exists() ? snap.data()?.log || '' : '';
+                console.log(`[Chat] Doc fetched, length: ${currentLog.length}`);
+            } else {
+                console.log(`[Chat] Cache hit for ${cacheKey}`);
             }
 
             const newLog = currentLog + line;
@@ -253,13 +259,15 @@ export async function sendChatMessage(conversationId: string, text: string): Pro
                 partnerEmail: partnerEmail.toLowerCase()
             };
 
+            console.log(`[Chat] Writing payload to Firestore...`);
             if (currentLog) {
                 await updateDoc(docRef, payload);
             } else {
                 await setDoc(docRef, payload);
             }
+            console.log(`[Chat] Write success for ${ownerEmail}`);
         } catch (err) {
-            console.warn(`[Chat] Failed to update convo for ${ownerEmail}:`, err);
+            console.error(`[Chat] CRITICAL ERROR updating convo for ${ownerEmail}:`, err);
             // Invalidate cache on error
             delete convoLogCache[cacheKey];
         }
