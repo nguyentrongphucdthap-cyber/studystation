@@ -9,9 +9,9 @@ import {
     remove,
     get,
 } from 'firebase/database';
-import { doc, getDoc, setDoc, updateDoc, onSnapshot, collection, query } from 'firebase/firestore';
+import { doc, getDoc, setDoc, updateDoc, onSnapshot, collection, query, addDoc, where } from 'firebase/firestore';
 import { auth, rtdb, db } from '@/config/firebase';
-import type { ChatMessage, Friend } from '@/types';
+import type { ChatMessage, Friend, GroupChat } from '@/types';
 
 // ============================================================
 // HELPERS
@@ -123,6 +123,17 @@ export async function removeFriend(friendEmail: string): Promise<void> {
 
     await remove(ref(rtdb, `hub/friends/${myKey}/${friendKey}`));
     await remove(ref(rtdb, `hub/friends/${friendKey}/${myKey}`));
+
+    // Log unfriend action
+    try {
+        await addDoc(collection(db, 'unfriend_logs'), {
+            userEmail: currentEmail,
+            unfriendedEmail: friendEmail,
+            timestamp: Date.now()
+        });
+    } catch (err) {
+        console.error('[Chat] Failed to log unfriend action:', err);
+    }
 }
 
 export function subscribeFriends(callback: (friends: Friend[]) => void) {
@@ -242,7 +253,7 @@ export async function sendChatMessage(conversationId: string, text: string): Pro
                 console.log(`[Chat] Cache miss for ${cacheKey}, fetching doc...`);
                 const snap = await getDoc(docRef);
                 currentLog = snap.exists() ? snap.data()?.log || '' : '';
-                console.log(`[Chat] Doc fetched, length: ${currentLog.length}`);
+                console.log(`[Chat] Doc fetched, length: ${currentLog?.length || 0}`);
             } else {
                 console.log(`[Chat] Cache hit for ${cacheKey}`);
             }
@@ -322,6 +333,118 @@ export function subscribeToAllConvos(callback: (lastMessages: Record<string, Cha
         console.warn('[Chat] Firestore collection listener error:', err.message);
         callback({});
     });
+}
+
+// ============================================================
+// GROUP CHAT SYSTEM — Firestore at group_chats/{groupId}
+// ============================================================
+
+const GROUP_COLORS = ['#3b82f6', '#10b981', '#f59e0b', '#ef4444', '#8b5cf6', '#ec4899'];
+
+export async function createGroupChat(name: string, members: string[]): Promise<string | null> {
+    const currentEmail = getCurrentEmail();
+    if (!currentEmail || !name.trim()) return null;
+
+    try {
+        const groupId = `group_${Date.now()}_${Math.random().toString(36).substr(2, 5)}`;
+        const groupRef = doc(db, 'group_chats', groupId);
+
+        const allMembers = Array.from(new Set([currentEmail, ...members.map(m => m.toLowerCase())]));
+        const avatarColor = GROUP_COLORS[Math.floor(Math.random() * GROUP_COLORS.length)];
+
+        const groupData: GroupChat = {
+            id: groupId,
+            name: name.trim(),
+            createdBy: currentEmail,
+            members: allMembers,
+            createdAt: new Date().toISOString(),
+            updatedAt: Date.now(),
+            avatarColor
+        };
+
+        await setDoc(groupRef, {
+            ...groupData,
+            log: ''
+        });
+
+        return groupId;
+    } catch (err) {
+        console.error('[Chat] Failed to create group:', err);
+        return null;
+    }
+}
+
+export async function sendGroupMessage(groupId: string, text: string): Promise<void> {
+    const currentEmail = getCurrentEmail();
+    if (!currentEmail || !text.trim()) return;
+
+    try {
+        const groupRef = doc(db, 'group_chats', groupId);
+        const timestamp = Date.now();
+        const line = encodeMsg(timestamp, currentEmail, text.trim()) + MSG_LINE_BREAK;
+
+        const snap = await getDoc(groupRef);
+        if (!snap.exists()) return;
+
+        const currentLog = snap.data()?.log || '';
+        await updateDoc(groupRef, {
+            log: currentLog + line,
+            updatedAt: timestamp
+        });
+    } catch (err) {
+        console.error('[Chat] Failed to send group message:', err);
+    }
+}
+
+export function subscribeToGroupMessages(groupId: string, callback: (messages: ChatMessage[]) => void) {
+    const groupRef = doc(db, 'group_chats', groupId);
+
+    return onSnapshot(
+        groupRef,
+        (snap) => {
+            if (!snap.exists()) { callback([]); return; }
+            const data = snap.data();
+            callback(decodeLog(data?.log || ''));
+        },
+        (error) => {
+            console.error("[Chat] Group messages listener error:", error);
+            callback([]);
+        }
+    );
+}
+
+export function subscribeToGroupChats(callback: (groups: GroupChat[]) => void) {
+    const currentEmail = getCurrentEmail();
+    if (!currentEmail) { callback([]); return () => { }; }
+
+    const groupsRef = collection(db, 'group_chats');
+    const q = query(groupsRef, where('members', 'array-contains', currentEmail.toLowerCase()));
+
+    return onSnapshot(
+        q,
+        (snap) => {
+            const groups: GroupChat[] = [];
+            snap.forEach(docSnap => {
+                const data = docSnap.data();
+                groups.push({
+                    id: docSnap.id,
+                    name: data.name,
+                    createdBy: data.createdBy,
+                    members: data.members,
+                    createdAt: data.createdAt,
+                    updatedAt: data.updatedAt,
+                    avatarColor: data.avatarColor
+                });
+            });
+            // Sort by updatedAt
+            groups.sort((a, b) => b.updatedAt - a.updatedAt);
+            callback(groups);
+        },
+        (err) => {
+            console.warn('[Chat] Failed to subscribe to groups:', err);
+            callback([]);
+        }
+    );
 }
 
 // ============================================================

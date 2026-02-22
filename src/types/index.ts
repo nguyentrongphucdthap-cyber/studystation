@@ -274,12 +274,58 @@ export interface ChatMessage {
     role?: 'user' | 'mago'; // for AI messages
 }
 
+export interface GroupChat {
+    id: string;
+    name: string;
+    createdBy: string;
+    members: string[]; // emails
+    createdAt: string;
+    updatedAt: number;
+    avatarColor?: string;
+}
+
 export interface Friend {
     email: string;
     displayName: string;
     photoURL?: string;
     status: 'pending_sent' | 'pending_received' | 'accepted';
     addedAt: string;
+}
+
+export interface StudyRoom {
+    id: string;
+    name: string;
+    subject: string;
+    ownerEmail: string;
+    ownerName: string;
+    members: StudyRoomMember[];
+    isPrivate: boolean;
+    passcode?: string;
+    createdAt: number;
+    lastActive: number;
+    timerState?: {
+        mode: 'focus' | 'shortBreak' | 'longBreak';
+        timeLeft: number;
+        isRunning: boolean;
+        updatedAt: number;
+    };
+}
+
+export interface StudyRoomMember {
+    email: string;
+    name: string;
+    photoURL?: string;
+    role: 'owner' | 'member';
+    joinedAt: number;
+}
+
+export interface StudyRoomMessage {
+    id: string;
+    roomId: string;
+    senderEmail: string;
+    senderName: string;
+    text: string;
+    timestamp: number;
 }
 
 export interface HubThemeSettings {

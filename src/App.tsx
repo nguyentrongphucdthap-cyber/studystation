@@ -1,6 +1,7 @@
 import { lazy, Suspense } from 'react';
 import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
 import { AuthProvider } from '@/contexts/AuthContext';
+import { ThemeProvider } from '@/contexts/ThemeContext';
 import { ToastProvider } from '@/components/ui/Toast';
 import { ProtectedRoute } from '@/components/layout/ProtectedRoute';
 import { AppLayout } from '@/components/layout/AppLayout';
@@ -32,67 +33,69 @@ function App() {
     return (
         <BrowserRouter>
             <AuthProvider>
-                <ToastProvider>
-                    <Suspense fallback={<LoadingScreen />}>
-                        <Routes>
-                            {/* Public route */}
-                            <Route path="/login" element={<LoginPage />} />
+                <ThemeProvider>
+                    <ToastProvider>
+                        <Suspense fallback={<LoadingScreen />}>
+                            <Routes>
+                                {/* Public route */}
+                                <Route path="/login" element={<LoginPage />} />
 
-                            {/* Protected app shell */}
-                            <Route
-                                element={
-                                    <ProtectedRoute>
-                                        <AppLayout />
-                                    </ProtectedRoute>
-                                }
-                            >
-                                {/* Dashboard */}
-                                <Route path="/" element={<Dashboard />} />
-
-                                {/* Practice module (allows guest) */}
-                                <Route path="/practice" element={<PracticeHome />} />
-                                <Route path="/practice/:examId" element={<PracticeExam />} />
-
-                                {/* Schedule (Student) */}
-                                <Route path="/schedule" element={<Schedule />} />
-
-                                {/* E-test */}
-                                <Route path="/etest" element={<EtestHome />} />
-                                <Route path="/etest/:examId" element={<EtestExam />} />
-
-                                {/* Vocab */}
-                                <Route path="/vocab" element={<VocabPage />} />
-
-                                {/* Admin (require admin role) */}
+                                {/* Protected app shell */}
                                 <Route
                                     element={
-                                        <ProtectedRoute requireAdmin>
-                                            <AdminDashboard />
+                                        <ProtectedRoute>
+                                            <AppLayout />
                                         </ProtectedRoute>
                                     }
                                 >
-                                    <Route path="/admin" element={<AdminOverview />} />
-                                    <Route path="/admin/practice" element={<AdminPractice />} />
-                                    <Route path="/admin/etest" element={<AdminEtest />} />
-                                    <Route path="/admin/vocab" element={<AdminVocab />} />
-                                    <Route path="/admin/schedule" element={<AdminSchedule />} />
-                                    <Route path="/admin/notifications" element={<AdminNotifications />} />
+                                    {/* Dashboard */}
+                                    <Route path="/" element={<Dashboard />} />
+
+                                    {/* Practice module (allows guest) */}
+                                    <Route path="/practice" element={<PracticeHome />} />
+                                    <Route path="/practice/:examId" element={<PracticeExam />} />
+
+                                    {/* Schedule (Student) */}
+                                    <Route path="/schedule" element={<Schedule />} />
+
+                                    {/* E-test */}
+                                    <Route path="/etest" element={<EtestHome />} />
+                                    <Route path="/etest/:examId" element={<EtestExam />} />
+
+                                    {/* Vocab */}
+                                    <Route path="/vocab" element={<VocabPage />} />
+
+                                    {/* Admin (require admin role) */}
                                     <Route
-                                        path="/admin/students"
                                         element={
-                                            <ProtectedRoute requireSuperAdmin>
-                                                <AdminStudents />
+                                            <ProtectedRoute requireAdmin>
+                                                <AdminDashboard />
                                             </ProtectedRoute>
                                         }
-                                    />
+                                    >
+                                        <Route path="/admin" element={<AdminOverview />} />
+                                        <Route path="/admin/practice" element={<AdminPractice />} />
+                                        <Route path="/admin/etest" element={<AdminEtest />} />
+                                        <Route path="/admin/vocab" element={<AdminVocab />} />
+                                        <Route path="/admin/schedule" element={<AdminSchedule />} />
+                                        <Route path="/admin/notifications" element={<AdminNotifications />} />
+                                        <Route
+                                            path="/admin/students"
+                                            element={
+                                                <ProtectedRoute requireSuperAdmin>
+                                                    <AdminStudents />
+                                                </ProtectedRoute>
+                                            }
+                                        />
+                                    </Route>
                                 </Route>
-                            </Route>
 
-                            {/* Fallback */}
-                            <Route path="*" element={<Navigate to="/" replace />} />
-                        </Routes>
-                    </Suspense>
-                </ToastProvider>
+                                {/* Fallback */}
+                                <Route path="*" element={<Navigate to="/" replace />} />
+                            </Routes>
+                        </Suspense>
+                    </ToastProvider>
+                </ThemeProvider>
             </AuthProvider>
         </BrowserRouter>
     );

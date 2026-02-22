@@ -14,14 +14,22 @@ import {
     X,
     RotateCcw,
     UserPlus,
+    UserMinus,
     ChevronLeft,
     Check,
     Trash2,
     Sparkles,
     Music,
     ExternalLink,
+    Moon,
+    Type,
+    Flame,
+    Pin,
+    PinOff,
+    Users,
 } from 'lucide-react';
 import { useAuth } from '@/contexts/AuthContext';
+import { useTheme } from '@/contexts/ThemeContext';
 import {
     subscribeFriends,
     sendFriendRequest,
@@ -29,28 +37,39 @@ import {
     removeFriend,
     sendChatMessage,
     subscribeToMessages,
-    sendMagoMessage,
-    saveMagoResponse,
-    subscribeToMagoMessages,
-    getConversationId,
     MAGO_SYSTEM_PROMPT,
     subscribeFriendPresence,
     subscribeToAllConvos,
-} from '@/services/chat.service';
+    createGroupChat,
+    sendGroupMessage,
+    subscribeToGroupMessages,
+    subscribeToGroupChats,
+} from '../services/chat.service';
+import {
+    createStudyRoom,
+    subscribeToRooms,
+    subscribeToRoom,
+    joinStudyRoom,
+    leaveStudyRoom,
+    sendRoomMessage,
+    subscribeToRoomMessages,
+    updateRoomTimer
+} from '../services/studyroom.service';
 import { generateAIContent, type AIChatMessage } from '@/services/ai.service';
-import type { ChatMessage, Friend } from '@/types';
+import type { ChatMessage, Friend, GroupChat, StudyRoom, StudyRoomMessage } from '@/types';
 import './FloatingHub.css';
 
 // ============================================================
 // CONSTANTS
 // ============================================================
-type TabId = 'chat' | 'pomodoro' | 'notes' | 'study' | 'music' | 'theme';
+type TabId = 'chat' | 'pomodoro' | 'notes' | 'study' | 'rooms' | 'music' | 'theme';
 
 const TABS: { id: TabId; icon: typeof MessageCircle; label: string }[] = [
     { id: 'chat', icon: MessageCircle, label: 'Chat' },
     { id: 'pomodoro', icon: Timer, label: 'Pomodoro' },
     { id: 'notes', icon: StickyNote, label: 'Ghi chú' },
     { id: 'study', icon: BarChart3, label: 'Học tập' },
+    { id: 'rooms', icon: Users, label: 'Phòng học' },
     { id: 'music', icon: Music, label: 'Nhạc' },
     { id: 'theme', icon: Palette, label: 'Giao diện' },
 ];
@@ -61,11 +80,11 @@ const POMODORO_MODES = [
     { id: 'longBreak', label: 'Nghỉ dài', duration: 15 * 60 },
 ] as const;
 
-const ACCENT_COLORS = ['#8b5cf6', '#ec4899', '#3b82f6', '#10b981', '#f59e0b', '#ef4444'];
+const ACCENT_COLORS = ['#3b82f6', '#10b981', '#f59e0b', '#ef4444', '#8b5cf6', '#ec4899'];
 
 const FAB_STORAGE_KEY = 'hub_fab_position';
 const NOTES_KEY_PREFIX = 'hub_notes_';
-const THEME_KEY = 'hub_theme';
+// Theme is managed by ThemeContext (no local key needed)
 const POMODORO_SESSIONS_KEY = 'hub_pomodoro_sessions';
 const MUSIC_LINKS_KEY = 'hub_music_links';
 
@@ -94,6 +113,8 @@ export function FloatingHub() {
     const [pomodoroSessions, setPomodoroSessions] = useState(() => {
         try { return parseInt(localStorage.getItem(POMODORO_SESSIONS_KEY) || '0'); } catch { return 0; }
     });
+    // Cycle tracked within focus sessions (1 -> 2 -> 3 -> 4)
+    const [pomodoroCycle, setPomodoroCycle] = useState(() => (pomodoroSessions % 4) || (pomodoroSessions === 0 ? 0 : 4));
     const pomodoroInterval = useRef<ReturnType<typeof setInterval> | null>(null);
 
     // Pomodoro timer effect (runs in PARENT — never unmounts)
@@ -111,8 +132,23 @@ export function FloatingHub() {
                         setPomodoroSessions(s => {
                             const next = s + 1;
                             try { localStorage.setItem(POMODORO_SESSIONS_KEY, String(next)); } catch { /* */ }
+                            const cyclePos = (next % 4) || 4;
+                            setPomodoroCycle(cyclePos);
+
+                            // Auto-switch to break
+                            if (cyclePos === 4) {
+                                setPomodoroMode('longBreak');
+                                setPomodoroTimeLeft(POMODORO_MODES.find(m => m.id === 'longBreak')!.duration);
+                            } else {
+                                setPomodoroMode('shortBreak');
+                                setPomodoroTimeLeft(POMODORO_MODES.find(m => m.id === 'shortBreak')!.duration);
+                            }
                             return next;
                         });
+                    } else {
+                        // After break, switch back to focus
+                        setPomodoroMode('focus');
+                        setPomodoroTimeLeft(POMODORO_MODES.find(m => m.id === 'focus')!.duration);
                     }
                     return 0;
                 }
@@ -183,6 +219,12 @@ export function FloatingHub() {
     const panelW = 380;
     const panelGap = 10;
 
+    const fabStyle: React.CSSProperties = {
+        left: fabPos.x,
+        top: fabPos.y,
+        cursor: isDragging ? 'grabbing' : (isOpen ? 'pointer' : 'grab'),
+        willChange: 'transform, left, top',
+    };
     const panelStyle: React.CSSProperties = {};
 
     // Horizontal: open toward the side with more space
@@ -220,7 +262,7 @@ export function FloatingHub() {
             <button
                 ref={fabRef}
                 className={`hub-fab ${isDragging ? 'dragging' : ''} ${isOpen ? 'open' : ''} ${showTimerOnFab ? 'timer-active' : ''}`}
-                style={{ left: fabPos.x, top: fabPos.y }}
+                style={fabStyle}
                 onPointerDown={onPointerDown}
                 onPointerMove={onPointerMove}
                 onPointerUp={onPointerUp}
@@ -254,7 +296,7 @@ export function FloatingHub() {
             {/* Panel */}
             {isOpen && (
                 <div className={`hub-panel ${panelPosClass}`} style={panelStyle}>
-                    {/* Sidebar tabs */}
+                    {/* Sidebar tabs (vertical on desktop, horizontal on mobile via CSS) */}
                     <div className="hub-sidebar">
                         {TABS.map(tab => {
                             const Icon = tab.icon;
@@ -283,9 +325,22 @@ export function FloatingHub() {
                                 timeLeft={pomodoroTimeLeft}
                                 isRunning={pomodoroRunning}
                                 sessions={pomodoroSessions}
-                                onSetMode={(m) => { setPomodoroMode(m); setPomodoroRunning(false); setPomodoroTimeLeft(POMODORO_MODES.find(p => p.id === m)!.duration); }}
-                                onToggleRunning={() => setPomodoroRunning(r => !r)}
-                                onReset={() => { setPomodoroRunning(false); setPomodoroTimeLeft(POMODORO_MODES.find(p => p.id === pomodoroMode)!.duration); }}
+                                cycle={pomodoroCycle}
+                                onSetMode={(m) => {
+                                    setPomodoroMode(m);
+                                    setPomodoroTimeLeft(POMODORO_MODES.find(x => x.id === m)!.duration);
+                                    setPomodoroRunning(false);
+                                }}
+                                onToggleRunning={() => setPomodoroRunning(!pomodoroRunning)}
+                                onReset={() => {
+                                    setPomodoroRunning(false);
+                                    setPomodoroTimeLeft(POMODORO_MODES.find(m => m.id === pomodoroMode)!.duration);
+                                }}
+                            />
+                        )}
+                        {activeTab === 'rooms' && (
+                            <StudyRoomsTab
+                                user={{ email: user.email, name: user.displayName || user.email, photoURL: user.photoURL || undefined }}
                             />
                         )}
                         {activeTab === 'notes' && <NotesTab userEmail={user.email} />}
@@ -304,6 +359,7 @@ export function FloatingHub() {
 // ============================================================
 
 const CHAT_READ_KEY = 'hub_chat_read_timestamps'; // localStorage key for read tracking
+const CHAT_PINNED_KEY = 'hub_pinned_chats'; // localStorage key for pinned conversations
 
 function formatTimeAgo(ts: number): string {
     const diff = Date.now() - ts;
@@ -318,6 +374,7 @@ function formatMsgTime(ts: number): string {
     return `${d.getHours().toString().padStart(2, '0')}:${d.getMinutes().toString().padStart(2, '0')}`;
 }
 
+
 function ChatTab({ user, onUnreadChange }: { user: { email: string; displayName: string | null; photoURL?: string | null }; onUnreadChange?: (count: number) => void }) {
     const [friends, setFriends] = useState<Friend[]>([]);
     const [activeChat, setActiveChat] = useState<string | null>(null);
@@ -330,10 +387,36 @@ function ChatTab({ user, onUnreadChange }: { user: { email: string; displayName:
     const [onlineMap, setOnlineMap] = useState<Record<string, boolean>>({});
     const [lastMessages, setLastMessages] = useState<Record<string, ChatMessage>>({});
     const [magoLocalMessages, setMagoLocalMessages] = useState<ChatMessage[]>([]);
-    const [magoRtdbFailed, setMagoRtdbFailed] = useState(false);
+    const [groups, setGroups] = useState<GroupChat[]>([]);
+    const [lastGroupMessages, setLastGroupMessages] = useState<Record<string, ChatMessage>>({});
+    const [showCreateGroup, setShowCreateGroup] = useState(false);
+    const [groupName, setGroupName] = useState('');
+    const [selectedMembers, setSelectedMembers] = useState<string[]>([]);
+    const [pinnedChats, setPinnedChats] = useState<string[]>(() => {
+        try { return JSON.parse(localStorage.getItem(CHAT_PINNED_KEY) || '[]'); } catch { return []; }
+    });
     const messagesEndRef = useRef<HTMLDivElement>(null);
 
-    // Read timestamps from localStorage
+    const togglePin = useCallback((chatId: string) => {
+        setPinnedChats(prev => {
+            const next = prev.includes(chatId)
+                ? prev.filter(id => id !== chatId)
+                : [chatId, ...prev];
+            localStorage.setItem(CHAT_PINNED_KEY, JSON.stringify(next));
+            return next;
+        });
+    }, []);
+
+    const handleRemoveFriend = async (friendEmail: string) => {
+        if (!window.confirm(`Bạn có chắc muốn xóa ${friendEmail} khỏi danh sách bạn bè?`)) return;
+        try {
+            await removeFriend(friendEmail);
+            if (activeChat === friendEmail) setActiveChat(null);
+        } catch (err) {
+            console.error('[Chat] Failed to remove friend:', err);
+        }
+    };
+
     const getReadTimestamps = useCallback((): Record<string, number> => {
         try { return JSON.parse(localStorage.getItem(CHAT_READ_KEY) || '{}'); } catch { return {}; }
     }, []);
@@ -344,86 +427,102 @@ function ChatTab({ user, onUnreadChange }: { user: { email: string; displayName:
         localStorage.setItem(CHAT_READ_KEY, JSON.stringify(ts));
     }, [getReadTimestamps]);
 
-    // Subscribe to friends
+    // Subscriptions
     useEffect(() => {
         const unsub = subscribeFriends(setFriends);
         return () => unsub();
     }, []);
 
-    // Subscribe to friend presence
     useEffect(() => {
         const acceptedEmails = friends.filter(f => f.status === 'accepted').map(f => f.email);
-        if (!acceptedEmails.length) { setOnlineMap({}); return; }
-        const unsub = subscribeFriendPresence(acceptedEmails, setOnlineMap);
-        return () => unsub();
-    }, [friends]);
-
-    // Subscribe to messages (with Mago RTDB fallback)
-    useEffect(() => {
-        if (!activeChat) return;
-
-        if (activeChat === 'mago') {
-            if (magoRtdbFailed) {
-                setMessages(magoLocalMessages);
-                return;
-            }
-            try {
-                const unsub = subscribeToMagoMessages((msgs) => {
-                    setMessages(msgs);
-                    setMagoRtdbFailed(false);
-                });
-                return () => unsub();
-            } catch {
-                setMagoRtdbFailed(true);
-                setMessages(magoLocalMessages);
-                return;
-            }
-        }
-
-        const convId = getConversationId(user.email, activeChat);
-        const unsub = subscribeToMessages(convId, setMessages);
-        return () => unsub();
-    }, [activeChat, user.email, magoRtdbFailed, magoLocalMessages]);
-
-    // Mark active chat as read
-    useEffect(() => {
-        if (activeChat) markAsRead(activeChat);
-    }, [activeChat, messages, markAsRead]);
-
-    // Subscribe to all conversations last messages in one go (more efficient/stable)
-    useEffect(() => {
-        const unsub = subscribeToAllConvos((updates) => {
+        const unsubPresence = subscribeFriendPresence(acceptedEmails, setOnlineMap);
+        const unsubConvos = subscribeToAllConvos((updates) => {
             setLastMessages(prev => ({ ...prev, ...updates }));
         });
-        return () => unsub();
-    }, [user.email]);
 
-    // Compute unread count and notify parent
+        const unsubGroups = subscribeToGroupChats((gs) => {
+            setGroups(gs);
+        });
+
+        return () => {
+            unsubPresence();
+            unsubConvos();
+            unsubGroups();
+        };
+    }, [friends, user.email]);
+
+    // Set up listeners for group messages specifically, cleaning up correctly when groups change
+    useEffect(() => {
+        const unsubs: Record<string, () => void> = {};
+
+        groups.forEach(g => {
+            if (!unsubs[g.id]) {
+                unsubs[g.id] = subscribeToGroupMessages(g.id, (msgs) => {
+                    const last = msgs[msgs.length - 1];
+                    if (last) {
+                        setLastGroupMessages(prev => ({ ...prev, [g.id]: last }));
+                    }
+                });
+            }
+        });
+
+        return () => {
+            Object.values(unsubs).forEach(unsub => unsub());
+        };
+    }, [groups.map(g => g.id).join(',')]); // Use a string map of IDs to avoid unnecessary re-subscriptions on simple group metadata updates
+
+    // End of subscriptions
+    useEffect(() => {
+        if (!activeChat) {
+            setMessages([]);
+            return;
+        }
+
+        let unsub: () => void;
+        if (activeChat.startsWith('group_')) {
+            unsub = subscribeToGroupMessages(activeChat, (msgs) => {
+                setMessages(msgs);
+                markAsRead(activeChat);
+                onUnreadChange?.(0);
+            });
+        } else if (activeChat === 'mago') {
+            unsub = () => { };
+            setMessages(magoLocalMessages);
+        } else {
+            const myKey = user.email.toLowerCase().replace(/@/g, '_at_').replace(/\./g, ',');
+            const partnerKey = activeChat.toLowerCase().replace(/@/g, '_at_').replace(/\./g, ',');
+            const convoId = [myKey, partnerKey].sort().join('__');
+            unsub = subscribeToMessages(convoId, (msgs) => {
+                setMessages(msgs);
+                markAsRead(activeChat.toLowerCase());
+                onUnreadChange?.(0);
+            });
+        }
+        return () => unsub();
+    }, [activeChat, user.email, magoLocalMessages, onUnreadChange, markAsRead]);
+
     useEffect(() => {
         const readTs = getReadTimestamps();
         let total = 0;
-
-        // Mago unread
         const magoLast = lastMessages['mago'];
         if (magoLast && magoLast.role === 'mago') {
-            const lastRead = readTs['mago'] || 0;
-            if (magoLast.timestamp > lastRead) total++;
+            if (magoLast.timestamp > (readTs['mago'] || 0)) total++;
         }
-
-        // Friend unreads
-        for (const f of friends.filter(f => f.status === 'accepted')) {
-            const emailLower = f.email.toLowerCase();
-            const last = lastMessages[emailLower];
+        friends.filter(f => f.status === 'accepted').forEach(f => {
+            const last = lastMessages[f.email.toLowerCase()];
             if (last && last.senderEmail.toLowerCase() !== user.email.toLowerCase()) {
-                const lastRead = readTs[emailLower] || 0;
-                if (last.timestamp > lastRead) total++;
+                if (last.timestamp > (readTs[f.email.toLowerCase()] || 0)) total++;
             }
-        }
-
+        });
+        groups.forEach(g => {
+            const last = lastGroupMessages[g.id];
+            if (last && last.senderEmail.toLowerCase() !== user.email.toLowerCase()) {
+                if (last.timestamp > (readTs[g.id] || 0)) total++;
+            }
+        });
         onUnreadChange?.(total);
-    }, [lastMessages, friends, user.email, getReadTimestamps, onUnreadChange]);
+    }, [lastMessages, lastGroupMessages, friends, groups, user.email, getReadTimestamps, onUnreadChange]);
 
-    // Auto scroll
     useEffect(() => {
         messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
     }, [messages]);
@@ -434,105 +533,60 @@ function ChatTab({ user, onUnreadChange }: { user: { email: string; displayName:
         setInput('');
 
         if (activeChat === 'mago') {
-            // Try RTDB first, fallback to local
+            const timestamp = Date.now();
             const userMsg: ChatMessage = {
-                id: `local_${Date.now()}`,
+                id: `mago_${timestamp}`,
                 text,
                 senderEmail: user.email,
-                senderName: user.displayName || 'User',
-                timestamp: Date.now(),
-                role: 'user',
+                senderName: user.displayName || 'Bạn',
+                timestamp,
+                role: 'user'
             };
-
-            try {
-                await sendMagoMessage(text);
-            } catch {
-                setMagoRtdbFailed(true);
-                setMagoLocalMessages(prev => [...prev, userMsg]);
-                setMessages(prev => [...prev, userMsg]);
-            }
-
+            setMagoLocalMessages(prev => [...prev, userMsg]);
             setIsMagoTyping(true);
-
             try {
-                // Build conversation history
-                const recentMsgs = messages.slice(-8);
-                const history: AIChatMessage[] = recentMsgs.map(msg => ({
-                    role: msg.role === 'mago' ? 'model' as const : 'user' as const,
-                    parts: [{ text: msg.text }],
+                const aiHistory: AIChatMessage[] = [...magoLocalMessages, userMsg].map(m => ({
+                    role: m.role === 'mago' ? 'model' : 'user',
+                    parts: [{ text: m.text }]
                 }));
-                history.push({ role: 'user', parts: [{ text }] });
-
-                const response = await generateAIContent(history, {
-                    temperature: 0.8,
-                    maxOutputTokens: 500,
-                    systemInstruction: MAGO_SYSTEM_PROMPT,
-                });
-
-                if (response) {
-                    try {
-                        await saveMagoResponse(response);
-                    } catch {
-                        // RTDB failed, save locally
-                        const aiMsg: ChatMessage = {
-                            id: `local_ai_${Date.now()}`,
-                            text: response,
-                            senderEmail: 'mago@studystation.site',
-                            senderName: 'Mago ✨',
-                            timestamp: Date.now(),
-                            role: 'mago',
-                        };
-                        setMagoRtdbFailed(true);
-                        setMagoLocalMessages(prev => [...prev, aiMsg]);
-                        setMessages(prev => [...prev, aiMsg]);
-                    }
-                }
-            } catch (err) {
-                console.error('[Mago] AI error:', err);
-                const errorMsg: ChatMessage = {
-                    id: `local_err_${Date.now()}`,
-                    text: 'Xin lỗi, tôi đang gặp sự cố. Bạn thử lại sau nhé! 😢',
-                    senderEmail: 'mago@studystation.site',
-                    senderName: 'Mago ✨',
+                const response = await generateAIContent(aiHistory, { systemInstruction: MAGO_SYSTEM_PROMPT });
+                const aiMsg: ChatMessage = {
+                    id: `mago_ai_${Date.now()}`,
+                    text: response,
+                    senderEmail: 'mago',
+                    senderName: 'Mago AI',
                     timestamp: Date.now(),
-                    role: 'mago',
+                    role: 'mago'
                 };
-                try { await saveMagoResponse(errorMsg.text); } catch {
-                    setMagoLocalMessages(prev => [...prev, errorMsg]);
-                    setMessages(prev => [...prev, errorMsg]);
-                }
+                setMagoLocalMessages(prev => [...prev, aiMsg]);
+            } catch (err) {
+                console.error('[Chat] Mago AI error:', err);
             } finally {
                 setIsMagoTyping(false);
             }
+        } else if (activeChat.startsWith('group_')) {
+            await sendGroupMessage(activeChat, text);
         } else {
-            const convId = getConversationId(user.email, activeChat);
-
-            // Optimistic update
-            const tempId = `temp_${Date.now()}`;
-            const optimisticMsg: ChatMessage = {
-                id: tempId,
-                text,
-                senderEmail: user.email,
-                senderName: user.displayName || 'User',
-                timestamp: Date.now(),
-                role: 'user',
-            };
-
-            // Add to UI immediately
-            setMessages(prev => [...prev, optimisticMsg]);
-
-            try {
-                // Send to server (service now handles caching)
-                const realMsg = await sendChatMessage(convId, text);
-
-                // Replace temp msg with real one if needed, or let subscription handle it
-                // ensuring no duplicates if subscription causes re-render fast
-            } catch (err) {
-                console.error('Failed to send message:', err);
-                // Remove optimistic message if failed
-                setMessages(prev => prev.filter(m => m.id !== tempId));
-            }
+            const myKey = user.email.toLowerCase().replace(/@/g, '_at_').replace(/\./g, ',');
+            const partnerKey = activeChat.toLowerCase().replace(/@/g, '_at_').replace(/\./g, ',');
+            const convoId = [myKey, partnerKey].sort().join('__');
+            await sendChatMessage(convoId, text);
         }
+    };
+
+    const handleCreateGroup = async () => {
+        if (!groupName.trim() || selectedMembers.length === 0) return;
+        const gid = await createGroupChat(groupName, selectedMembers);
+        if (gid) {
+            setShowCreateGroup(false);
+            setGroupName('');
+            setSelectedMembers([]);
+            setActiveChat(gid);
+        }
+    };
+
+    const toggleMemberSelection = (email: string) => {
+        setSelectedMembers(prev => prev.includes(email) ? prev.filter(e => e !== email) : [...prev, email]);
     };
 
     const handleAddFriend = async () => {
@@ -550,120 +604,158 @@ function ChatTab({ user, onUnreadChange }: { user: { email: string; displayName:
     const pendingReceived = friends.filter(f => f.status === 'pending_received');
     const readTs = getReadTimestamps();
 
-    // ── Chat list view ──
     if (!activeChat) {
         return (
             <>
                 <div className="hub-content-header">
-                    <h3>💬 Chat</h3>
-                    <button
-                        onClick={() => setShowAddFriend(true)}
-                        style={{ background: 'none', border: 'none', cursor: 'pointer', color: '#8b5cf6' }}
-                    >
-                        <UserPlus size={18} />
-                    </button>
+                    <h3><MessageCircle size={16} style={{ verticalAlign: '-3px', marginRight: '6px' }} /> Chat</h3>
+                    <div style={{ display: 'flex', gap: '8px' }}>
+                        <button onClick={() => setShowCreateGroup(true)} title="Tạo nhóm" style={{ background: 'none', border: 'none', cursor: 'pointer', color: 'var(--accent-color, #3b82f6)' }}>
+                            <Users size={18} />
+                        </button>
+                        <button onClick={() => setShowAddFriend(true)} title="Thêm bạn" style={{ background: 'none', border: 'none', cursor: 'pointer', color: 'var(--accent-color, #3b82f6)' }}>
+                            <UserPlus size={18} />
+                        </button>
+                    </div>
                 </div>
                 <div className="hub-content-body">
-                    {/* Add friend modal */}
                     {showAddFriend && (
                         <div className="chat-add-friend-modal">
                             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '8px' }}>
                                 <span style={{ fontSize: '13px', fontWeight: 600 }}>Thêm bạn bè</span>
-                                <button onClick={() => setShowAddFriend(false)} style={{ background: 'none', border: 'none', cursor: 'pointer' }}>
-                                    <X size={14} />
-                                </button>
+                                <button onClick={() => setShowAddFriend(false)} style={{ background: 'none', border: 'none', cursor: 'pointer' }}><X size={14} /></button>
                             </div>
                             <div style={{ display: 'flex', gap: '6px' }}>
-                                <input
-                                    type="email"
-                                    placeholder="Nhập email..."
-                                    value={friendEmail}
-                                    onChange={e => { setFriendEmail(e.target.value); setFriendError(''); }}
-                                    onKeyDown={e => e.key === 'Enter' && handleAddFriend()}
-                                    className="chat-add-friend-input"
-                                />
+                                <input type="email" placeholder="Nhập email..." value={friendEmail} onChange={e => setFriendEmail(e.target.value)} className="chat-add-friend-input" />
                                 <button onClick={handleAddFriend} className="chat-add-friend-btn">Gửi</button>
                             </div>
                             {friendError && <p className="chat-add-friend-error">{friendError}</p>}
                         </div>
                     )}
-
-                    {/* Pending requests */}
+                    {showCreateGroup && (
+                        <div className="chat-add-friend-modal" style={{ background: '#ecfdf5' }}>
+                            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '8px' }}>
+                                <span style={{ fontSize: '13px', fontWeight: 600 }}>Tạo nhóm mới</span>
+                                <button onClick={() => { setShowCreateGroup(false); setSelectedMembers([]); }} style={{ background: 'none', border: 'none', cursor: 'pointer' }}><X size={14} /></button>
+                            </div>
+                            <input type="text" placeholder="Tên nhóm..." value={groupName} onChange={e => setGroupName(e.target.value)} className="chat-add-friend-input" style={{ marginBottom: '10px', width: '100%' }} />
+                            <p className="chat-section-label" style={{ marginTop: 0 }}>Chọn thành viên ({selectedMembers.length})</p>
+                            <div style={{ maxHeight: '120px', overflowY: 'auto', marginBottom: '10px' }}>
+                                {friends.filter(f => f.status === 'accepted').map(f => (
+                                    <div key={f.email} className={`chat-contact-item ${selectedMembers.includes(f.email) ? 'selected' : ''}`} onClick={() => toggleMemberSelection(f.email)} style={{ padding: '6px 8px', fontSize: '12px' }}>
+                                        <div className="chat-contact-avatar" style={{ width: 24, height: 24, fontSize: 10 }}>{f.displayName.charAt(0)}</div>
+                                        <span style={{ flex: 1 }}>{f.displayName}</span>
+                                        {selectedMembers.includes(f.email) && <Check size={12} color="#10b981" />}
+                                    </div>
+                                ))}
+                            </div>
+                            <button onClick={handleCreateGroup} disabled={!groupName.trim() || selectedMembers.length === 0} className="chat-add-friend-btn" style={{ width: '100%', background: '#10b981' }}>Tạo nhóm</button>
+                        </div>
+                    )}
                     {pendingReceived.length > 0 && (
                         <div className="chat-section">
                             <p className="chat-section-label">Lời mời kết bạn</p>
                             {pendingReceived.map(f => (
                                 <div key={f.email} className="chat-contact-item pending">
-                                    <div className="chat-contact-avatar" style={{ background: '#f59e0b', color: 'white' }}>
-                                        {f.displayName.charAt(0).toUpperCase()}
-                                    </div>
+                                    <div className="chat-contact-avatar" style={{ background: '#f59e0b', color: 'white' }}>{f.displayName.charAt(0).toUpperCase()}</div>
                                     <div className="chat-contact-info">
                                         <p className="chat-contact-name">{f.displayName}</p>
                                         <p className="chat-contact-preview">{f.email}</p>
                                     </div>
-                                    <button onClick={() => acceptFriendRequest(f.email)} className="chat-accept-btn">
-                                        <Check size={14} />
-                                    </button>
-                                    <button onClick={() => removeFriend(f.email)} className="chat-reject-btn">
-                                        <X size={14} />
-                                    </button>
+                                    <button onClick={() => acceptFriendRequest(f.email)} className="chat-accept-btn"><Check size={14} /></button>
+                                    <button onClick={() => removeFriend(f.email)} className="chat-reject-btn"><X size={14} /></button>
                                 </div>
                             ))}
                         </div>
                     )}
-
-                    {/* Mago AI — pinned */}
                     <div className="chat-contact-item mago" onClick={() => setActiveChat('mago')}>
-                        <div className="chat-contact-avatar mago-avatar">🧙</div>
+                        <div className="chat-contact-avatar mago-avatar" style={{ overflow: 'hidden' }}>
+                            <img src="/mago.png" alt="Mago" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+                        </div>
                         <div className="chat-contact-info">
                             <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
                                 <span className="chat-contact-name">Mago</span>
                                 <span className="chat-ai-badge">AI ✨</span>
                             </div>
-                            <p className="chat-contact-preview">
-                                {lastMessages['mago']?.text || 'Trợ lý học tập thông minh'}
-                            </p>
+                            <p className="chat-contact-preview">{lastMessages['mago']?.text || 'Trợ lý học tập thông minh'}</p>
                         </div>
                         <div className="chat-contact-meta">
-                            {lastMessages['mago'] && (
-                                <span className="chat-contact-time">{formatTimeAgo(lastMessages['mago'].timestamp)}</span>
-                            )}
+                            {lastMessages['mago'] && <span className="chat-contact-time">{formatTimeAgo(lastMessages['mago'].timestamp)}</span>}
                         </div>
                     </div>
-
-                    {/* Friends list */}
-                    {friends.filter(f => f.status === 'accepted').length > 0 && (
+                    {groups.length > 0 && (
                         <div className="chat-section">
-                            <p className="chat-section-label">Bạn bè</p>
-                            {friends.filter(f => f.status === 'accepted').map(f => {
-                                const emailLower = f.email.toLowerCase();
-                                const last = lastMessages[emailLower];
-                                const isOnline = onlineMap[emailLower] || false;
-                                const lastRead = readTs[emailLower] || 0;
-                                const hasUnread = last && last.senderEmail.toLowerCase() !== user.email.toLowerCase() && last.timestamp > lastRead;
+                            <p className="chat-section-label">Nhóm</p>
+                            {groups.map(g => {
+                                const last = lastGroupMessages[g.id];
+                                const hasUnread = last && last.senderEmail.toLowerCase() !== user.email.toLowerCase() && last.timestamp > (readTs[g.id] || 0);
+                                const isPinned = pinnedChats.includes(g.id);
                                 return (
-                                    <div key={f.email} className={`chat-contact-item ${hasUnread ? 'unread' : ''}`} onClick={() => setActiveChat(f.email)}>
-                                        <div className="chat-contact-avatar-wrap">
-                                            <div className="chat-contact-avatar" style={{ background: '#e0e7ff', color: '#4f46e5', overflow: 'hidden' }}>
-                                                {f.photoURL ? <img src={f.photoURL} alt="" style={{ width: '100%', height: '100%', objectFit: 'cover' }} /> : f.displayName.charAt(0).toUpperCase()}
-                                            </div>
-                                            <span className={`chat-status-dot ${isOnline ? 'online' : 'offline'}`} />
-                                        </div>
+                                    <div key={g.id} className={`chat-contact-item ${hasUnread ? 'unread' : ''} ${isPinned ? 'pinned' : ''}`} onClick={() => setActiveChat(g.id)}>
+                                        <div className="chat-contact-avatar" style={{ background: g.avatarColor || '#10b981', color: 'white' }}>{g.name.charAt(0).toUpperCase()}</div>
                                         <div className="chat-contact-info">
-                                            <p className={`chat-contact-name ${hasUnread ? 'bold' : ''}`}>{f.displayName}</p>
-                                            <p className={`chat-contact-preview ${hasUnread ? 'unread-text' : ''}`}>
-                                                {last ? (last.senderEmail.toLowerCase() === user.email.toLowerCase() ? `Bạn: ${last.text}` : last.text) : f.email}
-                                            </p>
+                                            <p className={`chat-contact-name ${hasUnread ? 'bold' : ''}`}>{g.name} {isPinned && <Pin size={10} style={{ marginLeft: '4px', color: 'var(--accent-color, #3b82f6)' }} />}</p>
+                                            <p className={`chat-contact-preview ${hasUnread ? 'unread-text' : ''}`}>{last ? `${last.senderName}: ${last.text}` : 'Nhóm mới được tạo'}</p>
                                         </div>
                                         <div className="chat-contact-meta">
                                             {last && <span className="chat-contact-time">{formatTimeAgo(last.timestamp)}</span>}
-                                            {hasUnread && <span className="chat-unread-dot" />}
+                                            <div style={{ display: 'flex', alignItems: 'center', gap: '4px', marginTop: '4px' }}>
+                                                <button onClick={(e) => { e.stopPropagation(); togglePin(g.id); }} className="chat-pin-btn">{isPinned ? <PinOff size={12} /> : <Pin size={12} />}</button>
+                                                {hasUnread && <span className="chat-unread-dot" />}
+                                            </div>
                                         </div>
                                     </div>
                                 );
                             })}
                         </div>
                     )}
+                    {(() => {
+                        const acceptedFriends = friends.filter(f => f.status === 'accepted');
+                        if (acceptedFriends.length === 0) return null;
+                        const sortedFriends = [...acceptedFriends].sort((a, b) => {
+                            const aPinned = pinnedChats.includes(a.email.toLowerCase());
+                            const bPinned = pinnedChats.includes(b.email.toLowerCase());
+                            if (aPinned && !bPinned) return -1;
+                            if (!aPinned && bPinned) return 1;
+                            const aLast = lastMessages[a.email.toLowerCase()]?.timestamp || 0;
+                            const bLast = lastMessages[b.email.toLowerCase()]?.timestamp || 0;
+                            return bLast - aLast || new Date(b.addedAt).getTime() - new Date(a.addedAt).getTime();
+                        });
+                        return (
+                            <div className="chat-section">
+                                <p className="chat-section-label">Bạn bè</p>
+                                {sortedFriends.map(f => {
+                                    const emailLower = f.email.toLowerCase();
+                                    const last = lastMessages[emailLower];
+                                    const isOnline = onlineMap[emailLower] || false;
+                                    const lastRead = readTs[emailLower] || 0;
+                                    const hasUnread = last && last.senderEmail.toLowerCase() !== user.email.toLowerCase() && last.timestamp > lastRead;
+                                    const isPinned = pinnedChats.includes(emailLower);
+                                    return (
+                                        <div key={f.email} className={`chat-contact-item ${hasUnread ? 'unread' : ''} ${isPinned ? 'pinned' : ''}`} onClick={() => setActiveChat(f.email)}>
+                                            <div className="chat-contact-avatar-wrap">
+                                                <div className="chat-contact-avatar" style={{ background: '#e0e7ff', color: '#4f46e5', overflow: 'hidden' }}>
+                                                    {f.photoURL ? <img src={f.photoURL} alt="" style={{ width: '100%', height: '100%', objectFit: 'cover' }} /> : f.displayName.charAt(0).toUpperCase()}
+                                                </div>
+                                                <span className={`chat-status-dot ${isOnline ? 'online' : 'offline'}`} />
+                                            </div>
+                                            <div className="chat-contact-info">
+                                                <p className={`chat-contact-name ${hasUnread ? 'bold' : ''}`}>{f.displayName} {isPinned && <Pin size={10} style={{ marginLeft: '4px', color: 'var(--accent-color, #3b82f6)' }} />}</p>
+                                                <p className={`chat-contact-preview ${hasUnread ? 'unread-text' : ''}`}>{last ? (last.senderEmail.toLowerCase() === user.email.toLowerCase() ? `Bạn: ${last.text}` : last.text) : f.email}</p>
+                                            </div>
+                                            <div className="chat-contact-meta">
+                                                {last && <span className="chat-contact-time">{formatTimeAgo(last.timestamp)}</span>}
+                                                <div style={{ display: 'flex', alignItems: 'center', gap: '4px', marginTop: '4px' }}>
+                                                    <button onClick={(e) => { e.stopPropagation(); togglePin(emailLower); }} className="chat-pin-btn">{isPinned ? <PinOff size={12} /> : <Pin size={12} />}</button>
+                                                    {hasUnread && <span className="chat-unread-dot" />}
+                                                </div>
+                                            </div>
+                                        </div>
+                                    );
+                                })}
+                            </div>
+                        );
+                    })()}
 
                     {/* Sent requests */}
                     {friends.filter(f => f.status === 'pending_sent').length > 0 && (
@@ -689,7 +781,7 @@ function ChatTab({ user, onUnreadChange }: { user: { email: string; displayName:
                             <p style={{ fontSize: '12px' }}>Thêm bạn bè bằng email</p>
                             <button
                                 onClick={() => setShowAddFriend(true)}
-                                style={{ marginTop: '8px', padding: '6px 16px', borderRadius: '8px', background: '#8b5cf6', color: 'white', border: 'none', fontSize: '12px', fontWeight: 600, cursor: 'pointer' }}
+                                style={{ marginTop: '8px', padding: '6px 16px', borderRadius: '8px', background: 'var(--accent-color, #3b82f6)', color: 'white', border: 'none', fontSize: '12px', fontWeight: 600, cursor: 'pointer' }}
                             >
                                 <Plus size={12} style={{ marginRight: '4px', verticalAlign: 'middle' }} /> Thêm bạn
                             </button>
@@ -701,19 +793,23 @@ function ChatTab({ user, onUnreadChange }: { user: { email: string; displayName:
     }
 
     // ── Conversation view ──
-    const chatPartner = activeChat === 'mago' ? null : friends.find(f => f.email === activeChat);
-    const chatPartnerName = activeChat === 'mago' ? 'Mago' : chatPartner?.displayName || activeChat;
-    const isPartnerOnline = activeChat !== 'mago' && onlineMap[activeChat.toLowerCase()];
+    const isGroup = activeChat.startsWith('group_');
+    const group = isGroup ? groups.find(g => g.id === activeChat) : null;
+    const chatPartner = !isGroup && activeChat !== 'mago' ? friends.find(f => f.email === activeChat) : null;
+    const chatPartnerName = isGroup ? group?.name || 'Nhóm' : activeChat === 'mago' ? 'Mago' : chatPartner?.displayName || activeChat;
+    const isPartnerOnline = !isGroup && activeChat !== 'mago' && onlineMap[activeChat.toLowerCase()];
 
     return (
         <>
             <div className="hub-content-header chat-conv-header">
-                <button onClick={() => setActiveChat(null)} className="chat-back-btn">
-                    <ChevronLeft size={18} />
-                </button>
+                <button onClick={() => setActiveChat(null)} className="chat-back-btn"><ChevronLeft size={18} /></button>
                 <div className="chat-header-info">
-                    {activeChat === 'mago' ? (
-                        <div className="chat-header-avatar mago-avatar" style={{ width: 28, height: 28, fontSize: 14 }}>🧙</div>
+                    {isGroup ? (
+                        <div className="chat-header-avatar" style={{ background: group?.avatarColor || '#10b981', color: 'white', width: 28, height: 28, fontSize: 14 }}>{chatPartnerName.charAt(0).toUpperCase()}</div>
+                    ) : activeChat === 'mago' ? (
+                        <div className="chat-header-avatar mago-avatar" style={{ width: 28, height: 28, overflow: 'hidden' }}>
+                            <img src="/mago.png" alt="Mago" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+                        </div>
                     ) : (
                         <div className="chat-contact-avatar-wrap" style={{ width: 28, height: 28 }}>
                             <div className="chat-header-avatar" style={{ background: '#e0e7ff', color: '#4f46e5', width: 28, height: 28, fontSize: 11, overflow: 'hidden' }}>
@@ -727,16 +823,28 @@ function ChatTab({ user, onUnreadChange }: { user: { email: string; displayName:
                             {activeChat === 'mago' && <span className="chat-ai-badge">AI</span>}
                             <span style={{ fontSize: '13px', fontWeight: 700 }}>{chatPartnerName}</span>
                         </div>
-                        <p className="chat-header-status">
-                            {activeChat === 'mago' ? 'Luôn sẵn sàng ✨' : isPartnerOnline ? '🟢 Đang hoạt động' : '⚫ Không hoạt động'}
-                        </p>
+                        <p className="chat-header-status">{isGroup ? `${group?.members.length || 0} thành viên` : activeChat === 'mago' ? 'Luôn sẵn sàng ✨' : isPartnerOnline ? '🟢 Đang hoạt động' : '⚫ Không hoạt động'}</p>
                     </div>
+                </div>
+                <div className="chat-header-actions" style={{ display: 'flex', gap: '8px' }}>
+                    {!isGroup && activeChat !== 'mago' && (
+                        <>
+                            <button onClick={() => togglePin(activeChat!.toLowerCase())} className="chat-header-btn" title={pinnedChats.includes(activeChat!.toLowerCase()) ? 'Bỏ ghim' : 'Ghim hội thoại'} style={{ background: 'none', border: 'none', cursor: 'pointer', color: '#6b7280', padding: '4px' }}>
+                                {pinnedChats.includes(activeChat!.toLowerCase()) ? <PinOff size={16} /> : <Pin size={16} />}
+                            </button>
+                            <button onClick={() => handleRemoveFriend(activeChat!)} className="chat-header-btn" title="Hủy kết bạn" style={{ background: 'none', border: 'none', cursor: 'pointer', color: '#ef4444', padding: '4px' }}>
+                                <UserMinus size={16} />
+                            </button>
+                        </>
+                    )}
                 </div>
             </div>
             <div className="hub-content-body">
                 {messages.length === 0 && activeChat === 'mago' && (
                     <div className="chat-empty-state">
-                        <div style={{ fontSize: '40px', marginBottom: '8px' }}>🧙‍♂️</div>
+                        <div style={{ width: 60, height: 60, margin: '0 auto 12px', borderRadius: '50%', overflow: 'hidden', border: '3px solid #e2e8f0', background: 'white' }}>
+                            <img src="/mago.png" alt="Mago" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+                        </div>
                         <p style={{ fontSize: '14px', fontWeight: 700, color: '#4c1d95' }}>Xin chào! Tôi là Mago</p>
                         <p style={{ fontSize: '12px', marginTop: '4px', color: '#7c3aed' }}>Hỏi tôi bất cứ điều gì về StudyStation nhé! ✨</p>
                     </div>
@@ -747,19 +855,15 @@ function ChatTab({ user, onUnreadChange }: { user: { email: string; displayName:
                     return (
                         <div key={msg.id} className={`chat-message ${isSent ? 'sent' : 'received'} ${isMago ? 'mago' : ''}`}>
                             {!isSent && (
-                                <div className="chat-avatar" style={isMago ? { background: 'linear-gradient(135deg, #8b5cf6, #ec4899)' } : { overflow: 'hidden' }}>
-                                    {isMago ? '🧙' : (() => {
+                                <div className="chat-avatar" style={isMago ? { overflow: 'hidden' } : { overflow: 'hidden' }}>
+                                    {isMago ? <img src="/mago.png" alt="Mago" style={{ width: '100%', height: '100%', objectFit: 'cover' }} /> : (() => {
                                         const partner = friends.find(f => f.email.toLowerCase() === msg.senderEmail.toLowerCase());
-                                        return partner?.photoURL
-                                            ? <img src={partner.photoURL} alt="" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
-                                            : msg.senderName.charAt(0).toUpperCase();
+                                        return partner?.photoURL ? <img src={partner.photoURL} alt="" style={{ width: '100%', height: '100%', objectFit: 'cover' }} /> : msg.senderName.charAt(0).toUpperCase();
                                     })()}
                                 </div>
                             )}
                             <div>
-                                <div className="chat-bubble">
-                                    {msg.text}
-                                </div>
+                                <div className="chat-bubble">{msg.text}</div>
                                 <span className={`chat-msg-time ${isSent ? 'sent' : ''}`}>{formatMsgTime(msg.timestamp)}</span>
                             </div>
                         </div>
@@ -767,28 +871,19 @@ function ChatTab({ user, onUnreadChange }: { user: { email: string; displayName:
                 })}
                 {isMagoTyping && (
                     <div className="chat-message received mago">
-                        <div className="chat-avatar" style={{ background: 'linear-gradient(135deg, #8b5cf6, #ec4899)' }}>🧙</div>
+                        <div className="chat-avatar" style={{ overflow: 'hidden' }}>
+                            <img src="/mago.png" alt="Mago" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+                        </div>
                         <div className="chat-bubble typing-indicator">
-                            <span className="typing-dot" />
-                            <span className="typing-dot" style={{ animationDelay: '0.2s' }} />
-                            <span className="typing-dot" style={{ animationDelay: '0.4s' }} />
+                            <span className="typing-dot" /><span className="typing-dot" style={{ animationDelay: '0.2s' }} /><span className="typing-dot" style={{ animationDelay: '0.4s' }} />
                         </div>
                     </div>
                 )}
                 <div ref={messagesEndRef} />
             </div>
             <div className="chat-input-bar">
-                <input
-                    type="text"
-                    placeholder={activeChat === 'mago' ? 'Hỏi Mago...' : 'Nhắn tin...'}
-                    value={input}
-                    onChange={e => setInput(e.target.value)}
-                    onKeyDown={e => e.key === 'Enter' && !e.shiftKey && handleSend()}
-                    disabled={isMagoTyping}
-                />
-                <button onClick={handleSend} disabled={isMagoTyping || !input.trim()}>
-                    <Send size={16} />
-                </button>
+                <input type="text" placeholder={activeChat === 'mago' ? 'Hỏi Mago...' : 'Nhắn tin...'} value={input} onChange={e => setInput(e.target.value)} onKeyDown={e => e.key === 'Enter' && !e.shiftKey && handleSend()} disabled={isMagoTyping} />
+                <button onClick={handleSend} disabled={isMagoTyping || !input.trim()}><Send size={16} /></button>
             </div>
         </>
     );
@@ -803,12 +898,13 @@ interface PomodoroTabProps {
     timeLeft: number;
     isRunning: boolean;
     sessions: number;
+    cycle: number;
     onSetMode: (mode: 'focus' | 'shortBreak' | 'longBreak') => void;
     onToggleRunning: () => void;
     onReset: () => void;
 }
 
-function PomodoroTab({ mode, timeLeft, isRunning, sessions, onSetMode, onToggleRunning, onReset }: PomodoroTabProps) {
+function PomodoroTab({ mode, timeLeft, isRunning, sessions, cycle, onSetMode, onToggleRunning, onReset }: PomodoroTabProps) {
     const currentMode = POMODORO_MODES.find(m => m.id === mode)!;
     const totalDuration = currentMode.duration;
     const progress = (totalDuration - timeLeft) / totalDuration;
@@ -819,7 +915,7 @@ function PomodoroTab({ mode, timeLeft, isRunning, sessions, onSetMode, onToggleR
     return (
         <>
             <div className="hub-content-header">
-                <h3>⏱️ Pomodoro</h3>
+                <h3><Timer size={16} style={{ verticalAlign: '-3px', marginRight: '6px' }} /> Pomodoro</h3>
                 <span style={{ fontSize: '12px', color: '#9ca3af', fontWeight: 600 }}>
                     {sessions} phiên
                 </span>
@@ -843,7 +939,7 @@ function PomodoroTab({ mode, timeLeft, isRunning, sessions, onSetMode, onToggleR
                     <svg viewBox="0 0 176 176">
                         <defs>
                             <linearGradient id="pomodoroGradient" x1="0%" y1="0%" x2="100%" y2="0%">
-                                <stop offset="0%" stopColor="#8b5cf6" />
+                                <stop offset="0%" stopColor="var(--accent-color, #3b82f6)" />
                                 <stop offset="100%" stopColor="#ec4899" />
                             </linearGradient>
                         </defs>
@@ -859,6 +955,17 @@ function PomodoroTab({ mode, timeLeft, isRunning, sessions, onSetMode, onToggleR
                         <span className="time">{String(mins).padStart(2, '0')}:{String(secs).padStart(2, '0')}</span>
                         <span className="label">{currentMode.label}</span>
                     </div>
+                </div>
+
+                {/* Cycle indicators */}
+                <div className="pomodoro-cycle-dots">
+                    {[1, 2, 3, 4].map(dot => (
+                        <div
+                            key={dot}
+                            className={`cycle-dot ${dot <= cycle ? 'filled' : ''} ${dot === (mode === 'focus' ? cycle : -1) ? 'active' : ''}`}
+                            title={`Phiên ${dot}/4`}
+                        />
+                    ))}
                 </div>
 
                 {/* Controls */}
@@ -918,7 +1025,7 @@ function NotesTab({ userEmail }: { userEmail: string }) {
                     id: Date.now().toString(),
                     title: 'Ghi chú cũ',
                     content: `<p>${raw.replace(/\n/g, '</p><p>')}</p>`,
-                    color: '#8b5cf6',
+                    color: '#3b82f6',
                     createdAt: Date.now(),
                     updatedAt: Date.now(),
                 }];
@@ -952,7 +1059,7 @@ function NotesTab({ userEmail }: { userEmail: string }) {
             id: Date.now().toString(),
             title: 'Ghi chú mới',
             content: '',
-            color: NOTE_COLORS[notes.length % NOTE_COLORS.length] || '#8b5cf6',
+            color: NOTE_COLORS[notes.length % NOTE_COLORS.length] || '#3b82f6',
             createdAt: Date.now(),
             updatedAt: Date.now(),
         };
@@ -993,10 +1100,10 @@ function NotesTab({ userEmail }: { userEmail: string }) {
         return (
             <>
                 <div className="hub-content-header">
-                    <h3>📝 Ghi chú</h3>
+                    <h3><StickyNote size={16} style={{ verticalAlign: '-3px', marginRight: '6px' }} /> Ghi chú</h3>
                     <button
                         onClick={createNote}
-                        style={{ background: 'none', border: 'none', cursor: 'pointer', color: '#8b5cf6' }}
+                        style={{ background: 'none', border: 'none', cursor: 'pointer', color: 'var(--accent-color, #3b82f6)' }}
                         title="Tạo ghi chú mới"
                     >
                         <Plus size={18} />
@@ -1009,7 +1116,7 @@ function NotesTab({ userEmail }: { userEmail: string }) {
                             <p style={{ fontSize: '13px', fontWeight: 600 }}>Chưa có ghi chú</p>
                             <button
                                 onClick={createNote}
-                                style={{ marginTop: '10px', padding: '8px 18px', borderRadius: '10px', background: '#8b5cf6', color: 'white', border: 'none', fontSize: '12px', fontWeight: 600, cursor: 'pointer' }}
+                                style={{ marginTop: '10px', padding: '8px 18px', borderRadius: '10px', background: 'var(--accent-color, #3b82f6)', color: 'white', border: 'none', fontSize: '12px', fontWeight: 600, cursor: 'pointer' }}
                             >
                                 <Plus size={12} style={{ marginRight: '4px', verticalAlign: 'middle' }} /> Tạo ghi chú
                             </button>
@@ -1178,12 +1285,12 @@ function StudyTrackerTab({ userEmail }: { userEmail: string }) {
     return (
         <>
             <div className="hub-content-header">
-                <h3>📊 Theo dõi học tập</h3>
+                <h3><BarChart3 size={16} style={{ verticalAlign: '-3px', marginRight: '6px' }} /> Theo dõi học tập</h3>
             </div>
             <div className="hub-content-body">
                 {loading ? (
                     <div style={{ textAlign: 'center', padding: '40px 0', color: '#9ca3af' }}>
-                        <div style={{ fontSize: '24px', animation: 'hubPulse 1.5s ease-in-out infinite' }}>📊</div>
+                        <div style={{ fontSize: '24px', animation: 'hubPulse 1.5s ease-in-out infinite', display: 'flex', justifyContent: 'center' }}><BarChart3 size={24} /></div>
                         <p style={{ fontSize: '12px', marginTop: '8px' }}>Đang tải...</p>
                     </div>
                 ) : (
@@ -1199,7 +1306,7 @@ function StudyTrackerTab({ userEmail }: { userEmail: string }) {
                             </div>
                             <div className="stat-card">
                                 <div className="stat-value">{stats.streak}</div>
-                                <div className="stat-label">Streak 🔥</div>
+                                <div className="stat-label">Streak <Flame size={12} style={{ verticalAlign: '-2px', color: '#f59e0b' }} /></div>
                             </div>
                         </div>
 
@@ -1215,8 +1322,8 @@ function StudyTrackerTab({ userEmail }: { userEmail: string }) {
                             <div style={{ background: '#f9fafb', borderRadius: '12px', padding: '14px', marginTop: '8px' }}>
                                 <p style={{ fontSize: '12px', fontWeight: 600, color: '#374151', marginBottom: '8px' }}>Tóm tắt</p>
                                 <p style={{ fontSize: '12px', color: '#6b7280', lineHeight: 1.8 }}>
-                                    Bạn đã hoàn thành <strong style={{ color: '#8b5cf6' }}>{stats.totalExams}</strong> bài thi
-                                    với điểm trung bình <strong style={{ color: '#8b5cf6' }}>{stats.avgScore}</strong>.
+                                    Bạn đã hoàn thành <strong style={{ color: 'var(--accent-color, #3b82f6)' }}>{stats.totalExams}</strong> bài thi
+                                    với điểm trung bình <strong style={{ color: 'var(--accent-color, #3b82f6)' }}>{stats.avgScore}</strong>.
                                     {stats.streak > 0 && <> Streak hiện tại: <strong style={{ color: '#f59e0b' }}>{stats.streak}</strong> ngày liên tiếp 🔥</>}
                                 </p>
                             </div>
@@ -1229,45 +1336,290 @@ function StudyTrackerTab({ userEmail }: { userEmail: string }) {
 }
 
 // ============================================================
-// THEME TAB
+// STUDY ROOMS TAB — Real-time collaborative sessions
+// ============================================================
+
+function StudyRoomsTab({ user }: { user: { email: string; name: string; photoURL?: string } }) {
+    const [rooms, setRooms] = useState<StudyRoom[]>([]);
+    const [activeRoom, setActiveRoom] = useState<StudyRoom | null>(null);
+    const [messages, setMessages] = useState<StudyRoomMessage[]>([]);
+    const [input, setInput] = useState('');
+    const [showCreate, setShowCreate] = useState(false);
+    const [newRoomData, setNewRoomData] = useState({ name: '', subject: 'Khác', isPrivate: false });
+    const messagesEndRef = useRef<HTMLDivElement>(null);
+
+    // Subscribe to all rooms
+    useEffect(() => {
+        const unsub = subscribeToRooms(setRooms);
+        return () => unsub();
+    }, []);
+
+    // Subscribe to room details and messages when joined
+    useEffect(() => {
+        if (!activeRoom) return;
+        const unsubRoom = subscribeToRoom(activeRoom.id, (room: StudyRoom | null) => {
+            if (!room) setActiveRoom(null);
+            else setActiveRoom(room);
+        });
+        const unsubMsgs = subscribeToRoomMessages(activeRoom.id, setMessages);
+        return () => { unsubRoom(); unsubMsgs(); };
+    }, [activeRoom?.id]);
+
+    useEffect(() => {
+        messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
+    }, [messages]);
+
+    const handleCreate = async () => {
+        if (!newRoomData.name.trim()) return;
+        const rid = await createStudyRoom(newRoomData.name, newRoomData.subject, user.email, user.name, newRoomData.isPrivate);
+        const room: StudyRoom = {
+            id: rid,
+            name: newRoomData.name,
+            subject: newRoomData.subject,
+            ownerEmail: user.email,
+            ownerName: user.name,
+            members: [{ email: user.email, name: user.name, photoURL: user.photoURL, role: 'owner', joinedAt: Date.now() }],
+            isPrivate: newRoomData.isPrivate,
+            createdAt: Date.now(),
+            lastActive: Date.now(),
+            timerState: { mode: 'focus', timeLeft: 25 * 60, isRunning: false, updatedAt: Date.now() }
+        };
+        setActiveRoom(room);
+        setShowCreate(false);
+        setNewRoomData({ name: '', subject: 'Khác', isPrivate: false });
+    };
+
+    const handleJoin = async (room: StudyRoom) => {
+        await joinStudyRoom(room.id, user.email, user.name, user.photoURL);
+        setActiveRoom(room);
+    };
+
+    const handleLeave = async () => {
+        if (!activeRoom) return;
+        const member = activeRoom.members.find(m => m.email === user.email);
+        if (member) await leaveStudyRoom(activeRoom.id, member);
+        setActiveRoom(null);
+    };
+
+    const handleSend = async () => {
+        if (!input.trim() || !activeRoom) return;
+        await sendRoomMessage(activeRoom.id, user.email, user.name, input.trim());
+        setInput('');
+    };
+
+    const syncTimer = (running: boolean) => {
+        if (!activeRoom || activeRoom.ownerEmail !== user.email) return;
+        updateRoomTimer(activeRoom.id, {
+            ...activeRoom.timerState!,
+            isRunning: running,
+            updatedAt: Date.now()
+        });
+    };
+
+    // Room context view
+    if (activeRoom) {
+        const isOwner = activeRoom.ownerEmail === user.email;
+        const ts = activeRoom.timerState;
+
+        return (
+            <>
+                <div className="hub-content-header">
+                    <h3>
+                        <button onClick={handleLeave} style={{ background: 'none', border: 'none', cursor: 'pointer', color: '#6b7280', display: 'flex', alignItems: 'center' }}>
+                            <ChevronLeft size={18} />
+                        </button>
+                        <span style={{ fontSize: '14px' }}>{activeRoom.name}</span>
+                    </h3>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                        <div className="avatar-group">
+                            {activeRoom.members.map((m, i) => (
+                                <div
+                                    key={m.email}
+                                    title={m.name}
+                                    className="avatar-group-item"
+                                    style={{ zIndex: 10 - i }}
+                                >
+                                    {m.photoURL ? <img src={m.photoURL} style={{ width: '100%', height: '100%', objectFit: 'cover' }} /> : m.name[0]}
+                                </div>
+                            ))}
+                        </div>
+                    </div>
+                </div>
+
+                <div className="hub-content-body room-content-body">
+                    {/* Synchronized Shared Timer */}
+                    <div className="room-shared-timer">
+                        <div className="timer-val">
+                            {ts ? `${Math.floor(ts.timeLeft / 60).toString().padStart(2, '0')}:${(ts.timeLeft % 60).toString().padStart(2, '0')}` : '00:00'}
+                        </div>
+                        <div style={{ fontSize: '10px', color: '#9ca3af', textTransform: 'uppercase', fontWeight: 700, letterSpacing: '1px' }}>
+                            {ts?.mode === 'focus' ? '🎯 Đang học' : '☕ Đang nghỉ'}
+                        </div>
+                        {isOwner && (
+                            <button
+                                onClick={() => syncTimer(!ts?.isRunning)}
+                                style={{
+                                    marginTop: '8px', padding: '4px 12px', borderRadius: '20px',
+                                    border: 'none', background: ts?.isRunning ? '#ef4444' : 'var(--accent-color)',
+                                    color: 'white', fontSize: '11px', fontWeight: 600, cursor: 'pointer'
+                                }}
+                            >
+                                {ts?.isRunning ? 'Dừng chung' : 'Bắt đầu chung'}
+                            </button>
+                        )}
+                        {!isOwner && ts?.isRunning && (
+                            <div style={{ fontSize: '10px', color: '#10b981', marginTop: '6px', fontWeight: 600 }}>
+                                <Sparkles size={10} style={{ verticalAlign: 'middle', marginRight: '4px' }} /> Đồng bộ với chủ phòng
+                            </div>
+                        )}
+                    </div>
+
+                    {/* Room Chat */}
+                    <div className="room-chat-container">
+                        <div className="room-chat-messages">
+                            {messages.map((m) => (
+                                <div key={m.id} style={{ marginBottom: '8px', textAlign: m.senderEmail === user.email ? 'right' : 'left' }}>
+                                    <div style={{ fontSize: '10px', color: '#9ca3af', marginBottom: '2px' }}>{m.senderName}</div>
+                                    <div className={`room-msg-bubble ${m.senderEmail === user.email ? 'room-msg-sent' : 'room-msg-received'}`}>
+                                        {m.text}
+                                    </div>
+                                </div>
+                            ))}
+                            <div ref={messagesEndRef} />
+                        </div>
+                        <div style={{ display: 'flex', gap: '8px', marginTop: '8px', paddingTop: '8px', borderTop: '1px solid #f1f5f9' }}>
+                            <input
+                                type="text"
+                                value={input}
+                                onChange={e => setInput(e.target.value)}
+                                onKeyDown={e => e.key === 'Enter' && handleSend()}
+                                placeholder="Gửi tin nhắn cho phòng..."
+                                style={{ flex: 1, padding: '8px 12px', borderRadius: '12px', border: '1.5px solid #e5e7eb', fontSize: '12px', outline: 'none' }}
+                            />
+                            <button onClick={handleSend} style={{ width: '34px', height: '34px', borderRadius: '50%', background: 'var(--accent-color)', color: 'white', border: 'none', display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer' }}>
+                                <Send size={14} />
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            </>
+        );
+    }
+
+    // List view
+    return (
+        <>
+            <div className="hub-content-header">
+                <h3><Users size={16} style={{ verticalAlign: '-3px', marginRight: '6px' }} /> Phòng học</h3>
+                <button
+                    onClick={() => setShowCreate(true)}
+                    style={{ background: 'var(--accent-color)', color: 'white', border: 'none', borderRadius: '8px', padding: '4px 10px', fontSize: '12px', fontWeight: 600, cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '4px' }}
+                >
+                    <Plus size={14} /> Tạo phòng
+                </button>
+            </div>
+
+            <div className="hub-content-body">
+                {showCreate && (
+                    <div style={{ background: 'white', padding: '12px', borderRadius: '12px', marginBottom: '16px', border: '1.5px solid var(--accent-color)' }}>
+                        <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '10px' }}>
+                            <span style={{ fontWeight: 700, fontSize: '13px' }}>Tạo phòng mới</span>
+                            <button onClick={() => setShowCreate(false)} style={{ background: 'none', border: 'none', color: '#9ca3af', cursor: 'pointer' }}><X size={14} /></button>
+                        </div>
+                        <input
+                            type="text"
+                            placeholder="Tên phòng..."
+                            value={newRoomData.name}
+                            onChange={e => setNewRoomData(prev => ({ ...prev, name: e.target.value }))}
+                            style={{ width: '100%', padding: '8px', borderRadius: '8px', border: '1.5px solid #e5e7eb', marginBottom: '8px', fontSize: '12px', outline: 'none' }}
+                        />
+                        <select
+                            value={newRoomData.subject}
+                            onChange={e => setNewRoomData(prev => ({ ...prev, subject: e.target.value }))}
+                            style={{ width: '100%', padding: '8px', borderRadius: '8px', border: '1.5px solid #e5e7eb', marginBottom: '12px', fontSize: '12px', outline: 'none', color: '#374151' }}
+                        >
+                            <option value="Khác">Chọn môn học</option>
+                            <option value="Toán học">Toán học</option>
+                            <option value="Vật lý">Vật lý</option>
+                            <option value="Hóa học">Hóa học</option>
+                            <option value="Anh văn">Anh văn</option>
+                            <option value="Công nghệ">Công nghệ</option>
+                        </select>
+                        <button
+                            onClick={handleCreate}
+                            disabled={!newRoomData.name.trim()}
+                            style={{ width: '100%', padding: '8px', borderRadius: '8px', background: 'var(--accent-color)', color: 'white', border: 'none', fontWeight: 600, fontSize: '12px', cursor: 'pointer', opacity: !newRoomData.name.trim() ? 0.6 : 1 }}
+                        >
+                            Tạo phòng & Tham gia
+                        </button>
+                    </div>
+                )}
+
+                <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
+                    {rooms.length === 0 ? (
+                        <div style={{ textAlign: 'center', padding: '40px 20px', color: '#9ca3af' }}>
+                            <Users size={32} style={{ opacity: 0.3, marginBottom: '12px' }} />
+                            <p style={{ fontSize: '12px' }}>Chưa có phòng học nào. Hãy là người đầu tiên tạo phòng!</p>
+                        </div>
+                    ) : (
+                        rooms.map(room => (
+                            <div
+                                key={room.id}
+                                onClick={() => handleJoin(room)}
+                                style={{
+                                    padding: '12px', borderRadius: '14px', background: 'white',
+                                    border: '1px solid #f1f5f9', cursor: 'pointer',
+                                    transition: 'all 0.2s', display: 'flex',
+                                    alignItems: 'center', gap: '12px', boxShadow: '0 1px 3px rgba(0,0,0,0.02)'
+                                }}
+                                onMouseEnter={e => e.currentTarget.style.borderColor = 'var(--accent-color)'}
+                                onMouseLeave={e => e.currentTarget.style.borderColor = '#f1f5f9'}
+                            >
+                                <div style={{
+                                    width: '40px', height: '40px', borderRadius: '12px',
+                                    background: 'rgba(var(--accent-rgb), 0.1)', color: 'var(--accent-color)',
+                                    display: 'flex', alignItems: 'center', justifyContent: 'center',
+                                    fontSize: '18px', flexShrink: 0
+                                }}>
+                                    {room.subject === 'Toán học' ? '📐' : room.subject === 'Anh văn' ? '🌍' : '📚'}
+                                </div>
+                                <div style={{ flex: 1, minWidth: 0 }}>
+                                    <div style={{ display: 'flex', justifyContent: 'space-between' }}>
+                                        <span style={{ fontWeight: 700, fontSize: '13px', color: '#1f2937' }}>{room.name}</span>
+                                        <span style={{ fontSize: '10px', color: '#9ca3af' }}>{room.members.length} học sinh</span>
+                                    </div>
+                                    <div style={{ display: 'flex', justifyContent: 'space-between', marginTop: '2px' }}>
+                                        <span style={{ fontSize: '11px', color: '#6b7280' }}>{room.subject}</span>
+                                        <span style={{ fontSize: '10px', color: '#10b981', fontWeight: 600 }}>
+                                            {room.timerState?.isRunning ? 'Đang học 🎯' : 'Chờ đợi...'}
+                                        </span>
+                                    </div>
+                                </div>
+                            </div>
+                        ))
+                    )}
+                </div>
+            </div>
+        </>
+    );
+}
+
+// ============================================================
+// THEME TAB — uses global ThemeContext
 // ============================================================
 
 function ThemeTab() {
-    const [settings, setSettings] = useState(() => {
-        try {
-            const saved = localStorage.getItem(THEME_KEY);
-            if (saved) return JSON.parse(saved);
-        } catch { /* */ }
-        return { mode: 'light', accentColor: '#8b5cf6', fontSize: 'medium' };
-    });
-
-    const updateSetting = (key: string, value: string) => {
-        const updated = { ...settings, [key]: value };
-        setSettings(updated);
-        try { localStorage.setItem(THEME_KEY, JSON.stringify(updated)); } catch { /* */ }
-
-        // Apply theme changes to document
-        if (key === 'mode') {
-            document.documentElement.classList.toggle('dark', value === 'dark');
-        }
-        if (key === 'fontSize') {
-            const sizes: Record<string, string> = { small: '14px', medium: '16px', large: '18px' };
-            document.documentElement.style.fontSize = sizes[value] || '16px';
-        }
-        if (key === 'accentColor') {
-            document.documentElement.style.setProperty('--accent-color', value);
-        }
-    };
+    const { settings, updateSetting, resetToDefaults } = useTheme();
 
     return (
         <>
             <div className="hub-content-header">
-                <h3>🎨 Tùy chỉnh</h3>
+                <h3><Palette size={16} style={{ verticalAlign: '-3px', marginRight: '6px' }} /> Tùy chỉnh</h3>
             </div>
             <div className="hub-content-body">
                 {/* Dark mode toggle */}
                 <div className="theme-option">
-                    <label>🌙 Chế độ tối</label>
+                    <label><Moon size={14} style={{ verticalAlign: '-2px', marginRight: '4px' }} /> Chế độ tối</label>
                     <button
                         className={`toggle-switch ${settings.mode === 'dark' ? 'on' : ''}`}
                         onClick={() => updateSetting('mode', settings.mode === 'dark' ? 'light' : 'dark')}
@@ -1276,7 +1628,7 @@ function ThemeTab() {
 
                 {/* Accent color */}
                 <div className="theme-option" style={{ flexDirection: 'column', alignItems: 'flex-start', gap: '10px' }}>
-                    <label>🎨 Màu chủ đạo</label>
+                    <label><Palette size={14} style={{ verticalAlign: '-2px', marginRight: '4px' }} /> Màu chủ đạo</label>
                     <div className="color-picker">
                         {ACCENT_COLORS.map(color => (
                             <button
@@ -1291,7 +1643,7 @@ function ThemeTab() {
 
                 {/* Font size */}
                 <div className="theme-option" style={{ flexDirection: 'column', alignItems: 'flex-start', gap: '10px' }}>
-                    <label>🔤 Cỡ chữ</label>
+                    <label><Type size={14} style={{ verticalAlign: '-2px', marginRight: '4px' }} /> Cỡ chữ</label>
                     <div style={{ display: 'flex', gap: '6px' }}>
                         {(['small', 'medium', 'large'] as const).map(size => (
                             <button
@@ -1300,9 +1652,9 @@ function ThemeTab() {
                                 style={{
                                     padding: '6px 14px',
                                     borderRadius: '8px',
-                                    border: settings.fontSize === size ? '2px solid #8b5cf6' : '1.5px solid #e5e7eb',
-                                    background: settings.fontSize === size ? '#ede9fe' : 'white',
-                                    color: settings.fontSize === size ? '#7c3aed' : '#6b7280',
+                                    border: settings.fontSize === size ? '2px solid var(--accent-color, #3b82f6)' : '1.5px solid #e5e7eb',
+                                    background: settings.fontSize === size ? 'rgba(var(--accent-rgb, 59, 130, 246), 0.1)' : 'white',
+                                    color: settings.fontSize === size ? 'var(--accent-color, #3b82f6)' : '#6b7280',
                                     fontWeight: 600,
                                     fontSize: size === 'small' ? '11px' : size === 'large' ? '15px' : '13px',
                                     cursor: 'pointer',
@@ -1317,13 +1669,7 @@ function ThemeTab() {
 
                 {/* Reset */}
                 <button
-                    onClick={() => {
-                        const defaults = { mode: 'light', accentColor: '#8b5cf6', fontSize: 'medium' };
-                        setSettings(defaults);
-                        try { localStorage.setItem(THEME_KEY, JSON.stringify(defaults)); } catch { /* */ }
-                        document.documentElement.classList.remove('dark');
-                        document.documentElement.style.fontSize = '16px';
-                    }}
+                    onClick={resetToDefaults}
                     style={{
                         width: '100%', marginTop: '16px', padding: '10px', borderRadius: '12px',
                         border: '1.5px solid #e5e7eb', background: 'white', color: '#6b7280',
@@ -1454,7 +1800,7 @@ function MusicTab() {
     return (
         <>
             <div className="hub-content-header">
-                <h3>🎵 Âm nhạc</h3>
+                <h3><Music size={16} style={{ verticalAlign: '-3px', marginRight: '6px' }} /> Âm nhạc</h3>
             </div>
             <div className="hub-content-body">
                 {/* Add custom URL */}
@@ -1468,7 +1814,7 @@ function MusicTab() {
                             onKeyDown={e => e.key === 'Enter' && addCustomLink()}
                             style={{ flex: 1, padding: '8px 12px', borderRadius: '10px', border: '1.5px solid #e5e7eb', fontSize: '12px', outline: 'none' }}
                         />
-                        <button onClick={addCustomLink} style={{ padding: '8px 14px', borderRadius: '10px', background: '#8b5cf6', color: 'white', border: 'none', fontSize: '12px', fontWeight: 600, cursor: 'pointer' }}>
+                        <button onClick={addCustomLink} style={{ padding: '8px 14px', borderRadius: '10px', background: 'var(--accent-color, #3b82f6)', color: 'white', border: 'none', fontSize: '12px', fontWeight: 600, cursor: 'pointer' }}>
                             <Plus size={14} />
                         </button>
                     </div>

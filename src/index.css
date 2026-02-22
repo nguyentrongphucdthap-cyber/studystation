@@ -24,7 +24,138 @@
         --input: 214.3 31.8% 91.4%;
         --ring: 221.2 83.2% 53.3%;
         --radius: 0.75rem;
+
+        /* Theme system */
+        --accent-color: #3b82f6;
+        --accent-rgb: 59, 130, 246;
     }
+
+    /* ── Dark mode — indigo-dark for study comfort ── */
+    .dark {
+        --background: 230 25% 11%;
+        --foreground: 214 32% 91%;
+        --card: 230 20% 16%;
+        --card-foreground: 214 32% 91%;
+        --primary: 217 91% 60%;
+        --primary-foreground: 210 40% 98%;
+        --secondary: 230 20% 19%;
+        --secondary-foreground: 214 25% 85%;
+        --muted: 230 20% 19%;
+        --muted-foreground: 215 20% 55%;
+        --accent: 230 20% 19%;
+        --accent-foreground: 214 25% 85%;
+        --destructive: 0 62% 45%;
+        --destructive-foreground: 210 40% 98%;
+        --border: 230 15% 25%;
+        --input: 230 15% 25%;
+        --ring: 217 91% 60%;
+        color-scheme: dark;
+    }
+}
+
+/* ── Dark mode global overrides ── */
+.dark body {
+    background-color: hsl(230 25% 11%);
+    color: hsl(214 32% 91%);
+}
+
+.dark .bg-gray-50\/50,
+.dark .bg-gray-50 {
+    background-color: hsl(230 25% 11%) !important;
+}
+
+.dark .bg-gray-100 {
+    background-color: hsl(230 25% 13%) !important;
+}
+
+.dark .bg-white {
+    background-color: hsl(230 20% 16%) !important;
+}
+
+.dark .bg-white\/90 {
+    background-color: hsla(230, 20%, 16%, 0.9) !important;
+}
+
+.dark .text-gray-800,
+.dark .text-gray-900 {
+    color: hsl(214 32% 93%) !important;
+}
+
+.dark .text-gray-700 {
+    color: hsl(210 20% 80%) !important;
+}
+
+.dark .text-gray-600 {
+    color: hsl(210 20% 70%) !important;
+}
+
+.dark .text-gray-500 {
+    color: hsl(210 20% 60%) !important;
+}
+
+.dark .text-gray-400 {
+    color: hsl(210 20% 50%) !important;
+}
+
+.dark .border-gray-100,
+.dark .border-gray-200 {
+    border-color: hsl(224 10% 20%) !important;
+}
+
+.dark .shadow-sm {
+    box-shadow: 0 1px 2px 0 rgba(0, 0, 0, 0.3) !important;
+}
+
+/* Dark mode cards & containers */
+.dark .quiz-question {
+    background-color: hsl(224 10% 14%);
+    border-color: hsl(224 10% 22%);
+}
+
+.dark .question-text {
+    color: hsl(210 20% 90%);
+}
+
+.dark .options-container label {
+    background-color: hsl(224 10% 16%);
+    border-color: hsl(224 10% 24%);
+    color: hsl(210 20% 85%);
+}
+
+.dark .options-container label:hover {
+    background-color: hsl(224 10% 18%);
+}
+
+.dark .review-item {
+    border-color: hsl(224 10% 22%);
+}
+
+.dark .review-item.correct {
+    background-color: hsla(142, 71%, 45%, 0.1);
+    border-color: hsla(142, 71%, 45%, 0.3);
+}
+
+.dark .review-item.incorrect {
+    background-color: hsla(0, 84%, 60%, 0.1);
+    border-color: hsla(0, 84%, 60%, 0.3);
+}
+
+.dark .login-bg {
+    background-color: hsl(224 10% 10%);
+    background-image: radial-gradient(hsl(224 10% 18%) 1px, transparent 1px);
+}
+
+/* Dark mode footer */
+.dark footer {
+    border-color: hsl(224 10% 18%) !important;
+}
+
+.dark footer p {
+    color: hsl(210 20% 45%) !important;
+}
+
+.dark footer strong {
+    color: hsl(210 20% 60%) !important;
 }
 
 @layer base {

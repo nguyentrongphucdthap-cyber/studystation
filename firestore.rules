@@ -80,6 +80,11 @@ service cloud.firestore {
       allow update: if isLoggedIn() && resource.data.userEmail == request.auth.token.email;
     }
 
+    match /unfriend_logs/{logId} {
+      allow read: if isAdmin();
+      allow create: if isLoggedIn() && request.resource.data.userEmail == request.auth.token.email;
+    }
+
     match /user_activity_logs/{logId} {
       allow read: if isAdmin();
       allow create: if isLoggedIn() && request.resource.data.userEmail == request.auth.token.email;
@@ -111,6 +116,29 @@ service cloud.firestore {
     match /chats/{ownerEmail}/convos/{partnerKey} {
       // DEBUG: Allow all logged-in users to read/write for now
       allow read, write: if isLoggedIn(); 
+    }
+
+    // ============================================
+    // GROUP CHATS & STUDY ROOMS
+    // ============================================
+
+    match /group_chats/{groupId} {
+      allow read: if isLoggedIn() && request.auth.token.email in resource.data.members;
+      allow create: if isLoggedIn();
+      allow update: if isLoggedIn() && request.auth.token.email in resource.data.members;
+      allow delete: if isLoggedIn() && request.auth.token.email == resource.data.createdBy;
+    }
+
+    match /study_rooms/{roomId} {
+      allow read: if isLoggedIn();
+      allow create: if isLoggedIn();
+      allow update: if isLoggedIn();
+      allow delete: if isLoggedIn() && (request.auth.token.email == resource.data.ownerEmail || isAdmin());
+    }
+
+    match /study_room_messages/{msgId} {
+      allow read: if isLoggedIn();
+      allow create: if isLoggedIn();
     }
 
     match /users/{email} {
