@@ -49,7 +49,9 @@ export const createStudyRoom = async (
             mode: 'focus',
             timeLeft: 25 * 60,
             isRunning: false,
-            updatedAt: Date.now()
+            updatedAt: Date.now(),
+            cycle: 1,
+            sessions: 0
         }
     };
     const docRef = await addDoc(roomRef, newRoom);

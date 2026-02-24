@@ -308,6 +308,8 @@ export interface StudyRoom {
         timeLeft: number;
         isRunning: boolean;
         updatedAt: number;
+        cycle: number;
+        sessions: number;
     };
 }
 

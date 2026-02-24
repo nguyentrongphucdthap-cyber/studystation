@@ -27,9 +27,21 @@ import {
     Pin,
     PinOff,
     Users,
+    Image,
+    Upload,
 } from 'lucide-react';
 import { useAuth } from '@/contexts/AuthContext';
 import { useTheme } from '@/contexts/ThemeContext';
+import {
+    createStudyRoom,
+    subscribeToRooms,
+    subscribeToRoom,
+    joinStudyRoom,
+    leaveStudyRoom,
+    sendRoomMessage,
+    subscribeToRoomMessages,
+    updateRoomTimer
+} from '../services/studyroom.service';
 import {
     subscribeFriends,
     sendFriendRequest,
@@ -44,17 +56,10 @@ import {
     sendGroupMessage,
     subscribeToGroupMessages,
     subscribeToGroupChats,
+    sendMagoMessage,
+    saveMagoResponse,
+    subscribeToMagoMessages,
 } from '../services/chat.service';
-import {
-    createStudyRoom,
-    subscribeToRooms,
-    subscribeToRoom,
-    joinStudyRoom,
-    leaveStudyRoom,
-    sendRoomMessage,
-    subscribeToRoomMessages,
-    updateRoomTimer
-} from '../services/studyroom.service';
 import { generateAIContent, type AIChatMessage } from '@/services/ai.service';
 import type { ChatMessage, Friend, GroupChat, StudyRoom, StudyRoomMessage } from '@/types';
 import './FloatingHub.css';
@@ -386,7 +391,6 @@ function ChatTab({ user, onUnreadChange }: { user: { email: string; displayName:
     const [isMagoTyping, setIsMagoTyping] = useState(false);
     const [onlineMap, setOnlineMap] = useState<Record<string, boolean>>({});
     const [lastMessages, setLastMessages] = useState<Record<string, ChatMessage>>({});
-    const [magoLocalMessages, setMagoLocalMessages] = useState<ChatMessage[]>([]);
     const [groups, setGroups] = useState<GroupChat[]>([]);
     const [lastGroupMessages, setLastGroupMessages] = useState<Record<string, ChatMessage>>({});
     const [showCreateGroup, setShowCreateGroup] = useState(false);
@@ -486,8 +490,11 @@ function ChatTab({ user, onUnreadChange }: { user: { email: string; displayName:
                 onUnreadChange?.(0);
             });
         } else if (activeChat === 'mago') {
-            unsub = () => { };
-            setMessages(magoLocalMessages);
+            unsub = subscribeToMagoMessages((msgs) => {
+                setMessages(msgs);
+                markAsRead('mago');
+                onUnreadChange?.(0);
+            });
         } else {
             const myKey = user.email.toLowerCase().replace(/@/g, '_at_').replace(/\./g, ',');
             const partnerKey = activeChat.toLowerCase().replace(/@/g, '_at_').replace(/\./g, ',');
@@ -499,7 +506,7 @@ function ChatTab({ user, onUnreadChange }: { user: { email: string; displayName:
             });
         }
         return () => unsub();
-    }, [activeChat, user.email, magoLocalMessages, onUnreadChange, markAsRead]);
+    }, [activeChat, user.email, onUnreadChange, markAsRead]);
 
     useEffect(() => {
         const readTs = getReadTimestamps();
@@ -533,34 +540,36 @@ function ChatTab({ user, onUnreadChange }: { user: { email: string; displayName:
         setInput('');
 
         if (activeChat === 'mago') {
-            const timestamp = Date.now();
-            const userMsg: ChatMessage = {
-                id: `mago_${timestamp}`,
-                text,
-                senderEmail: user.email,
-                senderName: user.displayName || 'Bạn',
-                timestamp,
-                role: 'user'
-            };
-            setMagoLocalMessages(prev => [...prev, userMsg]);
             setIsMagoTyping(true);
             try {
-                const aiHistory: AIChatMessage[] = [...magoLocalMessages, userMsg].map(m => ({
+                // 1. Save user message to Firestore
+                await sendMagoMessage(text);
+
+                // 2. Clear input is already done above
+
+                // 3. Prepare history for AI (using current messages + the new one)
+                const aiHistory: AIChatMessage[] = [...messages, {
+                    id: 'temp',
+                    text,
+                    senderEmail: user.email,
+                    senderName: user.displayName || 'Bạn',
+                    timestamp: Date.now(),
+                    role: 'user'
+                }].filter(m => m.role).map(m => ({
                     role: m.role === 'mago' ? 'model' : 'user',
                     parts: [{ text: m.text }]
                 }));
+
+                // 4. Generate AI response
                 const response = await generateAIContent(aiHistory, { systemInstruction: MAGO_SYSTEM_PROMPT });
-                const aiMsg: ChatMessage = {
-                    id: `mago_ai_${Date.now()}`,
-                    text: response,
-                    senderEmail: 'mago',
-                    senderName: 'Mago AI',
-                    timestamp: Date.now(),
-                    role: 'mago'
-                };
-                setMagoLocalMessages(prev => [...prev, aiMsg]);
-            } catch (err) {
+
+                // 5. Save AI response to Firestore
+                await saveMagoResponse(response);
+            } catch (err: any) {
                 console.error('[Chat] Mago AI error:', err);
+                const errorMsg = err.message || 'Lỗi kết nối với Mago';
+                // Optionally show a non-intrusive error message in chat
+                await saveMagoResponse(`Xin lỗi, tôi đang gặp chút sự cố kỹ thuật: ${errorMsg}. Bạn thử lại sau nhé! 🧙‍♂️`);
             } finally {
                 setIsMagoTyping(false);
             }
@@ -1346,24 +1355,129 @@ function StudyRoomsTab({ user }: { user: { email: string; name: string; photoURL
     const [input, setInput] = useState('');
     const [showCreate, setShowCreate] = useState(false);
     const [newRoomData, setNewRoomData] = useState({ name: '', subject: 'Khác', isPrivate: false });
+    const [localTimeLeft, setLocalTimeLeft] = useState(25 * 60);
     const messagesEndRef = useRef<HTMLDivElement>(null);
+    const timerIntervalRef = useRef<ReturnType<typeof setInterval> | null>(null);
 
     // Subscribe to all rooms
     useEffect(() => {
-        const unsub = subscribeToRooms(setRooms);
-        return () => unsub();
-    }, []);
+        if (!user?.email) return;
+        let unsub: (() => void) | undefined;
+        try {
+            unsub = subscribeToRooms(setRooms);
+        } catch (err) {
+            console.error('[StudyRooms] Failed to set up listener:', err);
+        }
+
+        return () => {
+            if (unsub) {
+                try {
+                    unsub();
+                } catch (e) {
+                    // Ignore cleanup errors to prevent app crash
+                }
+            }
+        };
+    }, [user?.email]);
 
     // Subscribe to room details and messages when joined
     useEffect(() => {
-        if (!activeRoom) return;
-        const unsubRoom = subscribeToRoom(activeRoom.id, (room: StudyRoom | null) => {
-            if (!room) setActiveRoom(null);
-            else setActiveRoom(room);
+        if (!activeRoom || !user?.email) return;
+
+        let unsubRoom: (() => void) | undefined;
+        let unsubMsgs: (() => void) | undefined;
+
+        try {
+            unsubRoom = subscribeToRoom(activeRoom.id, (room: StudyRoom | null) => {
+                if (!room) {
+                    setActiveRoom(null);
+                    return;
+                }
+                setActiveRoom(room);
+
+                // Synchronize local timer with Firestore
+                if (room.timerState) {
+                    const ts = room.timerState;
+                    if (ts.isRunning) {
+                        const elapsed = Math.floor((Date.now() - ts.updatedAt) / 1000);
+                        const actualTime = Math.max(0, ts.timeLeft - elapsed);
+                        setLocalTimeLeft(actualTime);
+                    } else {
+                        setLocalTimeLeft(ts.timeLeft);
+                    }
+                }
+            });
+            unsubMsgs = subscribeToRoomMessages(activeRoom.id, setMessages);
+        } catch (err) {
+            console.error('[StudyRooms] Failed to subscribe to room details:', err);
+        }
+
+        return () => {
+            if (unsubRoom) { try { unsubRoom(); } catch (e) { } }
+            if (unsubMsgs) { try { unsubMsgs(); } catch (e) { } }
+        };
+    }, [activeRoom?.id, user?.email]);
+
+    // Local ticking effect
+    useEffect(() => {
+        if (timerIntervalRef.current) clearInterval(timerIntervalRef.current);
+
+        if (activeRoom?.timerState?.isRunning && localTimeLeft > 0) {
+            timerIntervalRef.current = setInterval(() => {
+                setLocalTimeLeft(prev => Math.max(0, prev - 1));
+            }, 1000);
+        }
+
+        return () => {
+            if (timerIntervalRef.current) clearInterval(timerIntervalRef.current);
+        };
+    }, [activeRoom?.timerState?.isRunning, localTimeLeft > 0]);
+
+    // Handle timer expiration (Owner only)
+    useEffect(() => {
+        const isOwner = activeRoom?.ownerEmail === user.email;
+        if (isOwner && localTimeLeft === 0 && activeRoom?.timerState?.isRunning) {
+            handleTimerComplete();
+        }
+    }, [localTimeLeft, activeRoom?.ownerEmail, user.email]);
+
+    const handleTimerComplete = async () => {
+        if (!activeRoom || activeRoom.ownerEmail !== user.email) return;
+
+        const ts = activeRoom.timerState!;
+        let nextMode = ts.mode;
+        let nextTime = 0;
+        let nextCycle = ts.cycle;
+        let nextSessions = ts.sessions;
+
+        if (ts.mode === 'focus') {
+            nextSessions += 1;
+            if (ts.cycle < 4) {
+                nextMode = 'shortBreak';
+                nextTime = 5 * 60;
+            } else {
+                nextMode = 'longBreak';
+                nextTime = 15 * 60;
+                nextCycle = 0; // Reset cycle after long break
+            }
+        } else {
+            nextMode = 'focus';
+            nextTime = 25 * 60;
+            if (ts.mode === 'longBreak') nextCycle = 1;
+            else nextCycle += 1;
+        }
+
+        await updateRoomTimer(activeRoom.id, {
+            ...ts,
+            mode: nextMode as any,
+            timeLeft: nextTime,
+            isRunning: true,
+            cycle: nextCycle,
+            sessions: nextSessions,
+            updatedAt: Date.now()
         });
-        const unsubMsgs = subscribeToRoomMessages(activeRoom.id, setMessages);
-        return () => { unsubRoom(); unsubMsgs(); };
-    }, [activeRoom?.id]);
+        playBeep();
+    };
 
     useEffect(() => {
         messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
@@ -1382,7 +1496,7 @@ function StudyRoomsTab({ user }: { user: { email: string; name: string; photoURL
             isPrivate: newRoomData.isPrivate,
             createdAt: Date.now(),
             lastActive: Date.now(),
-            timerState: { mode: 'focus', timeLeft: 25 * 60, isRunning: false, updatedAt: Date.now() }
+            timerState: { mode: 'focus', timeLeft: 25 * 60, isRunning: false, updatedAt: Date.now(), cycle: 1, sessions: 0 }
         };
         setActiveRoom(room);
         setShowCreate(false);
@@ -1411,7 +1525,32 @@ function StudyRoomsTab({ user }: { user: { email: string; name: string; photoURL
         if (!activeRoom || activeRoom.ownerEmail !== user.email) return;
         updateRoomTimer(activeRoom.id, {
             ...activeRoom.timerState!,
+            timeLeft: localTimeLeft,
             isRunning: running,
+            updatedAt: Date.now()
+        });
+    };
+
+    const resetTimer = async () => {
+        if (!activeRoom || activeRoom.ownerEmail !== user.email) return;
+        const mode = activeRoom.timerState?.mode || 'focus';
+        const duration = mode === 'focus' ? 25 * 60 : (mode === 'shortBreak' ? 5 * 60 : 15 * 60);
+        await updateRoomTimer(activeRoom.id, {
+            ...activeRoom.timerState!,
+            timeLeft: duration,
+            isRunning: false,
+            updatedAt: Date.now()
+        });
+    };
+
+    const changeMode = async (mode: 'focus' | 'shortBreak' | 'longBreak') => {
+        if (!activeRoom || activeRoom.ownerEmail !== user.email) return;
+        const duration = mode === 'focus' ? 25 * 60 : (mode === 'shortBreak' ? 5 * 60 : 15 * 60);
+        await updateRoomTimer(activeRoom.id, {
+            ...activeRoom.timerState!,
+            mode,
+            timeLeft: duration,
+            isRunning: false,
             updatedAt: Date.now()
         });
     };
@@ -1434,7 +1573,7 @@ function StudyRoomsTab({ user }: { user: { email: string; name: string; photoURL
                         <div className="avatar-group">
                             {activeRoom.members.map((m, i) => (
                                 <div
-                                    key={m.email}
+                                    key={`${m.email}-${i}`}
                                     title={m.name}
                                     className="avatar-group-item"
                                     style={{ zIndex: 10 - i }}
@@ -1448,30 +1587,92 @@ function StudyRoomsTab({ user }: { user: { email: string; name: string; photoURL
 
                 <div className="hub-content-body room-content-body">
                     {/* Synchronized Shared Timer */}
-                    <div className="room-shared-timer">
-                        <div className="timer-val">
-                            {ts ? `${Math.floor(ts.timeLeft / 60).toString().padStart(2, '0')}:${(ts.timeLeft % 60).toString().padStart(2, '0')}` : '00:00'}
+                    <div className="room-shared-timer" style={{ marginBottom: '24px' }}>
+                        <div className="room-pomodoro-modes" style={{ display: 'flex', gap: '4px', marginBottom: '16px', background: '#f3f4f6', padding: '4px', borderRadius: '12px' }}>
+                            {POMODORO_MODES.map(m => (
+                                <button
+                                    key={m.id}
+                                    disabled={!isOwner}
+                                    onClick={() => changeMode(m.id as any)}
+                                    className={`room-mode-btn ${ts?.mode === m.id ? 'active' : ''}`}
+                                    style={{
+                                        flex: 1, padding: '6px', borderRadius: '8px', border: 'none', fontSize: '11px', fontWeight: 600,
+                                        background: ts?.mode === m.id ? 'white' : 'transparent',
+                                        boxShadow: ts?.mode === m.id ? '0 2px 4px rgba(0,0,0,0.05)' : 'none',
+                                        color: ts?.mode === m.id ? 'var(--accent-color)' : '#6b7280',
+                                        cursor: isOwner ? 'pointer' : 'default', transition: 'all 0.2s'
+                                    }}
+                                >
+                                    {m.label}
+                                </button>
+                            ))}
                         </div>
-                        <div style={{ fontSize: '10px', color: '#9ca3af', textTransform: 'uppercase', fontWeight: 700, letterSpacing: '1px' }}>
-                            {ts?.mode === 'focus' ? '🎯 Đang học' : '☕ Đang nghỉ'}
-                        </div>
-                        {isOwner && (
-                            <button
-                                onClick={() => syncTimer(!ts?.isRunning)}
-                                style={{
-                                    marginTop: '8px', padding: '4px 12px', borderRadius: '20px',
-                                    border: 'none', background: ts?.isRunning ? '#ef4444' : 'var(--accent-color)',
-                                    color: 'white', fontSize: '11px', fontWeight: 600, cursor: 'pointer'
-                                }}
-                            >
-                                {ts?.isRunning ? 'Dừng chung' : 'Bắt đầu chung'}
-                            </button>
-                        )}
-                        {!isOwner && ts?.isRunning && (
-                            <div style={{ fontSize: '10px', color: '#10b981', marginTop: '6px', fontWeight: 600 }}>
-                                <Sparkles size={10} style={{ verticalAlign: 'middle', marginRight: '4px' }} /> Đồng bộ với chủ phòng
+
+                        <div className="pomodoro-ring small" style={{ width: '140px', height: '140px', margin: '0 auto', position: 'relative' }}>
+                            <svg viewBox="0 0 176 176" style={{ width: '100%', height: '100%' }}>
+                                <circle className="ring-bg" cx="88" cy="88" r="80" style={{ fill: 'none', stroke: '#f1f5f9', strokeWidth: '8px' }} />
+                                <circle
+                                    className="ring-progress"
+                                    cx="88" cy="88" r="80"
+                                    style={{
+                                        fill: 'none', stroke: 'var(--accent-color)', strokeWidth: '8px', strokeLinecap: 'round',
+                                        strokeDasharray: 2 * Math.PI * 80,
+                                        strokeDashoffset: (2 * Math.PI * 80) * (1 - (localTimeLeft / (ts?.mode === 'focus' ? 25 * 60 : (ts?.mode === 'shortBreak' ? 5 * 60 : 15 * 60)))),
+                                        transition: 'stroke-dashoffset 1s linear'
+                                    }}
+                                />
+                            </svg>
+                            <div className="pomodoro-time" style={{ position: 'absolute', top: '50%', left: '50%', transform: 'translate(-50%, -50%)', textAlign: 'center' }}>
+                                <span className="time" style={{ fontSize: '24px', fontWeight: 800 }}>
+                                    {Math.floor(localTimeLeft / 60).toString().padStart(2, '0')}:{(localTimeLeft % 60).toString().padStart(2, '0')}
+                                </span>
+                                <div style={{ fontSize: '9px', color: '#9ca3af', fontWeight: 700, textTransform: 'uppercase', marginTop: '-2px' }}>
+                                    {ts?.mode === 'focus' ? 'Focus' : 'Break'}
+                                </div>
                             </div>
-                        )}
+                        </div>
+
+                        <div className="pomodoro-cycle-dots" style={{ display: 'flex', gap: '6px', justifyContent: 'center', margin: '12px 0' }}>
+                            {[1, 2, 3, 4].map(dot => (
+                                <div
+                                    key={dot}
+                                    className={`cycle-dot ${dot <= (ts?.cycle || 0) ? 'filled' : ''} ${dot === (ts?.mode === 'focus' ? ts?.cycle : -1) ? 'active' : ''}`}
+                                    style={{
+                                        width: '6px', height: '6px', borderRadius: '50%',
+                                        background: dot <= (ts?.cycle || 0) ? 'var(--accent-color)' : '#e5e7eb',
+                                        boxShadow: dot === (ts?.mode === 'focus' ? ts?.cycle : -1) ? '0 0 8px var(--accent-color)' : 'none'
+                                    }}
+                                />
+                            ))}
+                        </div>
+
+                        <div style={{ textAlign: 'center' }}>
+                            {isOwner ? (
+                                <div style={{ display: 'flex', gap: '8px', justifyContent: 'center' }}>
+                                    <button
+                                        onClick={resetTimer}
+                                        style={{ padding: '8px 16px', borderRadius: '12px', border: '1.5px solid #f1f5f9', background: 'white', color: '#6b7280', fontSize: '11px', fontWeight: 700, cursor: 'pointer' }}
+                                    >
+                                        <RotateCcw size={14} style={{ verticalAlign: 'middle', marginRight: '4px' }} /> Reset
+                                    </button>
+                                    <button
+                                        onClick={() => syncTimer(!ts?.isRunning)}
+                                        style={{
+                                            padding: '8px 24px', borderRadius: '12px', border: 'none',
+                                            background: ts?.isRunning ? '#ef4444' : 'var(--accent-color)',
+                                            color: 'white', fontSize: '11px', fontWeight: 700, cursor: 'pointer',
+                                            boxShadow: '0 4px 12px rgba(59, 130, 246, 0.2)'
+                                        }}
+                                    >
+                                        {ts?.isRunning ? '⏸ Tạm dừng' : '▶ Bắt đầu'}
+                                    </button>
+                                </div>
+                            ) : (
+                                <div style={{ fontSize: '11px', color: '#10b981', fontWeight: 700, display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '6px' }}>
+                                    <Sparkles size={12} /> Đồng bộ với chủ phòng
+                                </div>
+                            )}
+                        </div>
                     </div>
 
                     {/* Room Chat */}
@@ -1664,6 +1865,71 @@ function ThemeTab() {
                                 {size === 'small' ? 'Nhỏ' : size === 'medium' ? 'Vừa' : 'Lớn'}
                             </button>
                         ))}
+                    </div>
+                </div>
+
+                {/* Background Image */}
+                <div className="theme-option" style={{ flexDirection: 'column', alignItems: 'flex-start', gap: '10px' }}>
+                    <label><Image size={14} style={{ verticalAlign: '-2px', marginRight: '4px' }} /> Hình nền</label>
+                    <div style={{ width: '100%', display: 'flex', flexDirection: 'column', gap: '8px' }}>
+                        <div style={{ display: 'flex', gap: '6px' }}>
+                            <input
+                                type="text"
+                                placeholder="Nhập link hình ảnh..."
+                                value={settings.customBackground || ''}
+                                onChange={e => updateSetting('customBackground', e.target.value)}
+                                style={{
+                                    flex: 1, padding: '8px 12px', borderRadius: '10px',
+                                    border: '1.5px solid #e5e7eb', fontSize: '12px', outline: 'none',
+                                    background: 'white'
+                                }}
+                            />
+                            {settings.customBackground && (
+                                <button
+                                    onClick={() => updateSetting('customBackground', undefined)}
+                                    title="Xóa hình nền"
+                                    style={{
+                                        padding: '8px', borderRadius: '10px', background: '#fee2e2',
+                                        color: '#ef4444', border: 'none', cursor: 'pointer'
+                                    }}
+                                >
+                                    <X size={14} />
+                                </button>
+                            )}
+                        </div>
+                        <div
+                            style={{
+                                position: 'relative', width: '100%', height: '36px',
+                                borderRadius: '10px', border: '1.5px dashed #d1d5db',
+                                display: 'flex', alignItems: 'center', justifyContent: 'center',
+                                fontSize: '12px', color: '#6b7280', cursor: 'pointer',
+                                background: '#f9fafb', overflow: 'hidden'
+                            }}
+                        >
+                            <input
+                                type="file"
+                                accept="image/*"
+                                onChange={(e) => {
+                                    const file = e.target.files?.[0];
+                                    if (!file) return;
+                                    const reader = new FileReader();
+                                    reader.onload = (event) => {
+                                        const result = event.target?.result as string;
+                                        updateSetting('customBackground', result);
+                                    };
+                                    reader.readAsDataURL(file);
+                                }}
+                                style={{
+                                    position: 'absolute', inset: 0, opacity: 0, cursor: 'pointer'
+                                }}
+                            />
+                            <Upload size={14} style={{ marginRight: '6px' }} /> Tải ảnh lên
+                        </div>
+                        {settings.customBackground && (
+                            <p style={{ fontSize: '10px', color: '#10b981', fontWeight: 600 }}>
+                                ✓ Đã áp dụng hình nền tùy chỉnh
+                            </p>
+                        )}
                     </div>
                 </div>
 

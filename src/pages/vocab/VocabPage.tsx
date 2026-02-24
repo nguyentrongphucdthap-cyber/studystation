@@ -117,29 +117,39 @@ export default function VocabPage() {
     // ==================== HOME ====================
     if (view === 'home') {
         return (
-            <div>
-                {/* Back button */}
-                <button
-                    onClick={() => window.location.href = '/'}
-                    className="flex items-center space-x-2 text-gray-600 hover:text-blue-600 transition-colors duration-300 mb-6 group"
-                >
-                    <svg className="w-5 h-5 transition-transform duration-300 group-hover:-translate-x-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 19l-7-7m0 0l7-7m-7 7h18" />
-                    </svg>
-                    <span className="font-medium">Quay lại Menu</span>
-                </button>
+            <div className="space-y-8">
+                {/* Header section */}
+                <div className="bg-white/70 backdrop-blur-xl rounded-[32px] p-8 md:p-10 shadow-soft border border-white flex flex-col md:flex-row md:items-center justify-between gap-6">
+                    <div>
+                        <h2 className="text-2xl md:text-4xl font-extrabold text-gray-900 dark:text-white tracking-tight">Flashcards</h2>
+                        <p className="text-gray-500 dark:text-gray-400 mt-2 text-sm md:text-lg font-medium opacity-90">
+                            Học từ vựng thông minh qua thẻ ghi nhớ.
+                        </p>
+                        <div className="flex items-center gap-2 mt-3">
+                            <span className="px-3 py-1 bg-purple-50 dark:bg-purple-500/10 text-purple-600 dark:text-purple-400 text-[11px] font-black rounded-full border border-purple-100 dark:border-purple-500/20 uppercase tracking-wider">
+                                {sets.length} Bộ từ vựng
+                            </span>
+                        </div>
+                    </div>
+                    <button
+                        onClick={() => window.location.href = '/'}
+                        className="bg-white hover:bg-gray-50 dark:bg-gray-800 dark:hover:bg-gray-700 text-gray-700 dark:text-gray-200 px-6 py-3 rounded-2xl font-bold transition-all flex items-center gap-2 shadow-soft hover:shadow-medium active:scale-95 shrink-0 self-start md:self-center border border-gray-100 dark:border-gray-700"
+                    >
+                        <ChevronLeft className="h-5 w-5" />
+                        Quay lại
+                    </button>
+                </div>
 
-                <h2 className="text-3xl md:text-4xl font-bold text-gray-800 mb-2">Từ vựng</h2>
-                <p className="text-gray-500 mb-6">{sets.length} bộ từ vựng</p>
-
-                <div className="flex flex-wrap gap-2 mb-6">
+                <div className="flex flex-wrap gap-2.5 mb-2">
                     {categories.map((cat) => (
                         <button
                             key={cat.id}
                             onClick={() => setActiveCategory(cat.id)}
                             className={cn(
-                                'rounded-full px-3 py-1.5 text-xs font-medium transition-all',
-                                activeCategory === cat.id ? 'bg-purple-600 text-white shadow' : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
+                                'rounded-[14px] px-5 py-2 text-xs font-black uppercase tracking-widest transition-all duration-300',
+                                activeCategory === cat.id
+                                    ? 'bg-purple-600 text-white shadow-lg shadow-purple-200'
+                                    : 'bg-white/80 border border-white text-gray-500 hover:bg-white hover:text-purple-600'
                             )}
                         >
                             {cat.label}
@@ -148,28 +158,41 @@ export default function VocabPage() {
                 </div>
 
                 {filteredSets.length === 0 ? (
-                    <div className="py-16 text-center"><p className="text-gray-400">Không có bộ từ vựng nào</p></div>
+                    <div className="py-20 text-center bg-white/50 rounded-[32px] border border-dashed border-gray-200">
+                        <p className="text-gray-400 font-bold uppercase tracking-widest">Không có bộ từ vựng nào</p>
+                    </div>
                 ) : (
-                    <ul className="space-y-4">
+                    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
                         {filteredSets.map((vocabSet) => (
-                            <li key={vocabSet.id} className="p-4 bg-gray-50 border border-gray-200 rounded-xl">
-                                <div className="flex items-center justify-between mb-3">
-                                    <h3 className="text-base font-semibold text-gray-800">{vocabSet.title}</h3>
-                                    <span className="rounded-full bg-purple-100 px-2.5 py-0.5 text-[10px] font-bold text-purple-700">
-                                        {vocabSet.words.length} từ
-                                    </span>
+                            <div key={vocabSet.id} className="bg-white/80 backdrop-blur-md p-6 rounded-[28px] border border-white shadow-soft hover:shadow-heavy hover:-translate-y-1 transition-all duration-500 flex flex-col justify-between group">
+                                <div className="mb-6">
+                                    <div className="flex items-start justify-between gap-4 mb-2">
+                                        <h3 className="text-lg font-extrabold text-gray-900 dark:text-gray-100 group-hover:text-purple-600 dark:group-hover:text-purple-400 transition-colors tracking-tight leading-snug">
+                                            {vocabSet.title}
+                                        </h3>
+                                        <div className="shrink-0 bg-purple-50 dark:bg-purple-500/10 text-purple-700 dark:text-purple-400 text-[10px] font-black px-2.5 py-1 rounded-lg border border-purple-100 dark:border-purple-500/20 shadow-sm">
+                                            {vocabSet.words.length} WORDS
+                                        </div>
+                                    </div>
+                                    <p className="text-[13px] text-gray-500 dark:text-gray-400 font-medium">Bắt đầu học ngay bộ từ vựng này để nâng cao kiến thức.</p>
                                 </div>
-                                <div className="flex gap-2">
-                                    <button onClick={() => startFlashcard(vocabSet)} className="flex-1 px-3 py-2 text-sm font-medium border border-gray-300 rounded-lg hover:bg-gray-100 transition-colors flex items-center justify-center gap-1">
-                                        <Layers className="h-3 w-3" /> Flashcard
+                                <div className="flex gap-3">
+                                    <button
+                                        onClick={() => startFlashcard(vocabSet)}
+                                        className="flex-1 px-4 py-3 text-[13px] font-bold border border-gray-100 rounded-2xl hover:bg-purple-50 hover:text-purple-600 hover:border-purple-200 transition-all flex items-center justify-center gap-2 active:scale-95"
+                                    >
+                                        <Layers className="h-4 w-4" /> Flashcard
                                     </button>
-                                    <button onClick={() => startMatching(vocabSet)} className="flex-1 px-3 py-2 text-sm font-medium bg-purple-600 text-white rounded-lg hover:bg-purple-700 transition-colors flex items-center justify-center gap-1">
-                                        <Shuffle className="h-3 w-3" /> Ghép
+                                    <button
+                                        onClick={() => startMatching(vocabSet)}
+                                        className="flex-1 px-4 py-3 text-[13px] font-bold bg-white border border-gray-100 rounded-2xl hover:bg-indigo-50 hover:text-indigo-600 hover:border-indigo-200 transition-all flex items-center justify-center gap-2 active:scale-95 shadow-sm"
+                                    >
+                                        <Shuffle className="h-4 w-4" /> Ghép từ
                                     </button>
                                 </div>
-                            </li>
+                            </div>
                         ))}
-                    </ul>
+                    </div>
                 )}
             </div>
         );

@@ -88,31 +88,34 @@ function MenuCard({ item, onClick }: MenuCardProps) {
             onClick={onClick}
             disabled={item.soon}
             className={`
-                group relative rounded-2xl p-5 md:p-7
-                flex flex-col items-center justify-center aspect-[11/9]
-                transition-all duration-300
-                border border-white/10
-                bg-white/10 backdrop-blur-sm
-                hover:bg-white/25 hover:border-white/40 hover:scale-[1.05] hover:shadow-[0_12px_40px_rgba(255,255,255,0.15)]
-                active:scale-[0.98]
-                disabled:opacity-40 disabled:cursor-not-allowed disabled:hover:scale-100 disabled:hover:bg-white/10 disabled:hover:shadow-none disabled:hover:border-white/10
+                group relative rounded-[32px] p-6 md:p-10
+                flex flex-col items-center justify-center aspect-[10/9]
+                transition-all duration-500 var(--cubic-out)
+                border border-white
+                bg-white/80 backdrop-blur-xl
+                shadow-soft hover:shadow-heavy hover:-translate-y-2 hover:bg-white
+                active:scale-[0.96]
+                disabled:opacity-40 disabled:cursor-not-allowed disabled:hover:translate-y-0 disabled:hover:shadow-soft
             `}
         >
-            {/* Icon circle */}
-            <div className={`w-12 h-12 md:w-14 md:h-14 rounded-full ${item.iconBg} flex items-center justify-center mb-3 md:mb-4 relative transition-transform duration-300 group-hover:scale-110`}>
-                {item.icon}
+            {/* Icon container */}
+            <div className={`w-14 h-14 md:w-16 md:h-16 rounded-[22px] ${item.iconBg} flex items-center justify-center mb-4 md:mb-5 relative transition-all duration-500 group-hover:scale-110 shadow-sm group-hover:shadow-md`}>
+                <div className="scale-110">{item.icon}</div>
                 {item.badge && (
-                    <span className="absolute -top-1 -right-1 bg-blue-500 text-white text-[8px] font-bold px-1.5 py-0.5 rounded-full">
+                    <span className="absolute -top-1.5 -right-1.5 bg-blue-600 text-white text-[9px] font-bold px-2 py-0.5 rounded-full shadow-lg">
                         {item.badge}
                     </span>
                 )}
             </div>
-            {/* Label */}
-            <span className="text-sm md:text-base font-semibold text-white/90 transition-colors group-hover:text-white">{item.label}</span>
 
-            {/* Soon */}
+            {/* Label */}
+            <span className="text-[15px] md:text-[17px] font-extrabold text-gray-900 dark:text-gray-100 transition-colors group-hover:text-blue-600 tracking-tight">{item.label}</span>
+
+            {/* Soon badge */}
             {item.soon && (
-                <span className="absolute bottom-3 text-[9px] text-white/40 font-medium">Sắp ra mắt</span>
+                <div className="absolute bottom-4 px-3 py-1 bg-gray-100/80 dark:bg-gray-800/80 backdrop-blur-sm rounded-full border border-gray-200 dark:border-gray-700">
+                    <span className="text-[9px] text-gray-500 dark:text-gray-400 font-black uppercase tracking-widest">Coming Soon</span>
+                </div>
             )}
         </button>
     );

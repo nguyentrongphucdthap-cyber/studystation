@@ -4,13 +4,12 @@
 
 @layer base {
     :root {
-        --background: 0 0% 96%;
-        /* #F3F4F6 bg-gray-100 */
+        --background: 210 40% 98%;
+        /* Soft off-white */
         --foreground: 222.2 84% 4.9%;
         --card: 0 0% 100%;
         --card-foreground: 222.2 84% 4.9%;
         --primary: 221.2 83.2% 53.3%;
-        /* #2563EB */
         --primary-foreground: 210 40% 98%;
         --secondary: 210 40% 96.1%;
         --secondary-foreground: 222.2 47.4% 11.2%;
@@ -23,11 +22,19 @@
         --border: 214.3 31.8% 91.4%;
         --input: 214.3 31.8% 91.4%;
         --ring: 221.2 83.2% 53.3%;
-        --radius: 0.75rem;
+        --radius: 1rem;
+        /* More rounded */
 
-        /* Theme system */
+        /* Design Tokens */
         --accent-color: #3b82f6;
         --accent-rgb: 59, 130, 246;
+        --soft-shadow: 0 10px 30px -5px rgba(0, 0, 0, 0.04), 0 4px 12px -2px rgba(0, 0, 0, 0.02);
+        --medium-shadow: 0 20px 40px -8px rgba(0, 0, 0, 0.08), 0 8px 20px -4px rgba(0, 0, 0, 0.04);
+        --heavy-shadow: 0 30px 60px -12px rgba(0, 0, 0, 0.12), 0 12px 30px -6px rgba(0, 0, 0, 0.06);
+        --inset-shadow: inset 0 2px 4px 0 rgba(0, 0, 0, 0.05);
+        --glass-bg: rgba(255, 255, 255, 0.8);
+        --glass-border: rgba(255, 255, 255, 0.5);
+        --cubic-out: cubic-bezier(0.25, 0.8, 0.25, 1);
     }
 
     /* ── Dark mode — indigo-dark for study comfort ── */
@@ -100,6 +107,54 @@
 .dark .border-gray-100,
 .dark .border-gray-200 {
     border-color: hsl(224 10% 20%) !important;
+}
+
+.dark .border-white,
+.dark .border-white\/60,
+.dark .border-white\/40,
+.dark .border-white\/50 {
+    border-color: hsla(230, 20%, 30%, 0.4) !important;
+}
+
+.dark .bg-white,
+.dark .bg-white\/95,
+.dark .bg-white\/90,
+.dark .bg-white\/80,
+.dark .bg-white\/70,
+.dark .bg-white\/60,
+.dark .bg-white\/50 {
+    background-color: hsla(230, 20%, 16%, 0.85) !important;
+    backdrop-filter: blur(20px) saturate(180%);
+}
+
+.dark .bg-gray-50,
+.dark .bg-gray-50\/50,
+.dark .bg-gray-100,
+.dark .bg-gray-100\/50 {
+    background-color: hsla(230, 20%, 12%, 0.5) !important;
+    border-color: hsla(230, 20%, 30%, 0.2) !important;
+}
+
+/* Fix Chemistry/Math contrast in dark mode */
+.dark .MathJax,
+.dark .katex {
+    color: hsl(214 32% 91%) !important;
+}
+
+.dark .MathJax [style*="color: red"],
+.dark .MathJax [style*="color: #ff0000"],
+.dark .katex .pstrut+span[style*="color: red"],
+.dark .katex .mord[style*="color: #ee1111"],
+.dark .katex .mord[style*="color:red"],
+.dark .text-red-500,
+.dark .text-red-600 {
+    color: #fca5a5 !important;
+    /* Soft light red for dark mode */
+}
+
+.dark .text-blue-500,
+.dark .text-blue-600 {
+    color: #93c5fd !important;
 }
 
 .dark .shadow-sm {
@@ -189,17 +244,57 @@
 @keyframes pageFadeIn {
     from {
         opacity: 0;
-        transform: translateY(20px);
+        transform: translateY(12px) scale(0.98);
     }
 
     to {
         opacity: 1;
-        transform: translateY(0);
+        transform: translateY(0) scale(1);
     }
 }
 
+@keyframes float-icon {
+
+    0%,
+    100% {
+        transform: translate(0, 0) rotate(0deg);
+    }
+
+    33% {
+        transform: translate(15px, -15px) rotate(5deg);
+    }
+
+    66% {
+        transform: translate(-10px, 10px) rotate(-3deg);
+    }
+}
+
+@keyframes float-icon-alt {
+
+    0%,
+    100% {
+        transform: translate(0, 0) rotate(0deg);
+    }
+
+    50% {
+        transform: translate(-20px, 20px) rotate(-5deg);
+    }
+}
+
+.animate-float-1 {
+    animation: float-icon 18s ease-in-out infinite;
+}
+
+.animate-float-2 {
+    animation: float-icon-alt 22s ease-in-out infinite;
+}
+
+.animate-float-3 {
+    animation: float-icon 25s ease-in-out infinite reverse;
+}
+
 .page-fade-in {
-    animation: pageFadeIn 0.5s cubic-bezier(0.25, 0.46, 0.45, 0.94) forwards;
+    animation: pageFadeIn 0.6s var(--cubic-out) forwards;
 }
 
 /* Card click animation (from original) */
@@ -222,13 +317,31 @@
 }
 
 /* Menu card hover effect (from original) */
+/* Menu card Soft UI effects */
 .menu-card {
-    transition: transform 0.3s ease, box-shadow 0.3s ease;
+    transition: all 0.4s var(--cubic-out);
+    border-radius: 20px;
 }
 
 .menu-card:hover {
-    transform: translateY(-5px);
-    box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05);
+    transform: translateY(-6px);
+    box-shadow: var(--medium-shadow);
+}
+
+.soft-ui-card {
+    background: white;
+    border-radius: 20px;
+    box-shadow: var(--soft-shadow);
+    border: 1px solid var(--glass-border);
+    transition: all 0.3s var(--cubic-out);
+}
+
+.soft-ui-panel {
+    background: var(--glass-bg);
+    backdrop-filter: blur(20px) saturate(180%);
+    border-radius: 24px;
+    border: 1px solid var(--glass-border);
+    box-shadow: var(--medium-shadow);
 }
 
 /* MathJax overrides */

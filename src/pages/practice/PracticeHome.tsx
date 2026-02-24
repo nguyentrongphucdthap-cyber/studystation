@@ -101,24 +101,24 @@ export default function PracticeHome() {
         return (
             <div className="space-y-6">
                 {/* Header Card */}
-                <div className="bg-white rounded-2xl p-6 md:p-8 shadow-sm border border-gray-100 flex flex-col md:flex-row md:items-center justify-between gap-4">
+                <div className="bg-white/70 backdrop-blur-xl rounded-[32px] p-8 md:p-10 shadow-soft border border-white flex flex-col md:flex-row md:items-center justify-between gap-6">
                     <div>
-                        <h2 className="text-2xl md:text-3xl font-bold text-gray-900">Ôn thi THPT QG 2025</h2>
-                        <p className="text-gray-500 mt-1 text-sm md:text-base">
+                        <h2 className="text-2xl md:text-4xl font-extrabold text-gray-900 tracking-tight">Ôn thi THPT QG 2025</h2>
+                        <p className="text-gray-500 mt-2 text-sm md:text-lg font-medium opacity-80">
                             Cấu trúc đề mới nhất. Tích hợp công thức Toán/Lý/Hóa.
                         </p>
                     </div>
                     <button
                         onClick={() => navigate('/')}
-                        className="bg-blue-600 hover:bg-blue-700 text-white px-5 py-2.5 rounded-xl font-semibold transition-all flex items-center gap-2 shadow-lg shadow-blue-500/20 active:scale-95 shrink-0 self-start md:self-center"
+                        className="bg-white hover:bg-gray-50 text-gray-700 px-6 py-3 rounded-2xl font-bold transition-all flex items-center gap-2 shadow-soft hover:shadow-medium active:scale-95 shrink-0 self-start md:self-center border border-gray-100"
                     >
-                        <ArrowLeft className="h-4 w-4" />
-                        Quay lại trang chủ
+                        <ArrowLeft className="h-5 w-5" />
+                        Quay lại Menu
                     </button>
                 </div>
 
                 {/* Grid of Subjects */}
-                <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4 md:gap-5">
+                <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4 md:gap-6">
                     {subjects.map((sub) => {
                         const count = exams.filter((e) => e.subjectId === sub.id).length;
                         const { icon, bg } = getSubjectIcon(sub.id);
@@ -126,17 +126,17 @@ export default function PracticeHome() {
                             <button
                                 key={sub.id}
                                 onClick={() => setSearchParams({ subject: sub.id })}
-                                className="group bg-white p-6 rounded-2xl border border-gray-100 shadow-sm hover:shadow-md hover:border-blue-200 transition-all flex flex-col items-center text-center relative overflow-hidden active:scale-95"
+                                className="group bg-white/80 backdrop-blur-md p-8 rounded-[28px] border border-white shadow-soft hover:shadow-heavy hover:-translate-y-2 transition-all duration-500 flex flex-col items-center text-center relative overflow-hidden active:scale-95"
                             >
-                                <div className={`w-14 h-14 rounded-2xl ${bg} flex items-center justify-center mb-4 group-hover:scale-110 transition-transform`}>
-                                    {icon}
+                                <div className={`w-16 h-16 rounded-[22px] ${bg} flex items-center justify-center mb-5 group-hover:scale-110 transition-transform shadow-sm`}>
+                                    <div className="scale-110">{icon}</div>
                                 </div>
-                                <h3 className="text-base font-bold text-gray-800 mb-1 group-hover:text-blue-600 transition-colors">
+                                <h3 className="text-lg font-extrabold text-gray-900 dark:text-gray-100 mb-2 group-hover:text-blue-600 dark:group-hover:text-blue-400 transition-colors tracking-tight">
                                     {sub.name}
                                 </h3>
-                                <p className="text-xs text-gray-400 font-medium bg-gray-50 px-2 py-0.5 rounded-full">
+                                <div className="text-[11px] text-gray-500 dark:text-gray-400 font-black uppercase tracking-widest bg-gray-50/50 dark:bg-black/20 px-3 py-1 rounded-full border border-gray-100 dark:border-gray-800">
                                     {count} đề thi
-                                </p>
+                                </div>
                             </button>
                         );
                     })}
@@ -151,32 +151,35 @@ export default function PracticeHome() {
     return (
         <div className="space-y-6">
             {/* Header for exam list */}
-            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 bg-white p-5 rounded-2xl border border-gray-100 shadow-sm">
-                <div className="flex items-center gap-3">
+            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-6 bg-white/80 backdrop-blur-xl p-6 rounded-[28px] border border-white shadow-soft">
+                <div className="flex items-center gap-4">
                     <button
                         onClick={() => setSearchParams({})}
-                        className="p-2 hover:bg-gray-100 rounded-lg text-gray-500 transition-colors"
+                        className="p-3 hover:bg-gray-100 rounded-2xl text-gray-500 transition-all active:scale-90 bg-gray-50/50"
                         title="Quay lại"
                     >
                         <ArrowLeft className="h-5 w-5" />
                     </button>
                     <div>
-                        <h2 className="text-xl font-bold text-gray-900">{currentSubject?.name || activeSubject}</h2>
-                        <p className="text-xs text-gray-500 uppercase tracking-wider font-semibold">
-                            {filteredExams.length} đề thi hiện có
-                        </p>
+                        <h2 className="text-2xl font-extrabold text-gray-900 tracking-tight">{currentSubject?.name || activeSubject}</h2>
+                        <div className="flex items-center gap-2 mt-1">
+                            <span className="w-2 h-2 rounded-full bg-blue-500" />
+                            <p className="text-[11px] text-gray-400 uppercase tracking-[0.15em] font-bold">
+                                {filteredExams.length} ĐỀ THI HIỆN CÓ
+                            </p>
+                        </div>
                     </div>
                 </div>
 
                 {/* Compact Search */}
-                <div className="relative flex-1 max-w-xs">
-                    <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-gray-400" />
+                <div className="relative flex-1 max-w-sm">
+                    <Search className="absolute left-4 top-1/2 -track-y-1/2 h-5 w-5 text-gray-400" />
                     <input
                         type="text"
                         value={searchQuery}
                         onChange={(e) => setSearchQuery(e.target.value)}
-                        placeholder="Tìm đề thi..."
-                        className="w-full pl-9 pr-3 py-2 bg-gray-50 border border-gray-100 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500 focus:bg-white transition-all text-sm"
+                        placeholder="Tìm kiếm đề thi..."
+                        className="w-full pl-12 pr-5 py-3 bg-gray-50/50 border border-transparent rounded-2xl focus:outline-none focus:ring-2 focus:ring-blue-500 focus:bg-white transition-all text-sm font-medium shadow-inset shadow-sm"
                     />
                 </div>
             </div>
@@ -201,24 +204,24 @@ export default function PracticeHome() {
                             <button
                                 key={exam.id}
                                 onClick={() => navigate(`/practice/${exam.id}`)}
-                                className="group relative bg-white p-5 rounded-2xl border border-gray-100 shadow-sm hover:shadow-md hover:border-blue-200 transition-all text-left flex flex-col justify-between active:scale-[0.98]"
+                                className="group relative bg-white/80 backdrop-blur-md p-6 rounded-[24px] border border-white shadow-soft hover:shadow-heavy hover:-translate-y-1 transition-all duration-500 text-left flex flex-col justify-between active:scale-[0.98]"
                             >
-                                <div>
-                                    <h3 className="text-base font-bold text-gray-800 line-clamp-1 group-hover:text-blue-600 transition-colors">
+                                <div className="space-y-3">
+                                    <h3 className="text-lg font-extrabold text-gray-800 line-clamp-2 group-hover:text-blue-600 transition-colors tracking-tight leading-snug">
                                         {exam.title}
                                     </h3>
-                                    <div className="flex items-center gap-3 mt-2 text-xs text-gray-500 font-medium">
-                                        <span className="flex items-center gap-1"><Clock className="h-3 w-3" /> {exam.time} phút</span>
-                                        <span className="flex items-center gap-1"><Book className="h-3 w-3" /> {totalQ} câu</span>
-                                        <span className="flex items-center gap-1">{exam.attemptCount || 0} lượt thi</span>
+                                    <div className="flex flex-wrap items-center gap-4 text-[12px] text-gray-500 font-bold uppercase tracking-wider">
+                                        <span className="flex items-center gap-1.5 opacity-70"><Clock className="h-3.5 w-3.5" /> {exam.time}'</span>
+                                        <span className="flex items-center gap-1.5 opacity-70"><Book className="h-3.5 w-3.5" /> {totalQ} CHƯƠNG</span>
+                                        <span className="flex items-center gap-1.5 opacity-70">{exam.attemptCount || 0} LƯỢT</span>
                                     </div>
                                 </div>
 
                                 {highScore && (
-                                    <div className="mt-4 flex items-center justify-between border-t border-gray-50 pt-3">
-                                        <span className="text-[10px] text-gray-400 font-bold uppercase tracking-wider">Điểm cao nhất</span>
-                                        <div className="flex items-center gap-1.5 text-xs font-bold text-amber-600 bg-amber-50 px-2 py-0.5 rounded-lg border border-amber-100">
-                                            <Trophy className="h-3 w-3" /> {highScore.highestScore.toFixed(1)}
+                                    <div className="mt-6 flex items-center justify-between border-t border-gray-100/50 pt-4">
+                                        <span className="text-[10px] text-gray-400 font-extrabold uppercase tracking-widest">High Score</span>
+                                        <div className="flex items-center gap-2 text-[13px] font-black text-amber-600 bg-amber-50/50 px-3 py-1 rounded-xl border border-amber-100/50 shadow-sm">
+                                            <Trophy className="h-3.5 w-3.5" /> {highScore.highestScore.toFixed(1)}
                                         </div>
                                     </div>
                                 )}

@@ -19,8 +19,26 @@ export interface AIChatOptions {
 const GEMINI_MODEL = 'gemini-2.0-flash';
 
 export async function generateAIContent(messages: AIChatMessage[], options?: AIChatOptions) {
-    // Use Firebase API key (same Google Cloud key) for direct Gemini access
-    const apiKey = import.meta.env.VITE_FIREBASE_API_KEY;
+    // Check for multiple dedicated Gemini keys (e.g., VITE_GEMINI_API_KEY_1, _2, _3)
+    // or a single VITE_GEMINI_API_KEY which could be comma-separated
+    let apiKeys: string[] = [];
+
+    if (import.meta.env.VITE_GEMINI_API_KEY) {
+        apiKeys = apiKeys.concat(import.meta.env.VITE_GEMINI_API_KEY.split(',').map((k: string) => k.trim()).filter(Boolean));
+    }
+    if (import.meta.env.VITE_GEMINI_API_KEY_1) apiKeys.push(import.meta.env.VITE_GEMINI_API_KEY_1);
+    if (import.meta.env.VITE_GEMINI_API_KEY_2) apiKeys.push(import.meta.env.VITE_GEMINI_API_KEY_2);
+    if (import.meta.env.VITE_GEMINI_API_KEY_3) apiKeys.push(import.meta.env.VITE_GEMINI_API_KEY_3);
+
+    // Pick a random key if multiple are available
+    let apiKey = '';
+    if (apiKeys.length > 0) {
+        apiKey = apiKeys[Math.floor(Math.random() * apiKeys.length)];
+    } else {
+        // Fallback to Firebase API key
+        apiKey = import.meta.env.VITE_FIREBASE_API_KEY || '';
+    }
+
     if (!apiKey) throw new Error('No API key found');
 
     const model = options?.model || GEMINI_MODEL;
@@ -50,7 +68,11 @@ export async function generateAIContent(messages: AIChatMessage[], options?: AIC
 
         if (!response.ok) {
             const error = await response.json() as any;
-            throw new Error(error.error?.message || 'Failed to generate AI content');
+            const msg = error.error?.message || 'Failed to generate AI content';
+            if (response.status === 403) {
+                console.error('[AI Service] 403 Error: API access is blocked. Please ensure "Generative Language API" is enabled in your Google Cloud Console and the API key is valid.');
+            }
+            throw new Error(msg);
         }
 
         const data = await response.json() as any;

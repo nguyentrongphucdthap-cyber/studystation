@@ -27,14 +27,14 @@ export default function Schedule() {
     const currentDayIndex = today === 0 ? -1 : today - 1;
 
     return (
-        <div className="animate-fade-in pb-10 w-full text-white">
-            {/* Glassmorphism Container */}
-            <div className="bg-black/40 backdrop-blur-xl rounded-2xl border border-white/10 overflow-hidden shadow-2xl ring-1 ring-white/5">
+        <div className="animate-page-fade-in pb-10 w-full">
+            {/* White Soft UI Container */}
+            <div className="bg-white/70 backdrop-blur-2xl rounded-[32px] border border-white overflow-hidden shadow-soft">
                 <div className="overflow-x-auto">
                     <table className="w-full text-left border-collapse text-sm md:text-base min-w-[1000px]">
                         <thead>
-                            <tr className="bg-white/5 text-white/90">
-                                <th className="p-5 border-b border-r border-white/10 w-24 text-center font-bold sticky left-0 bg-black/40 backdrop-blur-md z-20">
+                            <tr className="bg-gray-50/50 dark:bg-black/20">
+                                <th className="p-6 border-b border-r border-gray-100 dark:border-gray-800 w-24 text-center font-black text-gray-400 dark:text-gray-500 uppercase tracking-widest text-[11px] sticky left-0 bg-white/90 dark:bg-gray-900/90 backdrop-blur-md z-20">
                                     Tiết
                                 </th>
                                 {safeDays.map((day, index) => {
@@ -43,20 +43,20 @@ export default function Schedule() {
                                         <th
                                             key={day.day}
                                             className={cn(
-                                                "p-5 border-b border-white/10 min-w-[140px] font-bold text-center transition-colors relative group",
-                                                isToday ? "bg-white/10 text-white" : "text-white/70 hover:bg-white/5"
+                                                "p-6 border-b border-gray-100 dark:border-gray-800 min-w-[140px] font-extrabold text-center transition-all relative group",
+                                                isToday ? "bg-blue-50/30 dark:bg-blue-500/10 text-blue-600 dark:text-blue-400" : "text-gray-500 dark:text-gray-400 hover:bg-gray-50/80 dark:hover:bg-gray-800/50"
                                             )}
                                         >
-                                            <div className="flex flex-col items-center gap-1">
-                                                <span className="text-lg">{day.day}</span>
+                                            <div className="flex flex-col items-center gap-2">
+                                                <span className="text-lg tracking-tight">{day.day}</span>
                                                 {isToday && (
-                                                    <span className="text-[10px] font-bold bg-gradient-to-r from-pink-500 to-rose-500 text-white px-2 py-0.5 rounded-full shadow-lg shadow-pink-500/20 animate-pulse">
-                                                        HÔM NAY
+                                                    <span className="text-[9px] font-black bg-blue-600 text-white px-2.5 py-1 rounded-full shadow-lg shadow-blue-500/30 uppercase tracking-widest">
+                                                        Hôm nay
                                                     </span>
                                                 )}
                                             </div>
-                                            {/* Hover effect border bottom */}
-                                            <div className={cn("absolute bottom-0 left-0 right-0 h-0.5 transition-all duration-300", isToday ? "bg-pink-500" : "bg-transparent group-hover:bg-white/20")} />
+                                            {/* Hover effect indicator */}
+                                            <div className={cn("absolute bottom-0 left-6 right-6 h-1 rounded-full transition-all duration-300", isToday ? "bg-blue-500" : "bg-transparent group-hover:bg-gray-200")} />
                                         </th>
                                     );
                                 })}
@@ -64,17 +64,19 @@ export default function Schedule() {
                         </thead>
                         <tbody>
                             {/* Morning Session */}
-                            <tr className="bg-gradient-to-r from-amber-500/20 to-orange-600/20 backdrop-blur-sm">
-                                <td colSpan={safeDays.length + 1} className="p-3 px-6 font-bold text-amber-200 border-b border-white/10 uppercase tracking-widest text-xs shadow-inner">
-                                    <div className="flex items-center gap-2">
-                                        <Sun className="w-5 h-5 text-amber-300" />
+                            <tr className="bg-amber-50/30 backdrop-blur-sm border-b border-amber-100/20">
+                                <td colSpan={safeDays.length + 1} className="p-4 px-8 font-black text-amber-600 uppercase tracking-[0.2em] text-[10px] shadow-sm">
+                                    <div className="flex items-center gap-3">
+                                        <div className="p-2 bg-amber-100 rounded-xl text-amber-600">
+                                            <Sun className="w-4 h-4" />
+                                        </div>
                                         Buổi Sáng
                                     </div>
                                 </td>
                             </tr>
                             {Array.from({ length: 5 }).map((_, periodIndex) => (
-                                <tr key={`morning-${periodIndex}`} className="group hover:bg-white/5 transition-colors">
-                                    <td className="p-4 border-r border-b border-white/10 text-center font-bold text-white/40 sticky left-0 bg-black/40 backdrop-blur-md group-hover:text-white/70 group-hover:bg-black/50 transition-colors z-10 w-24">
+                                <tr key={`morning-${periodIndex}`} className="group hover:bg-blue-50/20 transition-colors">
+                                    <td className="p-5 border-r border-b border-gray-50 text-center font-extrabold text-gray-300 sticky left-0 bg-white/90 backdrop-blur-md group-hover:text-blue-500 transition-colors z-10 w-24">
                                         {periodIndex + 1}
                                     </td>
                                     {safeDays.map((day, dayIndex) => {
@@ -83,12 +85,12 @@ export default function Schedule() {
                                             <td
                                                 key={`m-${dayIndex}-${periodIndex}`}
                                                 className={cn(
-                                                    "p-4 border-b border-white/5 text-center transition-all duration-200 border-r border-dashed border-white/5 last:border-r-0",
-                                                    isToday ? "bg-white/5 font-medium text-white shadow-[inset_0_0_20px_rgba(255,255,255,0.02)]" : "text-white/80",
-                                                    !day.morning[periodIndex] && "text-white/10"
+                                                    "p-5 border-b border-gray-50 text-center transition-all duration-300 border-r border-gray-50/50 last:border-r-0",
+                                                    isToday ? "bg-blue-50/10 font-bold text-gray-900" : "text-gray-600",
+                                                    !day.morning[periodIndex] && "text-gray-200"
                                                 )}
                                             >
-                                                <span className={cn("inline-block transform transition-transform group-hover:scale-105", day.morning[periodIndex] ? "" : "text-2xl font-light scale-150 opacity-20")}>
+                                                <span className={cn("inline-block transform transition-transform group-hover:scale-105", day.morning[periodIndex] ? "font-bold" : "text-2xl font-light opacity-10")}>
                                                     {day.morning[periodIndex] || "·"}
                                                 </span>
                                             </td>
@@ -98,17 +100,19 @@ export default function Schedule() {
                             ))}
 
                             {/* Afternoon Session */}
-                            <tr className="bg-gradient-to-r from-indigo-500/20 to-violet-600/20 backdrop-blur-sm">
-                                <td colSpan={safeDays.length + 1} className="p-3 px-6 font-bold text-indigo-200 border-y border-white/10 uppercase tracking-widest text-xs shadow-inner">
-                                    <div className="flex items-center gap-2">
-                                        <Moon className="w-5 h-5 text-indigo-300" />
+                            <tr className="bg-indigo-50/30 backdrop-blur-sm border-y border-indigo-100/20">
+                                <td colSpan={safeDays.length + 1} className="p-4 px-8 font-black text-indigo-600 uppercase tracking-[0.2em] text-[10px] shadow-sm">
+                                    <div className="flex items-center gap-3">
+                                        <div className="p-2 bg-indigo-100 rounded-xl text-indigo-600">
+                                            <Moon className="w-4 h-4" />
+                                        </div>
                                         Buổi Chiều
                                     </div>
                                 </td>
                             </tr>
                             {Array.from({ length: 5 }).map((_, periodIndex) => (
-                                <tr key={`afternoon-${periodIndex}`} className="group hover:bg-white/5 transition-colors">
-                                    <td className="p-4 border-r border-b border-white/10 text-center font-bold text-white/40 sticky left-0 bg-black/40 backdrop-blur-md group-hover:text-white/70 group-hover:bg-black/50 transition-colors z-10 w-24">
+                                <tr key={`afternoon-${periodIndex}`} className="group hover:bg-blue-50/20 transition-colors">
+                                    <td className="p-5 border-r border-b border-gray-50 text-center font-extrabold text-gray-300 sticky left-0 bg-white/90 backdrop-blur-md group-hover:text-blue-500 transition-colors z-10 w-24">
                                         {periodIndex + 1}
                                     </td>
                                     {safeDays.map((day, dayIndex) => {
@@ -117,12 +121,12 @@ export default function Schedule() {
                                             <td
                                                 key={`a-${dayIndex}-${periodIndex}`}
                                                 className={cn(
-                                                    "p-4 border-b border-white/5 text-center transition-all duration-200 border-r border-dashed border-white/5 last:border-r-0",
-                                                    isToday ? "bg-white/5 font-medium text-white shadow-[inset_0_0_20px_rgba(255,255,255,0.02)]" : "text-white/80",
-                                                    !day.afternoon[periodIndex] && "text-white/10"
+                                                    "p-5 border-b border-gray-50 text-center transition-all duration-300 border-r border-gray-50/50 last:border-r-0",
+                                                    isToday ? "bg-blue-50/10 font-bold text-gray-900" : "text-gray-600",
+                                                    !day.afternoon[periodIndex] && "text-gray-200"
                                                 )}
                                             >
-                                                <span className={cn("inline-block transform transition-transform group-hover:scale-105", day.afternoon[periodIndex] ? "" : "text-2xl font-light scale-150 opacity-20")}>
+                                                <span className={cn("inline-block transform transition-transform group-hover:scale-105", day.afternoon[periodIndex] ? "font-bold" : "text-2xl font-light opacity-10")}>
                                                     {day.afternoon[periodIndex] || "·"}
                                                 </span>
                                             </td>
@@ -135,7 +139,7 @@ export default function Schedule() {
                 </div>
             </div>
 
-            <div className="mt-4 text-center text-xs text-white/40">
+            <div className="mt-8 text-center text-[10px] text-gray-400 font-bold uppercase tracking-widest opacity-60">
                 * Dữ liệu được cập nhật bởi quản trị viên
             </div>
         </div>

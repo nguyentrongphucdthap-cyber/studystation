@@ -1,5 +1,6 @@
 import { Outlet, useNavigate, useLocation } from 'react-router-dom';
 import { useAuth } from '@/contexts/AuthContext';
+import { useTheme } from '@/contexts/ThemeContext';
 import { useEffect, useState, useRef } from 'react';
 import { subscribeToOnlineUsers } from '@/services/auth.service';
 import { cn } from '@/lib/utils';
@@ -8,6 +9,7 @@ import { FloatingHub } from '@/components/FloatingHub';
 
 export function AppLayout() {
     const { user, isAdmin, logout } = useAuth();
+    const { settings } = useTheme();
     const navigate = useNavigate();
     const location = useLocation();
     const [onlineCount, setOnlineCount] = useState(0);
@@ -93,32 +95,41 @@ export function AppLayout() {
             </button>
 
             {showUserMenu && (
-                <div className="absolute right-0 top-full mt-2 w-56 bg-white rounded-xl shadow-xl border border-gray-200 py-1.5 z-[100]" style={{ animation: 'fadeIn 0.15s ease' }}>
+                <div
+                    className="absolute right-0 top-full mt-2 w-60 bg-white/95 backdrop-blur-xl rounded-[24px] shadow-heavy border border-white/50 py-2 z-[100] origin-top-right animate-page-fade-in"
+                    style={{ animationDuration: '0.3s' }}
+                >
                     {/* User info */}
-                    <div className="px-4 py-3 border-b border-gray-100">
-                        <p className="text-sm font-semibold text-gray-900 truncate">{user?.displayName || 'User'}</p>
-                        <p className="text-xs text-gray-400 truncate mt-0.5">{user?.email}</p>
+                    <div className="px-5 py-4 border-b border-gray-50">
+                        <p className="text-[15px] font-bold text-gray-900 truncate">{user?.displayName || 'Thành viên'}</p>
+                        <p className="text-[12px] text-gray-400 truncate mt-0.5">{user?.email}</p>
                     </div>
 
-                    {/* Admin link */}
-                    {isAdmin && (
-                        <button
-                            onClick={() => { setShowUserMenu(false); navigate('/admin'); }}
-                            className="w-full text-left px-4 py-2.5 text-sm text-gray-700 hover:bg-blue-50 hover:text-blue-600 flex items-center gap-2.5 transition-colors"
-                        >
-                            <Settings className="h-4 w-4 text-blue-500" />
-                            Khu vực Giáo Viên
-                        </button>
-                    )}
+                    <div className="p-1.5 px-2">
+                        {/* Admin link */}
+                        {isAdmin && (
+                            <button
+                                onClick={() => { setShowUserMenu(false); navigate('/admin'); }}
+                                className="w-full text-left px-4 py-2.5 text-[14px] text-gray-700 hover:bg-blue-50 hover:text-blue-600 rounded-2xl flex items-center gap-3 transition-all font-medium"
+                            >
+                                <div className="p-2 bg-blue-50 rounded-xl text-blue-500">
+                                    <Settings className="h-4 w-4" />
+                                </div>
+                                Khu vực Giáo Viên
+                            </button>
+                        )}
 
-                    {/* Logout */}
-                    <button
-                        onClick={handleLogout}
-                        className="w-full text-left px-4 py-2.5 text-sm text-red-500 hover:bg-red-50 flex items-center gap-2.5 transition-colors"
-                    >
-                        <LogOut className="h-4 w-4" />
-                        Đăng xuất
-                    </button>
+                        {/* Logout */}
+                        <button
+                            onClick={handleLogout}
+                            className="w-full text-left px-4 py-2.5 text-[14px] text-red-500 hover:bg-red-50 rounded-2xl flex items-center gap-3 transition-all font-medium"
+                        >
+                            <div className="p-2 bg-red-50 rounded-xl text-red-500">
+                                <LogOut className="h-4 w-4" />
+                            </div>
+                            Đăng xuất
+                        </button>
+                    </div>
                 </div>
             )}
         </div>
@@ -129,67 +140,92 @@ export function AppLayout() {
 
     if (isDashboard || isSchedule) {
         return (
-            <div className="min-h-screen bg-[#8B0000] relative overflow-hidden flex flex-col">
-                {/* Tet decorations */}
-                <div className="absolute inset-0 pointer-events-none overflow-hidden">
-                    <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[800px] h-[800px] rounded-full bg-gradient-radial from-yellow-900/20 via-transparent to-transparent" />
-                    <div className="absolute bottom-0 left-0 right-0 h-1/3 bg-gradient-to-t from-[#5a0000] to-transparent" />
-                    <div className="absolute top-0 left-[10%] text-5xl opacity-70 animate-pulse" style={{ animationDuration: '3s' }}>🏮</div>
-                    <div className="absolute top-0 right-[10%] text-5xl opacity-70 animate-pulse" style={{ animationDuration: '4s' }}>🏮</div>
-                    <div className="absolute top-0 left-[30%] text-3xl opacity-50 animate-pulse" style={{ animationDuration: '3.5s' }}>🏮</div>
-                    <div className="absolute top-0 right-[30%] text-3xl opacity-50 animate-pulse" style={{ animationDuration: '2.5s' }}>🏮</div>
-                    <div className="absolute bottom-[5%] left-[5%] text-4xl opacity-40">🌸</div>
-                    <div className="absolute bottom-[15%] left-[15%] text-3xl opacity-30">🌸</div>
-                    <div className="absolute bottom-[8%] right-[8%] text-4xl opacity-40">🌸</div>
-                    <div className="absolute bottom-[20%] right-[15%] text-3xl opacity-30">🌸</div>
-                    <div className="absolute bottom-[10%] left-[40%] text-2xl opacity-25">🌸</div>
-                    <div className="absolute bottom-[12%] right-[35%] text-2xl opacity-25">🌸</div>
-                    <div className="absolute bottom-6 left-1/2 -translate-x-1/2 text-center">
-                        <p className="text-5xl md:text-6xl font-bold text-yellow-600/30 tracking-widest">2026</p>
-                        <p className="text-xs md:text-sm text-yellow-600/25 tracking-[0.3em] uppercase mt-1">Happy New Year</p>
-                    </div>
+            <div className="min-h-screen bg-[#f8fafc] relative overflow-hidden flex flex-col">
+                {/* Optimized Soft Blue Gradient (Matching New Image) */}
+                <div className="absolute inset-0 pointer-events-none bg-[#f0f9ff]">
+                    {/* Top blue focus blob */}
+                    <div className="absolute inset-0 opacity-40"
+                        style={{
+                            background: 'radial-gradient(circle at 45% 25%, #3b82f6 0%, transparent 60%)'
+                        }}
+                    />
+                    {/* Primary white/light glow in the bottom half */}
+                    <div className="absolute inset-0 opacity-80"
+                        style={{
+                            background: 'radial-gradient(circle at 85% 85%, #ffffff 0%, transparent 60%)'
+                        }}
+                    />
+                    {/* Soft left-middle side glow */}
+                    <div className="absolute inset-0 opacity-50"
+                        style={{
+                            background: 'radial-gradient(circle at 5% 50%, #bae6fd 0%, transparent 50%)'
+                        }}
+                    />
+                    {/* Bottom-left accent blob */}
+                    <div className="absolute inset-0 opacity-30"
+                        style={{
+                            background: 'radial-gradient(circle at 15% 90%, #67e8f9 0%, transparent 40%)'
+                        }}
+                    />
+                </div>
+
+                {/* Custom User Background */}
+                {settings.customBackground && (
+                    <div
+                        className="absolute inset-0 bg-cover bg-center transition-opacity duration-700 z-[1]"
+                        style={{ backgroundImage: `url(${settings.customBackground})` }}
+                    />
+                )}
+
+                {/* Optional Tet Decorations (Subtle) */}
+                <div className="absolute inset-0 pointer-events-none opacity-20">
+                    <div className="absolute top-0 left-[15%] text-2xl animate-pulse">🏮</div>
+                    <div className="absolute top-0 right-[15%] text-2xl animate-pulse">🏮</div>
                 </div>
 
                 {/* Header */}
-                <header className="relative z-20 flex items-center justify-between px-5 md:px-8 py-4 shrink-0">
+                <header className="relative z-20 flex items-center justify-between px-6 md:px-12 py-5 shrink-0">
                     {isSchedule ? (
                         <div className="flex items-center gap-4">
                             <button
                                 onClick={() => navigate('/')}
-                                className="h-10 w-10 bg-white/10 hover:bg-white/20 backdrop-blur rounded-xl flex items-center justify-center border border-white/20 transition-all group"
+                                className="h-11 w-11 bg-white/60 hover:bg-white backdrop-blur-xl rounded-2xl flex items-center justify-center border border-white/40 shadow-soft transition-all group"
                             >
-                                <ChevronDown className="h-6 w-6 text-white rotate-90 group-hover:-translate-x-0.5 transition-transform" />
+                                <ChevronDown className="h-6 w-6 text-gray-700 rotate-90 group-hover:-translate-x-0.5 transition-transform" />
                             </button>
                             <div>
-                                <h1 className="text-lg md:text-xl font-bold text-white leading-tight">Thời Khóa Biểu</h1>
-                                <p className="text-xs text-white/60">Theo dõi lịch học</p>
+                                <h1 className="text-xl md:text-2xl font-bold text-gray-900 tracking-tight leading-tight">Thời Khóa Biểu</h1>
+                                <p className="text-[13px] text-gray-500 font-medium">Theo dõi lịch học</p>
                             </div>
                         </div>
                     ) : (
-                        <div className="flex items-center gap-3">
+                        <div className="flex items-center gap-4">
                             {/* Logo */}
-                            <div className="h-10 w-10 bg-white/15 backdrop-blur rounded-xl flex items-center justify-center border border-white/20">
-                                <span className="text-white text-lg font-bold">S</span>
+                            <div className="h-12 w-12 bg-blue-600 rounded-[18px] flex items-center justify-center shadow-lg shadow-blue-500/30">
+                                <span className="text-white text-xl font-bold">S</span>
                             </div>
                             <div>
-                                <h1 className="text-lg md:text-xl font-bold text-white leading-tight">
-                                    Study Station <span className="text-sm">🇻🇳</span>
+                                <h1 className="text-xl md:text-2xl font-bold text-gray-900 tracking-tight leading-tight">
+                                    Study Station
                                 </h1>
-                                <div className="flex items-center gap-1.5 mt-0.5">
-                                    <span className="w-2 h-2 rounded-full bg-green-400 shrink-0" style={{ boxShadow: '0 0 6px rgba(74,222,128,0.6)' }} />
-                                    <span className="text-[11px] text-white/70 font-medium">{onlineCount} người đang học</span>
+                                <div className="flex items-center gap-2 mt-1">
+                                    <div className="relative flex items-center">
+                                        <span className="w-2.5 h-2.5 rounded-full bg-green-500" />
+                                        <span className="absolute w-2.5 h-2.5 rounded-full bg-green-500 animate-ping opacity-75" />
+                                    </div>
+                                    <span className="text-[12px] text-gray-600 font-bold uppercase tracking-wider">{onlineCount} ĐANG HỌC</span>
                                 </div>
                             </div>
                         </div>
                     )}
 
-                    <div className="flex items-center gap-2">
-                        <button className="p-2 rounded-full text-white/60 hover:text-white hover:bg-white/10 transition-all" title="Thông báo">
-                            <Bell className="h-4 w-4" />
+                    <div className="flex items-center gap-4">
+                        <button className="h-10 w-10 flex items-center justify-center rounded-full text-gray-500 hover:text-gray-900 hover:bg-white/60 transition-all border border-transparent hover:border-white/40" title="Thông báo">
+                            <Bell className="h-5 w-5" />
                         </button>
-                        <div className="hidden sm:block text-right mr-1">
-                            <p className="text-[10px] text-white/50 uppercase tracking-wider">Xin chào</p>
-                            <p className="text-sm font-semibold text-white leading-tight">{user?.displayName?.split(' ').pop() || 'Bạn'}</p>
+                        <div className="hidden sm:block text-right mr-2">
+                            <p className="text-[10px] text-blue-600/70 font-black uppercase tracking-[0.12em]">Welcome back</p>
+                            <p className="text-[15px] font-extrabold text-gray-900 leading-tight">{user?.displayName?.split(' ').pop() || 'Bạn'}</p>
                         </div>
                         {userDropdown}
                     </div>
@@ -210,20 +246,31 @@ export function AppLayout() {
 
     // --- Sub-pages: modern white header layout ---
     return (
-        <div className="min-h-screen bg-gray-50/50">
-            {/* White Header */}
-            <header className="bg-white border-b border-gray-100 px-5 md:px-8 py-3 sticky top-0 z-30 shadow-sm">
+        <div className="min-h-screen bg-gray-50/50 relative overflow-hidden">
+            {/* Custom User Background */}
+            {settings.customBackground && (
+                <div
+                    className="absolute inset-0 bg-cover bg-center transition-opacity duration-700 z-[0]"
+                    style={{ backgroundImage: `url(${settings.customBackground})` }}
+                />
+            )}
+
+            {/* Premium Glass Header */}
+            <header className="bg-white/80 backdrop-blur-xl border-b border-white/60 px-6 md:px-10 py-4 sticky top-0 z-30 shadow-soft">
                 <div className="max-w-7xl mx-auto flex items-center justify-between">
-                    <div className="flex items-center gap-3">
-                        <div className="h-9 w-9 bg-blue-600 rounded-xl flex items-center justify-center text-white text-base font-bold shadow-lg shadow-blue-500/20">S</div>
-                        <h1 className="text-lg font-bold text-gray-800 tracking-tight">StudyStation</h1>
+                    <div
+                        className="flex items-center gap-3 cursor-pointer group"
+                        onClick={() => navigate('/')}
+                    >
+                        <div className="h-10 w-10 bg-blue-600 rounded-[18px] flex items-center justify-center text-white text-lg font-bold shadow-lg shadow-blue-500/30 group-hover:scale-105 transition-transform">S</div>
+                        <h1 className="text-xl font-bold text-gray-900 tracking-tight">StudyStation</h1>
                     </div>
 
-                    <div className="flex items-center gap-4">
+                    <div className="flex items-center gap-5">
                         <div className="flex items-center gap-2 md:gap-4 mr-2">
-                            <button className="p-2 hover:bg-gray-100 rounded-lg text-gray-500 transition-colors"><Music4 className="h-5 w-5" /></button>
-                            <button className="p-2 hover:bg-gray-100 rounded-lg text-gray-500 transition-colors"><BarChart3 className="h-5 w-5" /></button>
-                            <button className="p-2 hover:bg-gray-100 rounded-lg text-gray-500 transition-colors"><Settings className="h-5 w-5" /></button>
+                            <button className="p-2.5 hover:bg-gray-100 rounded-2xl text-gray-500 transition-all hover:scale-110 active:scale-90"><Music4 className="h-5 w-5" /></button>
+                            <button className="p-2.5 hover:bg-gray-100 rounded-2xl text-gray-500 transition-all hover:scale-110 active:scale-90"><BarChart3 className="h-5 w-5" /></button>
+                            <button className="p-2.5 hover:bg-gray-100 rounded-2xl text-gray-500 transition-all hover:scale-110 active:scale-90"><Settings className="h-5 w-5" /></button>
                         </div>
                         {userDropdown}
                     </div>
@@ -231,7 +278,7 @@ export function AppLayout() {
             </header>
 
             <main className={cn(
-                "w-full mx-auto px-4 py-6 md:py-10 min-h-[calc(100vh-160px)] transition-all duration-300",
+                "relative z-10 w-full mx-auto px-4 py-6 md:py-10 min-h-[calc(100vh-160px)] transition-all duration-300",
                 isExamPage ? "max-w-7xl" : "max-w-5xl"
             )}>
                 <div className="page-fade-in">
@@ -239,9 +286,6 @@ export function AppLayout() {
                 </div>
             </main>
 
-            <footer className="text-center text-[12px] text-gray-400 py-8 border-t border-gray-100 mt-10">
-                <p>Designed & Developed by <strong className="text-gray-500 font-semibold">Trọng Phúc</strong> | From Concept to Content by <strong className="text-gray-500 font-semibold">Phương Kiều</strong></p>
-            </footer>
             <FloatingHub />
         </div>
     );

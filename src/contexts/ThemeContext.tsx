@@ -5,11 +5,12 @@ export interface ThemeSettings {
     mode: 'light' | 'dark';
     accentColor: string;
     fontSize: 'small' | 'medium' | 'large';
+    customBackground?: string;
 }
 
 interface ThemeContextType {
     settings: ThemeSettings;
-    updateSetting: (key: keyof ThemeSettings, value: string) => void;
+    updateSetting: (key: keyof ThemeSettings, value: any) => void;
     resetToDefaults: () => void;
 }
 
@@ -19,6 +20,7 @@ const DEFAULT_SETTINGS: ThemeSettings = {
     mode: 'light',
     accentColor: '#3b82f6',
     fontSize: 'medium',
+    customBackground: undefined,
 };
 
 const FONT_SIZES: Record<string, string> = {
@@ -68,7 +70,7 @@ export function ThemeProvider({ children }: { children: ReactNode }) {
         applyThemeToDOM(settings);
     }, [settings]);
 
-    const updateSetting = useCallback((key: keyof ThemeSettings, value: string) => {
+    const updateSetting = useCallback((key: keyof ThemeSettings, value: any) => {
         setSettings(prev => {
             const updated = { ...prev, [key]: value };
             try { localStorage.setItem(THEME_KEY, JSON.stringify(updated)); } catch { /* */ }

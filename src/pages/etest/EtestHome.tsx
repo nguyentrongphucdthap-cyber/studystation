@@ -59,60 +59,84 @@ export default function EtestHome() {
     }
 
     return (
-        <div>
-            {/* Back button */}
-            <button
-                onClick={() => navigate('/')}
-                className="flex items-center space-x-2 text-gray-600 hover:text-blue-600 transition-colors duration-300 mb-6 group"
-            >
-                <svg className="w-5 h-5 transition-transform duration-300 group-hover:-translate-x-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 19l-7-7m0 0l7-7m-7 7h18" />
-                </svg>
-                <span className="font-medium">Quay lại Menu</span>
-            </button>
+        <div className="space-y-8">
+            {/* Header section */}
+            <div className="bg-white/70 backdrop-blur-xl rounded-[32px] p-8 md:p-10 shadow-soft border border-white flex flex-col md:flex-row md:items-center justify-between gap-6">
+                <div>
+                    <h2 className="text-2xl md:text-4xl font-extrabold text-gray-900 dark:text-white tracking-tight">E-test Reading</h2>
+                    <p className="text-gray-500 dark:text-gray-400 mt-2 text-sm md:text-lg font-medium opacity-90">
+                        Bài đọc hiểu tiếng Anh theo form chuẩn THPT QG.
+                    </p>
+                    <div className="flex items-center gap-2 mt-3">
+                        <span className="px-3 py-1 bg-emerald-50 dark:bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 text-[11px] font-black rounded-full border border-emerald-100 dark:border-emerald-500/20 uppercase tracking-wider">
+                            {exams.length} Bài thi hiện có
+                        </span>
+                    </div>
+                </div>
+                <button
+                    onClick={() => navigate('/')}
+                    className="bg-white hover:bg-gray-50 dark:bg-gray-800 dark:hover:bg-gray-700 text-gray-700 dark:text-gray-200 px-6 py-3 rounded-2xl font-bold transition-all flex items-center gap-2 shadow-soft hover:shadow-medium active:scale-95 shrink-0 self-start md:self-center border border-gray-100 dark:border-gray-700"
+                >
+                    <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M10 19l-7-7m0 0l7-7m-7 7h18" />
+                    </svg>
+                    Quay lại
+                </button>
+            </div>
 
-            <h2 className="text-3xl md:text-4xl font-bold text-gray-800 mb-2">E-test</h2>
-            <p className="text-gray-500 mb-6">Bài đọc hiểu tiếng Anh · {exams.length} bài</p>
-
-            {/* Search */}
-            <div className="mb-6">
+            {/* Search & Actions */}
+            <div className="relative group max-w-xl mx-auto">
+                <div className="absolute inset-y-0 left-5 flex items-center pointer-events-none text-gray-400 group-focus-within:text-blue-500 transition-colors">
+                    <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
+                    </svg>
+                </div>
                 <input
                     type="text"
                     value={search}
                     onChange={(e) => setSearch(e.target.value)}
-                    placeholder="Tìm kiếm bài đọc..."
-                    className="w-full px-3 py-2 border border-gray-300 rounded-lg shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-400 focus:border-blue-400 text-sm"
+                    placeholder="Tìm kiếm tiêu đề bài đọc..."
+                    className="w-full pl-14 pr-6 py-4 bg-white/80 dark:bg-gray-800/80 backdrop-blur-md rounded-[24px] border border-white dark:border-gray-700 shadow-soft focus:shadow-medium focus:ring-2 focus:ring-blue-500/20 focus:border-blue-200 dark:focus:border-blue-500 transition-all text-base font-medium outline-none text-gray-900 dark:text-gray-100"
                 />
             </div>
 
-            {/* Exam list */}
+            {/* List */}
             {filtered.length === 0 ? (
-                <div className="text-center py-12 text-gray-400">
-                    <p>Không tìm thấy bài đọc nào.</p>
+                <div className="text-center py-20 bg-white/50 rounded-[32px] border border-dashed border-gray-200">
+                    <p className="text-gray-400 font-bold uppercase tracking-widest">Không tìm thấy bài đọc nào</p>
                 </div>
             ) : (
-                <ul className="space-y-4">
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
                     {filtered.map((exam) => (
-                        <li key={exam.id}>
-                            <button
-                                onClick={() => navigate(`/etest/${exam.id}`)}
-                                className="w-full text-left p-4 bg-gray-50 border border-gray-200 rounded-xl hover:border-emerald-400 hover:bg-emerald-50 transition-all group"
-                            >
-                                <div className="flex items-center justify-between mb-1">
-                                    <h3 className="text-base font-semibold text-gray-800 group-hover:text-emerald-600 transition-colors">
+                        <button
+                            key={exam.id}
+                            onClick={() => navigate(`/etest/${exam.id}`)}
+                            className="bg-white/80 backdrop-blur-md p-6 rounded-[28px] border border-white shadow-soft hover:shadow-heavy hover:-translate-y-1 transition-all duration-500 text-left group flex flex-col justify-between"
+                        >
+                            <div>
+                                <div className="flex items-start justify-between gap-4 mb-3">
+                                    <h3 className="text-lg font-extrabold text-gray-900 group-hover:text-blue-600 transition-colors tracking-tight leading-snug">
                                         {exam.title}
                                     </h3>
-                                    <span className={`rounded-full px-2.5 py-0.5 text-[10px] font-bold uppercase ${tagColors[exam.tag || ''] || tagColors.default}`}>
+                                    <span className={`shrink-0 rounded-xl px-3 py-1 text-[10px] font-black uppercase tracking-widest ${tagColors[exam.tag || ''] || tagColors.default} shadow-sm border border-black/5`}>
                                         {exam.tag || 'Practice'}
                                     </span>
                                 </div>
-                                <p className="text-sm text-gray-500">
-                                    {exam.sections?.length || 0} passage(s) · {exam.sections?.reduce((s, sec) => s + (sec.questions?.length || 0), 0) || 0} questions · {exam.time} min
-                                </p>
-                            </button>
-                        </li>
+                                <div className="flex items-center gap-4 text-[12px] text-gray-500 font-bold uppercase tracking-wider opacity-70">
+                                    <span>{exam.sections?.length || 0} PASSAGE(S)</span>
+                                    <span>{exam.time} MIN</span>
+                                </div>
+                            </div>
+
+                            <div className="mt-6 flex items-center text-[13px] font-bold text-blue-600 group-hover:translate-x-1 transition-transform">
+                                Bắt đầu làm bài
+                                <svg className="w-4 h-4 ml-1.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M14 5l7 7m0 0l-7 7m7-7H3" />
+                                </svg>
+                            </div>
+                        </button>
                     ))}
-                </ul>
+                </div>
             )}
         </div>
     );
