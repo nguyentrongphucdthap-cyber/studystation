@@ -33,7 +33,7 @@ export async function generateAIContent(messages: AIChatMessage[], options?: AIC
     // Pick a random key if multiple are available
     let apiKey = '';
     if (apiKeys.length > 0) {
-        apiKey = apiKeys[Math.floor(Math.random() * apiKeys.length)];
+        apiKey = apiKeys[Math.floor(Math.random() * apiKeys.length)] || '';
     } else {
         // Fallback to Firebase API key
         apiKey = import.meta.env.VITE_FIREBASE_API_KEY || '';
