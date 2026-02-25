@@ -73,6 +73,7 @@ import { generateAIContent, type AIChatMessage } from '@/services/ai.service';
 import type { ChatMessage, Friend, GroupChat, StudyRoom, StudyRoomMessage } from '@/types';
 import './FloatingHub.css';
 import { APP_VERSION } from '@/version';
+import MathText from './MathText';
 
 // ============================================================
 // CONSTANTS
@@ -1050,7 +1051,7 @@ function ChatTab({ user, onUnreadChange }: { user: { email: string; displayName:
                                 </div>
                             )}
                             <div>
-                                <div className="chat-bubble">{msg.text}</div>
+                                <div className="chat-bubble"><MathText text={msg.text} /></div>
                                 <span className={`chat-msg-time ${isSent ? 'sent' : ''}`}>{formatMsgTime(msg.timestamp)}</span>
                             </div>
                         </div>
@@ -1862,7 +1863,7 @@ function StudyRoomsTab({ user }: { user: { email: string; name: string; photoURL
                                 <div key={m.id} style={{ marginBottom: '8px', textAlign: m.senderEmail === user.email ? 'right' : 'left' }}>
                                     <div style={{ fontSize: '10px', color: '#9ca3af', marginBottom: '2px' }}>{m.senderName}</div>
                                     <div className={`room-msg-bubble ${m.senderEmail === user.email ? 'room-msg-sent' : 'room-msg-received'}`}>
-                                        {m.text}
+                                        <MathText text={m.text} />
                                     </div>
                                 </div>
                             ))}
