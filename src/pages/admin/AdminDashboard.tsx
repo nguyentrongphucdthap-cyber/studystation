@@ -4,11 +4,12 @@ import { getAllExams } from '@/services/exam.service';
 import { getAllAllowedUsers, getActivityStats } from '@/services/auth.service';
 import { getAllEtestExams } from '@/services/etest.service';
 import { getAllVocabSets } from '@/services/vocab.service';
+import { getApiKeys, checkApiKeyHealth, type ApiKeyStatus } from '@/services/ai.service';
 import { Spinner } from '@/components/ui/Spinner';
 import { cn } from '@/lib/utils';
 import {
     LayoutDashboard, GraduationCap, FileText, Languages,
-    Bell, Calendar, Users, BarChart3,
+    Bell, Calendar, Users, BarChart3, Key, RefreshCw,
 } from 'lucide-react';
 import { useEffect, useState } from 'react';
 
@@ -96,7 +97,32 @@ export function AdminOverview() {
         load();
     }, [isSuperAdmin]);
 
+    // API Key health check (super-admin only)
+    const [keyStatuses, setKeyStatuses] = useState<ApiKeyStatus[]>([]);
+    const [checkingKeys, setCheckingKeys] = useState(false);
+
+    const handleCheckKeys = async () => {
+        setCheckingKeys(true);
+        setKeyStatuses([]);
+        const keys = getApiKeys();
+        const results: ApiKeyStatus[] = [];
+        for (const k of keys) {
+            const result = await checkApiKeyHealth(k.fullKey);
+            result.index = k.index;
+            results.push(result);
+        }
+        setKeyStatuses(results);
+        setCheckingKeys(false);
+    };
+
     if (loading) return <div className="flex justify-center py-10"><Spinner size="md" label="Đang tải..." /></div>;
+
+    const statusColor: Record<string, string> = {
+        ok: 'bg-green-100 text-green-700 border-green-200',
+        quota_exceeded: 'bg-red-100 text-red-700 border-red-200',
+        invalid: 'bg-yellow-100 text-yellow-700 border-yellow-200',
+        error: 'bg-gray-100 text-gray-700 border-gray-200',
+    };
 
     return (
         <div className="space-y-4">
@@ -111,6 +137,44 @@ export function AdminOverview() {
                 <StatBox label="Lượt truy cập" value={stats.totalAccess} icon="📊" />
                 <StatBox label="Users hoạt động" value={stats.uniqueUsers} icon="🟢" />
             </div>
+
+            {/* API Key Health Check — super admin only */}
+            {isSuperAdmin && (
+                <div className="rounded-xl border border-border bg-card p-4 space-y-3">
+                    <div className="flex items-center justify-between">
+                        <h3 className="text-sm font-bold flex items-center gap-2">
+                            <Key className="h-4 w-4 text-primary" /> Gemini API Keys
+                        </h3>
+                        <button
+                            onClick={handleCheckKeys}
+                            disabled={checkingKeys}
+                            className="flex items-center gap-1.5 rounded-lg bg-primary/10 px-3 py-1.5 text-xs font-semibold text-primary transition-colors hover:bg-primary/20 disabled:opacity-50"
+                        >
+                            <RefreshCw className={`h-3.5 w-3.5 ${checkingKeys ? 'animate-spin' : ''}`} />
+                            {checkingKeys ? 'Đang kiểm tra...' : 'Kiểm tra'}
+                        </button>
+                    </div>
+
+                    {keyStatuses.length > 0 && (
+                        <div className="space-y-2">
+                            {keyStatuses.map((ks) => (
+                                <div key={ks.index} className="flex items-center gap-3 rounded-lg border p-3 text-xs">
+                                    <span className="font-mono font-semibold text-muted-foreground">Key {ks.index}</span>
+                                    <span className="font-mono text-muted-foreground/70">{ks.key}</span>
+                                    <span className={`ml-auto rounded-full border px-2.5 py-0.5 text-[11px] font-bold ${statusColor[ks.status] || ''}`}>
+                                        {ks.status === 'ok' ? '✅ OK' : ks.status === 'quota_exceeded' ? '🔴 Hết quota' : ks.status === 'invalid' ? '⚠️ Lỗi' : '❌ Lỗi'}
+                                    </span>
+                                </div>
+                            ))}
+                            <p className="text-[11px] text-muted-foreground">Model: {keyStatuses[0]?.model}</p>
+                        </div>
+                    )}
+
+                    {keyStatuses.length === 0 && !checkingKeys && (
+                        <p className="text-xs text-muted-foreground">Nhấn "Kiểm tra" để xem trạng thái các API keys.</p>
+                    )}
+                </div>
+            )}
         </div>
     );
 }

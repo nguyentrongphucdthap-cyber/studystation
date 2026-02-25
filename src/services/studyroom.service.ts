@@ -8,8 +8,6 @@ import {
     query,
     where,
     orderBy,
-    arrayUnion,
-    arrayRemove,
     getDoc
 } from 'firebase/firestore';
 import { db } from '@/config/firebase';
@@ -63,6 +61,14 @@ export const createStudyRoom = async (
  */
 export const joinStudyRoom = async (roomId: string, userEmail: string, userName: string, photoURL?: string) => {
     const roomRef = doc(db, ROOMS_COL, roomId);
+    const snap = await getDoc(roomRef);
+    if (!snap.exists()) return;
+
+    const room = snap.data() as StudyRoom;
+    const isAlreadyMember = room.members.some(m => m.email.toLowerCase() === userEmail.toLowerCase());
+
+    if (isAlreadyMember) return;
+
     const member: StudyRoomMember = {
         email: userEmail,
         name: userName,
@@ -70,8 +76,9 @@ export const joinStudyRoom = async (roomId: string, userEmail: string, userName:
         role: 'member',
         joinedAt: Date.now()
     };
+
     await updateDoc(roomRef, {
-        members: arrayUnion(member),
+        members: [...room.members, member],
         lastActive: Date.now()
     });
 };
@@ -79,19 +86,23 @@ export const joinStudyRoom = async (roomId: string, userEmail: string, userName:
 /**
  * Leave a room
  */
-export const leaveStudyRoom = async (roomId: string, member: StudyRoomMember) => {
+export const leaveStudyRoom = async (roomId: string, memberEmail: string) => {
     const roomRef = doc(db, ROOMS_COL, roomId);
     const snap = await getDoc(roomRef);
     if (!snap.exists()) return;
 
     const room = snap.data() as StudyRoom;
+    const leavingMember = room.members.find(m => m.email.toLowerCase() === memberEmail.toLowerCase());
+
+    if (!leavingMember) return;
 
     // Auto-delete the room if the owner leaves, or if it's the last member
-    if (member.role === 'owner' || room.members.length <= 1) {
+    if (leavingMember.role === 'owner' || room.members.length <= 1) {
         await deleteDoc(roomRef);
     } else {
+        const remainingMembers = room.members.filter(m => m.email.toLowerCase() !== memberEmail.toLowerCase());
         await updateDoc(roomRef, {
-            members: arrayRemove(member)
+            members: remainingMembers
         });
     }
 };

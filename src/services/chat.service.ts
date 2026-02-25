@@ -9,7 +9,7 @@ import {
     remove,
     get,
 } from 'firebase/database';
-import { doc, getDoc, setDoc, updateDoc, onSnapshot, collection, query, addDoc, where } from 'firebase/firestore';
+import { doc, getDoc, setDoc, updateDoc, onSnapshot, collection, query, addDoc, where, deleteDoc, arrayUnion, arrayRemove } from 'firebase/firestore';
 import { auth, rtdb, db } from '@/config/firebase';
 import type { ChatMessage, Friend, GroupChat } from '@/types';
 
@@ -134,6 +134,16 @@ export async function removeFriend(friendEmail: string): Promise<void> {
     } catch (err) {
         console.error('[Chat] Failed to log unfriend action:', err);
     }
+}
+
+/** Cancel a sent friend request */
+export async function cancelFriendRequest(targetEmail: string): Promise<void> {
+    const currentEmail = getCurrentEmail();
+    const myKey = sanitizeEmail(currentEmail);
+    const friendKey = sanitizeEmail(targetEmail);
+
+    await remove(ref(rtdb, `hub/friends/${myKey}/${friendKey}`));
+    await remove(ref(rtdb, `hub/friends/${friendKey}/${myKey}`));
 }
 
 export function subscribeFriends(callback: (friends: Friend[]) => void) {
@@ -349,14 +359,17 @@ export async function createGroupChat(name: string, members: string[]): Promise<
         const groupId = `group_${Date.now()}_${Math.random().toString(36).substr(2, 5)}`;
         const groupRef = doc(db, 'group_chats', groupId);
 
-        const allMembers = Array.from(new Set([currentEmail, ...members.map(m => m.toLowerCase())]));
+        const normalizedCreator = currentEmail.toLowerCase();
+        const pending = members.map(m => m.toLowerCase()).filter(m => m !== normalizedCreator);
         const avatarColor = GROUP_COLORS[Math.floor(Math.random() * GROUP_COLORS.length)];
 
         const groupData: GroupChat = {
             id: groupId,
             name: name.trim(),
             createdBy: currentEmail,
-            members: allMembers,
+            members: [normalizedCreator], // Only creator is a member initially
+            pendingInvites: pending,
+            allRelated: [normalizedCreator, ...pending],
             createdAt: new Date().toISOString(),
             updatedAt: Date.now(),
             avatarColor
@@ -372,6 +385,60 @@ export async function createGroupChat(name: string, members: string[]): Promise<
         console.error('[Chat] Failed to create group:', err);
         return null;
     }
+}
+
+export async function renameGroupChat(groupId: string, newName: string): Promise<void> {
+    const groupRef = doc(db, 'group_chats', groupId);
+    await updateDoc(groupRef, {
+        name: newName.trim(),
+        updatedAt: Date.now()
+    });
+}
+
+export async function deleteGroupChat(groupId: string): Promise<void> {
+    const groupRef = doc(db, 'group_chats', groupId);
+    await deleteDoc(groupRef);
+}
+
+export async function addGroupMembers(groupId: string, newMemberEmails: string[]): Promise<void> {
+    const groupRef = doc(db, 'group_chats', groupId);
+    const normalized = newMemberEmails.map(m => m.toLowerCase());
+    await updateDoc(groupRef, {
+        pendingInvites: arrayUnion(...normalized),
+        allRelated: arrayUnion(...normalized)
+    });
+}
+
+export async function leaveGroupChat(groupId: string): Promise<void> {
+    const currentEmail = getCurrentEmail();
+    if (!currentEmail) return;
+    const groupRef = doc(db, 'group_chats', groupId);
+    await updateDoc(groupRef, {
+        members: arrayRemove(currentEmail.toLowerCase()),
+        allRelated: arrayRemove(currentEmail.toLowerCase())
+    });
+}
+
+export async function acceptGroupInvite(groupId: string): Promise<void> {
+    const currentEmail = getCurrentEmail();
+    if (!currentEmail) return;
+    const normalized = currentEmail.toLowerCase();
+    const groupRef = doc(db, 'group_chats', groupId);
+    await updateDoc(groupRef, {
+        members: arrayUnion(normalized),
+        pendingInvites: arrayRemove(normalized)
+    });
+}
+
+export async function rejectGroupInvite(groupId: string): Promise<void> {
+    const currentEmail = getCurrentEmail();
+    if (!currentEmail) return;
+    const normalized = currentEmail.toLowerCase();
+    const groupRef = doc(db, 'group_chats', groupId);
+    await updateDoc(groupRef, {
+        pendingInvites: arrayRemove(normalized),
+        allRelated: arrayRemove(normalized)
+    });
 }
 
 export async function sendGroupMessage(groupId: string, text: string): Promise<void> {
@@ -418,7 +485,8 @@ export function subscribeToGroupChats(callback: (groups: GroupChat[]) => void) {
     if (!currentEmail) { callback([]); return () => { }; }
 
     const groupsRef = collection(db, 'group_chats');
-    const q = query(groupsRef, where('members', 'array-contains', currentEmail.toLowerCase()));
+    // Query groups where user is a member OR has a pending invite via allRelated field
+    const q = query(groupsRef, where('allRelated', 'array-contains', currentEmail.toLowerCase()));
 
     return onSnapshot(
         q,
@@ -431,6 +499,8 @@ export function subscribeToGroupChats(callback: (groups: GroupChat[]) => void) {
                     name: data.name,
                     createdBy: data.createdBy,
                     members: data.members,
+                    pendingInvites: data.pendingInvites,
+                    allRelated: data.allRelated,
                     createdAt: data.createdAt,
                     updatedAt: data.updatedAt,
                     avatarColor: data.avatarColor

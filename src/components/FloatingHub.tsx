@@ -29,6 +29,8 @@ import {
     Users,
     Image,
     Upload,
+    Settings,
+    LogOut,
 } from 'lucide-react';
 import { useAuth } from '@/contexts/AuthContext';
 import { useTheme } from '@/contexts/ThemeContext';
@@ -47,6 +49,7 @@ import {
     sendFriendRequest,
     acceptFriendRequest,
     removeFriend,
+    cancelFriendRequest,
     sendChatMessage,
     subscribeToMessages,
     MAGO_SYSTEM_PROMPT,
@@ -56,6 +59,12 @@ import {
     sendGroupMessage,
     subscribeToGroupMessages,
     subscribeToGroupChats,
+    renameGroupChat,
+    deleteGroupChat,
+    addGroupMembers,
+    leaveGroupChat,
+    acceptGroupInvite,
+    rejectGroupInvite,
     sendMagoMessage,
     saveMagoResponse,
     subscribeToMagoMessages,
@@ -63,6 +72,7 @@ import {
 import { generateAIContent, type AIChatMessage } from '@/services/ai.service';
 import type { ChatMessage, Friend, GroupChat, StudyRoom, StudyRoomMessage } from '@/types';
 import './FloatingHub.css';
+import { APP_VERSION } from '@/version';
 
 // ============================================================
 // CONSTANTS
@@ -102,11 +112,18 @@ export function FloatingHub() {
     const [isOpen, setIsOpen] = useState(false);
     const [activeTab, setActiveTab] = useState<TabId>('chat');
     const [fabPos, setFabPos] = useState(() => {
+        const fabSize = window.innerWidth < 480 ? 48 : 56;
         try {
             const saved = localStorage.getItem(FAB_STORAGE_KEY);
-            if (saved) return JSON.parse(saved);
+            if (saved) {
+                const parsed = JSON.parse(saved);
+                return {
+                    x: Math.max(0, Math.min(parsed.x, window.innerWidth - fabSize)),
+                    y: Math.max(0, Math.min(parsed.y, window.innerHeight - fabSize)),
+                };
+            }
         } catch { /* ignore */ }
-        return { x: window.innerWidth - 72, y: window.innerHeight - 120 };
+        return { x: window.innerWidth - (fabSize + 16), y: window.innerHeight - (fabSize + 64) };
     });
     const [isDragging, setIsDragging] = useState(false);
     const [chatUnreadCount, setChatUnreadCount] = useState(0);
@@ -174,13 +191,21 @@ export function FloatingHub() {
 
     // ── Clamp to viewport (free-floating, NO edge snapping) ──
     const clampToViewport = useCallback((x: number, y: number) => {
-        const fabW = 52;
-        const fabH = 52;
+        const fabSize = window.innerWidth < 480 ? 48 : 56;
         return {
-            x: Math.max(0, Math.min(x, window.innerWidth - fabW)),
-            y: Math.max(0, Math.min(y, window.innerHeight - fabH)),
+            x: Math.max(0, Math.min(x, window.innerWidth - fabSize)),
+            y: Math.max(0, Math.min(y, window.innerHeight - fabSize)),
         };
     }, []);
+
+    // Keep FAB on screen during window resize
+    useEffect(() => {
+        const handleResize = () => {
+            setFabPos(prev => clampToViewport(prev.x, prev.y));
+        };
+        window.addEventListener('resize', handleResize);
+        return () => window.removeEventListener('resize', handleResize);
+    }, [clampToViewport]);
 
     // --- Drag handlers ---
     const onPointerDown = useCallback((e: React.PointerEvent) => {
@@ -216,8 +241,9 @@ export function FloatingHub() {
     }, [isDragging, clampToViewport]);
 
     // ── Smart panel positioning based on FAB quadrant ──
-    const fabCenterX = fabPos.x + 26;
-    const fabCenterY = fabPos.y + 26;
+    const fabSize = window.innerWidth < 480 ? 48 : 56;
+    const fabCenterX = fabPos.x + fabSize / 2;
+    const fabCenterY = fabPos.y + fabSize / 2;
     const isOnLeft = fabCenterX < window.innerWidth / 2;
     const isOnTop = fabCenterY < window.innerHeight / 2;
 
@@ -236,12 +262,12 @@ export function FloatingHub() {
     if (isOnLeft) {
         panelStyle.left = Math.max(8, Math.min(fabPos.x, window.innerWidth - panelW - 8));
     } else {
-        panelStyle.right = Math.max(8, Math.min(window.innerWidth - fabPos.x - 52, window.innerWidth - panelW - 8));
+        panelStyle.right = Math.max(8, Math.min(window.innerWidth - fabPos.x - fabSize, window.innerWidth - panelW - 8));
     }
 
     // Vertical: open below if FAB is on top half, above if on bottom half
     if (isOnTop) {
-        panelStyle.top = fabPos.y + 52 + panelGap;
+        panelStyle.top = fabPos.y + fabSize + panelGap;
     } else {
         panelStyle.bottom = Math.max(8, window.innerHeight - fabPos.y + panelGap);
     }
@@ -300,60 +326,65 @@ export function FloatingHub() {
 
             {/* Panel */}
             {isOpen && (
-                <div className={`hub-panel ${panelPosClass}`} style={panelStyle}>
-                    {/* Sidebar tabs (vertical on desktop, horizontal on mobile via CSS) */}
-                    <div className="hub-sidebar">
-                        {TABS.map(tab => {
-                            const Icon = tab.icon;
-                            return (
-                                <button
-                                    key={tab.id}
-                                    className={`hub-sidebar-btn ${activeTab === tab.id ? 'active' : ''}`}
-                                    onClick={() => setActiveTab(tab.id)}
-                                    title={tab.label}
-                                >
-                                    <Icon size={18} />
-                                    {tab.id === 'chat' && chatUnreadCount > 0 && (
-                                        <span className="hub-tab-badge">{chatUnreadCount > 9 ? '9+' : chatUnreadCount}</span>
-                                    )}
-                                </button>
-                            );
-                        })}
-                    </div>
+                <>
+                    {/* Backdrop for mobile bottom sheet */}
+                    <div className="hub-backdrop" onClick={() => setIsOpen(false)} />
 
-                    {/* Content */}
-                    <div className="hub-content">
-                        {activeTab === 'chat' && <ChatTab user={user} onUnreadChange={setChatUnreadCount} />}
-                        {activeTab === 'pomodoro' && (
-                            <PomodoroTab
-                                mode={pomodoroMode}
-                                timeLeft={pomodoroTimeLeft}
-                                isRunning={pomodoroRunning}
-                                sessions={pomodoroSessions}
-                                cycle={pomodoroCycle}
-                                onSetMode={(m) => {
-                                    setPomodoroMode(m);
-                                    setPomodoroTimeLeft(POMODORO_MODES.find(x => x.id === m)!.duration);
-                                    setPomodoroRunning(false);
-                                }}
-                                onToggleRunning={() => setPomodoroRunning(!pomodoroRunning)}
-                                onReset={() => {
-                                    setPomodoroRunning(false);
-                                    setPomodoroTimeLeft(POMODORO_MODES.find(m => m.id === pomodoroMode)!.duration);
-                                }}
-                            />
-                        )}
-                        {activeTab === 'rooms' && (
-                            <StudyRoomsTab
-                                user={{ email: user.email, name: user.displayName || user.email, photoURL: user.photoURL || undefined }}
-                            />
-                        )}
-                        {activeTab === 'notes' && <NotesTab userEmail={user.email} />}
-                        {activeTab === 'study' && <StudyTrackerTab userEmail={user.email} />}
-                        {activeTab === 'music' && <MusicTab />}
-                        {activeTab === 'theme' && <ThemeTab />}
+                    <div className={`hub-panel ${panelPosClass}`} style={panelStyle}>
+                        {/* Sidebar tabs (vertical on desktop, horizontal on mobile via CSS) */}
+                        <div className="hub-sidebar">
+                            {TABS.map(tab => {
+                                const Icon = tab.icon;
+                                return (
+                                    <button
+                                        key={tab.id}
+                                        className={`hub-sidebar-btn ${activeTab === tab.id ? 'active' : ''}`}
+                                        onClick={() => setActiveTab(tab.id)}
+                                        title={tab.label}
+                                    >
+                                        <Icon size={18} />
+                                        {tab.id === 'chat' && chatUnreadCount > 0 && (
+                                            <span className="hub-tab-badge">{chatUnreadCount > 9 ? '9+' : chatUnreadCount}</span>
+                                        )}
+                                    </button>
+                                );
+                            })}
+                        </div>
+
+                        {/* Content */}
+                        <div className="hub-content">
+                            {activeTab === 'chat' && <ChatTab user={user} onUnreadChange={setChatUnreadCount} />}
+                            {activeTab === 'pomodoro' && (
+                                <PomodoroTab
+                                    mode={pomodoroMode}
+                                    timeLeft={pomodoroTimeLeft}
+                                    isRunning={pomodoroRunning}
+                                    sessions={pomodoroSessions}
+                                    cycle={pomodoroCycle}
+                                    onSetMode={(m) => {
+                                        setPomodoroMode(m);
+                                        setPomodoroTimeLeft(POMODORO_MODES.find(x => x.id === m)!.duration);
+                                        setPomodoroRunning(false);
+                                    }}
+                                    onToggleRunning={() => setPomodoroRunning(!pomodoroRunning)}
+                                    onReset={() => {
+                                        setPomodoroRunning(false);
+                                        setPomodoroTimeLeft(POMODORO_MODES.find(m => m.id === pomodoroMode)!.duration);
+                                    }}
+                                />
+                            )}
+                            {activeTab === 'rooms' && (
+                                <StudyRoomsTab
+                                    user={{ email: user.email, name: user.displayName || user.email, photoURL: user.photoURL || undefined }}
+                                />
+                            )}
+                            {activeTab === 'notes' && <NotesTab userEmail={user.email} />}
+                            {activeTab === 'study' && <StudyTrackerTab userEmail={user.email} />}
+                            {activeTab === 'music' && <MusicTab />}
+                            {activeTab === 'theme' && <ThemeTab />}
+                        </div>
                     </div>
-                </div>
+                </>
             )}
         </>
     );
@@ -396,6 +427,10 @@ function ChatTab({ user, onUnreadChange }: { user: { email: string; displayName:
     const [showCreateGroup, setShowCreateGroup] = useState(false);
     const [groupName, setGroupName] = useState('');
     const [selectedMembers, setSelectedMembers] = useState<string[]>([]);
+    const [showGroupSettings, setShowGroupSettings] = useState(false);
+    const [isRenamingGroup, setIsRenamingGroup] = useState(false);
+    const [newGroupName, setNewGroupName] = useState('');
+    const [showInviteMembers, setShowInviteMembers] = useState(false);
     const [pinnedChats, setPinnedChats] = useState<string[]>(() => {
         try { return JSON.parse(localStorage.getItem(CHAT_PINNED_KEY) || '[]'); } catch { return []; }
     });
@@ -594,6 +629,36 @@ function ChatTab({ user, onUnreadChange }: { user: { email: string; displayName:
         }
     };
 
+    const handleRenameGroup = async () => {
+        if (!activeChat || !newGroupName.trim()) return;
+        await renameGroupChat(activeChat, newGroupName);
+        setIsRenamingGroup(false);
+    };
+
+    const handleDeleteGroup = async () => {
+        if (!activeChat) return;
+        if (window.confirm('Bạn có chắc muốn giải tán nhóm này?')) {
+            await deleteGroupChat(activeChat);
+            setActiveChat(null);
+            setShowGroupSettings(false);
+        }
+    };
+
+    const handleLeaveGroupChan = async () => {
+        if (!activeChat) return;
+        if (window.confirm('Bạn có chắc muốn rời khỏi nhóm?')) {
+            await leaveGroupChat(activeChat);
+            setActiveChat(null);
+            setShowGroupSettings(false);
+        }
+    };
+
+    const handleInviteMembers = async (emails: string[]) => {
+        if (!activeChat || emails.length === 0) return;
+        await addGroupMembers(activeChat, emails);
+        setShowInviteMembers(false);
+    };
+
     const toggleMemberSelection = (email: string) => {
         setSelectedMembers(prev => prev.includes(email) ? prev.filter(e => e !== email) : [...prev, email]);
     };
@@ -677,6 +742,26 @@ function ChatTab({ user, onUnreadChange }: { user: { email: string; displayName:
                             ))}
                         </div>
                     )}
+                    {(() => {
+                        const invitedGroups = groups.filter(g => g.pendingInvites?.includes(user.email.toLowerCase()));
+                        if (invitedGroups.length === 0) return null;
+                        return (
+                            <div className="chat-section">
+                                <p className="chat-section-label">Lời mời vào nhóm</p>
+                                {invitedGroups.map(g => (
+                                    <div key={g.id} className="chat-contact-item pending">
+                                        <div className="chat-contact-avatar" style={{ background: g.avatarColor || '#10b981', color: 'white' }}>{g.name.charAt(0).toUpperCase()}</div>
+                                        <div className="chat-contact-info">
+                                            <p className="chat-contact-name">{g.name}</p>
+                                            <p className="chat-contact-preview">Mời bạn vào nhóm</p>
+                                        </div>
+                                        <button onClick={() => acceptGroupInvite(g.id)} className="chat-accept-btn" title="Tham gia"><Check size={14} /></button>
+                                        <button onClick={() => rejectGroupInvite(g.id)} className="chat-reject-btn" title="Từ chối"><X size={14} /></button>
+                                    </div>
+                                ))}
+                            </div>
+                        );
+                    })()}
                     <div className="chat-contact-item mago" onClick={() => setActiveChat('mago')}>
                         <div className="chat-contact-avatar mago-avatar" style={{ overflow: 'hidden' }}>
                             <img src="/mago.png" alt="Mago" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
@@ -779,6 +864,13 @@ function ChatTab({ user, onUnreadChange }: { user: { email: string; displayName:
                                         <p className="chat-contact-name" style={{ color: '#6b7280' }}>{f.email}</p>
                                         <p className="chat-contact-preview">Đang chờ chấp nhận...</p>
                                     </div>
+                                    <button
+                                        onClick={() => cancelFriendRequest(f.email)}
+                                        className="chat-reject-btn"
+                                        title="Rút lại lời mời"
+                                    >
+                                        <X size={14} />
+                                    </button>
                                 </div>
                             ))}
                         </div>
@@ -836,6 +928,11 @@ function ChatTab({ user, onUnreadChange }: { user: { email: string; displayName:
                     </div>
                 </div>
                 <div className="chat-header-actions" style={{ display: 'flex', gap: '8px' }}>
+                    {isGroup && (
+                        <button onClick={() => setShowGroupSettings(!showGroupSettings)} className="chat-header-btn" title="Cài đặt nhóm" style={{ background: 'none', border: 'none', cursor: 'pointer', color: '#6b7280', padding: '4px' }}>
+                            <Settings size={18} />
+                        </button>
+                    )}
                     {!isGroup && activeChat !== 'mago' && (
                         <>
                             <button onClick={() => togglePin(activeChat!.toLowerCase())} className="chat-header-btn" title={pinnedChats.includes(activeChat!.toLowerCase()) ? 'Bỏ ghim' : 'Ghim hội thoại'} style={{ background: 'none', border: 'none', cursor: 'pointer', color: '#6b7280', padding: '4px' }}>
@@ -848,7 +945,88 @@ function ChatTab({ user, onUnreadChange }: { user: { email: string; displayName:
                     )}
                 </div>
             </div>
-            <div className="hub-content-body">
+            <div className="hub-content-body" style={{ position: 'relative' }}>
+                {showGroupSettings && isGroup && group && (
+                    <div className="chat-group-settings-overlay">
+                        <div className="chat-settings-header">
+                            <span style={{ fontWeight: 700 }}>Cài đặt nhóm</span>
+                            <button onClick={() => setShowGroupSettings(false)} className="chat-settings-close"><X size={14} /></button>
+                        </div>
+                        <div className="chat-settings-body">
+                            {isRenamingGroup ? (
+                                <div style={{ display: 'flex', gap: '6px', marginBottom: '12px' }}>
+                                    <input
+                                        className="chat-add-friend-input"
+                                        placeholder="Tên nhóm mới..."
+                                        value={newGroupName}
+                                        onChange={e => setNewGroupName(e.target.value)}
+                                    />
+                                    <button onClick={handleRenameGroup} className="chat-add-friend-btn">Lưu</button>
+                                    <button onClick={() => setIsRenamingGroup(false)} style={{ background: '#f3f4f6', border: 'none', borderRadius: '8px', cursor: 'pointer' }}><X size={14} /></button>
+                                </div>
+                            ) : (
+                                <button
+                                    onClick={() => { setIsRenamingGroup(true); setNewGroupName(group.name); }}
+                                    className="chat-settings-item"
+                                >
+                                    Đổi tên nhóm
+                                </button>
+                            )}
+
+                            <button
+                                onClick={() => setShowInviteMembers(true)}
+                                className="chat-settings-item"
+                            >
+                                Mời thành viên
+                            </button>
+
+                            <button
+                                onClick={handleLeaveGroupChan}
+                                className="chat-settings-item danger"
+                            >
+                                <LogOut size={14} style={{ marginRight: '6px' }} /> Rời khỏi nhóm
+                            </button>
+
+                            {group.createdBy === user.email && (
+                                <button
+                                    onClick={handleDeleteGroup}
+                                    className="chat-settings-item danger"
+                                    style={{ borderTop: '1px solid #fee2e2', marginTop: '4px', paddingTop: '8px' }}
+                                >
+                                    <Trash2 size={14} style={{ marginRight: '6px' }} /> Giải tán nhóm
+                                </button>
+                            )}
+                        </div>
+
+                        {showInviteMembers && (
+                            <div className="chat-invite-modal">
+                                <p style={{ fontSize: '12px', fontWeight: 600, marginBottom: '8px' }}>Chọn thành viên mời</p>
+                                <div style={{ maxHeight: '150px', overflowY: 'auto' }}>
+                                    {friends.filter(f => f.status === 'accepted' && !group.allRelated?.includes(f.email.toLowerCase())).map(f => (
+                                        <div
+                                            key={f.email}
+                                            className={`chat-contact-item ${selectedMembers.includes(f.email) ? 'selected' : ''}`}
+                                            onClick={() => toggleMemberSelection(f.email)}
+                                        >
+                                            <div className="chat-contact-avatar" style={{ background: '#e0e7ff', color: '#4f46e5', width: 24, height: 24, fontSize: 10 }}>
+                                                {f.photoURL ? <img src={f.photoURL} alt="" style={{ width: '100%', height: '100%', objectFit: 'cover' }} /> : f.displayName[0]}
+                                            </div>
+                                            <span style={{ fontSize: '12px', flex: 1 }}>{f.displayName}</span>
+                                            {selectedMembers.includes(f.email) && <Check size={12} color="#10b981" />}
+                                        </div>
+                                    ))}
+                                    {friends.filter(f => f.status === 'accepted' && !group.allRelated?.includes(f.email.toLowerCase())).length === 0 && (
+                                        <p style={{ fontSize: '11px', color: '#9ca3af', textAlign: 'center', padding: '10px' }}>Tất cả bạn bè đã được mời hoặc ở trong nhóm</p>
+                                    )}
+                                </div>
+                                <div style={{ display: 'flex', gap: '8px', marginTop: '10px' }}>
+                                    <button onClick={() => handleInviteMembers(selectedMembers)} disabled={selectedMembers.length === 0} className="chat-add-friend-btn" style={{ flex: 1 }}>Mời ({selectedMembers.length})</button>
+                                    <button onClick={() => { setShowInviteMembers(false); setSelectedMembers([]); }} className="chat-add-friend-btn" style={{ background: '#f3f4f6', color: '#6b7280' }}>Hủy</button>
+                                </div>
+                            </div>
+                        )}
+                    </div>
+                )}
                 {messages.length === 0 && activeChat === 'mago' && (
                     <div className="chat-empty-state">
                         <div style={{ width: 60, height: 60, margin: '0 auto 12px', borderRadius: '50%', overflow: 'hidden', border: '3px solid #e2e8f0', background: 'white' }}>
@@ -1510,8 +1688,9 @@ function StudyRoomsTab({ user }: { user: { email: string; name: string; photoURL
 
     const handleLeave = async () => {
         if (!activeRoom) return;
+        if (!window.confirm('Bạn có chắc muốn rời phòng học?')) return;
         const member = activeRoom.members.find(m => m.email === user.email);
-        if (member) await leaveStudyRoom(activeRoom.id, member);
+        if (member) await leaveStudyRoom(activeRoom.id, member.email);
         setActiveRoom(null);
     };
 
@@ -1570,6 +1749,7 @@ function StudyRoomsTab({ user }: { user: { email: string; name: string; photoURL
                         <span style={{ fontSize: '14px' }}>{activeRoom.name}</span>
                     </h3>
                     <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                        <span style={{ fontSize: '11px', color: '#9ca3af', fontWeight: 600 }}>{activeRoom.members.length}</span>
                         <div className="avatar-group">
                             {activeRoom.members.map((m, i) => (
                                 <div
@@ -1945,6 +2125,11 @@ function ThemeTab() {
                 >
                     <RotateCcw size={14} /> Đặt lại mặc định
                 </button>
+
+                {/* Version */}
+                <div style={{ textAlign: 'center', marginTop: '16px', padding: '8px 0', borderTop: '1px solid rgba(0,0,0,0.05)' }}>
+                    <span style={{ fontSize: '11px', color: '#b0b0b0', fontWeight: 500 }}>StudyStation v{APP_VERSION}</span>
+                </div>
             </div>
         </>
     );

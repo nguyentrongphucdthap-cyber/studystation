@@ -123,9 +123,9 @@ service cloud.firestore {
     // ============================================
 
     match /group_chats/{groupId} {
-      allow read: if isLoggedIn() && request.auth.token.email in resource.data.members;
+      allow read: if isLoggedIn() && request.auth.token.email in resource.data.allRelated;
       allow create: if isLoggedIn();
-      allow update: if isLoggedIn() && request.auth.token.email in resource.data.members;
+      allow update: if isLoggedIn() && request.auth.token.email in resource.data.allRelated;
       allow delete: if isLoggedIn() && request.auth.token.email == resource.data.createdBy;
     }
 

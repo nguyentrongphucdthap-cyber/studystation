@@ -279,6 +279,8 @@ export interface GroupChat {
     name: string;
     createdBy: string;
     members: string[]; // emails
+    pendingInvites?: string[]; // emails of invited users
+    allRelated: string[]; // members + pendingInvites for unified querying
     createdAt: string;
     updatedAt: number;
     avatarColor?: string;
