@@ -101,20 +101,29 @@ export default function PracticeHome() {
         return (
             <div className="space-y-6">
                 {/* Header Card */}
-                <div className="bg-white/70 backdrop-blur-xl rounded-[32px] p-8 md:p-10 shadow-soft border border-white flex flex-col md:flex-row md:items-center justify-between gap-6">
+                <div className="bg-white/70 backdrop-blur-xl rounded-[32px] p-8 md:p-10 shadow-soft border border-white/80 flex flex-col md:flex-row md:items-center justify-between gap-6">
                     <div>
                         <h2 className="text-2xl md:text-4xl font-extrabold text-gray-900 tracking-tight">Ôn thi THPT QG 2025</h2>
                         <p className="text-gray-500 mt-2 text-sm md:text-lg font-medium opacity-80">
                             Cấu trúc đề mới nhất. Tích hợp công thức Toán/Lý/Hóa.
                         </p>
                     </div>
-                    <button
-                        onClick={() => navigate('/')}
-                        className="bg-white hover:bg-gray-50 text-gray-700 px-6 py-3 rounded-2xl font-bold transition-all flex items-center gap-2 shadow-soft hover:shadow-medium active:scale-95 shrink-0 self-start md:self-center border border-gray-100"
-                    >
-                        <ArrowLeft className="h-5 w-5" />
-                        Quay lại Menu
-                    </button>
+                    <div className="flex flex-wrap gap-2 shrink-0 self-start md:self-center">
+                        <button
+                            onClick={() => navigate('/practice/history')}
+                            className="bg-blue-50 hover:bg-blue-100 text-blue-600 px-6 py-3 rounded-2xl font-bold transition-all flex items-center gap-2 shadow-sm active:scale-95 border border-blue-100"
+                        >
+                            <Clock className="h-5 w-5" />
+                            Lịch sử
+                        </button>
+                        <button
+                            onClick={() => navigate('/')}
+                            className="bg-white hover:bg-gray-50 text-gray-700 px-6 py-3 rounded-2xl font-bold transition-all flex items-center gap-2 shadow-soft hover:shadow-medium active:scale-95 border border-gray-100"
+                        >
+                            <ArrowLeft className="h-5 w-5" />
+                            Quay lại Menu
+                        </button>
+                    </div>
                 </div>
 
                 {/* Grid of Subjects */}
@@ -126,7 +135,7 @@ export default function PracticeHome() {
                             <button
                                 key={sub.id}
                                 onClick={() => setSearchParams({ subject: sub.id })}
-                                className="group bg-white/80 backdrop-blur-md p-8 rounded-[28px] border border-white shadow-soft hover:shadow-heavy hover:-translate-y-2 transition-all duration-500 flex flex-col items-center text-center relative overflow-hidden active:scale-95"
+                                className="group bg-white/85 backdrop-blur-md p-8 rounded-[28px] border border-white/70 shadow-card hover:shadow-card-hover hover:-translate-y-2 transition-all duration-500 flex flex-col items-center text-center relative overflow-hidden active:scale-95"
                             >
                                 <div className={`w-16 h-16 rounded-[22px] ${bg} flex items-center justify-center mb-5 group-hover:scale-110 transition-transform shadow-sm`}>
                                     <div className="scale-110">{icon}</div>
@@ -204,7 +213,7 @@ export default function PracticeHome() {
                             <button
                                 key={exam.id}
                                 onClick={() => navigate(`/practice/${exam.id}`)}
-                                className="group relative bg-white/80 backdrop-blur-md p-6 rounded-[24px] border border-white shadow-soft hover:shadow-heavy hover:-translate-y-1 transition-all duration-500 text-left flex flex-col justify-between active:scale-[0.98]"
+                                className="group relative bg-white/85 backdrop-blur-md p-6 rounded-[24px] border border-white/70 shadow-card hover:shadow-card-hover hover:-translate-y-1 transition-all duration-500 text-left flex flex-col justify-between active:scale-[0.98]"
                             >
                                 <div className="space-y-3">
                                     <h3 className="text-lg font-extrabold text-gray-800 line-clamp-2 group-hover:text-blue-600 transition-colors tracking-tight leading-snug">
@@ -217,11 +226,11 @@ export default function PracticeHome() {
                                     </div>
                                 </div>
 
-                                {highScore && (
+                                {highScore && typeof highScore.highestScore === 'number' && !isNaN(highScore.highestScore) && (
                                     <div className="mt-6 flex items-center justify-between border-t border-gray-100/50 pt-4">
-                                        <span className="text-[10px] text-gray-400 font-extrabold uppercase tracking-widest">High Score</span>
+                                        <span className="text-[10px] text-gray-400 font-extrabold uppercase tracking-widest">Best Score</span>
                                         <div className="flex items-center gap-2 text-[13px] font-black text-amber-600 bg-amber-50/50 px-3 py-1 rounded-xl border border-amber-100/50 shadow-sm">
-                                            <Trophy className="h-3.5 w-3.5" /> {highScore.highestScore.toFixed(1)}
+                                            <Trophy className="h-3.5 w-3.5" /> {highScore.highestScore.toFixed(1)} / 10
                                         </div>
                                     </div>
                                 )}

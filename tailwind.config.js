@@ -46,6 +46,16 @@ export default {
                 md: 'calc(var(--radius) - 2px)',
                 sm: 'calc(var(--radius) - 4px)',
             },
+            boxShadow: {
+                // Subtle layered shadows for card depth — not too bright
+                'soft': '0 2px 8px -1px rgba(0,0,0,0.06), 0 1px 3px -1px rgba(0,0,0,0.04)',
+                'medium': '0 6px 18px -3px rgba(0,0,0,0.09), 0 2px 6px -2px rgba(0,0,0,0.05)',
+                'heavy': '0 14px 30px -6px rgba(0,0,0,0.13), 0 4px 10px -3px rgba(0,0,0,0.07)',
+                'inset': 'inset 0 2px 5px 0 rgba(0,0,0,0.04)',
+                // Card overlay: a very faint bottom shadow that dims background
+                'card': '0 1px 4px 0 rgba(0,0,0,0.05), 0 4px 16px -4px rgba(0,0,0,0.07)',
+                'card-hover': '0 4px 12px -2px rgba(0,0,0,0.10), 0 8px 24px -8px rgba(0,0,0,0.09)',
+            },
         },
     },
     plugins: [

@@ -49,25 +49,34 @@ export function AppLayout() {
     // --- Admin layout ---
     if (isAdminRoute) {
         return (
-            <div className="min-h-screen bg-gray-100">
-                <header className="sticky top-0 z-40 border-b border-gray-200 bg-white/90 backdrop-blur">
-                    <div className="mx-auto flex h-14 max-w-7xl items-center justify-between px-4">
-                        <button onClick={() => navigate('/admin')} className="flex items-center gap-2 font-bold text-lg">
-                            <Settings className="h-5 w-5 text-blue-600" />
-                            <span className="text-gray-800">Khu vực Giáo Viên</span>
+            <div className="min-h-screen bg-slate-50">
+                <header className="sticky top-0 z-40 border-b border-slate-200/60 bg-white/80 backdrop-blur-xl">
+                    <div className="flex h-14 w-full items-center justify-between px-4 sm:px-6 lg:px-8">
+                        <button onClick={() => navigate('/admin')} className="flex items-center gap-2 font-black text-lg">
+                            <div className="h-7 w-7 rounded-lg bg-indigo-600 flex items-center justify-center shadow-md shadow-indigo-500/20">
+                                <span className="text-white text-xs">S</span>
+                            </div>
+                            <span className="text-slate-800 tracking-tight">Khu vực Giáo Viên</span>
                         </button>
-                        <div className="flex items-center gap-3">
-                            <span className="text-xs text-gray-500">🟢 {onlineCount} đang trực tuyến</span>
-                            <button onClick={() => navigate('/')} className="text-sm text-gray-500 hover:text-blue-600 transition-colors">
-                                ← Trang chủ
+                        <div className="flex items-center gap-4">
+                            <div className="hidden sm:flex items-center gap-1.5 px-3 py-1.5 bg-emerald-50 text-emerald-600 rounded-full text-xs font-bold border border-emerald-100">
+                                <span className="relative flex h-2 w-2">
+                                    <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75"></span>
+                                    <span className="relative inline-flex rounded-full h-2 w-2 bg-emerald-500"></span>
+                                </span>
+                                {onlineCount} online
+                            </div>
+                            <button onClick={() => navigate('/')} className="text-sm font-semibold text-slate-500 hover:text-indigo-600 transition-colors">
+                                Trang chủ
                             </button>
-                            <button onClick={handleLogout} className="text-sm text-red-500 hover:text-red-700 flex items-center gap-1">
+                            <div className="h-4 w-px bg-slate-200"></div>
+                            <button onClick={handleLogout} className="text-sm font-semibold text-slate-500 hover:text-rose-600 flex items-center gap-1.5 transition-colors">
                                 <LogOut className="h-4 w-4" /> Đăng xuất
                             </button>
                         </div>
                     </div>
                 </header>
-                <main className="mx-auto max-w-7xl px-4 py-6">
+                <main className="w-full px-4 sm:px-6 lg:px-8 py-6">
                     <Outlet />
                 </main>
                 <FloatingHub />
@@ -170,11 +179,22 @@ export function AppLayout() {
                 </div>
 
                 {/* Custom User Background */}
-                {settings.customBackground && (
-                    <div
-                        className="absolute inset-0 bg-cover bg-center transition-opacity duration-700 z-[1]"
-                        style={{ backgroundImage: `url(${settings.customBackground})` }}
-                    />
+                {settings.customBackground && settings.bgEnabled !== false && (
+                    <>
+                        <div
+                            className="absolute inset-0 bg-cover bg-center transition-opacity duration-700 z-[1]"
+                            style={{
+                                backgroundImage: `url(${settings.customBackground})`,
+                                opacity: settings.bgOpacity ?? 1,
+                            }}
+                        />
+                        {(settings.bgDarkness ?? 0) > 0 && (
+                            <div
+                                className="absolute inset-0 z-[2] transition-opacity duration-700"
+                                style={{ background: `rgba(0,0,0,${settings.bgDarkness})` }}
+                            />
+                        )}
+                    </>
                 )}
 
                 {/* Optional Tet Decorations (Subtle) */}
@@ -248,11 +268,22 @@ export function AppLayout() {
     return (
         <div className="min-h-screen bg-gray-50/50 relative overflow-hidden">
             {/* Custom User Background */}
-            {settings.customBackground && (
-                <div
-                    className="absolute inset-0 bg-cover bg-center transition-opacity duration-700 z-[0]"
-                    style={{ backgroundImage: `url(${settings.customBackground})` }}
-                />
+            {settings.customBackground && settings.bgEnabled !== false && (
+                <>
+                    <div
+                        className="absolute inset-0 bg-cover bg-center transition-opacity duration-700 z-[0]"
+                        style={{
+                            backgroundImage: `url(${settings.customBackground})`,
+                            opacity: settings.bgOpacity ?? 1,
+                        }}
+                    />
+                    {(settings.bgDarkness ?? 0) > 0 && (
+                        <div
+                            className="absolute inset-0 z-[1] transition-opacity duration-700"
+                            style={{ background: `rgba(0,0,0,${settings.bgDarkness})` }}
+                        />
+                    )}
+                </>
             )}
 
             {/* Premium Glass Header */}
@@ -278,8 +309,13 @@ export function AppLayout() {
             </header>
 
             <main className={cn(
-                "relative z-10 w-full mx-auto px-4 py-6 md:py-10 min-h-[calc(100vh-160px)] transition-all duration-300",
-                isExamPage ? "max-w-7xl" : "max-w-5xl"
+                "relative z-10 w-full mx-auto px-4 min-h-[calc(100vh-160px)] transition-all duration-300",
+                isExamPage ? "max-w-7xl" : "max-w-5xl",
+                isExamPage
+                    ? settings.examPadding === 'compact' ? 'py-3 md:py-4'
+                    : settings.examPadding === 'spacious' ? 'py-10 md:py-16'
+                    : 'py-6 md:py-10'
+                    : 'py-6 md:py-10'
             )}>
                 <div className="page-fade-in">
                     <Outlet />

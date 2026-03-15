@@ -12,6 +12,7 @@ const LoginPage = lazy(() => import('@/pages/Login'));
 const Dashboard = lazy(() => import('@/pages/Dashboard'));
 const PracticeHome = lazy(() => import('@/pages/practice/PracticeHome'));
 const PracticeExam = lazy(() => import('@/pages/practice/PracticeExam'));
+const PracticeHistory = lazy(() => import('@/pages/practice/PracticeHistory'));
 const Schedule = lazy(() => import('@/pages/Schedule'));
 const EtestHome = lazy(() => import('@/pages/etest/EtestHome'));
 const EtestExam = lazy(() => import('@/pages/etest/EtestExam'));
@@ -22,7 +23,8 @@ const AdminEtest = lazy(() => import('@/pages/admin/AdminEtest'));
 const AdminVocab = lazy(() => import('@/pages/admin/AdminVocab'));
 const AdminNotifications = lazy(() => import('@/pages/admin/AdminNotifications'));
 const AdminStudents = lazy(() => import('@/pages/admin/AdminStudents'));
-const AdminSchedule = lazy(() => import('@/pages/admin/AdminSchedule')); // Added Schedule
+const AdminSchedule = lazy(() => import('@/pages/admin/AdminSchedule'));
+const EditExamPage = lazy(() => import('@/pages/admin/EditExamPage'));
 
 // Lazy-load AdminOverview from same file
 const AdminOverview = lazy(() =>
@@ -53,6 +55,7 @@ function App() {
 
                                     {/* Practice module (allows guest) */}
                                     <Route path="/practice" element={<PracticeHome />} />
+                                    <Route path="/practice/history" element={<PracticeHistory />} />
                                     <Route path="/practice/:examId" element={<PracticeExam />} />
 
                                     {/* Schedule (Student) */}
@@ -75,6 +78,7 @@ function App() {
                                     >
                                         <Route path="/admin" element={<AdminOverview />} />
                                         <Route path="/admin/practice" element={<AdminPractice />} />
+                                        <Route path="/admin/practice/:examId/edit" element={<EditExamPage />} />
                                         <Route path="/admin/etest" element={<AdminEtest />} />
                                         <Route path="/admin/vocab" element={<AdminVocab />} />
                                         <Route path="/admin/schedule" element={<AdminSchedule />} />

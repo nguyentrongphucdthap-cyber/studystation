@@ -14,6 +14,7 @@ export interface AIChatOptions {
     temperature?: number;
     maxOutputTokens?: number;
     systemInstruction?: string;
+    responseMimeType?: string;
 }
 
 const GEMINI_MODEL = 'gemini-2.5-flash-lite';
@@ -48,7 +49,8 @@ export async function generateAIContent(messages: AIChatMessage[], options?: AIC
         contents: messages,
         generationConfig: {
             temperature: options?.temperature ?? 0.7,
-            maxOutputTokens: options?.maxOutputTokens ?? 2048,
+            maxOutputTokens: options?.maxOutputTokens ?? 8192,
+            ...(options?.responseMimeType ? { responseMimeType: options.responseMimeType } : {})
         },
     };
     if (options?.systemInstruction) {
@@ -67,6 +69,7 @@ export async function generateAIContent(messages: AIChatMessage[], options?: AIC
             const response = await fetch(url, {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
+                referrerPolicy: 'no-referrer',
                 body: bodyStr,
             });
 
@@ -146,6 +149,7 @@ export async function checkApiKeyHealth(apiKey: string): Promise<ApiKeyStatus> {
         const response = await fetch(url, {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
+            referrerPolicy: 'no-referrer',
             body: JSON.stringify({
                 contents: [{ role: 'user', parts: [{ text: 'Hi' }] }],
                 generationConfig: { maxOutputTokens: 5 },

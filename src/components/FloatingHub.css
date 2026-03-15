@@ -1369,7 +1369,9 @@
 
 .color-picker {
     display: flex;
+    flex-wrap: wrap;
     gap: 8px;
+    max-width: 100%;
 }
 
 .color-swatch {

@@ -2,15 +2,9 @@ import React, { useState, useRef } from 'react';
 import { Dialog } from '@/components/ui/Dialog';
 import { Button } from '@/components/ui/Button';
 import { useToast } from '@/components/ui/Toast';
-import { Upload, Wand2, Check, AlertCircle, Image as ImageIcon } from 'lucide-react';
-import * as mammoth from 'mammoth';
-import * as pdfjsLib from 'pdfjs-dist';
-import { uploadToImgBB } from '@/services/image.service';
-import { parseExamText } from '@/utils/examParser';
+import { Upload, Wand2 } from 'lucide-react';
 import { getSubjects } from '@/services/exam.service';
-
-// Configure PDF.js worker
-pdfjsLib.GlobalWorkerOptions.workerSrc = `https://unpkg.com/pdfjs-dist@${pdfjsLib.version}/build/pdf.worker.min.mjs`;
+import { generateAIContent } from '@/services/ai.service';
 
 interface SmartImportDialogProps {
     open: boolean;
@@ -18,6 +12,129 @@ interface SmartImportDialogProps {
     onImport: (data: any) => Promise<void>;
     type: 'practice' | 'etest' | 'vocab';
     initialSubjectId?: string | null;
+}
+
+// ──────────────────────────────────────────────────────────
+// AI SYSTEM PROMPTS for different types
+// ──────────────────────────────────────────────────────────
+
+const PROMPTS = {
+    practice: `Bạn là chuyên gia phân tích đề thi THPT Việt Nam. Nhiệm vụ: đọc đề thi và xuất ra JSON.
+
+CẤU TRÚC ĐỀ THI:
+- Phần I (I): MCQ → part1. Đáp án A. B. C. D. "correct" là index 0-3.
+- Phần II (II): Đúng/Sai → part2. Mỗi câu có ý a) b) c) d). Mỗi ý là subQuestion với "correct" là true/false.
+- Phần III (III): Trả lời ngắn → part3. Câu hỏi tính toán, kết quả. "correct" là string.
+
+QUY TẮC CÔNG THỨC & VĂN BẢN (CỰC KỲ QUAN TRỌNG):
+- TẤT CẢ các biểu thức toán/lý/hóa, số kèm đơn vị (VD: $10\\text{ V}$, $50\\text{ Hz}$, $0.5\\text{ m/s}$), các ký hiệu độc lập ($x$, $t$, $\\pi$, $\\Omega$), và phương trình dài (VD: $x = 100\\sqrt{2}\\cos(100\\pi t + \\pi/4)\\text{ cm}$) BẮT BUỘC phải được bọc trọn vẹn trong thẻ LaTeX \`$\`...\`$\` hoặc \`$$\`...\`$$\`. KHÔNG ĐƯỢC để nội dung toán học nằm trơ trọi dưới dạng text thường.
+- Đốivới đơn vị đứng cạnh số, dùng \`\\text{}\` bên trong LaTeX, ví dụ: $100\\text{ V}$.
+- NẾU HÌNH ẢNH LÀ CÔNG THỨC TOÁN HỌC: TUYỆT ĐỐI KHÔNG sao chép thẻ hình ảnh \`![...](url)\`. Thay vào đó, bạn PHẢI tự động "đọc" nội dung trong ảnh và gõ lại toàn bộ công thức đó bằng mã LaTeX. CHỈ GIỮ LẠI thẻ hình ảnh nếu đó là một biểu đồ, đồ thị, hoặc bức tranh minh họa thực sự.
+- TUYỆT ĐỐI KHÔNG dùng dấu "/" để biểu diễn phân số (VD: không viết 1/2). BẮT BUỘC dùng LaTeX \`\\frac{1}{2}\` cho mọi phân số.
+- Các công thức toán học phải được viết đẹp và chuẩn LaTeX (vd: dùng \`\\sqrt{}\`, \`\\pi\`, \`\\cos\`, \`\\Omega\`, v.v...).
+- QUAN TRỌNG: Trong chuỗi JSON, BẤT KỲ ký tự gạch chéo ngược (\\) nào CŨNG PHẢI ĐƯỢC NHÂN ĐÔI thành (\\\\). Tức là viết \`\\\\frac\`, \`\\\\sqrt\`, \`\\\\cos\`, \`\\\\pi\`, KHÔNG BAO GIỜ viết \`\\frac\`. Việc quên nhân đôi dấu \\ sẽ làm lỗi toàn bộ hệ thống. Mọi ký hiệu LaTeX đều phải đính kèm \\\\ ở trước.
+- Việc thiếu sót câu hỏi là KHÔNG CHẤP NHẬN ĐƯỢC. Đề thi có bao nhiêu câu phải TRÍCH XUẤT ĐẦY ĐỦ bấy nhiêu câu.
+- TUYỆT ĐỐI KHÔNG dùng dấu ngoặc kép thẳng (") ở giữa nội dung các trường text vì sẽ làm hỏng JSON. Nếu cần trích dẫn, hãy dùng dấu nháy đơn (') hoặc ngoặc kép cong (“ ”).
+- Các chuỗi phải viết trên CÙNG MỘT DÒNG. Dùng "\\\\n" nếu cần xuống dòng, TUYỆT ĐỐI KHÔNG ấn Enter tạo dòng mới bên giữa chuỗi JSON.
+- HÌNH ẢNH: Nếu hình ảnh là biểu đồ/đồ thị/minh họa (KHÔNG phải công thức), BẮT BUỘC phải copy y nguyên link thẻ hình (Markdown '![...](url)'). VỊ TRÍ ĐẶT ẢNH: Đặt vào cuối thuộc tính "text" của CÂU HỎI CHÍNH. TUY NHIÊN, NẾU hình ảnh đó chính là MỘT ĐÁP ÁN (A, B, C, D) hoặc nằm trong Ý TRẢ LỜI của đúng/sai, thì ĐƯỢC PHÉP dán thẻ hình ảnh đó vào mảng "options" hoặc thuộc tính "text" của "subQuestions".
+
+JSON FORMAT (PHẢI TUÂN THỦ TUYỆT ĐỐI):
+{
+  "part1": [{ "id": 1, "text": "...", "options": ["A", "B", "C", "D"], "correct": 0, "explanation": "..." }],
+  "part2": [{ "id": 1, "text": "...", "subQuestions": [{ "id": "a", "text": "...", "correct": true }] }],
+  "part3": [{ "id": 1, "text": "...", "correct": "10" }]
+}
+QUY TẮC CỰC KỲ QUAN TRỌNG:
+1. Phải có dấu phẩy (,) ngăn cách giữa các đối tượng trong mảng và giữa các thuộc tính.
+2. KHÔNG được có dấu phẩy dư ở cuối mảng hoặc cuối đối tượng.
+3. Chỉ xuất JSON thuần, không giải thích gì thêm.`,
+
+    etest: `Phân tích văn bản tiếng Anh và xuất JSON cho đề thi E-test.
+JSON FORMAT:
+{
+  "sections": [
+    {
+      "passage": "Nội dung bài đọc (nếu có, nếu không để trống)",
+      "questions": [
+        { "id": 1, "text": "...", "options": ["A", "B", "C", "D"], "correct": 0 }
+      ]
+    }
+  ]
+}
+Chỉ xuất JSON thuần.`,
+
+    vocab: `Trích xuất từ vựng từ văn bản và xuất JSON.
+JSON FORMAT:
+{
+  "words": [
+    { "word": "apple", "meaning": "quả táo", "example": "I eat an apple.", "pronunciation": "/ˈæp.əl/", "partOfSpeech": "noun" }
+  ]
+}
+Chỉ xuất JSON thuần.`
+};
+
+const MARKDOWN_IMAGE_REGEX = /!\[[^\]]*]\(([^)]+)\)/g;
+
+function toMarkdownImage(imageValue: unknown): string {
+    if (typeof imageValue !== 'string') return '';
+    const trimmed = imageValue.trim();
+    if (!trimmed) return '';
+    if (trimmed.startsWith('![')) return trimmed;
+    return `![image](${trimmed})`;
+}
+
+function appendImageToText(text: unknown, imageValue: unknown): string {
+    const normalizedText = typeof text === 'string' ? text.trim() : '';
+    const markdownImage = toMarkdownImage(imageValue);
+    if (!markdownImage) return normalizedText;
+
+    const existingImages = Array.from(normalizedText.matchAll(MARKDOWN_IMAGE_REGEX), (match) => match[0]);
+    if (existingImages.includes(markdownImage)) {
+        return normalizedText;
+    }
+
+    return normalizedText ? `${normalizedText}\n\n${markdownImage}` : markdownImage;
+}
+
+function normalizeImportedExamData(data: any) {
+    const normalized = structuredClone(data);
+
+    if (Array.isArray(normalized.part1)) {
+        normalized.part1 = normalized.part1.map((q: any) => {
+            const newQ = {
+                ...q,
+                text: appendImageToText(q?.text, q?.image),
+                options: Array.isArray(q?.options) ? q.options.slice(0, 4) : ['', '', '', ''],
+            };
+            delete newQ.image;
+            return newQ;
+        });
+    }
+
+    if (Array.isArray(normalized.part2)) {
+        normalized.part2 = normalized.part2.map((q: any) => {
+            const newQ = {
+                ...q,
+                text: appendImageToText(q?.text, q?.image),
+                subQuestions: Array.isArray(q?.subQuestions) ? q.subQuestions : [],
+            };
+            delete newQ.image;
+            return newQ;
+        });
+    }
+
+    if (Array.isArray(normalized.part3)) {
+        normalized.part3 = normalized.part3.map((q: any) => {
+            const newQ = {
+                ...q,
+                text: appendImageToText(q?.text, q?.image),
+            };
+            delete newQ.image;
+            return newQ;
+        });
+    }
+
+    return normalized;
 }
 
 export function SmartImportDialog({ open, onClose, onImport, type, initialSubjectId }: SmartImportDialogProps) {
@@ -28,40 +145,48 @@ export function SmartImportDialog({ open, onClose, onImport, type, initialSubjec
     const [time, setTime] = useState(50);
     const [subjectId, setSubjectId] = useState<string>(initialSubjectId || 'toan');
     const [extractedText, setExtractedText] = useState('');
-    const [generatedText, setGeneratedText] = useState('');
+    const [jsonPreview, setJsonPreview] = useState('');
     const [uploadProgress, setUploadProgress] = useState<{ current: number, total: number } | null>(null);
     const fileInputRef = useRef<HTMLInputElement>(null);
     const subjects = getSubjects();
+
+
 
     const handleFileChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
         const file = e.target.files?.[0];
         if (!file) return;
 
         setLoading(true);
-        setUploadProgress(null);
         try {
-            let text = '';
-            if (file.name.endsWith('.pdf')) {
-                text = await extractTextFromPDF(file);
-            } else if (file.name.endsWith('.docx')) {
-                text = await extractTextFromDocxWithImages(file);
-            } else {
-                text = await file.text();
+            const formData = new FormData();
+            formData.append("file", file);
+
+            // Call Python backend
+            const backendUrl = import.meta.env.VITE_BACKEND_API_URL || "http://localhost:8000";
+            let res: Response;
+            try {
+                res = await fetch(`${backendUrl}/api/extract`, {
+                    method: "POST",
+                    body: formData,
+                });
+            } catch (networkErr: any) {
+                throw new Error("Không thể kết nối đến máy chủ xử lý (Python Backend). Đảm bảo backend đang chạy.");
             }
 
-            if (!text || text.trim().length === 0) {
-                throw new Error('File rỗng hoặc không có nội dung có thể trích xuất.');
+            if (!res.ok) {
+                const errorData = await res.json().catch(() => ({}));
+                throw new Error(errorData.detail || `Server error: ${res.status}`);
             }
 
+            const data = await res.json();
+            const text = data.text;
+
+            if (!text || !text.trim()) throw new Error('File rỗng hoặc không thể trích xuất.');
             setExtractedText(text);
-            toast({ title: 'Đã đọc file', message: 'Nội dung đã được trích xuất thành công.', type: 'info' });
+            if (!title) setTitle(file.name.replace(/\.[^/.]+$/, "").replace(/[_-]/g, ' '));
+            toast({ title: '✅ Đã đọc file', type: 'info' });
         } catch (err: any) {
-            console.error('[SmartImport] Error:', err);
-            toast({
-                title: 'Lỗi đọc file',
-                message: err.message || 'Không thể trích xuất nội dung.',
-                type: 'error'
-            });
+            toast({ title: 'Lỗi', message: err.message, type: 'error' });
         } finally {
             setLoading(false);
             setUploadProgress(null);
@@ -69,296 +194,218 @@ export function SmartImportDialog({ open, onClose, onImport, type, initialSubjec
         }
     };
 
-    const extractTextFromDocxWithImages = async (file: File): Promise<string> => {
-        const arrayBuffer = await file.arrayBuffer();
-
-        const options = {
-            convertImage: (mammoth.images as any).imgElement(async (element: any) => {
-                setUploadProgress(prev => ({ current: (prev?.current || 0) + 1, total: 0 }));
-
-                const buffer = await element.read();
-                const blob = new Blob([buffer], { type: element.contentType });
-
-                try {
-                    const result = await uploadToImgBB(blob);
-                    return {
-                        src: result.url
-                    };
-                } catch (err) {
-                    console.error('Failed to upload docx image:', err);
-                    return { src: "" };
-                }
-            })
-        };
-
-        const result = await (mammoth as any).convertToMarkdown({ arrayBuffer }, options);
-        return result.value;
-    };
-
-    const extractTextFromPDF = async (file: File): Promise<string> => {
-        const arrayBuffer = await file.arrayBuffer();
-        const pdf = await pdfjsLib.getDocument({ data: arrayBuffer }).promise;
-        let text = '';
-
-        for (let i = 1; i <= pdf.numPages; i++) {
-            const page = await pdf.getPage(i);
-            const content = await page.getTextContent();
-            text += content.items.map((item: any) => item.str).join(' ') + '\n';
-
-            // Note: PDF image extraction is complex in browser, 
-            // staying with text-only for PDF in this version to ensure stability.
+    const robustJSONParse = (jsonStr: string) => {
+        let cleaned = jsonStr.trim();
+        
+        // Remove possible markdown wrappers
+        if (cleaned.startsWith('```')) {
+            cleaned = cleaned.replace(/^```(?:json)?\s*/, '').replace(/\s*```$/, '');
         }
-        return text;
+
+        try {
+            return JSON.parse(cleaned);
+        } catch (e: any) {
+            console.warn('[SmartImport] Initial parse failed, attempting structural repair:', e.message);
+            
+            let repaired = cleaned;
+
+            // 1. Fix unescaped backslashes in LaTeX (avoid breaking valid escapes)
+            // Replace any single backslash that isn't part of a known explicitly requested JSON escape like \n or \t
+            // We only want to keep literal \n, \t, \", \\. We should escape others.
+            repaired = repaired.replace(/\\(?!["\\/bfnrtu])/g, '\\\\');
+            
+            // For LaTeX commands that happen to start with n, r, t (like \neq, \rightarrow, \tan)
+            // If they are unescaped, JSON.parse will treat \n as newline, and \neq as <newline>eq.
+            // Instead of trying to regex everything, we must ensure the prompt asks for \\.
+            
+            // 2. Fix unescaped newlines inside strings
+            repaired = repaired.replace(/"([^"]*)"/g, (_match, p1) => {
+                return '"' + p1.replace(/\n/g, '\\n') + '"';
+            });
+            
+            // 3. Fix missing commas between objects/arrays: } { -> }, {
+            repaired = repaired.replace(/\}\s*\{/g, '}, {');
+            repaired = repaired.replace(/\]\s*\[/g, '], [');
+            repaired = repaired.replace(/\}\s*\[/g, '}, [');
+            repaired = repaired.replace(/\]\s*\{/g, '], {');
+            
+            // 4. Remove trailing commas before closing braces/brackets
+            repaired = repaired.replace(/,\s*\}/g, '}');
+            repaired = repaired.replace(/,\s*\]/g, ']');
+
+            // 5. Try to fix truncated JSON by closing open brackets/braces
+            const stack: ( '{' | '[' )[] = [];
+            for (let i = 0; i < repaired.length; i++) {
+                if (repaired[i] === '{') stack.push('{');
+                else if (repaired[i] === '[') stack.push('[');
+                else if (repaired[i] === '}') stack.pop();
+                else if (repaired[i] === ']') stack.pop();
+            }
+            while (stack.length > 0) {
+                const last = stack.pop();
+                repaired += last === '{' ? '}' : ']';
+            }
+
+            try {
+                return JSON.parse(repaired);
+            } catch (err2: any) {
+                console.error('[SmartImport] Structural repair failed:', err2.message);
+                // Return original error but with better context
+                const pos = err2.message.match(/position (\d+)/)?.[1] || e.message.match(/position (\d+)/)?.[1] || '?';
+                throw new Error(`JSON Error: ${e.message}. Vị trí: ${pos}. Có thể file quá dài hoặc AI bị ngắt quãng.`);
+            }
+        }
     };
 
     const handleGenerateAI = async () => {
         if (!extractedText.trim()) return;
-
         setLoading(true);
-        setUploadProgress({ current: 0, total: 1 }); // Re-use progress for chunks count
-
         try {
-            // 1. Split text into chunks (around 4000 chars each, preferably at double newlines)
-            const CHUNK_SIZE = 4000;
-            const textToProcess = extractedText.trim();
-            const chunks: string[] = [];
-
-            let currentIdx = 0;
-            while (currentIdx < textToProcess.length) {
-                let endIdx = currentIdx + CHUNK_SIZE;
-                if (endIdx < textToProcess.length) {
-                    // Try to find a good breaking point (double newline)
-                    const nextBreak = textToProcess.indexOf('\n\n', endIdx - 500);
-                    if (nextBreak !== -1 && nextBreak < endIdx + 500) {
-                        endIdx = nextBreak + 2;
-                    }
-                }
-                chunks.push(textToProcess.substring(currentIdx, endIdx));
-                currentIdx = endIdx;
-            }
-
-            setUploadProgress({ current: 0, total: chunks.length });
-
-            // 2. Call AI API in parallel for all chunks
-            const results = await Promise.all(chunks.map(async (chunk, index) => {
-                const res = await fetch('/api/ai/generate-exam', {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ text: chunk, type })
-                });
-
-                const data = await res.json();
-                if (!res.ok) throw new Error(data.error || `Lỗi ở phần ${index + 1}`);
-
-                setUploadProgress(prev => prev ? { ...prev, current: prev.current + 1 } : null);
-                return data.text;
-            }));
-
-            // 3. Merge results with delimiter
-            const joinedText = results.filter(Boolean).join('\n--------------------------------------------------\n');
-
-            setGeneratedText(joinedText);
-            setStep('review');
-            toast({
-                title: 'Thành công',
-                message: `AI đã xử lý xong ${chunks.length} phần dữ liệu!`,
-                type: 'success'
+            const response = await generateAIContent([
+                { role: 'user', parts: [{ text: `NỘI DUNG:\n${extractedText}` }] }
+            ], {
+                systemInstruction: PROMPTS[type] || PROMPTS.practice,
+                temperature: 0.1,
+                maxOutputTokens: 32768, // Allow up to 32k tokens to prevent truncation of long documents
+                responseMimeType: "application/json"
             });
+
+            const jsonMatch = response.match(/\{[\s\S]*\}/);
+            if (!jsonMatch) throw new Error('AI không trả về JSON hợp lệ.');
+            
+            const parsed = normalizeImportedExamData(robustJSONParse(jsonMatch[0]));
+            setJsonPreview(JSON.stringify(parsed, null, 2));
+            setStep('review');
+            toast({ title: '✅ Phân tích xong', type: 'success' });
         } catch (err: any) {
-            console.error('[AI Optimization] Error:', err);
             toast({ title: 'Lỗi AI', message: err.message, type: 'error' });
         } finally {
             setLoading(false);
-            setUploadProgress(null);
         }
     };
 
     const handleFinalImport = async () => {
-        if (!title.trim()) {
-            toast({ title: 'Thiếu thông tin', message: 'Vui lòng nhập tên đề thi.', type: 'warning' });
+        if (!title.trim() && type !== 'vocab') {
+            toast({ title: 'Thiếu tiêu đề', type: 'warning' });
             return;
         }
-
         try {
-            setLoading(true);
-            const questions = parseExamText(generatedText);
-
-            if (questions.length === 0) {
-                throw new Error('Không trích xuất được câu hỏi nào từ nội dung trên. Vui lòng kiểm tra định dạng.');
+            const data = normalizeImportedExamData(robustJSONParse(jsonPreview));
+            
+            // Re-index all IDs to guarantee absolute uniqueness and sequential order
+            let globalId = 1;
+            if (Array.isArray(data.part1)) {
+                data.part1.forEach((q: any) => { q.id = globalId++; });
+            }
+            if (Array.isArray(data.part2)) {
+                data.part2.forEach((q: any) => {
+                    q.id = globalId++;
+                    if (Array.isArray(q.subQuestions)) {
+                        q.subQuestions.forEach((sq: any, j: number) => {
+                            sq.id = String.fromCharCode(97 + j); // 'a', 'b', 'c', 'd'
+                        });
+                    }
+                });
+            }
+            if (Array.isArray(data.part3)) {
+                data.part3.forEach((q: any) => { q.id = globalId++; });
             }
 
-            // Wrap questions into full exam object
-            const examData = {
+            await onImport({
                 title,
                 time,
                 subjectId,
-                part1: questions.map((q, idx) => ({
-                    id: idx + 1,
-                    ...q
-                }))
-            };
-
-            await onImport(examData);
-            toast({ title: 'Thành công', message: `Đã tạo đề "${title}" với ${questions.length} câu hỏi.`, type: 'success' });
-
+                ...data
+            });
+            toast({ title: 'Thành công!', type: 'success' });
             onClose();
             setStep('upload');
             setExtractedText('');
-            setGeneratedText('');
             setTitle('');
         } catch (err: any) {
-            toast({ title: 'Lỗi Import', message: err.message, type: 'error' });
-        } finally {
-            setLoading(false);
+            toast({ title: 'Lỗi', message: err.message, type: 'error' });
         }
     };
 
     return (
-        <Dialog open={open} onClose={onClose} className="max-w-4xl">
-            <div className="flex items-center gap-2 mb-6">
-                <div className="p-2 rounded-lg bg-primary/10 text-primary">
-                    <Wand2 className="h-5 w-5" />
-                </div>
+        <Dialog open={open} onClose={onClose} className="max-w-4xl max-h-[90vh] flex flex-col p-0 overflow-hidden">
+            <div className="flex items-center gap-3 p-6 border-b bg-muted/20 shrink-0">
+                <div className="p-2 rounded-xl bg-primary/10 text-primary"><Wand2 className="h-5 w-5" /></div>
                 <div>
-                    <h3 className="text-lg font-bold">Soạn đề thông minh v2.0</h3>
-                    <p className="text-sm text-muted-foreground">Tự động trích xuất Ảnh & Công thức từ Word/PDF</p>
+                    <h3 className="text-lg font-bold">Smart Import v3.1 ({type})</h3>
+                    <p className="text-sm text-muted-foreground">Tự động nhận diện cấu trúc & công thức</p>
+                </div>
+                <div className="ml-auto flex gap-1.5">
+                    {['upload', 'review'].map((s) => (
+                        <div key={s} className={`h-1.5 rounded-full ${step === s ? 'w-8 bg-primary' : 'w-4 bg-muted'}`} />
+                    ))}
                 </div>
             </div>
 
-            {step === 'upload' ? (
-                <div className="space-y-4">
-                    <div
-                        onClick={() => !loading && fileInputRef.current?.click()}
-                        className={`group relative flex flex-col items-center justify-center rounded-xl border-2 border-dashed border-border p-10 transition-all hover:bg-accent cursor-pointer ${loading ? 'opacity-50 cursor-not-allowed' : ''}`}
-                    >
-                        <input
-                            type="file"
-                            ref={fileInputRef}
-                            onChange={handleFileChange}
-                            accept=".pdf,.docx,.txt"
-                            className="hidden"
-                        />
-                        {loading && uploadProgress ? (
-                            <div className="flex flex-col items-center animate-pulse">
-                                {uploadProgress.total > 1 ? (
-                                    <>
-                                        <Wand2 className="h-10 w-10 text-primary mb-2" />
-                                        <p className="text-sm font-medium">AI đang xử lý phần {uploadProgress.current}/{uploadProgress.total}...</p>
-                                    </>
-                                ) : (
-                                    <>
-                                        <ImageIcon className="h-10 w-10 text-primary mb-2" />
-                                        <p className="text-sm font-medium">Đang xử lý hình ảnh ({uploadProgress.current})...</p>
-                                    </>
-                                )}
-                            </div>
-                        ) : (
-                            <>
-                                <Upload className="mb-4 h-10 w-10 text-muted-foreground group-hover:text-primary" />
-                                <p className="text-sm font-medium">Click để tải lên đề Word/PDF</p>
-                                <p className="text-xs text-muted-foreground mt-1">Hỗ trợ trích xuất ảnh trực tiếp từ Word</p>
-                            </>
-                        )}
-                    </div>
-
-                    <div className="relative">
-                        <div className="absolute inset-0 flex items-center"><span className="w-full border-t" /></div>
-                        <div className="relative flex justify-center text-xs uppercase"><span className="bg-card px-2 text-muted-foreground">Hoặc dán văn bản kèm ảnh</span></div>
-                    </div>
-
-                    <textarea
-                        value={extractedText}
-                        onChange={(e) => setExtractedText(e.target.value)}
-                        placeholder="Dán nội dung từ Word/Web vào đây (bao gồm cả link ảnh)..."
-                        rows={10}
-                        className="w-full rounded-lg border border-input bg-background p-3 text-sm outline-none focus:border-primary transition-all font-mono"
-                    />
-
-                    <div className="flex justify-end gap-2">
-                        <Button variant="outline" onClick={onClose}>Hủy</Button>
-                        <Button
-                            onClick={handleGenerateAI}
-                            isLoading={loading}
-                            disabled={!extractedText.trim()}
-                            className="bg-gradient-to-r from-primary to-purple-600 border-none text-white px-8"
+            <div className="flex-1 overflow-y-auto p-6">
+                {step === 'upload' ? (
+                    <div className="space-y-5">
+                        <div
+                            onClick={() => !loading && fileInputRef.current?.click()}
+                            className={`flex flex-col items-center justify-center rounded-2xl border-2 border-dashed border-border p-10 hover:bg-primary/5 cursor-pointer transition-all ${loading ? 'opacity-50' : ''}`}
                         >
-                            <Wand2 className="h-4 w-4 mr-2" /> Soạn đề với Gemini 2.5
-                        </Button>
-                    </div>
-                </div>
-            ) : (
-                <div className="space-y-4">
-                    <div className="flex items-center justify-between">
-                        <h4 className="text-sm font-semibold flex items-center gap-2">
-                            <Check className="h-4 w-4 text-emerald-500" /> Kết quả cấu trúc hóa (Review)
-                        </h4>
-                        <div className="flex gap-2">
-                            <Button variant="ghost" size="sm" onClick={() => setStep('upload')}>Quay lại</Button>
+                            <input type="file" ref={fileInputRef} onChange={handleFileChange} accept=".pdf,.docx,.txt" className="hidden" />
+                            {loading && uploadProgress ? (
+                                <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary" />
+                            ) : (
+                                <>
+                                    <Upload className="mb-3 h-10 w-10 text-muted-foreground" />
+                                    <p className="text-sm font-semibold">Tải lên Word hoặc PDF</p>
+                                </>
+                            )}
                         </div>
-                    </div>
 
-                    <div className="grid grid-cols-1 md:grid-cols-4 gap-4 p-4 bg-muted/30 rounded-lg border">
-                        <div className="md:col-span-2">
-                            <label className="text-xs font-bold uppercase text-muted-foreground block mb-1">Tên đề thi</label>
-                            <input
-                                type="text" value={title} onChange={(e) => setTitle(e.target.value)}
-                                placeholder="Ví dụ: Đề thi thử THPT Quốc gia 2025"
-                                className="w-full bg-background border px-3 py-2 rounded outline-none focus:border-primary text-sm"
-                            />
-                        </div>
-                        <div>
-                            <label className="text-xs font-bold uppercase text-muted-foreground block mb-1">Môn học</label>
-                            <select
-                                value={subjectId} onChange={(e) => setSubjectId(e.target.value)}
-                                className="w-full bg-background border px-3 py-2 rounded outline-none focus:border-primary text-sm"
-                            >
-                                {subjects.map(s => <option key={s.id} value={s.id}>{s.icon} {s.name}</option>)}
-                            </select>
-                        </div>
-                        <div>
-                            <label className="text-xs font-bold uppercase text-muted-foreground block mb-1">Thời gian</label>
-                            <input
-                                type="number" value={time} onChange={(e) => setTime(Number(e.target.value))}
-                                className="w-full bg-background border px-3 py-2 rounded outline-none focus:border-primary text-sm"
-                            />
-                        </div>
-                    </div>
-
-                    <div className="relative group">
                         <textarea
-                            value={generatedText}
-                            onChange={(e) => setGeneratedText(e.target.value)}
-                            rows={15}
-                            className="w-full rounded-lg border border-input bg-slate-950 text-slate-200 p-4 text-sm font-mono outline-none focus:border-primary leading-relaxed"
+                            value={extractedText}
+                            onChange={(e) => setExtractedText(e.target.value)}
+                            placeholder="Hoặc dán văn bản vào đây..."
+                            rows={10}
+                            className="w-full rounded-xl border p-4 text-sm font-mono outline-none focus:border-primary"
                         />
-                        <div className="absolute bottom-4 right-4 opacity-0 group-hover:opacity-100 transition-opacity">
-                            <div className="bg-black/50 backdrop-blur-sm text-white text-[10px] px-2 py-1 rounded">
-                                * = Đáp án đúng | LaTeX: $...$ | Image: ![...]
+
+                        <div className="flex justify-end gap-3">
+                            <Button variant="outline" onClick={onClose}>Hủy</Button>
+                            <Button onClick={handleGenerateAI} isLoading={loading} disabled={!extractedText.trim()}>Phân tích AI</Button>
+                        </div>
+                    </div>
+                ) : (
+                    <div className="space-y-5">
+                        <div className="grid grid-cols-1 md:grid-cols-3 gap-4 p-4 bg-muted/30 rounded-xl border">
+                            <div className="md:col-span-1">
+                                <label className="text-[10px] font-bold uppercase text-muted-foreground mb-1 block">Tiêu đề</label>
+                                <input type="text" value={title} onChange={(e) => setTitle(e.target.value)} className="w-full border rounded-md px-3 py-1.5 text-sm" />
+                            </div>
+                            <div>
+                                <label className="text-[10px] font-bold uppercase text-muted-foreground mb-1 block">Môn học</label>
+                                <select value={subjectId} onChange={(e) => setSubjectId(e.target.value)} className="w-full border rounded-md px-3 py-1.5 text-sm">
+                                    {subjects.map(s => <option key={s.id} value={s.id}>{s.icon} {s.name}</option>)}
+                                </select>
+                            </div>
+                            <div>
+                                <label className="text-[10px] font-bold uppercase text-muted-foreground mb-1 block">Thời gian</label>
+                                <input type="number" value={time} onChange={(e) => setTime(Number(e.target.value))} className="w-full border rounded-md px-3 py-1.5 text-sm" />
                             </div>
                         </div>
-                    </div>
 
-                    <div className="rounded-lg bg-blue-50 p-3 border border-blue-200 flex items-start gap-2">
-                        <AlertCircle className="h-4 w-4 text-blue-600 mt-0.5" />
-                        <div className="text-[11px] text-blue-800 space-y-1">
-                            <p><strong>Mẹo:</strong> Anh có thể chỉnh sửa trực tiếp nội dung trên. Đảm bảo mỗi câu bắt đầu với <code className="bg-blue-200 px-1 rounded">[Question]</code>.</p>
-                            <p>Các công thức $\LaTeX$ sẽ được tự động hiển thị trên giao diện bài thi.</p>
+                        <textarea
+                            value={jsonPreview}
+                            onChange={(e) => setJsonPreview(e.target.value)}
+                            rows={15}
+                            className="w-full rounded-xl border bg-slate-900 text-slate-100 p-4 text-xs font-mono outline-none"
+                        />
+
+                        <div className="flex justify-end gap-3">
+                            <Button variant="outline" onClick={() => setStep('upload')}>Quay lại</Button>
+                            <Button onClick={handleFinalImport} className="bg-emerald-600 hover:bg-emerald-700 text-white">Xác nhận nhập kho</Button>
                         </div>
                     </div>
-
-                    <div className="flex justify-end gap-2">
-                        <Button variant="outline" onClick={() => setStep('upload')}>Hủy</Button>
-                        <Button
-                            onClick={handleFinalImport}
-                            isLoading={loading}
-                            className="bg-emerald-600 hover:bg-emerald-700 text-white"
-                        >
-                            Xác nhận & Nhập kho dữ liệu
-                        </Button>
-                    </div>
-                </div>
-            )}
+                )}
+            </div>
         </Dialog>
     );
 }
-

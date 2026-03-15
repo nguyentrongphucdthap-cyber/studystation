@@ -96,7 +96,11 @@ const POMODORO_MODES = [
     { id: 'longBreak', label: 'Nghỉ dài', duration: 15 * 60 },
 ] as const;
 
-const ACCENT_COLORS = ['#3b82f6', '#10b981', '#f59e0b', '#ef4444', '#8b5cf6', '#ec4899'];
+// Vivid colors
+const ACCENT_COLORS_VIVID = ['#3b82f6', '#10b981', '#f59e0b', '#ef4444', '#8b5cf6', '#ec4899'];
+// Pastel colors
+const ACCENT_COLORS_PASTEL = ['#a8d8ea', '#b8e0d2', '#f9c6d0', '#d7c5e8', '#fde2b8', '#b5d5fb', '#ffd6e7', '#c3e8c3'];
+const ACCENT_COLORS = [...ACCENT_COLORS_VIVID, ...ACCENT_COLORS_PASTEL];
 
 const FAB_STORAGE_KEY = 'hub_fab_position';
 const NOTES_KEY_PREFIX = 'hub_notes_';
@@ -2049,6 +2053,33 @@ function ThemeTab() {
                     </div>
                 </div>
 
+                {/* Font Family */}
+                <div className="theme-option" style={{ flexDirection: 'column', alignItems: 'flex-start', gap: '10px' }}>
+                    <label><Type size={14} style={{ verticalAlign: '-2px', marginRight: '4px' }} /> Phông chữ</label>
+                    <div style={{ display: 'flex', flexDirection: 'column', gap: '6px', width: '100%' }}>
+                        {(['Be Vietnam Pro', 'Roboto', 'Times New Roman', 'Montserrat (Đậm)'] as const).map(font => (
+                            <button
+                                key={font}
+                                onClick={() => updateSetting('fontFamily', font)}
+                                style={{
+                                    padding: '8px 14px',
+                                    borderRadius: '8px',
+                                    border: settings.fontFamily === font ? '2px solid var(--accent-color, #3b82f6)' : '1.5px solid #e5e7eb',
+                                    background: settings.fontFamily === font ? 'rgba(var(--accent-rgb, 59, 130, 246), 0.1)' : 'white',
+                                    color: settings.fontFamily === font ? 'var(--accent-color, #3b82f6)' : '#6b7280',
+                                    fontWeight: font.includes('Montserrat') ? 700 : 500,
+                                    fontFamily: font.replace(' (Đậm)', ''),
+                                    textAlign: 'left',
+                                    cursor: 'pointer',
+                                    transition: 'all 0.2s',
+                                }}
+                            >
+                                {font}
+                            </button>
+                        ))}
+                    </div>
+                </div>
+
                 {/* Background Image */}
                 <div className="theme-option" style={{ flexDirection: 'column', alignItems: 'flex-start', gap: '10px' }}>
                     <label><Image size={14} style={{ verticalAlign: '-2px', marginRight: '4px' }} /> Hình nền</label>
@@ -2111,6 +2142,95 @@ function ThemeTab() {
                                 ✓ Đã áp dụng hình nền tùy chỉnh
                             </p>
                         )}
+                    </div>
+                </div>
+
+                {/* BG Enabled Toggle — chỉ hiện khi đã có hình nền */}
+                {settings.customBackground && (
+                    <div className="theme-option">
+                        <label style={{ display: 'flex', alignItems: 'center', gap: '4px' }}>
+                            <Image size={14} style={{ verticalAlign: '-2px' }} /> Hiển thị hình nền khi làm bài
+                        </label>
+                        <button
+                            className={`toggle-switch ${settings.bgEnabled !== false ? 'on' : ''}`}
+                            onClick={() => updateSetting('bgEnabled', settings.bgEnabled === false ? true : false)}
+                        />
+                    </div>
+                )}
+
+                {/* Opacity slider — chỉ hiện khi bg bật */}
+                {settings.customBackground && settings.bgEnabled !== false && (
+                    <div className="theme-option" style={{ flexDirection: 'column', alignItems: 'flex-start', gap: '8px' }}>
+                        <label style={{ display: 'flex', justifyContent: 'space-between', width: '100%' }}>
+                            <span>🌫️ Độ trong suốt</span>
+                            <span style={{ fontWeight: 700, color: 'var(--accent-color, #3b82f6)' }}>
+                                {Math.round((settings.bgOpacity ?? 1) * 100)}%
+                            </span>
+                        </label>
+                        <input
+                            type="range"
+                            min={10}
+                            max={100}
+                            step={5}
+                            value={Math.round((settings.bgOpacity ?? 1) * 100)}
+                            onChange={e => updateSetting('bgOpacity', parseInt(e.target.value) / 100)}
+                            style={{ width: '100%', accentColor: 'var(--accent-color, #3b82f6)', cursor: 'pointer' }}
+                        />
+                    </div>
+                )}
+
+                {/* Darkness overlay slider — chỉ hiện khi bg bật */}
+                {settings.customBackground && settings.bgEnabled !== false && (
+                    <div className="theme-option" style={{ flexDirection: 'column', alignItems: 'flex-start', gap: '8px' }}>
+                        <label style={{ display: 'flex', justifyContent: 'space-between', width: '100%' }}>
+                            <span>🌑 Độ tối</span>
+                            <span style={{ fontWeight: 700, color: 'var(--accent-color, #3b82f6)' }}>
+                                {Math.round((settings.bgDarkness ?? 0) * 100)}%
+                            </span>
+                        </label>
+                        <input
+                            type="range"
+                            min={0}
+                            max={90}
+                            step={5}
+                            value={Math.round((settings.bgDarkness ?? 0) * 100)}
+                            onChange={e => updateSetting('bgDarkness', parseInt(e.target.value) / 100)}
+                            style={{ width: '100%', accentColor: 'var(--accent-color, #3b82f6)', cursor: 'pointer' }}
+                        />
+                    </div>
+                )}
+
+                {/* Exam Padding Picker */}
+                <div className="theme-option" style={{ flexDirection: 'column', alignItems: 'flex-start', gap: '10px' }}>
+                    <label>📐 Độ dãn vùng làm bài</label>
+                    <div style={{ display: 'flex', gap: '6px', width: '100%' }}>
+                        {(['compact', 'normal', 'spacious'] as const).map(p => (
+                            <button
+                                key={p}
+                                onClick={() => updateSetting('examPadding', p)}
+                                style={{
+                                    flex: 1,
+                                    padding: '7px 6px',
+                                    borderRadius: '10px',
+                                    border: settings.examPadding === p
+                                        ? '2px solid var(--accent-color, #3b82f6)'
+                                        : '1.5px solid #e5e7eb',
+                                    background: settings.examPadding === p
+                                        ? 'rgba(var(--accent-rgb, 59,130,246), 0.1)'
+                                        : 'white',
+                                    color: settings.examPadding === p
+                                        ? 'var(--accent-color, #3b82f6)'
+                                        : '#6b7280',
+                                    fontWeight: 600,
+                                    fontSize: '12px',
+                                    cursor: 'pointer',
+                                    transition: 'all 0.2s',
+                                    textAlign: 'center' as const,
+                                }}
+                            >
+                                {p === 'compact' ? '🗜️ Gọn' : p === 'normal' ? '📄 Vừa' : '📖 Rộng'}
+                            </button>
+                        ))}
                     </div>
                 </div>
 

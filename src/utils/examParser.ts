@@ -7,20 +7,27 @@ export interface ParsedQuestion {
     image?: string;
 }
 
+/**
+ * Basic text parser for MCQ format.
+ * Expects blocks separated by --------------------------------------------------
+ * or [Question] blocks.
+ */
 export function parseExamText(text: string): ParsedQuestion[] {
     const questions: ParsedQuestion[] = [];
-    const blocks = text.split(/--------------------------------------------------/);
+    
+    // Split by common delimiters
+    const blocks = text.split(/--------------------------------------------------|\[Question\]/i);
 
     for (const block of blocks) {
         const trimmedBlock = block.trim();
         if (!trimmedBlock) continue;
 
         try {
-            // Match content following [Question], stopping at the first option (A. or *A.)
-            const questionMatch = trimmedBlock.match(/\[Question\]\s*([\s\S]*?)(?=[A-Z]\.|\n\*)/i);
-            const questionContent = (questionMatch && questionMatch[1]) ? questionMatch[1].trim() : '';
+            // Match content stopping at the first option (A. or *A.)
+            const questionMatch = trimmedBlock.match(/^([\s\S]*?)(?=[A-Z]\.|\*)/i);
+            const questionContent = (questionMatch && questionMatch[1]) ? questionMatch[1].trim() : trimmedBlock;
 
-            // Extract image from question content if present
+            // Extract image if present
             const imgMatch = questionContent.match(/!\[.*?\]\((.*?)\)/);
             const image = (imgMatch && imgMatch[1]) ? imgMatch[1] : undefined;
             const pureQuestion = questionContent.replace(/!\[.*?\]\(.*?\)/g, '').trim();
@@ -28,8 +35,8 @@ export function parseExamText(text: string): ParsedQuestion[] {
             const options: string[] = [];
             let correct = 0;
 
-            // Regex looks for patterns like A. Option, *B. Correct, C. Option
-            const optionRegex = /^[ \t]*(\*?)([A-D])\.\s*(.*)$/gm;
+            // Detect options A. B. C. D. or *A. for correct
+            const optionRegex = /^[ \t]*(\*?)([A-D])[\.)]\s*(.*)$/gm;
             let match;
             let optionIndex = 0;
 
@@ -47,7 +54,7 @@ export function parseExamText(text: string): ParsedQuestion[] {
             if (pureQuestion && options.length > 0) {
                 const question: ParsedQuestion = {
                     text: pureQuestion,
-                    options: options.slice(0, 4),
+                    options: options.slice(0, 4), // Normalize to 4
                     correct,
                     explanation,
                 };

@@ -41,6 +41,7 @@ export interface Part1Question {
     image?: string;
     options: [string, string, string, string];
     correct: 0 | 1 | 2 | 3;
+    explanation?: string;
 }
 
 export interface Part2SubQuestion {
@@ -54,6 +55,7 @@ export interface Part2Question {
     text: string;
     image?: string;
     subQuestions: Part2SubQuestion[];
+    explanation?: string;
 }
 
 export interface Part3Question {
@@ -61,6 +63,7 @@ export interface Part3Question {
     text: string;
     image?: string;
     correct: string;
+    explanation?: string;
 }
 
 export interface Exam {

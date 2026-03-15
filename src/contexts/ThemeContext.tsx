@@ -6,6 +6,11 @@ export interface ThemeSettings {
     accentColor: string;
     fontSize: 'small' | 'medium' | 'large';
     customBackground?: string;
+    bgEnabled: boolean;           // bật/tắt hình nền khi làm bài
+    bgOpacity: number;            // 0–1, độ trong suốt của hình nền
+    bgDarkness: number;           // 0–0.9, độ tối overlay
+    examPadding: 'compact' | 'normal' | 'spacious'; // độ dãn vùng làm bài
+    fontFamily: 'Be Vietnam Pro' | 'Roboto' | 'Times New Roman' | 'Montserrat (Đậm)';
 }
 
 interface ThemeContextType {
@@ -21,6 +26,11 @@ const DEFAULT_SETTINGS: ThemeSettings = {
     accentColor: '#3b82f6',
     fontSize: 'medium',
     customBackground: undefined,
+    bgEnabled: true,
+    bgOpacity: 1,
+    bgDarkness: 0,
+    examPadding: 'normal',
+    fontFamily: 'Be Vietnam Pro',
 };
 
 const FONT_SIZES: Record<string, string> = {
@@ -48,6 +58,22 @@ function applyThemeToDOM(settings: ThemeSettings) {
 
     // Font size
     root.style.fontSize = FONT_SIZES[settings.fontSize] || '16px';
+
+    // Font Family
+    if (settings.fontFamily === 'Roboto') {
+        document.body.style.fontFamily = '"Roboto", sans-serif';
+        document.body.style.fontWeight = 'normal';
+    } else if (settings.fontFamily === 'Times New Roman') {
+        document.body.style.fontFamily = '"Times New Roman", Times, serif';
+        document.body.style.fontWeight = 'normal';
+    } else if (settings.fontFamily === 'Montserrat (Đậm)') {
+        document.body.style.fontFamily = '"Montserrat", sans-serif';
+        document.body.style.fontWeight = '700';
+    } else {
+        // Mặc định
+        document.body.style.fontFamily = '"Be Vietnam Pro", "Plus Jakarta Sans", sans-serif';
+        document.body.style.fontWeight = 'normal';
+    }
 }
 
 // ── Context ──

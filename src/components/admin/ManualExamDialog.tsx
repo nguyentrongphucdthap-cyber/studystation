@@ -2,17 +2,9 @@ import { useState } from 'react';
 import { Button } from '@/components/ui/Button';
 import { Dialog } from '@/components/ui/Dialog';
 import { getSubjects } from '@/services/exam.service';
-import { Trash2, ChevronRight, ChevronLeft, Save, PlusCircle } from 'lucide-react';
+import { Trash2, ChevronRight, ChevronLeft, Save, PlusCircle, Check, X } from 'lucide-react';
 import { cn } from '@/lib/utils';
-
-interface Question {
-    id: string;
-    text: string;
-    options?: string[];
-    answer: string;
-    explanation?: string;
-    type: 'mcq' | 'tf' | 'short';
-}
+import { LatexContent } from '@/components/ui/LatexContent';
 
 interface ManualExamDialogProps {
     open: boolean;
@@ -25,46 +17,51 @@ export function ManualExamDialog({ open, onClose, onSave, initialSubject }: Manu
     const subjects = getSubjects();
     const [step, setStep] = useState(1);
     const [loading, setLoading] = useState(false);
+    
     const [meta, setMeta] = useState({
         title: '',
         subjectId: initialSubject || subjects[0]?.id || '',
         time: 50,
     });
 
-    const [part1, setPart1] = useState<Question[]>([]);
-    const [part2, setPart2] = useState<Question[]>([]);
-    const [part3, setPart3] = useState<Question[]>([]);
+    const [part1, setPart1] = useState<any[]>([]);
+    const [part2, setPart2] = useState<any[]>([]);
+    const [part3, setPart3] = useState<any[]>([]);
 
-    const addQuestion = (part: number) => {
-        const newQ: Question = {
-            id: Date.now().toString(),
+    const addPart1 = () => {
+        setPart1([...part1, {
+            id: part1.length + 1,
             text: '',
             options: ['', '', '', ''],
-            answer: '',
-            type: part === 1 ? 'mcq' : part === 2 ? 'tf' : 'short',
-        };
-        if (part === 1) setPart1([...part1, newQ]);
-        else if (part === 2) {
-            newQ.options = ['Đúng', 'Sai'];
-            setPart2([...part2, newQ]);
-        }
-        else setPart3([...part3, newQ]);
+            correct: 0,
+            explanation: ''
+        }]);
     };
 
-    const removeQuestion = (part: number, id: string) => {
-        if (part === 1) setPart1(part1.filter(q => q.id !== id));
-        else if (part === 2) setPart2(part2.filter(q => q.id !== id));
-        else setPart3(part3.filter(q => q.id !== id));
+    const addPart2 = () => {
+        setPart2([...part2, {
+            id: part2.length + 1,
+            text: '',
+            subQuestions: [
+                { id: 'a', text: '', correct: true },
+                { id: 'b', text: '', correct: true },
+                { id: 'c', text: '', correct: true },
+                { id: 'd', text: '', correct: true },
+            ]
+        }]);
     };
 
-    const updateQuestion = (part: number, id: string, updates: Partial<Question>) => {
-        const setter = part === 1 ? setPart1 : part === 2 ? setPart2 : setPart3;
-        const list = part === 1 ? part1 : part === 2 ? part2 : part3;
-        setter(list.map(q => q.id === id ? { ...q, ...updates } : q));
+    const addPart3 = () => {
+        setPart3([...part3, {
+            id: part3.length + 1,
+            text: '',
+            correct: '',
+            explanation: ''
+        }]);
     };
 
     const handleFinalSave = async () => {
-        if (!meta.title) return alert('Vui lòng nhập tiêu đề');
+        if (!meta.title) return;
         setLoading(true);
         try {
             await onSave({
@@ -74,11 +71,8 @@ export function ManualExamDialog({ open, onClose, onSave, initialSubject }: Manu
                 part3,
             });
             onClose();
-            // Reset form
             setStep(1);
-            setPart1([]);
-            setPart2([]);
-            setPart3([]);
+            setPart1([]); setPart2([]); setPart3([]);
             setMeta({ title: '', subjectId: initialSubject || subjects[0]?.id || '', time: 50 });
         } catch (error) {
             console.error(error);
@@ -87,230 +81,141 @@ export function ManualExamDialog({ open, onClose, onSave, initialSubject }: Manu
         }
     };
 
-    const QuestionItem = ({ q, part }: { q: Question, part: number }) => (
-        <div className="p-4 border border-border rounded-xl space-y-3 bg-muted/30">
-            <div className="flex justify-between items-start">
-                <span className="text-xs font-bold uppercase text-muted-foreground tracking-widest">
-                    Câu hỏi {q.id.slice(-3)}
-                </span>
-                <Button variant="ghost" size="icon" onClick={() => removeQuestion(part, q.id)} className="text-red-500 h-6 w-6">
-                    <Trash2 className="h-4 w-4" />
-                </Button>
-            </div>
-
-            <textarea
-                value={q.text}
-                onChange={(e) => updateQuestion(part, q.id, { text: e.target.value })}
-                placeholder="Nhập nội dung câu hỏi..."
-                className="w-full bg-background border border-input rounded-lg p-2 text-sm outline-none focus:border-primary min-h-[60px]"
-            />
-
-            {part === 1 && (
-                <div className="grid grid-cols-2 gap-2">
-                    {q.options?.map((opt, idx) => (
-                        <div key={idx} className="flex items-center gap-2">
-                            <input
-                                type="radio"
-                                name={`ans-${q.id}`}
-                                checked={q.answer === String.fromCharCode(65 + idx)}
-                                onChange={() => updateQuestion(part, q.id, { answer: String.fromCharCode(65 + idx) })}
-                            />
-                            <input
-                                type="text"
-                                value={opt}
-                                onChange={(e) => {
-                                    const newOpts = [...(q.options || [])];
-                                    newOpts[idx] = e.target.value;
-                                    updateQuestion(part, q.id, { options: newOpts });
-                                }}
-                                placeholder={`Lựa chọn ${String.fromCharCode(65 + idx)}`}
-                                className="flex-1 bg-background border border-input rounded-md px-2 py-1 text-sm"
-                            />
-                        </div>
-                    ))}
-                </div>
-            )}
-
-            {part === 2 && (
-                <div className="flex gap-4">
-                    {['Đúng', 'Sai'].map((label) => (
-                        <label key={label} className="flex items-center gap-2 cursor-pointer">
-                            <input
-                                type="radio"
-                                name={`ans-${q.id}`}
-                                checked={q.answer === label}
-                                onChange={() => updateQuestion(part, q.id, { answer: label })}
-                            />
-                            <span className="text-sm">{label}</span>
-                        </label>
-                    ))}
-                </div>
-            )}
-
-            {part === 3 && (
-                <div className="space-y-2">
-                    <p className="text-xs font-medium text-muted-foreground uppercase">Đáp án đúng (ngăn cách bằng dấu | nếu có nhiều phương án):</p>
-                    <input
-                        type="text"
-                        value={q.answer}
-                        onChange={(e) => updateQuestion(part, q.id, { answer: e.target.value })}
-                        placeholder="VD: 10 | 10.0"
-                        className="w-full bg-background border border-input rounded-md px-3 py-1.5 text-sm"
-                    />
-                </div>
-            )}
-        </div>
-    );
-
     return (
         <Dialog open={open} onClose={onClose} className="max-w-4xl w-full max-h-[90vh] flex flex-col p-0 overflow-hidden">
             {/* Header */}
-            <div className="p-6 border-b border-border bg-muted/20">
+            <div className="p-6 border-b bg-muted/20">
                 <div className="flex items-center justify-between mb-2">
-                    <h3 className="text-xl font-bold flex items-center gap-2">
-                        ✍️ Thêm đề thi mới
-                    </h3>
-                    <div className="flex gap-1">
-                        {[1, 2, 3].map(i => (
-                            <div key={i} className={cn(
-                                "h-1.5 w-8 rounded-full transition-all",
-                                step === i ? "bg-primary w-12" : "bg-muted"
-                            )} />
+                    <h3 className="text-xl font-bold flex items-center gap-2">✍️ Soạn đề thủ công</h3>
+                    <div className="flex gap-1.5">
+                        {[1, 2].map(i => (
+                            <div key={i} className={cn("h-1.5 rounded-full transition-all", step === i ? "bg-primary w-10" : "bg-muted w-4")} />
                         ))}
                     </div>
                 </div>
-                <p className="text-xs text-muted-foreground uppercase font-bold tracking-widest">
-                    {step === 1 ? 'Thông tin cơ bản' : step === 2 ? 'Nội dung câu hỏi' : 'Hoàn tất'}
-                </p>
             </div>
 
             {/* Body */}
             <div className="flex-1 overflow-y-auto p-6 scrollbar-thin">
-                {step === 1 && (
-                    <div className="space-y-6 animate-in fade-in slide-in-from-bottom-4">
-                        <div className="space-y-2">
-                            <label className="text-sm font-bold uppercase tracking-wider text-muted-foreground">Tên đề thi</label>
-                            <input
-                                type="text"
-                                value={meta.title}
-                                onChange={(e) => setMeta({ ...meta, title: e.target.value })}
-                                placeholder="VD: Đề thi thử THPT Quốc gia 2024 - Môn Toán"
-                                className="w-full text-lg font-bold bg-background border border-input rounded-xl px-4 py-3 outline-none focus:border-primary shadow-sm"
-                            />
-                        </div>
-                        <div className="grid grid-cols-2 gap-4">
-                            <div className="space-y-2">
-                                <label className="text-sm font-bold uppercase tracking-wider text-muted-foreground">Môn học</label>
-                                <select
-                                    value={meta.subjectId}
-                                    onChange={(e) => setMeta({ ...meta, subjectId: e.target.value })}
-                                    className="w-full bg-background border border-input rounded-xl px-4 py-3 outline-none focus:border-primary shadow-sm"
-                                >
+                {step === 1 ? (
+                    <div className="space-y-6">
+                        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                            <div className="md:col-span-1">
+                                <label className="text-xs font-bold uppercase text-muted-foreground mb-1 block">Tên đề thi</label>
+                                <input value={meta.title} onChange={e => setMeta({...meta, title: e.target.value})} className="w-full border rounded-lg px-3 py-2 text-sm outline-none focus:border-primary" />
+                            </div>
+                            <div>
+                                <label className="text-xs font-bold uppercase text-muted-foreground mb-1 block">Môn học</label>
+                                <select value={meta.subjectId} onChange={e => setMeta({...meta, subjectId: e.target.value})} className="w-full border rounded-lg px-3 py-2 text-sm outline-none focus:border-primary">
                                     {subjects.map(s => <option key={s.id} value={s.id}>{s.icon} {s.name}</option>)}
                                 </select>
                             </div>
-                            <div className="space-y-2">
-                                <label className="text-sm font-bold uppercase tracking-wider text-muted-foreground">Thời gian (phút)</label>
-                                <input
-                                    type="number"
-                                    value={meta.time}
-                                    onChange={(e) => setMeta({ ...meta, time: parseInt(e.target.value) || 0 })}
-                                    className="w-full bg-background border border-input rounded-xl px-4 py-3 outline-none focus:border-primary shadow-sm"
-                                />
+                            <div>
+                                <label className="text-xs font-bold uppercase text-muted-foreground mb-1 block">Thời gian</label>
+                                <input type="number" value={meta.time} onChange={e => setMeta({...meta, time: parseInt(e.target.value) || 0})} className="w-full border rounded-lg px-3 py-2 text-sm outline-none focus:border-primary" />
                             </div>
                         </div>
+
+                        {/* Part 1 */}
+                        <section className="space-y-4 pt-4 border-t">
+                            <div className="flex items-center justify-between">
+                                <h4 className="font-bold text-blue-600">Phần I: Trắc nghiệm khách quan</h4>
+                                <Button onClick={addPart1} size="sm" variant="outline" className="rounded-full"><PlusCircle className="h-4 w-4 mr-1" /> Thêm</Button>
+                            </div>
+                            {part1.map((q, idx) => (
+                                <div key={idx} className="p-4 border rounded-xl bg-slate-50 relative group">
+                                    <button onClick={() => setPart1(part1.filter((_, i) => i !== idx))} className="absolute top-2 right-2 text-red-500 opacity-0 group-hover:opacity-100"><X size={16} /></button>
+                                    <textarea value={q.text} onChange={e => {
+                                        const newP = [...part1]; newP[idx].text = e.target.value; setPart1(newP);
+                                    }} className="w-full mb-3 p-2 text-sm border rounded" placeholder="Câu hỏi..." />
+                                    <div className="grid grid-cols-2 gap-2">
+                                        {q.options.map((opt: string, oIdx: number) => (
+                                            <div key={oIdx} className="flex items-center gap-2">
+                                                <input type="radio" checked={q.correct === oIdx} onChange={() => {
+                                                    const newP = [...part1]; newP[idx].correct = oIdx; setPart1(newP);
+                                                }} />
+                                                <input value={opt} onChange={e => {
+                                                    const newP = [...part1]; newP[idx].options[oIdx] = e.target.value; setPart1(newP);
+                                                }} className="flex-1 p-1 text-sm border rounded" placeholder={`Lựa chọn ${String.fromCharCode(65+oIdx)}`} />
+                                            </div>
+                                        ))}
+                                    </div>
+                                </div>
+                            ))}
+                        </section>
+
+                        {/* Part 2 */}
+                        <section className="space-y-4 pt-4 border-t">
+                            <div className="flex items-center justify-between">
+                                <h4 className="font-bold text-emerald-600">Phần II: Đúng/Sai</h4>
+                                <Button onClick={addPart2} size="sm" variant="outline" className="rounded-full"><PlusCircle className="h-4 w-4 mr-1" /> Thêm</Button>
+                            </div>
+                            {part2.map((q, idx) => (
+                                <div key={idx} className="p-4 border rounded-xl bg-slate-50 relative group">
+                                    <button onClick={() => setPart2(part2.filter((_, i) => i !== idx))} className="absolute top-2 right-2 text-red-500 opacity-0 group-hover:opacity-100"><X size={16} /></button>
+                                    <textarea value={q.text} onChange={e => {
+                                        const newP = [...part2]; newP[idx].text = e.target.value; setPart2(newP);
+                                    }} className="w-full mb-3 p-2 text-sm border rounded" placeholder="Đoạn văn/Câu hỏi chung..." />
+                                    <div className="space-y-2">
+                                        {q.subQuestions.map((sq: any, sIdx: number) => (
+                                            <div key={sIdx} className="flex items-center gap-3 bg-white p-2 rounded border">
+                                                <span className="text-xs font-bold">{sq.id})</span>
+                                                <input value={sq.text} onChange={e => {
+                                                    const newP = [...part2]; newP[idx].subQuestions[sIdx].text = e.target.value; setPart2(newP);
+                                                }} className="flex-1 text-sm border-none outline-none" placeholder="Ý hỏi..." />
+                                                <div className="flex gap-1 shrink-0">
+                                                    <button onClick={() => {
+                                                        const newP = [...part2]; newP[idx].subQuestions[sIdx].correct = true; setPart2(newP);
+                                                    }} className={`w-8 h-6 rounded text-xs font-bold ${sq.correct === true ? 'bg-emerald-500 text-white' : 'bg-slate-100'}`}>Đ</button>
+                                                    <button onClick={() => {
+                                                        const newP = [...part2]; newP[idx].subQuestions[sIdx].correct = false; setPart2(newP);
+                                                    }} className={`w-8 h-6 rounded text-xs font-bold ${sq.correct === false ? 'bg-red-500 text-white' : 'bg-slate-100'}`}>S</button>
+                                                </div>
+                                            </div>
+                                        ))}
+                                    </div>
+                                </div>
+                            ))}
+                        </section>
+
+                        {/* Part 3 */}
+                        <section className="space-y-4 pt-4 border-t">
+                            <div className="flex items-center justify-between">
+                                <h4 className="font-bold text-violet-600">Phần III: Trả lời ngắn</h4>
+                                <Button onClick={addPart3} size="sm" variant="outline" className="rounded-full"><PlusCircle className="h-4 w-4 mr-1" /> Thêm</Button>
+                            </div>
+                            {part3.map((q, idx) => (
+                                <div key={idx} className="p-4 border rounded-xl bg-slate-50 relative group">
+                                    <button onClick={() => setPart3(part3.filter((_, i) => i !== idx))} className="absolute top-2 right-2 text-red-500 opacity-0 group-hover:opacity-100"><X size={16} /></button>
+                                    <textarea value={q.text} onChange={e => {
+                                        const newP = [...part3]; newP[idx].text = e.target.value; setPart3(newP);
+                                    }} className="w-full mb-2 p-2 text-sm border rounded" placeholder="Câu hỏi..." />
+                                    <input value={q.correct} onChange={e => {
+                                        const newP = [...part3]; newP[idx].correct = e.target.value; setPart3(newP);
+                                    }} className="w-full p-2 text-sm border rounded font-bold" placeholder="Đáp án đúng..." />
+                                </div>
+                            ))}
+                        </section>
                     </div>
-                )}
-
-                {step === 2 && (
-                    <div className="space-y-8 animate-in fade-in slide-in-from-right-4">
-                        <section className="space-y-4">
-                            <div className="flex items-center justify-between sticky top-0 bg-background/95 backdrop-blur py-2 z-10 border-b border-border/50">
-                                <h4 className="font-bold flex items-center gap-2">Part 1: Trắc nghiệm khách quan</h4>
-                                <Button onClick={() => addQuestion(1)} size="sm" variant="outline" className="gap-1 rounded-full border-dashed">
-                                    <PlusCircle className="h-4 w-4" /> Thêm câu hỏi
-                                </Button>
-                            </div>
-                            <div className="space-y-4">
-                                {part1.map(q => <QuestionItem key={q.id} q={q} part={1} />)}
-                                {part1.length === 0 && <p className="text-center py-4 text-sm text-muted-foreground italic border border-dashed rounded-xl">Chưa có câu hỏi cho Phần 1</p>}
-                            </div>
-                        </section>
-
-                        <section className="space-y-4">
-                            <div className="flex items-center justify-between sticky top-0 bg-background/95 backdrop-blur py-2 z-10 border-b border-border/50">
-                                <h4 className="font-bold flex items-center gap-2">Part 2: Trắc nghiệm Đúng/Sai</h4>
-                                <Button onClick={() => addQuestion(2)} size="sm" variant="outline" className="gap-1 rounded-full border-dashed">
-                                    <PlusCircle className="h-4 w-4" /> Thêm câu hỏi
-                                </Button>
-                            </div>
-                            <div className="space-y-4">
-                                {part2.map(q => <QuestionItem key={q.id} q={q} part={2} />)}
-                                {part2.length === 0 && <p className="text-center py-4 text-sm text-muted-foreground italic border border-dashed rounded-xl">Chưa có câu hỏi cho Phần 2</p>}
-                            </div>
-                        </section>
-
-                        <section className="space-y-4">
-                            <div className="flex items-center justify-between sticky top-0 bg-background/95 backdrop-blur py-2 z-10 border-b border-border/50">
-                                <h4 className="font-bold flex items-center gap-2">Part 3: Trắc nghiệm trả lời ngắn</h4>
-                                <Button onClick={() => addQuestion(3)} size="sm" variant="outline" className="gap-1 rounded-full border-dashed">
-                                    <PlusCircle className="h-4 w-4" /> Thêm câu hỏi
-                                </Button>
-                            </div>
-                            <div className="space-y-4">
-                                {part3.map(q => <QuestionItem key={q.id} q={q} part={3} />)}
-                                {part3.length === 0 && <p className="text-center py-4 text-sm text-muted-foreground italic border border-dashed rounded-xl">Chưa có câu hỏi cho Phần 3</p>}
-                            </div>
-                        </section>
-                    </div>
-                )}
-
-                {step === 3 && (
-                    <div className="text-center py-10 space-y-6 animate-in fade-in zoom-in-95">
-                        <div className="h-24 w-24 bg-primary/10 rounded-full flex items-center justify-center text-5xl mx-auto border-4 border-primary">
-                            ✅
-                        </div>
-                        <div className="space-y-2">
-                            <h4 className="text-2xl font-bold">Sẵn sàng lưu trữ!</h4>
-                            <p className="text-muted-foreground">
-                                Đề thi <b>{meta.title}</b> đã được soạn thảo thành công với tổng số {part1.length + part2.length + part3.length} câu hỏi.
-                            </p>
-                        </div>
-                        <div className="bg-muted p-4 rounded-xl text-left text-sm max-w-md mx-auto">
-                            <div className="flex justify-between border-b pb-2 mb-2">
-                                <span>Trắc nghiệm (Part 1):</span>
-                                <span className="font-bold">{part1.length} câu</span>
-                            </div>
-                            <div className="flex justify-between border-b pb-2 mb-2">
-                                <span>Đúng/Sai (Part 2):</span>
-                                <span className="font-bold">{part2.length} câu</span>
-                            </div>
-                            <div className="flex justify-between">
-                                <span>Trả lời ngắn (Part 3):</span>
-                                <span className="font-bold">{part3.length} câu</span>
-                            </div>
-                        </div>
+                ) : (
+                    <div className="text-center py-20 space-y-4">
+                        <div className="text-6xl">🎉</div>
+                        <h4 className="text-2xl font-bold">Xác nhận lưu đề!</h4>
+                        <p className="text-muted-foreground">Tổng cộng {part1.length + part2.length + part3.length} câu hỏi đã được soạn.</p>
                     </div>
                 )}
             </div>
 
-            {/* Footer */}
-            <div className="p-6 border-t border-border bg-muted/20 flex justify-between items-center">
-                <Button variant="ghost" onClick={onClose}>Hủy bỏ</Button>
-                <div className="flex gap-3">
-                    {step > 1 && (
-                        <Button variant="outline" onClick={() => setStep(step - 1)} className="gap-1">
-                            <ChevronLeft className="h-4 w-4" /> Quay lại
-                        </Button>
-                    )}
-                    {step < 3 ? (
-                        <Button onClick={() => setStep(step + 1)} className="gap-1 min-w-[120px]">
-                            Tiếp theo <ChevronRight className="h-4 w-4" />
-                        </Button>
+            <div className="p-6 border-t bg-muted/20 flex justify-between">
+                <Button variant="ghost" onClick={onClose}>Hủy</Button>
+                <div className="flex gap-2">
+                    {step === 1 ? (
+                        <Button onClick={() => setStep(2)}>Tiếp theo</Button>
                     ) : (
-                        <Button onClick={handleFinalSave} isLoading={loading} className="gap-1 min-w-[120px] bg-green-600 hover:bg-green-700">
-                            <Save className="h-4 w-4" /> Lưu đề thi
-                        </Button>
+                        <>
+                            <Button variant="outline" onClick={() => setStep(1)}>Quay lại</Button>
+                            <Button onClick={handleFinalSave} isLoading={loading} className="bg-emerald-600 hover:bg-emerald-700 text-white">Lưu đề thi</Button>
+                        </>
                     )}
                 </div>
             </div>

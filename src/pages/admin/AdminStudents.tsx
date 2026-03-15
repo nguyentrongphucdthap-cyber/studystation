@@ -53,68 +53,130 @@ export default function AdminStudents() {
     if (loading) return <div className="flex justify-center py-10"><Spinner size="md" /></div>;
 
     return (
-        <div className="space-y-4">
-            <div className="flex items-center justify-between">
-                <h2 className="text-lg font-bold flex items-center gap-2"><Users className="h-5 w-5" /> Quản lý học sinh ({users.length})</h2>
-                <Button onClick={() => setShowAdd(true)}><Plus className="h-4 w-4" /> Thêm</Button>
-            </div>
-            <div className="relative max-w-md">
-                <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
-                <input type="text" value={search} onChange={(e) => setSearch(e.target.value)} placeholder="Tìm email / tên..." className="w-full rounded-lg border border-input bg-background py-2 pl-10 pr-4 text-sm outline-none focus:border-primary" />
-            </div>
-            <div className="overflow-x-auto rounded-xl border border-border">
-                <table className="w-full text-sm">
-                    <thead className="bg-muted/50">
-                        <tr>
-                            <th className="px-4 py-2.5 text-left font-medium">Email</th>
-                            <th className="px-4 py-2.5 text-left font-medium">Tên</th>
-                            <th className="px-4 py-2.5 text-center font-medium">Role</th>
-                            <th className="px-4 py-2.5 text-center font-medium">Thao tác</th>
-                        </tr>
-                    </thead>
-                    <tbody>
-                        {filtered.map((u) => {
-                            const role = roleOptions.find((r) => u.role.includes(r.value)) || roleOptions[0];
-                            return (
-                                <tr key={u.email} className="border-t border-border hover:bg-accent/50">
-                                    <td className="px-4 py-3 font-mono text-xs">{u.email}</td>
-                                    <td className="px-4 py-3">{u.name || '—'}</td>
-                                    <td className="px-4 py-3 text-center">
-                                        <select
-                                            value={u.role}
-                                            onChange={(e) => handleRoleChange(u.email, e.target.value)}
-                                            className={cn('rounded-full px-2 py-0.5 text-[11px] font-bold border-0 cursor-pointer', role?.color)}
-                                        >
-                                            {roleOptions.map((r) => <option key={r.value} value={r.value}>{r.label}</option>)}
-                                        </select>
-                                    </td>
-                                    <td className="px-4 py-3 text-center">
-                                        <Button variant="ghost" size="icon" onClick={() => setDeleteTarget(u.email)} className="text-red-600"><Trash2 className="h-4 w-4" /></Button>
-                                    </td>
-                                </tr>
-                            );
-                        })}
-                    </tbody>
-                </table>
-                {filtered.length === 0 && <p className="py-8 text-center text-sm text-muted-foreground">Không tìm thấy</p>}
-            </div>
-            <Dialog open={showAdd} onClose={() => setShowAdd(false)}>
-                <h3 className="text-lg font-bold mb-4">Thêm học sinh</h3>
-                <div className="space-y-3">
-                    <div>
-                        <label className="mb-1 block text-sm font-medium">Email</label>
-                        <input type="email" value={addForm.email} onChange={(e) => setAddForm({ ...addForm, email: e.target.value })} className="w-full rounded-lg border border-input bg-background px-3 py-2 text-sm outline-none focus:border-primary" />
+        <div className="space-y-6 animate-in fade-in slide-in-from-bottom-4 duration-500">
+            <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between admin-card p-4">
+                <div className="flex items-center gap-3 pl-2">
+                    <div className="p-2 bg-indigo-100 text-indigo-600 rounded-lg dark:bg-indigo-900/30 dark:text-indigo-400">
+                        <Users className="h-5 w-5" />
                     </div>
                     <div>
-                        <label className="mb-1 block text-sm font-medium">Role</label>
-                        <select value={addForm.role} onChange={(e) => setAddForm({ ...addForm, role: e.target.value })} className="w-full rounded-lg border border-input bg-background px-3 py-2 text-sm outline-none focus:border-primary">
-                            {roleOptions.map((r) => <option key={r.value} value={r.value}>{r.label}</option>)}
-                        </select>
+                        <h2 className="text-xl font-black text-slate-800 dark:text-slate-100">Quản lý học sinh</h2>
+                        <p className="text-xs font-medium text-slate-500 mt-0.5">Tổng cộng {users.length} tài khoản</p>
                     </div>
                 </div>
-                <div className="mt-4 flex justify-end gap-2">
-                    <Button variant="outline" onClick={() => setShowAdd(false)}>Hủy</Button>
-                    <Button onClick={handleAdd}>Thêm</Button>
+                <div className="flex gap-2">
+                    <div className="relative w-full max-w-xs sm:w-64">
+                        <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400" />
+                        <input type="text" value={search} onChange={(e) => setSearch(e.target.value)} placeholder="Tìm email / tên..." className="w-full rounded-xl border-none bg-slate-50 dark:bg-slate-800 shadow-inner py-2.5 pl-10 pr-4 text-sm outline-none focus:ring-2 focus:ring-indigo-500/50" />
+                    </div>
+                    <Button onClick={() => setShowAdd(true)} className="admin-btn-primary rounded-xl gap-2 font-semibold whitespace-nowrap"><Plus className="h-4 w-4" /> Thêm mới</Button>
+                </div>
+            </div>
+
+            <div className="admin-card overflow-hidden border-none p-1">
+                <div className="overflow-x-auto rounded-[1.2rem]">
+                    <table className="w-full text-sm">
+                        <thead className="bg-slate-50 border-b border-slate-100 dark:bg-slate-800/50 dark:border-slate-800">
+                            <tr>
+                                <th className="px-6 py-4 text-left font-bold text-xs uppercase tracking-wider text-slate-500">Người dùng</th>
+                                <th className="px-6 py-4 text-left font-bold text-xs uppercase tracking-wider text-slate-500">Phân quyền gốc</th>
+                                <th className="px-6 py-4 text-center font-bold text-xs uppercase tracking-wider text-slate-500">Thay đổi quyền</th>
+                                <th className="px-6 py-4 text-right font-bold text-xs uppercase tracking-wider text-slate-500">Thao tác</th>
+                            </tr>
+                        </thead>
+                        <tbody className="divide-y divide-slate-100 dark:divide-slate-800/60 bg-white dark:bg-slate-900/20">
+                            {filtered.map((u) => {
+                                const role = roleOptions.find((r) => u.role.includes(r.value));
+                                const RoleIcon = role?.icon || User;
+                                const roleColor = role?.color || 'bg-slate-100 text-slate-700';
+                                const roleLabel = role?.label || 'Không xác định';
+
+                                return (
+                                    <tr key={u.email} className="transition-all hover:bg-slate-50/80 dark:hover:bg-slate-800/40 group relative">
+                                        <td className="px-6 py-4">
+                                            <div className="absolute left-0 top-0 bottom-0 w-1 bg-indigo-500 opacity-0 group-hover:opacity-100 transition-opacity" />
+                                            <div className="flex items-center gap-3">
+                                                <div className="h-10 w-10 rounded-full bg-slate-100 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 flex items-center justify-center text-slate-400 font-bold uppercase shrink-0 shadow-sm">
+                                                    {u.email.charAt(0)}
+                                                </div>
+                                                <div>
+                                                    <p className="font-bold text-slate-800 dark:text-slate-200">{u.name || 'Người dùng chưa cập nhật tên'}</p>
+                                                    <p className="text-xs font-mono text-slate-500 dark:text-slate-400">{u.email}</p>
+                                                </div>
+                                            </div>
+                                        </td>
+                                        <td className="px-6 py-4">
+                                            <div className={cn('inline-flex items-center gap-1.5 rounded-full px-3 py-1 font-bold text-[11px] shadow-sm', roleColor)}>
+                                                <RoleIcon className="h-3 w-3" />
+                                                {roleLabel}
+                                            </div>
+                                        </td>
+                                        <td className="px-6 py-4 text-center">
+                                            <div className="inline-block relative">
+                                                <select
+                                                    value={u.role}
+                                                    onChange={(e) => handleRoleChange(u.email, e.target.value)}
+                                                    className={cn("appearance-none bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-lg py-1.5 pl-3 pr-8 text-xs font-semibold shadow-sm focus:ring-2 focus:ring-indigo-500 outline-none cursor-pointer hover:border-indigo-300 transition-colors", roleColor)}
+                                                >
+                                                    {roleOptions.map((r) => <option key={r.value} value={r.value}>{r.label}</option>)}
+                                                </select>
+                                                <div className="pointer-events-none absolute inset-y-0 right-0 flex items-center px-2 text-slate-400">
+                                                    <svg className="h-3 w-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M19 9l-7 7-7-7"></path></svg>
+                                                </div>
+                                            </div>
+                                        </td>
+                                        <td className="px-6 py-4 text-right">
+                                            <div className="flex justify-end opacity-40 group-hover:opacity-100 transition-opacity">
+                                                <Button variant="ghost" size="icon" onClick={() => setDeleteTarget(u.email)} className="text-slate-400 hover:text-rose-600 hover:bg-rose-50 dark:hover:bg-rose-900/30 dark:hover:text-rose-400 h-8 w-8 rounded-lg" title="Xóa người dùng">
+                                                    <Trash2 className="h-4 w-4" />
+                                                </Button>
+                                            </div>
+                                        </td>
+                                    </tr>
+                                );
+                            })}
+                        </tbody>
+                    </table>
+                    {filtered.length === 0 && (
+                        <div className="py-24 text-center flex flex-col items-center gap-3 bg-white dark:bg-slate-900/20">
+                            <div className="h-16 w-16 rounded-2xl bg-slate-50 dark:bg-slate-800/50 flex items-center justify-center text-slate-300 dark:text-slate-600 shadow-inner">
+                                <Search className="h-6 w-6" />
+                            </div>
+                            <p className="text-sm font-bold text-slate-500">Không tìm thấy người dùng nào</p>
+                        </div>
+                    )}
+                </div>
+            </div>
+
+            <Dialog open={showAdd} onClose={() => setShowAdd(false)}>
+                <div className="p-1">
+                    <h3 className="text-xl font-black mb-6 flex items-center gap-2 text-slate-800 dark:text-slate-100">
+                        <div className="p-1.5 bg-indigo-100 text-indigo-600 rounded-lg">
+                            <Plus className="h-5 w-5" />
+                        </div>
+                        Thêm học sinh mới
+                    </h3>
+                    <div className="space-y-4">
+                        <div className="space-y-1.5">
+                            <label className="text-xs font-bold uppercase tracking-wider text-slate-500">Địa chỉ Email</label>
+                            <input type="email" value={addForm.email} onChange={(e) => setAddForm({ ...addForm, email: e.target.value })} placeholder="email@example.com" className="w-full rounded-xl border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-900/50 px-4 py-2.5 text-sm font-medium outline-none focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500 transition-all shadow-inner" />
+                        </div>
+                        <div className="space-y-1.5">
+                            <label className="text-xs font-bold uppercase tracking-wider text-slate-500">Phân quyền (Role)</label>
+                            <div className="relative">
+                                <select value={addForm.role} onChange={(e) => setAddForm({ ...addForm, role: e.target.value })} className="w-full appearance-none rounded-xl border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-900/50 px-4 py-2.5 text-sm font-medium outline-none focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500 transition-all shadow-inner cursor-pointer">
+                                    {roleOptions.map((r) => <option key={r.value} value={r.value}>{r.label}</option>)}
+                                </select>
+                                <div className="pointer-events-none absolute inset-y-0 right-0 flex items-center px-4 text-slate-500">
+                                    <svg className="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M19 9l-7 7-7-7"></path></svg>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    <div className="mt-8 flex justify-end gap-3">
+                        <Button variant="outline" onClick={() => setShowAdd(false)} className="rounded-xl font-semibold border-slate-200 text-slate-600 hover:bg-slate-100">Hủy bỏ</Button>
+                        <Button onClick={handleAdd} className="admin-btn-primary rounded-xl font-semibold px-6">Thêm người dùng</Button>
+                    </div>
                 </div>
             </Dialog>
             <ConfirmDialog open={!!deleteTarget} onClose={() => setDeleteTarget(null)} onConfirm={() => deleteTarget && handleDelete(deleteTarget)} title="Xóa người dùng?" message="Người dùng sẽ không thể truy cập nữa." confirmText="Xóa" variant="destructive" />

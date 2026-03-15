@@ -324,24 +324,58 @@ export async function getPracticeHistory(examId: string): Promise<PracticeHistor
     const user = auth.currentUser;
     if (!user) return [];
 
-    const q = query(
-        collection(db, 'practice_history'),
-        where('userId', '==', user.uid),
-        where('examId', '==', examId),
-        orderBy('timestamp', 'desc')
-    );
-    const snapshot = await getDocs(q);
-    return snapshot.docs.map((d: QueryDocumentSnapshot<DocumentData>) => ({ id: d.id, ...d.data() })) as PracticeHistory[];
+    try {
+        const q = query(
+            collection(db, 'practice_history'),
+            where('userId', '==', user.uid),
+            where('examId', '==', examId)
+        );
+        const snapshot = await getDocs(q);
+        const results = snapshot.docs.map((d: QueryDocumentSnapshot<DocumentData>) => ({ id: d.id, ...d.data() })) as PracticeHistory[];
+        
+        // Sort in memory to avoid index requirements
+        return results.sort((a, b) => new Date(b.timestamp).getTime() - new Date(a.timestamp).getTime());
+    } catch (err) {
+        console.error('[ExamService] getPracticeHistory error:', err);
+        return [];
+    }
+}
+
+export async function getUserTotalHistory(): Promise<PracticeHistory[]> {
+    const user = auth.currentUser;
+    if (!user) return [];
+
+    try {
+        const q = query(
+            collection(db, 'practice_history'),
+            where('userId', '==', user.uid),
+            firestoreLimit(100)
+        );
+        const snapshot = await getDocs(q);
+        const results = snapshot.docs.map((d: QueryDocumentSnapshot<DocumentData>) => ({ id: d.id, ...d.data() })) as PracticeHistory[];
+        
+        // Sort in memory to avoid index requirements
+        return results.sort((a, b) => new Date(b.timestamp).getTime() - new Date(a.timestamp).getTime());
+    } catch (err) {
+        console.error('[ExamService] getUserTotalHistory error:', err);
+        return [];
+    }
 }
 
 export async function getAllPracticeLogs(): Promise<PracticeLog[]> {
-    const q = query(
-        collection(db, 'practice_logs'),
-        orderBy('timestamp', 'desc'),
-        firestoreLimit(200)
-    );
-    const snapshot = await getDocs(q);
-    return snapshot.docs.map((d: QueryDocumentSnapshot<DocumentData>) => ({ id: d.id, ...d.data() })) as PracticeLog[];
+    try {
+        const q = query(
+            collection(db, 'practice_logs'),
+            firestoreLimit(200)
+        );
+        const snapshot = await getDocs(q);
+        const logs = snapshot.docs.map((d: QueryDocumentSnapshot<DocumentData>) => ({ id: d.id, ...d.data() })) as PracticeLog[];
+        
+        return logs.sort((a, b) => new Date(b.timestamp).getTime() - new Date(a.timestamp).getTime());
+    } catch (err) {
+        console.error('[ExamService] getAllPracticeLogs error:', err);
+        return [];
+    }
 }
 
 // ============================================================
