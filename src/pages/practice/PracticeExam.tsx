@@ -226,7 +226,7 @@ export default function PracticeExam() {
     if (loading) {
         return (
             <div className="flex items-center justify-center py-20">
-                <Spinner size="lg" label="Äang táº£i Ä‘á» thi..." />
+                <Spinner size="lg" label="Đang táº£i đề thi..." />
             </div>
         );
     }
@@ -234,7 +234,7 @@ export default function PracticeExam() {
     if (!exam) {
         return (
             <div className="py-20 text-center">
-                <p className="text-muted-foreground">KhÃ´ng tÃ¬m tháº¥y Ä‘á» thi</p>
+                <p className="text-muted-foreground">KhÃ´ng tÃ¬m tháº¥y đề thi</p>
                 <Button variant="outline" className="mt-4" onClick={() => navigate('/practice')}>
                     <ArrowLeft className="h-4 w-4" /> Quay láº¡i
                 </Button>
@@ -279,7 +279,7 @@ export default function PracticeExam() {
                     </div>
 
                     <div className="mb-6 rounded-lg bg-muted/50 p-3 text-left text-xs text-muted-foreground">
-                        <p className="font-medium text-foreground mb-1">ðŸ“‹ Cáº¥u trÃºc Ä‘á»:</p>
+                        <p className="font-medium text-foreground mb-1">ðŸ“‹ Cáº¥u trÃºc đề:</p>
                         {(exam.part1?.length || 0) > 0 && <p>• Phần 1: {exam.part1?.length} câu trắc nghiệm</p>}
                         {(exam.part2?.length || 0) > 0 && (
                             <p>• Phần 2: {exam.part2?.length} câu Đúng/Sai ({(exam.part2 || []).reduce((s: number, q: Part2Question) => s + q.subQuestions.length, 0)} ý)</p>
@@ -288,7 +288,7 @@ export default function PracticeExam() {
                     </div>
 
                     <Button size="xl" className="w-full" onClick={handleStart}>
-                        ðŸš€ Báº¯t Ä‘áº§u lÃ m bÃ i
+                        🚀 Bắt đầu làm bài
                     </Button>
                 </div>
 
@@ -296,15 +296,15 @@ export default function PracticeExam() {
                 {!isGuest && examHistory.length > 0 && (
                     <div className="mt-8 space-y-4 animate-in fade-in slide-in-from-bottom-5">
                         <h3 className="text-sm font-black uppercase tracking-[0.2em] text-gray-400 flex items-center gap-2 px-2">
-                            <History size={16} /> Lá»‹ch sá»­ gáº§n Ä‘Ã¢y
+                            <History size={16} /> Lịch sử gần đây
                         </h3>
                         <div className="bg-white/60 backdrop-blur-md rounded-2xl border border-white/80 shadow-soft overflow-hidden">
                             <table className="w-full text-left text-sm">
                                 <thead className="bg-gray-50/50 border-b border-gray-100">
                                     <tr>
-                                        <th className="px-4 py-3 font-bold text-gray-500 uppercase text-[10px]">NgÃ y lÃ m</th>
+                                        <th className="px-4 py-3 font-bold text-gray-500 uppercase text-[10px]">Ngày làm</th>
                                         <th className="px-4 py-3 font-bold text-gray-500 uppercase text-[10px] text-center">Thá»i gian</th>
-                                        <th className="px-4 py-3 font-bold text-gray-500 uppercase text-[10px] text-right">Äiá»ƒm sá»‘</th>
+                                        <th className="px-4 py-3 font-bold text-gray-500 uppercase text-[10px] text-right">Điá»ƒm sá»‘</th>
                                     </tr>
                                 </thead>
                                 <tbody className="divide-y divide-gray-100">
@@ -376,7 +376,7 @@ export default function PracticeExam() {
                                 {formatTime(timeLeft)}
                             </div>
                             <Button size="sm" onClick={() => setShowSubmitConfirm(true)} className="hidden sm:flex">
-                                <Send className="h-3.5 w-3.5" /> Ná»™p bÃ i
+                                <Send className="h-3.5 w-3.5" /> Nộp bài
                             </Button>
                         </div>
                     </div>
@@ -389,7 +389,7 @@ export default function PracticeExam() {
                         {(exam.part1?.length || 0) > 0 && (
                             <section>
                                 <div className="mb-4 flex items-center gap-2 border-l-4 border-primary pl-3">
-                                    <h3 className="text-xl font-bold">Phần 1: Tráº¯c nghiá»‡m</h3>
+                                    <h3 className="text-xl font-bold">Phần 1: Trắc nghiệm</h3>
                                     <span className="text-sm text-muted-foreground">({exam.part1?.length} câu)</span>
                                 </div>
                                 <div className="space-y-6">
@@ -475,7 +475,7 @@ export default function PracticeExam() {
                                                                             : 'bg-background hover:bg-emerald-50 hover:text-emerald-700 text-muted-foreground border border-border hover:border-emerald-300'
                                                                     )}
                                                                 >
-                                                                    Ä
+                                                                    Đ
                                                                 </button>
                                                                 <button
                                                                     onClick={() => setPart2Answers({ ...part2Answers, [key]: false })}
@@ -535,13 +535,13 @@ export default function PracticeExam() {
                     <aside className="hidden w-full shrink-0 lg:block lg:w-[280px] lg:sticky lg:top-[110px] lg:self-start">
                         <div className="rounded-2xl border border-border bg-card p-5 shadow-lg">
                             <h4 className="mb-3 flex items-center gap-2 text-sm font-bold uppercase tracking-wider text-muted-foreground">
-                                <BookOpen className="h-4 w-4" /> Má»¥c lá»¥c
+                                <BookOpen className="h-4 w-4" /> Mục lục
                             </h4>
 
                             {/* Progress summary */}
                             <div className="mb-4 flex gap-2 text-xs">
                                 <span className="flex-1 text-center rounded-lg bg-primary/10 text-primary font-bold py-1">
-                                    {answeredAnswerUnits}/{totalAnswerUnits} da lam
+                                    {answeredAnswerUnits}/{totalAnswerUnits} đã làm
                                 </span>
                             </div>
 
@@ -630,7 +630,7 @@ export default function PracticeExam() {
 
                             <div className="mt-6 pt-4 border-t border-border">
                                 <Button className="w-full" onClick={() => setShowSubmitConfirm(true)}>
-                                    <Send className="mr-2 h-4 w-4" /> Ná»™p bÃ i thi
+                                    <Send className="mr-2 h-4 w-4" /> Nộp bài thi
                                 </Button>
                             </div>
                         </div>
@@ -641,9 +641,9 @@ export default function PracticeExam() {
                     open={showSubmitConfirm}
                     onClose={() => setShowSubmitConfirm(false)}
                     onConfirm={handleSubmit}
-                    title="Ná»™p bÃ i?"
-                    message={`Báº¡n cÃ²n ${formatTime(timeLeft)} thá»i gian. Báº¡n cÃ³ cháº¯c cháº¯n muá»‘n ná»™p bÃ i?`}
-                    confirmText="Ná»™p bÃ i"
+                    title="Nộp bài?"
+                    message={`Bạn còn ${formatTime(timeLeft)} thá»i gian. Bạn có chắc chắn muốn nộp bài?`}
+                    confirmText="Nộp bài"
                 />
             </div>
         );
@@ -673,7 +673,7 @@ export default function PracticeExam() {
             
             // Format time correctly
             const d = new Date(hist.timestamp);
-            displayTimestamp = `Láº§n ná»™p: ${d.getHours()}:${d.getMinutes().toString().padStart(2, '0')} ngÃ y ${d.getDate()}/${d.getMonth()+1}/${d.getFullYear()}`;
+            displayTimestamp = `Lần nộp: ${d.getHours()}:${d.getMinutes().toString().padStart(2, '0')} ngày ${d.getDate()}/${d.getMonth()+1}/${d.getFullYear()}`;
         }
     }
 
@@ -685,7 +685,7 @@ export default function PracticeExam() {
                 {displayTimestamp && (
                     <div className="absolute top-4 left-4 right-4 text-center">
                         <span className="inline-block bg-amber-100 text-amber-800 text-xs font-bold px-3 py-1 rounded-full">
-                            Äang xem káº¿t quáº£ cÅ© ({displayTimestamp})
+                            Đang xem káº¿t quáº£ cÅ© ({displayTimestamp})
                         </span>
                     </div>
                 )}
@@ -700,7 +700,7 @@ export default function PracticeExam() {
                     {displayScore}
                 </div>
                 <h2 className="text-xl font-bold">
-                    {displayScore >= 8 ? 'ðŸŽ‰ Xuáº¥t sáº¯c!' : displayScore >= 5 ? 'ðŸ‘ KhÃ¡ tá»‘t!' : 'ðŸ’ª Cá»‘ gáº¯ng hÆ¡n!'}
+                    {displayScore >= 8 ? '🎉 Xuất sắc!' : displayScore >= 5 ? 'ðŸ‘ KhÃ¡ tá»‘t!' : '💪 Cố gắng hơn!'}
                 </h2>
                 <p className="mt-1 text-xs text-muted-foreground">
                     {exam?.title}
@@ -712,17 +712,17 @@ export default function PracticeExam() {
                         </Button>
                     )}
                     <Button variant={selectedHistoryId ? "ghost" : "outline"} onClick={handleReset}>
-                        <RotateCcw className="h-4 w-4" /> LÃ m láº¡i
+                        <RotateCcw className="h-4 w-4" /> Làm lại
                     </Button>
                     <Button onClick={() => navigate('/practice')}>
-                        <BookOpen className="h-4 w-4" /> Äá» khÃ¡c
+                        <BookOpen className="h-4 w-4" /> Đá» khÃ¡c
                     </Button>
                 </div>
 
                 {/* Summary Table */}
                 <div className="mt-8 grid grid-cols-3 gap-4 border-t pt-6">
                     <div className="text-center">
-                        <p className="text-[10px] font-black uppercase tracking-widest text-gray-400 mb-1">ÄÃºng / CÃ¢u</p>
+                        <p className="text-[10px] font-black uppercase tracking-widest text-gray-400 mb-1">ĐÃºng / Câu</p>
                         <p className="text-xl font-black text-gray-900">{displayCorrectCount} / {displayTotalQuestions}</p>
                     </div>
                     <div className="text-center">
@@ -730,16 +730,16 @@ export default function PracticeExam() {
                         <p className="text-xl font-black text-gray-900">{formatTime(displayDuration)}</p>
                     </div>
                     <div className="text-center">
-                        <p className="text-[10px] font-black uppercase tracking-widest text-gray-400 mb-1">Hiá»‡u suáº¥t</p>
+                        <p className="text-[10px] font-black uppercase tracking-widest text-gray-400 mb-1">Hiệu suất</p>
                         <p className="text-xl font-black text-emerald-600">{displayTotalQuestions > 0 ? ((displayCorrectCount / displayTotalQuestions) * 100).toFixed(0) : 0}%</p>
                     </div>
                 </div>
 
-                {/* Biá»ƒu Ä‘á»“ Ä‘iá»ƒm sá»‘ 10 láº§n gáº§n nháº¥t cá»§a Ä‘á» nÃ y */}
+                {/* Biá»ƒu đề“ điá»ƒm sá»‘ 10 láº§n gáº§n nháº¥t cá»§a đề nÃ y */}
                 {(() => {
-                    // Cáº§n gá»™p thÃªm Ä‘iá»ƒm sá»‘ hiá»‡n táº¡i vÃ o lá»‹ch sá»­ vÃ¬ examHistory cÃ³ thá»ƒ chÆ°a chá»©a láº§n ná»™p bÃ i nÃ y
-                    // náº¿u load lÃºc Ä‘áº§u, hoáº·c chá»©a rá»“i náº¿u react effect reload.
-                    // An toÃ n nháº¥t: coi score hiá»‡n táº¡i lÃ  1 Ä‘iá»ƒm neo. 
+                    // Cáº§n gá»™p thÃªm điá»ƒm sá»‘ hiá»‡n táº¡i vÃ o lá»‹ch sá»­ vÃ¬ examHistory cÃ³ thá»ƒ chÆ°a chá»©a láº§n ná»™p bÃ i nÃ y
+                    // náº¿u load lÃºc đáº§u, hoáº·c chá»©a rá»“i náº¿u react effect reload.
+                    // An toÃ n nháº¥t: coi score hiá»‡n táº¡i lÃ  1 điá»ƒm neo. 
                     // Táº¡m thá»i láº¥y examHistory váº½.
                     const recentAttempts = [...examHistory].sort((a, b) => new Date(b.timestamp).getTime() - new Date(a.timestamp).getTime()).slice(0, 10).reverse();
                     
@@ -764,7 +764,7 @@ export default function PracticeExam() {
                         <div className="mt-8 pt-6 border-t relative group overflow-hidden">
                             <h3 className="text-sm font-bold text-gray-800 flex items-center justify-center gap-2 mb-6">
                                 <History className="h-4 w-4 text-blue-500" />
-                                Lá»‹ch sá»­ Ä‘iá»ƒm sá»‘ Ä‘á» nÃ y
+                                Lá»‹ch sá»­ điá»ƒm sá»‘ đề nÃ y
                             </h3>
                             <div className="h-32 w-full max-w-lg mx-auto relative pt-4">
                                 <svg className="w-full h-full overflow-visible" viewBox={`0 -20 ${width} ${height + 40}`}>
@@ -824,7 +824,7 @@ export default function PracticeExam() {
             <div className="space-y-4 pb-20">
                 <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 bg-white p-3 md:p-4 rounded-xl shadow-sm border border-gray-100">
                     <h3 className="text-lg font-bold flex items-center gap-2 m-0 shrink-0">
-                        <Eye className="h-5 w-5 text-blue-500" /> Káº¿t quáº£ chi tiáº¿t
+                        <Eye className="h-5 w-5 text-blue-500" /> Kết quả chi tiết
                     </h3>
                     
                     {/* Filters Toggle */}
@@ -833,19 +833,19 @@ export default function PracticeExam() {
                             onClick={() => setResultFilter('all')}
                             className={cn('px-3 py-1.5 rounded-md text-xs font-bold transition-all whitespace-nowrap', resultFilter === 'all' ? 'bg-white text-gray-900 shadow-sm' : 'text-gray-500 hover:text-gray-700')}
                         >
-                            Táº¥t cáº£
+                            Tất cả
                         </button>
                         <button
                             onClick={() => setResultFilter('correct')}
                             className={cn('px-3 py-1.5 rounded-md text-xs font-bold transition-all whitespace-nowrap', resultFilter === 'correct' ? 'bg-emerald-100 text-emerald-700 shadow-sm' : 'text-gray-500 hover:text-emerald-600')}
                         >
-                            CÃ¢u Ä‘Ãºng
+                            Câu đúng
                         </button>
                         <button
                             onClick={() => setResultFilter('incorrect')}
                             className={cn('px-3 py-1.5 rounded-md text-xs font-bold transition-all whitespace-nowrap', resultFilter === 'incorrect' ? 'bg-red-100 text-red-700 shadow-sm' : 'text-gray-500 hover:text-red-600')}
                         >
-                            CÃ¢u sai / ChÆ°a lÃ m
+                            Câu sai / ChÆ°a lÃ m
                         </button>
                     </div>
 
@@ -860,7 +860,7 @@ export default function PracticeExam() {
                         }}
                         className="text-xs font-bold text-blue-600 hover:underline shrink-0"
                     >
-                        {Object.keys(expandedResults).length > 0 ? 'Thu gá»n táº¥t cáº£' : 'Báº­t xem táº¥t cáº£'}
+                        {Object.keys(expandedResults).length > 0 ? 'Thu gá»n tất cả' : 'Bật xem tất cả'}
                     </button>
                 </div>
 
@@ -889,7 +889,7 @@ export default function PracticeExam() {
                                             {isCorrect ? <CheckCircle size={16} /> : !answered ? <MinusCircle size={16} /> : <XCircle size={16} />}
                                         </div>
                                         <div>
-                                            <span className="text-xs font-bold text-gray-400 uppercase tracking-widest">CÃ¢u {q.id} (Tráº¯c nghiá»‡m)</span>
+                                            <span className="text-xs font-bold text-gray-400 uppercase tracking-widest">Câu {q.id} (Trắc nghiệm)</span>
                                             <p className="text-sm font-semibold text-gray-700 line-clamp-1">{q.text}</p>
                                         </div>
                                     </div>
@@ -919,7 +919,7 @@ export default function PracticeExam() {
                                         {q.explanation && (
                                             <div className="mt-4 p-4 rounded-xl bg-blue-50 border border-blue-100 text-[11px] leading-relaxed">
                                                 <div className="font-bold text-blue-600 uppercase tracking-wider mb-1 flex items-center gap-1">
-                                                    ðŸ’¡ Giáº£i thÃ­ch
+                                                    💡 Giải thích
                                                 </div>
                                                 <LatexContent content={q.explanation} />
                                             </div>
@@ -958,7 +958,7 @@ export default function PracticeExam() {
                                             {allCorrect ? <CheckCircle size={16} /> : someIncorrect ? <XCircle size={16} /> : <MinusCircle size={16} />}
                                         </div>
                                         <div>
-                                            <span className="text-xs font-bold text-gray-400 uppercase tracking-widest">CÃ¢u {q.id} (Đúng/Sai)</span>
+                                            <span className="text-xs font-bold text-gray-400 uppercase tracking-widest">Câu {q.id} (Đúng/Sai)</span>
                                             <p className="text-sm font-semibold text-gray-700 line-clamp-1">{q.text}</p>
                                         </div>
                                     </div>
@@ -986,8 +986,8 @@ export default function PracticeExam() {
                                                         <div className="flex items-center gap-2 font-black shrink-0 ml-3">
                                                             {answered ? (isCorrectSq ? 'CHÃNH XÃC' : 'SAI') : 'Bá»Ž TRá»NG'}
                                                             <div className="w-1.5 h-1.5 rounded-full bg-gray-200 mx-1" />
-                                                            ÄÃP ÃN: {sq.correct ? 'Ä' : 'S'}
-                                                            {answered && !isCorrectSq && <span className="opacity-50 ml-1">({userAns ? 'Ä' : 'S'})</span>}
+                                                            ĐÃP ÃN: {sq.correct ? 'Đ' : 'S'}
+                                                            {answered && !isCorrectSq && <span className="opacity-50 ml-1">({userAns ? 'Đ' : 'S'})</span>}
                                                         </div>
                                                     </div>
                                                 );
@@ -996,7 +996,7 @@ export default function PracticeExam() {
                                         {q.explanation && (
                                             <div className="mt-4 p-4 rounded-xl bg-blue-50 border border-blue-100 text-[11px] leading-relaxed">
                                                 <div className="font-bold text-blue-600 uppercase tracking-wider mb-1 flex items-center gap-1">
-                                                    ðŸ’¡ Giáº£i thÃ­ch
+                                                    💡 Giải thích
                                                 </div>
                                                 <LatexContent content={q.explanation} />
                                             </div>
@@ -1033,7 +1033,7 @@ export default function PracticeExam() {
                                             {isCorrect ? <CheckCircle size={16} /> : !answered ? <MinusCircle size={16} /> : <XCircle size={16} />}
                                         </div>
                                         <div>
-                                            <span className="text-xs font-bold text-gray-400 uppercase tracking-widest">CÃ¢u {q.id} (Tráº£ lá»i ngáº¯n)</span>
+                                            <span className="text-xs font-bold text-gray-400 uppercase tracking-widest">Câu {q.id} (Tráº£ lá»i ngáº¯n)</span>
                                             <p className="text-sm font-semibold text-gray-700 line-clamp-1">{q.text}</p>
                                         </div>
                                     </div>
@@ -1054,7 +1054,7 @@ export default function PracticeExam() {
                                             </div>
                                             <div className="w-px h-10 bg-gray-100" />
                                             <div className="flex-1">
-                                                <p className="text-[10px] font-black uppercase tracking-widest text-gray-400 mb-1">ÄÃ¡p Ã¡n Ä‘Ãºng</p>
+                                                <p className="text-[10px] font-black uppercase tracking-widest text-gray-400 mb-1">ĐÃ¡p Ã¡n đúng</p>
                                                 <p className="text-sm font-bold text-emerald-600">
                                                     {q.correct}
                                                 </p>
@@ -1063,7 +1063,7 @@ export default function PracticeExam() {
                                         {q.explanation && (
                                             <div className="mt-4 p-4 rounded-xl bg-blue-50 border border-blue-100 text-[11px] leading-relaxed">
                                                 <div className="font-bold text-blue-600 uppercase tracking-wider mb-1 flex items-center gap-1">
-                                                    ðŸ’¡ Giáº£i thÃ­ch
+                                                    💡 Giải thích
                                                 </div>
                                                 <LatexContent content={q.explanation} />
                                             </div>
