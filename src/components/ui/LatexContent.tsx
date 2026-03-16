@@ -149,11 +149,9 @@ function tokenize(content: string): Token[] {
 
     while (i < content.length) {
         // ──── Table Detection ────
-        // Check if we are at the start of a line and see a '|' (allowing leading spaces)
         let isStartOfLine = i === 0 || content[i - 1] === '\n';
-        let cursor = i;
         if (isStartOfLine) {
-            // Skip leading whitespace to find '|'
+            let cursor = i;
             while (cursor < content.length && (content[cursor] === ' ' || content[cursor] === '\t')) {
                 cursor++;
             }
@@ -161,7 +159,6 @@ function tokenize(content: string): Token[] {
                 let j = cursor;
                 let currentLine = '';
                 const tableLines: string[] = [];
-                
                 while (j < content.length) {
                     const char = content[j];
                     if (char === '\n') {
@@ -169,40 +166,30 @@ function tokenize(content: string): Token[] {
                             tableLines.push(currentLine.trim());
                             currentLine = '';
                             j++;
-                            // Peek next line (skipping its leading spaces)
                             let nextRowStart = j;
-                            while (nextRowStart < content.length && (content[nextRowStart] === ' ' || content[nextRowStart] === '\t')) {
-                                nextRowStart++;
-                            }
+                            while (nextRowStart < content.length && (content[nextRowStart] === ' ' || content[nextRowStart] === '\t')) nextRowStart++;
                             if (content[nextRowStart] !== '|') break;
-                            j = nextRowStart; // move to next row's '|'
-                        } else {
-                            break;
-                        }
+                            j = nextRowStart;
+                        } else break;
                     } else {
                         currentLine += char;
                         j++;
                     }
                 }
-            // Add the last line if it's a table line
-            if (currentLine.trim().startsWith('|') && currentLine.trim().endsWith('|')) {
-                tableLines.push(currentLine.trim());
-            }
+                if (currentLine.trim().startsWith('|') && currentLine.trim().endsWith('|')) {
+                    tableLines.push(currentLine.trim());
+                }
 
-            // A valid Markdown table must have at least 2 lines (header + divider)
-            const dividerLine = tableLines[1];
-            if (tableLines.length >= 2 && dividerLine && dividerLine.includes('-')) {
-                flush();
-                const rows = tableLines
-                    .filter(line => !line.match(/^\|[ :|-]+\|$/)) // skip divider line
-                    .map(line => {
-                        return line.split('|')
-                            .filter((_, idx, arr) => idx > 0 && idx < arr.length - 1)
-                            .map(s => s.trim());
-                    });
-                tokens.push({ type: 'table', rows });
-                i = j;
-                continue;
+                const dividerLine = tableLines[1];
+                if (tableLines.length >= 2 && dividerLine && dividerLine.includes('-')) {
+                    flush();
+                    const rows = tableLines
+                        .filter(line => !line.match(/^\|[ :|-]+\|$/))
+                        .map(line => line.split('|').filter((_, idx, arr) => idx > 0 && idx < arr.length - 1).map(s => s.trim()));
+                    tokens.push({ type: 'table', rows });
+                    i = j;
+                    continue;
+                }
             }
         }
 

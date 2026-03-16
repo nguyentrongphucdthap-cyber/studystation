@@ -43,14 +43,12 @@ QUY TẮC CÔNG THỨC & VĂN BẢN (CỰC KỲ QUAN TRỌNG):
 - Việc thiếu sót câu hỏi là KHÔNG CHẤP NHẬN ĐƯỢC. Đề thi có bao nhiêu câu phải TRÍCH XUẤT ĐẦY ĐỦ bấy nhiêu câu.
 - TUYỆT ĐỐI KHÔNG dùng dấu ngoặc kép thẳng (") ở giữa nội dung các trường text vì sẽ làm hỏng JSON. Nếu cần trích dẫn, hãy dùng dấu nháy đơn (') hoặc ngoặc kép cong (“ ”).
 - Các chuỗi phải viết trên CÙNG MỘT DÒNG. Dùng "\\\\n" nếu cần xuống dòng, TUYỆT ĐỐI KHÔNG ấn Enter tạo dòng mới bên giữa chuỗi JSON.
-- QUY TẮC BẢNG (CỰC KỲ QUAN TRỌNG): 
-  + Nếu đề bài có bảng số liệu, BẮT BUỘC phải chuyển về định dạng bảng Markdown.
-  + ĐẶC BIỆT: Nếu văn bản trích xuất bị "làm phẳng" (liệt kê danh sách tên loài/đối tượng rồi đến một loạt con số), bạn PHẢI TỰ SUY LUẬN để xây dựng lại bảng (thường là bảng so sánh hoặc ma trận). 
-  Ví dụ: Nếu thấy "Loài A, Loài B, 0%, 50%, 0%", hãy chuyển thành:
-  | Loài | Loài A | Loài B |
-  |---|---|---|
-  | Loài A | 0% | 50% |
-  | Loài B | 50% | 0% |
+  + ĐẶC BIỆT (Xử lý chuỗi dọc): Nếu thấy dữ liệu bị liệt kê rời rạc theo hàng dọc (ví dụ trích xuất từ PDF bị lỗi layout thành từng dòng rời rạc, có nhiều newline ở giữa), bạn PHẢI TỰ GHÉP chúng lại thành bảng hoàn chỉnh.
+  Ví dụ: "Quần thể, A, B, C, Diện tích, 25, 240, 193, Mật độ, 10, 15, 20" ->
+  | Quần thể | A | B | C |
+  |---|---|---|---|
+  | Diện tích | 25 | 240 | 193 |
+  | Mật độ | 10 | 15 | 20 |
   + Bảng Markdown chuẩn:
   | Đặc điểm | Quần thể A | Quần thể B |
   |---|---|---|
@@ -69,12 +67,16 @@ QUY TẮC CỰC KỲ QUAN TRỌNG:
 2. KHÔNG được có dấu phẩy dư ở cuối mảng hoặc cuối đối tượng.
 3. Chỉ xuất JSON thuần, không giải thích gì thêm.`,
 
-    etest: `Phân tích văn bản tiếng Anh và xuất JSON cho đề thi E-test.
+    etest: `Bạn là chuyên gia phân tích đề thi tiếng Anh. Nhiệm vụ: trích xuất nội dung và xuất JSON.
+    
+CẤU TRÚC:
+- "passage": Nội dung bài đọc. Nếu bài đọc có BẢNG SỐ LIỆU (kể cả khi bị liệt kê rời rạc theo hàng dọc), bạn BẮT BUỘC phải dùng Markdown table để tái cấu trúc lại.
+
 JSON FORMAT:
 {
   "sections": [
     {
-      "passage": "Nội dung bài đọc (nếu có, dùng bảng Markdown nếu bài đọc có bảng)",
+      "passage": "...",
       "questions": [
         { "id": 1, "text": "...", "options": ["A", "B", "C", "D"], "correct": 0 }
       ]
