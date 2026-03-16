@@ -7,9 +7,12 @@ import { Button } from '@/components/ui/Button';
 import { Dialog, ConfirmDialog } from '@/components/ui/Dialog';
 import { cn } from '@/lib/utils';
 import type { AllowedUser, ActivityLog } from '@/types';
-import { Users, Plus, Trash2, Search, Shield, ShieldCheck, User, Tags, Activity, History, Clock } from 'lucide-react';
+import { 
+    Users, Plus, Trash2, Search, Shield, ShieldCheck, User, Tags, Activity, 
+    History as ActivityHistory, Clock, Globe, Filter, UserCheck, LayoutGrid 
+} from 'lucide-react';
 import { formatRelativeActiveTime } from '@/lib/utils';
-import { getUserActivityLogsByEmail } from '@/services/auth.service';
+import { getUserActivityLogsByEmail, subscribeToOnlineUsersList } from '@/services/auth.service';
 
 const roleOptions = [
     { value: 'user', label: 'Học sinh', icon: User, color: 'bg-blue-100 text-blue-700' },
@@ -23,6 +26,10 @@ export default function AdminStudents() {
     const [users, setUsers] = useState<AllowedUser[]>([]);
     const [loading, setLoading] = useState(true);
     const [search, setSearch] = useState('');
+    const [roleFilter, setRoleFilter] = useState('all');
+    const [statusFilter, setStatusFilter] = useState('all'); // all, online, offline
+    const [classFilter, setClassFilter] = useState('all');
+    const [onlineEmails, setOnlineEmails] = useState<string[]>([]);
     const [showAdd, setShowAdd] = useState(false);
     const [addForm, setAddForm] = useState({ email: '', role: 'user' });
     const [deleteTarget, setDeleteTarget] = useState<string | null>(null);
@@ -31,6 +38,13 @@ export default function AdminStudents() {
     const [loadingLogs, setLoadingLogs] = useState(false);
 
     useEffect(() => { loadUsers(); }, []);
+
+    useEffect(() => {
+        const unsubscribe = subscribeToOnlineUsersList((onlineList) => {
+            setOnlineEmails(onlineList.map(u => u.email.toLowerCase()));
+        });
+        return () => unsubscribe();
+    }, []);
     
     async function loadUsers() { 
         setLoading(true); 
@@ -57,7 +71,24 @@ export default function AdminStudents() {
         setLoading(false); 
     }
 
-    const filtered = search.trim() ? users.filter((u: AllowedUser) => u.email.toLowerCase().includes(search.toLowerCase()) || u.name?.toLowerCase().includes(search.toLowerCase())) : users;
+    const allAvailableClasses = Array.from(new Set(users.flatMap(u => u.classes || []))).sort();
+
+    const filtered = users.filter((u: AllowedUser) => {
+        const matchesSearch = !search.trim() || 
+            u.email.toLowerCase().includes(search.toLowerCase()) || 
+            u.name?.toLowerCase().includes(search.toLowerCase());
+        
+        const matchesRole = roleFilter === 'all' || u.role === roleFilter;
+        
+        const isOnline = onlineEmails.includes(u.email.toLowerCase());
+        const matchesStatus = statusFilter === 'all' || 
+            (statusFilter === 'online' && isOnline) || 
+            (statusFilter === 'offline' && !isOnline);
+            
+        const matchesClass = classFilter === 'all' || (u.classes || []).includes(classFilter);
+
+        return matchesSearch && matchesRole && matchesStatus && matchesClass;
+    });
 
     const handleAdd = async () => {
         if (!addForm.email.trim()) { toast({ title: 'Nhập email', type: 'warning' }); return; }
@@ -111,22 +142,59 @@ export default function AdminStudents() {
 
     return (
         <div className="space-y-6 animate-in fade-in slide-in-from-bottom-4 duration-500">
-            <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between admin-card p-4">
-                <div className="flex items-center gap-3 pl-2">
-                    <div className="p-2 bg-indigo-100 text-indigo-600 rounded-lg dark:bg-indigo-900/30 dark:text-indigo-400">
-                        <Users className="h-5 w-5" />
+            {/* Header Section */}
+            <div className="admin-card overflow-hidden">
+                <div className="p-6 border-b border-slate-100 dark:border-slate-800 flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between bg-white dark:bg-slate-900/40">
+                    <div className="flex items-center gap-4">
+                        <div className="p-3 bg-indigo-500 text-white rounded-2xl shadow-lg shadow-indigo-200 dark:shadow-none">
+                            <Users className="h-6 w-6" />
+                        </div>
+                        <div>
+                            <h2 className="text-2xl font-black text-slate-800 dark:text-slate-100">Quản lý học sinh</h2>
+                            <p className="text-sm font-medium text-slate-500 mt-0.5 flex items-center gap-2">
+                                <span className="flex items-center gap-1"><UserCheck className="h-3 w-3 text-emerald-500" /> {onlineEmails.length} đang online</span>
+                                <span className="text-slate-300">•</span>
+                                <span>Tổng {users.length} tài khoản</span>
+                            </p>
+                        </div>
                     </div>
-                    <div>
-                        <h2 className="text-xl font-black text-slate-800 dark:text-slate-100">Quản lý học sinh</h2>
-                        <p className="text-xs font-medium text-slate-500 mt-0.5">Tổng cộng {users.length} tài khoản</p>
-                    </div>
+                    <Button onClick={() => setShowAdd(true)} className="admin-btn-primary rounded-xl gap-2 font-bold px-6 py-6 h-auto shadow-indigo-100"><Plus className="h-5 w-5" /> Thêm mới</Button>
                 </div>
-                <div className="flex gap-2">
-                    <div className="relative w-full max-w-xs sm:w-64">
-                        <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400" />
-                        <input type="text" value={search} onChange={(e) => setSearch(e.target.value)} placeholder="Tìm email / tên..." className="w-full rounded-xl border-none bg-slate-50 dark:bg-slate-800 shadow-inner py-2.5 pl-10 pr-4 text-sm outline-none focus:ring-2 focus:ring-indigo-500/50" />
+
+                {/* Filters Section */}
+                <div className="p-4 bg-slate-50/50 dark:bg-slate-800/20 grid grid-cols-1 md:grid-cols-4 gap-4">
+                    <div className="relative group">
+                        <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400 group-focus-within:text-indigo-500 transition-colors" />
+                        <input type="text" value={search} onChange={(e) => setSearch(e.target.value)} placeholder="Tìm email / tên..." className="w-full rounded-xl border-none bg-white dark:bg-slate-800 shadow-sm py-2.5 pl-10 pr-4 text-sm outline-none focus:ring-2 focus:ring-indigo-500/50 transition-all" />
                     </div>
-                    <Button onClick={() => setShowAdd(true)} className="admin-btn-primary rounded-xl gap-2 font-semibold whitespace-nowrap"><Plus className="h-4 w-4" /> Thêm mới</Button>
+
+                    <div className="relative">
+                        <Shield className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400" />
+                        <select value={roleFilter} onChange={(e) => setRoleFilter(e.target.value)} className="w-full appearance-none rounded-xl border-none bg-white dark:bg-slate-800 shadow-sm py-2.5 pl-10 pr-10 text-sm font-medium outline-none focus:ring-2 focus:ring-indigo-500/50 cursor-pointer">
+                            <option value="all">Tất cả quyền</option>
+                            {roleOptions.map(r => <option key={r.value} value={r.value}>{r.label}</option>)}
+                        </select>
+                        <Filter className="absolute right-3 top-1/2 h-3 w-3 -translate-y-1/2 text-slate-300 pointer-events-none" />
+                    </div>
+
+                    <div className="relative">
+                        <Globe className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400" />
+                        <select value={statusFilter} onChange={(e) => setStatusFilter(e.target.value)} className="w-full appearance-none rounded-xl border-none bg-white dark:bg-slate-800 shadow-sm py-2.5 pl-10 pr-10 text-sm font-medium outline-none focus:ring-2 focus:ring-indigo-500/50 cursor-pointer">
+                            <option value="all">Tất cả trạng thái</option>
+                            <option value="online">Đang online</option>
+                            <option value="offline">Ngoại tuyến</option>
+                        </select>
+                        <Filter className="absolute right-3 top-1/2 h-3 w-3 -translate-y-1/2 text-slate-300 pointer-events-none" />
+                    </div>
+
+                    <div className="relative">
+                        <LayoutGrid className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400" />
+                        <select value={classFilter} onChange={(e) => setClassFilter(e.target.value)} className="w-full appearance-none rounded-xl border-none bg-white dark:bg-slate-800 shadow-sm py-2.5 pl-10 pr-10 text-sm font-medium outline-none focus:ring-2 focus:ring-indigo-500/50 cursor-pointer">
+                            <option value="all">Tất cả lớp</option>
+                            {allAvailableClasses.map(c => <option key={c} value={c}>{c}</option>)}
+                        </select>
+                        <Filter className="absolute right-3 top-1/2 h-3 w-3 -translate-y-1/2 text-slate-300 pointer-events-none" />
+                    </div>
                 </div>
             </div>
 
@@ -156,12 +224,21 @@ export default function AdminStudents() {
                                         <td className="px-6 py-4">
                                             <div className="absolute left-0 top-0 bottom-0 w-1 bg-indigo-500 opacity-0 group-hover:opacity-100 transition-opacity" />
                                             <div className="flex items-center gap-3">
-                                                <div className="h-10 w-10 rounded-full bg-slate-100 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 flex items-center justify-center text-slate-400 font-bold uppercase shrink-0 shadow-sm">
-                                                    {u.email.charAt(0)}
+                                                <div className="relative shrink-0">
+                                                    {u.photoURL ? (
+                                                        <img src={u.photoURL} alt={u.name} className="h-10 w-10 rounded-full border border-slate-200 dark:border-slate-700 shadow-sm object-cover" />
+                                                    ) : (
+                                                        <div className="h-10 w-10 rounded-full bg-indigo-50 dark:bg-indigo-900/30 border border-indigo-100 dark:border-indigo-800 flex items-center justify-center text-indigo-600 dark:text-indigo-400 font-bold uppercase shadow-sm">
+                                                            {u.email.charAt(0)}
+                                                        </div>
+                                                    )}
+                                                    {onlineEmails.includes(u.email.toLowerCase()) && (
+                                                        <span className="absolute -bottom-0.5 -right-0.5 h-3.5 w-3.5 bg-emerald-500 border-2 border-white dark:border-slate-900 rounded-full ring-2 ring-emerald-500/20 animate-pulse" />
+                                                    )}
                                                 </div>
                                                 <div>
-                                                    <p className="font-bold text-slate-800 dark:text-slate-200">{u.name || 'Người dùng chưa cập nhật tên'}</p>
-                                                    <p className="text-xs font-mono text-slate-500 dark:text-slate-400">{u.email}</p>
+                                                    <p className="font-bold text-slate-800 dark:text-slate-200 line-clamp-1">{u.name || 'Chưa cập nhật tên'}</p>
+                                                    <p className="text-[11px] font-medium text-slate-400 dark:text-slate-500">{u.email}</p>
                                                 </div>
                                             </div>
                                         </td>
@@ -299,7 +376,7 @@ export default function AdminStudents() {
                                     <div key={log.id} className="p-3 rounded-xl bg-slate-50 dark:bg-slate-800/50 border border-slate-100 dark:border-slate-700/50 flex items-start justify-between gap-4">
                                         <div className="flex gap-3">
                                             <div className="mt-1 p-1.5 bg-white dark:bg-slate-800 rounded-lg shadow-sm">
-                                                <History className="h-3.5 w-3.5 text-slate-400" />
+                                                <ActivityHistory className="h-3.5 w-3.5 text-slate-400" />
                                             </div>
                                             <div>
                                                 <p className="text-sm font-bold text-slate-700 dark:text-slate-200">{log.moduleLabel || log.moduleName}</p>
@@ -314,7 +391,7 @@ export default function AdminStudents() {
                             </div>
                         ) : (
                             <div className="py-12 text-center text-slate-500 flex flex-col items-center gap-2">
-                                <History className="h-8 w-8 opacity-20" />
+                                <ActivityHistory className="h-8 w-8 opacity-20" />
                                 <p className="text-sm font-bold">Chưa có nhật ký hoạt động nào</p>
                             </div>
                         )}

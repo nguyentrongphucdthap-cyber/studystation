@@ -10,6 +10,7 @@ import {
 } from '@/services/exam.service';
 import { logUserActivity } from '@/services/auth.service';
 import { useAuth } from '@/contexts/AuthContext';
+import { useTheme } from '@/contexts/ThemeContext';
 import { cn, formatTime } from '@/lib/utils';
 import { Spinner } from '@/components/ui/Spinner';
 import { Button } from '@/components/ui/Button';
@@ -41,6 +42,7 @@ export default function PracticeExam() {
     const { examId } = useParams<{ examId: string }>();
     const navigate = useNavigate();
     const { user, isGuest } = useAuth();
+    const { settings } = useTheme();
 
     const [exam, setExam] = useState<Exam | null>(null);
     const [loading, setLoading] = useState(true);
@@ -509,7 +511,10 @@ export default function PracticeExam() {
                             <h2 className="text-sm font-bold truncate max-w-[150px] sm:max-w-none lg:text-base flex items-center gap-2">
                                 {exam.title}
                                 {isShuffled && (
-                                    <span className="bg-blue-100 text-blue-600 dark:bg-blue-900/30 dark:text-blue-400 text-[10px] px-2 py-0.5 rounded-full font-black uppercase tracking-wider">
+                                    <span 
+                                        className="text-[10px] px-2 py-0.5 rounded-full font-black uppercase tracking-wider"
+                                        style={{ backgroundColor: `rgba(var(--accent-rgb), 0.15)`, color: settings.accentColor }}
+                                    >
                                         Đang xáo trộn
                                     </span>
                                 )}
@@ -641,18 +646,24 @@ export default function PracticeExam() {
                                                                 <button
                                                                     onClick={() => handlePart2Select(q.id, sq.id, true)}
                                                                     className={cn(
-                                                                        'flex h-10 w-12 items-center justify-center rounded-lg text-sm font-bold transition-all',
-                                                                        userAns === true ? 'bg-emerald-600 text-white shadow-md' : 'bg-background hover:bg-emerald-50 text-muted-foreground border'
+                                                                        'flex h-10 w-12 items-center justify-center rounded-lg text-sm font-bold transition-all border-2',
+                                                                        userAns === true 
+                                                                            ? 'text-white shadow-md' 
+                                                                            : 'bg-background hover:bg-slate-50 text-muted-foreground border-slate-100'
                                                                     )}
+                                                                    style={userAns === true ? { backgroundColor: settings.accentColor, borderColor: settings.accentColor } : {}}
                                                                 >
                                                                     Đ
                                                                 </button>
                                                                 <button
                                                                     onClick={() => handlePart2Select(q.id, sq.id, false)}
                                                                     className={cn(
-                                                                        'flex h-10 w-12 items-center justify-center rounded-lg text-sm font-bold transition-all',
-                                                                        userAns === false ? 'bg-red-600 text-white shadow-md' : 'bg-background hover:bg-red-50 text-muted-foreground border'
+                                                                        'flex h-10 w-12 items-center justify-center rounded-lg text-sm font-bold transition-all border-2',
+                                                                        userAns === false 
+                                                                            ? 'text-white shadow-md' 
+                                                                            : 'bg-background hover:bg-slate-50 text-muted-foreground border-slate-100'
                                                                     )}
+                                                                    style={userAns === false ? { backgroundColor: settings.accentColor, borderColor: settings.accentColor } : {}}
                                                                 >
                                                                     S
                                                                 </button>
@@ -827,9 +838,12 @@ export default function PracticeExam() {
                             {/* Main Pill */}
                             <div className="bg-slate-900/90 dark:bg-slate-900/95 backdrop-blur-xl border border-slate-800 rounded-full shadow-[0_20px_50px_rgba(0,0,0,0.4)] p-1.5 flex items-center gap-1 transition-all">
                                 {/* Progress Circular/Pill */}
-                                <div className="bg-blue-600 rounded-full px-3 py-1.5 flex items-center gap-2">
+                                <div 
+                                    className="rounded-full px-3 py-1.5 flex items-center gap-2"
+                                    style={{ backgroundColor: settings.accentColor }}
+                                >
                                     <div className="flex flex-col items-start leading-none">
-                                        <span className="text-[10px] text-blue-100/70 font-bold uppercase tracking-tighter">Tiến độ</span>
+                                        <span className="text-[10px] text-white/70 font-bold uppercase tracking-tighter">Tiến độ</span>
                                         <span className="text-white font-black text-sm">{answeredQs}/{totalQs}</span>
                                     </div>
                                     <div className="h-6 w-px bg-white/20" />
@@ -870,9 +884,10 @@ export default function PracticeExam() {
                             <button
                                 onClick={() => window.scrollTo({ top: 0, behavior: 'smooth' })}
                                 className={cn(
-                                    "h-12 w-12 flex items-center justify-center rounded-full bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 shadow-xl text-blue-600 transition-all duration-300 transform",
+                                    "h-12 w-12 flex items-center justify-center rounded-full bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 shadow-xl transition-all duration-300 transform",
                                     showScrollTop ? "scale-100 opacity-100" : "scale-0 opacity-0 pointer-events-none"
                                 )}
+                                style={{ color: settings.accentColor }}
                                 title="Lên đầu trang"
                             >
                                 <ArrowUp className="h-5 w-5" />
@@ -892,7 +907,7 @@ export default function PracticeExam() {
                         <div className="relative w-full max-w-md bg-white dark:bg-slate-900 rounded-3xl shadow-2xl overflow-hidden animate-in slide-in-from-bottom-5 duration-300">
                             <div className="p-5 border-b border-slate-100 dark:border-slate-800 flex items-center justify-between">
                                 <h4 className="flex items-center gap-2 font-black text-slate-800 dark:text-gray-100">
-                                    <List className="h-5 w-5 text-blue-500" /> Danh sách câu hỏi
+                                    <List className="h-5 w-5" style={{ color: settings.accentColor }} /> Danh sách câu hỏi
                                 </h4>
                                 <button 
                                     onClick={() => setShowMobileTOC(false)}
@@ -916,9 +931,10 @@ export default function PracticeExam() {
                                                         className={cn(
                                                             'h-10 rounded-xl font-bold transition-all border-2',
                                                             part1Answers[q.id] !== undefined 
-                                                                ? 'bg-blue-600 border-blue-600 text-white shadow-md shadow-blue-200' 
+                                                                ? 'text-white' 
                                                                 : 'bg-white dark:bg-slate-800 border-slate-100 dark:border-slate-700 text-slate-400'
                                                         )}
+                                                        style={part1Answers[q.id] !== undefined ? { backgroundColor: settings.accentColor, borderColor: settings.accentColor, boxShadow: `0 4px 12px rgba(var(--accent-rgb), 0.3)` } : {}}
                                                     >
                                                         {idx + 1}
                                                     </button>
@@ -941,10 +957,14 @@ export default function PracticeExam() {
                                                             onClick={() => { scrollToQuestion(`p2-${q.id}`); setShowMobileTOC(false); }}
                                                             className={cn(
                                                                 'h-10 rounded-xl font-bold transition-all border-2',
-                                                                isDone ? 'bg-blue-600 border-blue-600 text-white shadow-md shadow-blue-200' :
-                                                                someDone ? 'bg-blue-50 text-blue-600 border-blue-200' :
+                                                                isDone ? 'text-white' :
+                                                                someDone ? 'bg-slate-50' :
                                                                 'bg-white dark:bg-slate-800 border-slate-100 dark:border-slate-700 text-slate-400'
                                                             )}
+                                                            style={
+                                                                isDone ? { backgroundColor: settings.accentColor, borderColor: settings.accentColor, boxShadow: `0 4px 12px rgba(var(--accent-rgb), 0.3)` } :
+                                                                someDone ? { color: settings.accentColor, borderColor: `rgba(var(--accent-rgb), 0.3)`, backgroundColor: `rgba(var(--accent-rgb), 0.05)` } : {}
+                                                            }
                                                         >
                                                             {shuffledP1.length + idx + 1}
                                                         </button>
@@ -966,9 +986,10 @@ export default function PracticeExam() {
                                                         className={cn(
                                                             'h-10 rounded-xl font-bold transition-all border-2',
                                                             (part3Answers[q.id] || '').trim()
-                                                                ? 'bg-blue-600 border-blue-600 text-white shadow-md shadow-blue-200' 
+                                                                ? 'text-white' 
                                                                 : 'bg-white dark:bg-slate-800 border-slate-100 dark:border-slate-700 text-slate-400'
                                                         )}
+                                                        style={(part3Answers[q.id] || '').trim() ? { backgroundColor: settings.accentColor, borderColor: settings.accentColor, boxShadow: `0 4px 12px rgba(var(--accent-rgb), 0.3)` } : {}}
                                                     >
                                                         {shuffledP1.length + shuffledP2.length + idx + 1}
                                                     </button>

@@ -551,6 +551,8 @@ export async function syncUserProfile(user: User) {
         // Also sync to allowed_users for management view
         if (user.email) {
             await setDoc(doc(db, 'allowed_users', user.email), {
+                name: user.displayName,
+                photoURL: user.photoURL,
                 lastActive: new Date().toISOString(),
             }, { merge: true });
             lastFirestoreUpdate = Date.now();

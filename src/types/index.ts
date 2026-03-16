@@ -15,6 +15,7 @@ export interface AllowedUser {
     email: string;
     role: string;
     name?: string;
+    photoURL?: string | null;
     addedBy?: string;
     addedAt?: string;
     classes?: string[];         // For students

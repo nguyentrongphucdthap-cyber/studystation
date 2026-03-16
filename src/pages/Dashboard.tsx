@@ -1,4 +1,10 @@
 import { useNavigate } from 'react-router-dom';
+import { useState, useEffect, useMemo } from 'react';
+import { useTheme } from '../contexts/ThemeContext';
+import { 
+    ChevronRight, 
+    AlarmClock
+} from 'lucide-react';
 
 const menuItems = [
     {
@@ -55,23 +61,87 @@ const menuItems = [
     },
 ];
 
+interface ExamItem {
+    id: number;
+    subject: string;
+    date: string; // DD/MM/YYYY
+    time: string; // HH:mm
+    timestamp: number;
+}
+
+const EXAM_SCHEDULE: ExamItem[] = [
+    { id: 1, subject: 'Ngữ văn', date: '16/03/2026', time: '07:05', timestamp: new Date(2026, 2, 16, 7, 5).getTime() },
+    { id: 2, subject: 'Vật lý', date: '16/03/2026', time: '08:45', timestamp: new Date(2026, 2, 16, 8, 45).getTime() },
+    { id: 3, subject: 'Toán', date: '17/03/2026', time: '07:05', timestamp: new Date(2026, 2, 17, 7, 5).getTime() },
+    { id: 4, subject: 'Lịch sử', date: '18/03/2026', time: '07:05', timestamp: new Date(2026, 2, 18, 7, 5).getTime() },
+    { id: 5, subject: 'Hóa học', date: '18/03/2026', time: '08:00', timestamp: new Date(2026, 2, 18, 8, 0).getTime() },
+    { id: 6, subject: 'Tiếng Anh', date: '19/03/2026', time: '07:05', timestamp: new Date(2026, 2, 19, 7, 5).getTime() },
+    { id: 7, subject: 'Sinh học', date: '19/03/2026', time: '08:15', timestamp: new Date(2026, 2, 19, 8, 15).getTime() },
+    { id: 8, subject: 'Tin học', date: '21/03/2026', time: '07:05', timestamp: new Date(2026, 2, 21, 7, 5).getTime() },
+];
+
 export default function Dashboard() {
     const navigate = useNavigate();
 
     return (
-        <div>
-            {/* 3-column grid — first row */}
-            <div className="grid grid-cols-3 gap-3 md:gap-4 mb-3 md:mb-4">
-                {menuItems.slice(0, 3).map((item) => (
+        <div className="space-y-4 md:space-y-6">
+            {/* Exam Schedule Widget */}
+            <ExamScheduleWidget />
+
+            <div className="grid grid-cols-2 md:grid-cols-3 gap-3 md:gap-4">
+                {menuItems.map((item) => (
                     <MenuCard key={item.label} item={item} onClick={() => item.path && navigate(item.path)} />
                 ))}
             </div>
-            {/* 2-column row — left-aligned with first 2 columns */}
-            <div className="grid grid-cols-3 gap-3 md:gap-4">
-                {menuItems.slice(3).map((item) => (
-                    <MenuCard key={item.label} item={item} onClick={() => item.path && navigate(item.path)} />
-                ))}
-                <div /> {/* spacer */}
+        </div>
+    );
+}
+
+function ExamScheduleWidget() {
+    const { settings: _settings } = useTheme(); // Not directly used in ribbon but theme context available
+    const [now, setNow] = useState(Date.now());
+
+    useEffect(() => {
+        const timer = setInterval(() => setNow(Date.now()), 1000);
+        return () => clearInterval(timer);
+    }, []);
+
+    const next = useMemo(() => {
+        return EXAM_SCHEDULE.filter(e => e.timestamp > now).sort((a, b) => a.timestamp - b.timestamp)[0] || null;
+    }, [now]);
+
+    const formatCountdown = (target: number) => {
+        const diff = target - now;
+        if (diff <= 0) return "00:00:00";
+        const h = Math.floor(diff / 3600000);
+        const m = Math.floor((diff % 3600000) / 60000);
+        const s = Math.floor((diff % 60000) / 1000);
+        return `${h.toString().padStart(2, '0')}:${m.toString().padStart(2, '0')}:${s.toString().padStart(2, '0')}`;
+    };
+
+    if (!next) return null;
+
+    return (
+        <div className="relative group overflow-hidden rounded-2xl bg-white/60 dark:bg-slate-900/60 backdrop-blur-md border border-white/50 dark:border-slate-800/50 shadow-sm p-2 px-4 transition-all hover:bg-white dark:hover:bg-slate-900">
+            <div className="flex flex-wrap items-center justify-between gap-x-4 gap-y-1">
+                <div className="flex items-center gap-2 min-w-0">
+                    <span className="shrink-0 px-2 py-0.5 rounded-md bg-slate-900 text-[10px] font-black text-white uppercase tracking-tighter">
+                        {next.date.split('/')[0]}/{next.date.split('/')[1]}
+                    </span>
+                    <h4 className="text-xs font-black text-gray-800 dark:text-gray-200 truncate tracking-tight">
+                        {next.subject} <span className="text-[10px] font-bold text-gray-400 ml-1">@ {next.time}</span>
+                    </h4>
+                </div>
+                
+                <div className="flex items-center gap-2">
+                    <div className="flex items-center gap-1.5 px-2 py-1 rounded-lg bg-blue-50 dark:bg-blue-900/20 border border-blue-100/50 dark:border-blue-800/30">
+                        <AlarmClock className="w-3 h-3 text-blue-500" />
+                        <span className="font-mono font-black text-[11px] text-blue-600 dark:text-blue-400 tracking-wider">
+                            {formatCountdown(next.timestamp)}
+                        </span>
+                    </div>
+                    <ChevronRight className="w-3 h-3 text-gray-300 group-hover:translate-x-0.5 transition-transform" />
+                </div>
             </div>
         </div>
     );
@@ -88,8 +158,8 @@ function MenuCard({ item, onClick }: MenuCardProps) {
             onClick={onClick}
             disabled={item.soon}
             className={`
-                group relative rounded-[32px] p-6 md:p-10
-                flex flex-col items-center justify-center aspect-[10/9]
+                group relative rounded-[32px] p-4 md:p-8
+                flex flex-col items-center justify-center aspect-square md:aspect-[10/9]
                 transition-all duration-500 var(--cubic-out)
                 border border-white
                 bg-white/80 backdrop-blur-xl
@@ -99,8 +169,8 @@ function MenuCard({ item, onClick }: MenuCardProps) {
             `}
         >
             {/* Icon container */}
-            <div className={`w-14 h-14 md:w-16 md:h-16 rounded-[22px] ${item.iconBg} flex items-center justify-center mb-4 md:mb-5 relative transition-all duration-500 group-hover:scale-110 shadow-sm group-hover:shadow-md`}>
-                <div className="scale-110">{item.icon}</div>
+            <div className={`w-12 h-12 md:w-16 md:h-16 rounded-[20px] md:rounded-[22px] ${item.iconBg} flex items-center justify-center mb-3 md:mb-5 relative transition-all duration-500 group-hover:scale-110 shadow-sm group-hover:shadow-md`}>
+                <div className="scale-100 md:scale-110">{item.icon}</div>
                 {item.badge && (
                     <span className="absolute -top-1.5 -right-1.5 bg-blue-600 text-white text-[9px] font-bold px-2 py-0.5 rounded-full shadow-lg">
                         {item.badge}
@@ -109,12 +179,12 @@ function MenuCard({ item, onClick }: MenuCardProps) {
             </div>
 
             {/* Label */}
-            <span className="text-[15px] md:text-[17px] font-extrabold text-gray-900 dark:text-gray-100 transition-colors group-hover:text-blue-600 tracking-tight">{item.label}</span>
+            <span className="text-sm md:text-[17px] font-extrabold text-gray-900 dark:text-gray-100 transition-colors group-hover:text-blue-600 tracking-tight">{item.label}</span>
 
             {/* Soon badge */}
             {item.soon && (
-                <div className="absolute bottom-4 px-3 py-1 bg-gray-100/80 dark:bg-gray-800/80 backdrop-blur-sm rounded-full border border-gray-200 dark:border-gray-700">
-                    <span className="text-[9px] text-gray-500 dark:text-gray-400 font-black uppercase tracking-widest">Coming Soon</span>
+                <div className="absolute bottom-3 md:bottom-4 px-2 md:px-3 py-0.5 md:py-1 bg-gray-100/80 dark:bg-gray-800/80 backdrop-blur-sm rounded-full border border-gray-200 dark:border-gray-700">
+                    <span className="text-[8px] md:text-[9px] text-gray-500 dark:text-gray-400 font-black uppercase tracking-widest">Soon</span>
                 </div>
             )}
         </button>
