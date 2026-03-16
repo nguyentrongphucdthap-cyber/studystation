@@ -43,7 +43,10 @@ QUY TẮC CÔNG THỨC & VĂN BẢN (CỰC KỲ QUAN TRỌNG):
 - Việc thiếu sót câu hỏi là KHÔNG CHẤP NHẬN ĐƯỢC. Đề thi có bao nhiêu câu phải TRÍCH XUẤT ĐẦY ĐỦ bấy nhiêu câu.
 - TUYỆT ĐỐI KHÔNG dùng dấu ngoặc kép thẳng (") ở giữa nội dung các trường text vì sẽ làm hỏng JSON. Nếu cần trích dẫn, hãy dùng dấu nháy đơn (') hoặc ngoặc kép cong (“ ”).
 - Các chuỗi phải viết trên CÙNG MỘT DÒNG. Dùng "\\\\n" nếu cần xuống dòng, TUYỆT ĐỐI KHÔNG ấn Enter tạo dòng mới bên giữa chuỗi JSON.
-- QUY TẮC BẢNG (MỚI): Nếu đề bài có bảng số liệu, BẮT BUỘC phải chuyển về định dạng bảng Markdown. Ví dụ:
+- QUY TẮC BẢNG (CỰC KỲ QUAN TRỌNG): 
+  + Nếu đề bài có bảng số liệu, BẮT BUỘC phải chuyển về định dạng bảng Markdown.
+  + ĐẶC BIỆT: Nếu văn bản trích xuất bị "làm phẳng" (ví dụ: liệt kê một loạt tên loài, sau đó là một loạt các con số % tương ứng), bạn PHẢI TỰ SUY LUẬN cấu trúc bảng (như bảng so sánh, ma trận tương đồng) và chuyển nó về dạng bảng Markdown hoàn chỉnh. KHÔNG được để dữ liệu ở dạng liệt kê dòng đơn lẻ nếu nó vốn dĩ là một bảng.
+  Ví dụ bảng Markdown chuẩn:
   | Đặc điểm | Quần thể A | Quần thể B |
   |---|---|---|
   | Diện tích | 25 ha | 240 ha |
