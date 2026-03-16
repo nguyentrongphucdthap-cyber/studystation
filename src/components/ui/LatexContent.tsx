@@ -12,7 +12,8 @@ type Token =
     | { type: 'text'; value: string }
     | { type: 'inline-math'; value: string }
     | { type: 'block-math'; value: string }
-    | { type: 'chem'; value: string };
+    | { type: 'chem'; value: string }
+    | { type: 'table'; rows: string[][] };
 
 // ─── BƯỚC 1: TIỀN XỬ LÝ KÝ HIỆU TOÁN HỌC THÔ ───────────────────────────────
 //
@@ -147,6 +148,53 @@ function tokenize(content: string): Token[] {
     };
 
     while (i < content.length) {
+        // ──── Table Detection ────
+        // Check if we are at the start of a line and see a '|'
+        const isStartOfLine = i === 0 || content[i - 1] === '\n';
+        if (isStartOfLine && content[i] === '|') {
+            let j = i;
+            let currentLine = '';
+            const tableLines: string[] = [];
+            
+            while (j < content.length) {
+                const char = content[j];
+                if (char === '\n') {
+                    if (currentLine.trim().startsWith('|') && currentLine.trim().endsWith('|')) {
+                        tableLines.push(currentLine.trim());
+                        currentLine = '';
+                        j++;
+                        // Peek next line
+                        if (content[j] !== '|') break;
+                    } else {
+                        break;
+                    }
+                } else {
+                    currentLine += char;
+                    j++;
+                }
+            }
+            // Add the last line if it's a table line
+            if (currentLine.trim().startsWith('|') && currentLine.trim().endsWith('|')) {
+                tableLines.push(currentLine.trim());
+            }
+
+            // A valid Markdown table must have at least 2 lines (header + divider)
+            const dividerLine = tableLines[1];
+            if (tableLines.length >= 2 && dividerLine && dividerLine.includes('-')) {
+                flush();
+                const rows = tableLines
+                    .filter(line => !line.match(/^\|[ :|-]+\|$/)) // skip divider line
+                    .map(line => {
+                        return line.split('|')
+                            .filter((_, idx, arr) => idx > 0 && idx < arr.length - 1)
+                            .map(s => s.trim());
+                    });
+                tokens.push({ type: 'table', rows });
+                i = j;
+                continue;
+            }
+        }
+
         // ──── $$...$$ — block math ────
         if (content.startsWith('$$', i)) {
             flush();
@@ -295,6 +343,33 @@ export const LatexContent: React.FC<LatexContentProps> = ({ content, className, 
         return tokens.map((token, index) => {
             try {
                 switch (token.type) {
+                    case 'table':
+                        return (
+                            <div key={index} className="latex-table-container">
+                                <table className="latex-table">
+                                    <thead>
+                                        <tr>
+                                            {token.rows[0]?.map((cell, i) => (
+                                                <th key={i}>
+                                                    <LatexContent content={cell} />
+                                                </th>
+                                            ))}
+                                        </tr>
+                                    </thead>
+                                    <tbody>
+                                        {token.rows.slice(1).map((row, i) => (
+                                            <tr key={i}>
+                                                {row.map((cell, j) => (
+                                                    <td key={j}>
+                                                        <LatexContent content={cell} />
+                                                    </td>
+                                                ))}
+                                            </tr>
+                                        ))}
+                                    </tbody>
+                                </table>
+                            </div>
+                        );
                     case 'block-math':
                         return (
                             <span key={index} className="block my-2 overflow-x-auto">
@@ -302,13 +377,10 @@ export const LatexContent: React.FC<LatexContentProps> = ({ content, className, 
                             </span>
                         );
                     case 'inline-math':
-                        return <InlineMath key={index} math={token.value} errorColor="#cc0000" />;
                     case 'chem':
                         return <InlineMath key={index} math={token.value} errorColor="#cc0000" />;
                     case 'text':
                     default: {
-                        // Replace **, __, *, _ with styled HTML elements
-                        // Bold takes precedence
                         const html = token.value
                             .replace(/&/g, '&amp;')
                             .replace(/</g, '&lt;')
@@ -330,9 +402,10 @@ export const LatexContent: React.FC<LatexContentProps> = ({ content, className, 
                 }
             } catch (err) {
                 console.warn('[LatexContent] Render error:', err, token);
+                const displayValue = 'value' in token ? token.value : '[Table]';
                 return (
                     <span key={index} className="text-rose-500 font-mono text-xs bg-rose-50 px-1 rounded">
-                        {token.value}
+                        {displayValue}
                     </span>
                 );
             }

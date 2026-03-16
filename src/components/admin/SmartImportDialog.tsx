@@ -43,7 +43,13 @@ QUY TẮC CÔNG THỨC & VĂN BẢN (CỰC KỲ QUAN TRỌNG):
 - Việc thiếu sót câu hỏi là KHÔNG CHẤP NHẬN ĐƯỢC. Đề thi có bao nhiêu câu phải TRÍCH XUẤT ĐẦY ĐỦ bấy nhiêu câu.
 - TUYỆT ĐỐI KHÔNG dùng dấu ngoặc kép thẳng (") ở giữa nội dung các trường text vì sẽ làm hỏng JSON. Nếu cần trích dẫn, hãy dùng dấu nháy đơn (') hoặc ngoặc kép cong (“ ”).
 - Các chuỗi phải viết trên CÙNG MỘT DÒNG. Dùng "\\\\n" nếu cần xuống dòng, TUYỆT ĐỐI KHÔNG ấn Enter tạo dòng mới bên giữa chuỗi JSON.
+- QUY TẮC BẢNG (MỚI): Nếu đề bài có bảng số liệu, BẮT BUỘC phải chuyển về định dạng bảng Markdown. Ví dụ:
+  | Đặc điểm | Quần thể A | Quần thể B |
+  |---|---|---|
+  | Diện tích | 25 ha | 240 ha |
+  | Mật độ | 10 | 15 |
 - HÌNH ẢNH: Nếu hình ảnh là biểu đồ/đồ thị/minh họa (KHÔNG phải công thức), BẮT BUỘC phải copy y nguyên link thẻ hình (Markdown '![...](url)'). VỊ TRÍ ĐẶT ẢNH: Đặt vào cuối thuộc tính "text" của CÂU HỎI CHÍNH. TUY NHIÊN, NẾU hình ảnh đó chính là MỘT ĐÁP ÁN (A, B, C, D) hoặc nằm trong Ý TRẢ LỜI của đúng/sai, thì ĐƯỢC PHÉP dán thẻ hình ảnh đó vào mảng "options" hoặc thuộc tính "text" của "subQuestions".
+- KHÔNG ĐƯỢC tự ý bỏ qua các bảng số liệu. Bảng số liệu là một phần của câu hỏi.
 
 JSON FORMAT (PHẢI TUÂN THỦ TUYỆT ĐỐI):
 {
@@ -61,7 +67,7 @@ JSON FORMAT:
 {
   "sections": [
     {
-      "passage": "Nội dung bài đọc (nếu có, nếu không để trống)",
+      "passage": "Nội dung bài đọc (nếu có, dùng bảng Markdown nếu bài đọc có bảng)",
       "questions": [
         { "id": 1, "text": "...", "options": ["A", "B", "C", "D"], "correct": 0 }
       ]

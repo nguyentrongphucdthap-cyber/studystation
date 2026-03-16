@@ -578,4 +578,34 @@
         box-shadow: var(--btn-primary-hover);
         transform: translateY(-1px);
     }
+
+    /* ── Markdown Table Styles ── */
+    .latex-table-container {
+        @apply my-6 overflow-x-auto rounded-xl border border-border bg-card shadow-sm;
+    }
+
+    .latex-table {
+        @apply w-full border-collapse text-left text-sm;
+    }
+
+    .latex-table th {
+        @apply border-b border-border bg-muted/50 px-4 py-3 font-bold text-foreground;
+    }
+
+    .latex-table td {
+        @apply border-b border-border/50 px-4 py-3 text-muted-foreground;
+    }
+
+    .latex-table tr:last-child td {
+        @apply border-b-0;
+    }
+
+    .latex-table tr:hover td {
+        @apply bg-muted/30 text-foreground;
+    }
+
+    /* Dark mode adjustments for table */
+    .dark .latex-table th {
+        @apply bg-slate-800/50;
+    }
 }
