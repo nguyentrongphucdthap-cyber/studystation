@@ -1,6 +1,7 @@
 import { useEffect, useState, useMemo } from 'react';
 import { useNavigate, useSearchParams } from 'react-router-dom';
 import { getAllExams, getSubjects, getHighestScores } from '@/services/exam.service';
+import { logUserActivity } from '@/services/auth.service';
 import { Spinner } from '@/components/ui/Spinner';
 import type { ExamMetadata, HighestScores } from '@/types';
 import {
@@ -30,6 +31,9 @@ export default function PracticeHome() {
                 ]);
                 setExams(examList);
                 setScores(highScores);
+                
+                // Log visiting practice home
+                logUserActivity('PracticeHome', 'Xem danh sách đề thi');
             } catch (err) {
                 console.error('[Practice] Load error:', err);
                 setError('Không thể tải danh sách đề thi. Vui lòng kiểm tra kết nối mạng hoặc quyền truy cập.');

@@ -6,8 +6,10 @@ import { Spinner } from '@/components/ui/Spinner';
 import { Button } from '@/components/ui/Button';
 import { Dialog, ConfirmDialog } from '@/components/ui/Dialog';
 import { cn } from '@/lib/utils';
-import type { AllowedUser } from '@/types';
-import { Users, Plus, Trash2, Search, Shield, ShieldCheck, User, Tags } from 'lucide-react';
+import type { AllowedUser, ActivityLog } from '@/types';
+import { Users, Plus, Trash2, Search, Shield, ShieldCheck, User, Tags, Activity, History, Clock } from 'lucide-react';
+import { formatRelativeActiveTime } from '@/lib/utils';
+import { getUserActivityLogsByEmail } from '@/services/auth.service';
 
 const roleOptions = [
     { value: 'user', label: 'Học sinh', icon: User, color: 'bg-blue-100 text-blue-700' },
@@ -24,6 +26,9 @@ export default function AdminStudents() {
     const [showAdd, setShowAdd] = useState(false);
     const [addForm, setAddForm] = useState({ email: '', role: 'user' });
     const [deleteTarget, setDeleteTarget] = useState<string | null>(null);
+    const [trackingUser, setTrackingUser] = useState<AllowedUser | null>(null);
+    const [trackingLogs, setTrackingLogs] = useState<ActivityLog[]>([]);
+    const [loadingLogs, setLoadingLogs] = useState(false);
 
     useEffect(() => { loadUsers(); }, []);
     
@@ -83,6 +88,25 @@ export default function AdminStudents() {
         setDeleteTarget(null);
     };
 
+    const handleTrackUser = async (user: AllowedUser) => {
+        setTrackingUser(user);
+        setLoadingLogs(true);
+        try {
+            const logs = await getUserActivityLogsByEmail(user.email);
+            setTrackingLogs(logs as ActivityLog[]);
+        } catch (error: any) {
+            console.error('[Track] Error loading logs for', user.email, ':', error);
+            // If it's an index error, the error message often contains a link
+            const message = error?.message || '';
+            if (message.includes('index')) {
+                toast({ title: 'Thiếu Index Firestore', type: 'error', message: 'Vui lòng kiểm tra console để tạo index.' });
+            } else {
+                toast({ title: 'Lỗi tải log', type: 'error' });
+            }
+        }
+        setLoadingLogs(false);
+    };
+
     if (loading) return <div className="flex justify-center py-10"><Spinner size="md" /></div>;
 
     return (
@@ -113,6 +137,7 @@ export default function AdminStudents() {
                             <tr>
                                 <th className="px-6 py-4 text-left font-bold text-xs uppercase tracking-wider text-slate-500">Học sinh</th>
                                 <th className="px-6 py-4 text-left font-bold text-xs uppercase tracking-wider text-slate-500">Lớp học</th>
+                                {isSuperAdmin && <th className="px-6 py-4 text-left font-bold text-xs uppercase tracking-wider text-slate-500">Hoạt động</th>}
                                 <th className="px-6 py-4 text-left font-bold text-xs uppercase tracking-wider text-slate-500">Phân quyền</th>
                                 {isSuperAdmin && <th className="px-6 py-4 text-center font-bold text-xs uppercase tracking-wider text-slate-500">Thay đổi quyền</th>}
                                 <th className="px-6 py-4 text-right font-bold text-xs uppercase tracking-wider text-slate-500">Thao tác</th>
@@ -160,6 +185,16 @@ export default function AdminStudents() {
                                                 </div>
                                             </div>
                                         </td>
+                                        {isSuperAdmin && (
+                                            <td className="px-6 py-4">
+                                                <div className="flex flex-col gap-1">
+                                                    <span className="text-[11px] font-bold text-slate-600 dark:text-slate-400 flex items-center gap-1.5">
+                                                        <Clock className="h-3 w-3 text-indigo-500" />
+                                                        {formatRelativeActiveTime(u.lastActive)}
+                                                    </span>
+                                                </div>
+                                            </td>
+                                        )}
                                         <td className="px-6 py-4">
                                             <div className={cn('inline-flex items-center gap-1.5 rounded-full px-3 py-1 font-bold text-[11px] shadow-sm', roleColor)}>
                                                 <RoleIcon className="h-3 w-3" />
@@ -182,8 +217,13 @@ export default function AdminStudents() {
                                                 </div>
                                             </td>
                                         )}
-                                        <td className="px-6 py-4 text-right">
-                                            <div className="flex justify-end opacity-40 group-hover:opacity-100 transition-opacity">
+                                         <td className="px-6 py-4 text-right">
+                                            <div className="flex justify-end gap-2 opacity-40 group-hover:opacity-100 transition-opacity">
+                                                {isSuperAdmin && (
+                                                    <Button variant="ghost" size="icon" onClick={() => handleTrackUser(u)} className="text-slate-400 hover:text-indigo-600 hover:bg-indigo-50 dark:hover:bg-indigo-900/30 dark:hover:text-indigo-400 h-8 w-8 rounded-lg" title="Xem lịch sử hoạt động">
+                                                        <Activity className="h-4 w-4" />
+                                                    </Button>
+                                                )}
                                                 <Button variant="ghost" size="icon" onClick={() => setDeleteTarget(u.email)} className="text-slate-400 hover:text-rose-600 hover:bg-rose-50 dark:hover:bg-rose-900/30 dark:hover:text-rose-400 h-8 w-8 rounded-lg" title="Xóa người dùng">
                                                     <Trash2 className="h-4 w-4" />
                                                 </Button>
@@ -237,6 +277,54 @@ export default function AdminStudents() {
                 </div>
             </Dialog>
             <ConfirmDialog open={!!deleteTarget} onClose={() => setDeleteTarget(null)} onConfirm={() => deleteTarget && handleDelete(deleteTarget)} title="Xóa người dùng?" message="Người dùng sẽ không thể truy cập nữa." confirmText="Xóa" variant="destructive" />
+
+            {/* Activity Tracking Dialog */}
+            <Dialog open={!!trackingUser} onClose={() => setTrackingUser(null)}>
+                <div className="p-1 max-w-2xl w-full">
+                    <div className="flex items-center justify-between mb-6">
+                        <h3 className="text-xl font-black flex items-center gap-2 text-slate-800 dark:text-slate-100">
+                            <div className="p-1.5 bg-indigo-100 text-indigo-600 rounded-lg">
+                                <Activity className="h-5 w-5" />
+                            </div>
+                            Nhật ký: {trackingUser?.name || trackingUser?.email}
+                        </h3>
+                    </div>
+
+                    <div className="space-y-4 max-h-[60vh] overflow-y-auto pr-2 custom-scrollbar">
+                        {loadingLogs ? (
+                            <div className="flex justify-center py-10"><Spinner size="md" /></div>
+                        ) : trackingLogs.length > 0 ? (
+                            <div className="space-y-3">
+                                {trackingLogs.map((log) => (
+                                    <div key={log.id} className="p-3 rounded-xl bg-slate-50 dark:bg-slate-800/50 border border-slate-100 dark:border-slate-700/50 flex items-start justify-between gap-4">
+                                        <div className="flex gap-3">
+                                            <div className="mt-1 p-1.5 bg-white dark:bg-slate-800 rounded-lg shadow-sm">
+                                                <History className="h-3.5 w-3.5 text-slate-400" />
+                                            </div>
+                                            <div>
+                                                <p className="text-sm font-bold text-slate-700 dark:text-slate-200">{log.moduleLabel || log.moduleName}</p>
+                                                <p className="text-[10px] text-slate-500 font-medium uppercase tracking-wider">{log.deviceType || 'Unknown Device'}</p>
+                                            </div>
+                                        </div>
+                                        <span className="text-[11px] font-bold text-indigo-500 whitespace-nowrap bg-indigo-50 dark:bg-indigo-900/30 px-2 py-0.5 rounded-md">
+                                            {formatRelativeActiveTime(log.timestamp)}
+                                        </span>
+                                    </div>
+                                ))}
+                            </div>
+                        ) : (
+                            <div className="py-12 text-center text-slate-500 flex flex-col items-center gap-2">
+                                <History className="h-8 w-8 opacity-20" />
+                                <p className="text-sm font-bold">Chưa có nhật ký hoạt động nào</p>
+                            </div>
+                        )}
+                    </div>
+
+                    <div className="mt-8 flex justify-end">
+                        <Button onClick={() => setTrackingUser(null)} className="rounded-xl font-semibold px-6">Đóng</Button>
+                    </div>
+                </div>
+            </Dialog>
         </div>
     );
 }

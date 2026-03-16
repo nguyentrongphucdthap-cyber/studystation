@@ -58,3 +58,38 @@ declare global {
         };
     }
 }
+
+/** Format relative active time in Vietnamese */
+export function formatRelativeActiveTime(timestamp: string | number | Date | undefined): string {
+    if (!timestamp) return 'Chưa có thông tin';
+
+    const d = typeof timestamp === 'string' ? new Date(timestamp) : (typeof timestamp === 'number' ? new Date(timestamp) : timestamp);
+    const now = new Date();
+    const diffMs = now.getTime() - d.getTime();
+
+    if (diffMs < 60000) return 'Vừa hoạt động';
+
+    const diffMins = Math.floor(diffMs / 60000);
+    if (diffMins < 60) return `Hoạt động ${diffMins} phút trước`;
+
+    const diffHours = Math.floor(diffMins / 60);
+    const minsRemaining = diffMins % 60;
+    
+    // Format: "Hoạt động X giờ Y phút trước (hh:mm)"
+    const timeStr = d.toLocaleTimeString('vi-VN', { 
+        hour: '2-digit', 
+        minute: '2-digit',
+        hour12: false
+    });
+
+    if (diffHours < 24) {
+        return `Hoạt động ${diffHours} giờ ${minsRemaining} phút trước (${timeStr})`;
+    }
+
+    const diffDays = Math.floor(diffHours / 24);
+    if (diffDays < 7) {
+        return `Hoạt động ${diffDays} ngày trước (${timeStr})`;
+    }
+
+    return `Hoạt động ngày ${d.toLocaleDateString('vi-VN')} (${timeStr})`;
+}

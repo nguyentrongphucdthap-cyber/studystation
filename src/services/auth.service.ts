@@ -16,6 +16,7 @@ import {
     collection,
     getDocs,
     query,
+    where,
     deleteDoc,
     orderBy,
     limit as firestoreLimit,
@@ -327,6 +328,22 @@ function getPresenceData(user: { email: string | null; displayName: string | nul
     };
 }
 
+let lastFirestoreUpdate = 0;
+const FIRESTORE_HEARTBEAT_THRESHOLD = 10 * 60 * 1000; // 10 minutes
+
+async function updateFirestoreLastActive(email: string | null) {
+    if (!email) return;
+    const now = Date.now();
+    if (now - lastFirestoreUpdate < FIRESTORE_HEARTBEAT_THRESHOLD) return;
+
+    try {
+        await setDoc(doc(db, 'allowed_users', email), {
+            lastActive: new Date().toISOString(),
+        }, { merge: true });
+        lastFirestoreUpdate = now;
+    } catch { }
+}
+
 export async function startPresence() {
     const user = auth.currentUser;
     if (!user) return;
@@ -351,6 +368,7 @@ export async function startPresence() {
     heartbeatInterval = setInterval(() => {
         if (presenceRef && auth.currentUser) {
             set(presenceRef, getPresenceData(auth.currentUser, deviceType)).catch(() => { });
+            updateFirestoreLastActive(auth.currentUser.email);
         }
     }, HEARTBEAT_INTERVAL_MS);
 
@@ -380,11 +398,13 @@ export async function startPresence() {
             // Resume: immediately heartbeat + restart interval
             if (presenceRef && auth.currentUser) {
                 set(presenceRef, getPresenceData(auth.currentUser, deviceType)).catch(() => { });
+                updateFirestoreLastActive(auth.currentUser.email);
             }
             if (!heartbeatInterval) {
                 heartbeatInterval = setInterval(() => {
                     if (presenceRef && auth.currentUser) {
                         set(presenceRef, getPresenceData(auth.currentUser, deviceType)).catch(() => { });
+                        updateFirestoreLastActive(auth.currentUser.email);
                     }
                 }, HEARTBEAT_INTERVAL_MS);
             }
@@ -527,6 +547,14 @@ export async function syncUserProfile(user: User) {
             photoURL: user.photoURL,
             lastLogin: new Date().toISOString(),
         }, { merge: true });
+
+        // Also sync to allowed_users for management view
+        if (user.email) {
+            await setDoc(doc(db, 'allowed_users', user.email), {
+                lastActive: new Date().toISOString(),
+            }, { merge: true });
+            lastFirestoreUpdate = Date.now();
+        }
     } catch {
         // Silent fail
     }
@@ -557,6 +585,17 @@ export async function logUserActivity(moduleName: string, moduleLabel = '') {
 export async function getUserActivityLogs(limitCount = 100) {
     const q = query(
         collection(db, 'user_activity_logs'),
+        orderBy('timestamp', 'desc'),
+        firestoreLimit(limitCount)
+    );
+    const snapshot = await getDocs(q);
+    return snapshot.docs.map((d) => ({ id: d.id, ...d.data() }));
+}
+
+export async function getUserActivityLogsByEmail(email: string, limitCount = 50) {
+    const q = query(
+        collection(db, 'user_activity_logs'),
+        where('userEmail', '==', email),
         orderBy('timestamp', 'desc'),
         firestoreLimit(limitCount)
     );

@@ -1,4 +1,5 @@
 import { useEffect, useState, useCallback, useRef } from 'react';
+import { createPortal } from 'react-dom';
 import { useParams, useNavigate } from 'react-router-dom';
 import {
     getExamContent,
@@ -7,6 +8,7 @@ import {
     getSubjects,
     getPracticeHistory,
 } from '@/services/exam.service';
+import { logUserActivity } from '@/services/auth.service';
 import { useAuth } from '@/contexts/AuthContext';
 import { cn, formatTime } from '@/lib/utils';
 import { Spinner } from '@/components/ui/Spinner';
@@ -29,6 +31,8 @@ import {
     History,
     Trophy,
     Shuffle,
+    ChevronUp as ArrowUp,
+    List,
 } from 'lucide-react';
 
 type ExamMode = 'ready' | 'taking' | 'result';
@@ -76,6 +80,10 @@ export default function PracticeExam() {
     // UI
     const [showSubmitConfirm, setShowSubmitConfirm] = useState(false);
     const [showAnswerSheet, setShowAnswerSheet] = useState(false);
+    const [showMobileTOC, setShowMobileTOC] = useState(false);
+    const [showScrollTop, setShowScrollTop] = useState(false);
+    const [isNavbarVisible, setIsNavbarVisible] = useState(true);
+    const [lastScrollY, setLastScrollY] = useState(0);
     const [alertState, setAlertState] = useState<{ open: boolean; title: string; message: string; type: 'success' | 'error' | 'info' }>({
         open: false, title: '', message: '', type: 'info',
     });
@@ -95,6 +103,9 @@ export default function PracticeExam() {
                     setShuffledP1(examData.part1 || []);
                     setShuffledP2(examData.part2 || []);
                     setShuffledP3(examData.part3 || []);
+                    
+                    // Log viewing the exam
+                    logUserActivity('PracticeExam', `Xem đề: ${examData.title}`);
                 }
             } catch (err) {
                 console.error('[PracticeExam] Load error:', err);
@@ -127,6 +138,29 @@ export default function PracticeExam() {
             setShowAnswerSheet(false);
         }
     }, [mode]);
+
+    useEffect(() => {
+        const handleScroll = () => {
+            const currentScrollY = window.scrollY;
+            
+            // Show/hide scroll to top button
+            setShowScrollTop(currentScrollY > 400);
+
+            // Handle navbar visibility based on scroll direction
+            if (currentScrollY > lastScrollY && currentScrollY > 100) {
+                // Scrolling down - hide
+                setIsNavbarVisible(false);
+            } else {
+                // Scrolling up - show
+                setIsNavbarVisible(true);
+            }
+            
+            setLastScrollY(currentScrollY);
+        };
+
+        window.addEventListener('scroll', handleScroll, { passive: true });
+        return () => window.removeEventListener('scroll', handleScroll);
+    }, [lastScrollY]);
 
     const handleStart = () => {
         setMode('taking');
@@ -439,7 +473,15 @@ export default function PracticeExam() {
     }
 
     // ==================== TAKING VIEW ====================
-    if (mode === 'taking') {
+    if (mode === 'taking' && exam) {
+        const p1Answered = Object.values(part1Answers).filter(v => v !== undefined).length;
+        const p2Answered = Object.values(part2Answers).filter(v => v !== undefined).length;
+        const p3Answered = Object.values(part3Answers).filter(v => (v || '').trim()).length;
+
+        const totalQs = shuffledP1.length + (shuffledP2.reduce((acc, q) => acc + q.subQuestions.length, 0)) + shuffledP3.length;
+        const answeredQs = p1Answered + p2Answered + p3Answered;
+        const completionPercent = totalQs > 0 ? Math.round((answeredQs / totalQs) * 100) : 0;
+
         const isTimeLow = timeLeft < 300;
 
         const scrollToQuestion = (id: string | number) => {
@@ -454,9 +496,6 @@ export default function PracticeExam() {
             }
         };
 
-        const p1Answered = Object.values(part1Answers).filter(v => v !== undefined).length;
-        const p2Answered = Object.values(part2Answers).filter(v => v !== undefined).length;
-        const p3Answered = Object.values(part3Answers).filter(v => (v || '').trim()).length;
 
         return (
             <div className="mx-auto w-full px-4 lg:px-8">
@@ -777,6 +816,178 @@ export default function PracticeExam() {
                     message={`Bạn còn ${formatTime(timeLeft)} thời gian. Bạn có chắc chắn muốn nộp bài?`}
                     confirmText="Nộp bài"
                 />
+
+                {/* Floating Navbar (Redesigned Pill Shape) - Portaled */}
+                {createPortal(
+                    <div className={cn(
+                        "fixed bottom-6 left-1/2 -translate-x-1/2 z-[999] w-fit max-w-[95%] transition-all duration-500 transform",
+                        isNavbarVisible ? "translate-y-0 opacity-100" : "translate-y-32 opacity-0"
+                    )}>
+                        <div className="flex items-center gap-2">
+                            {/* Main Pill */}
+                            <div className="bg-slate-900/90 dark:bg-slate-900/95 backdrop-blur-xl border border-slate-800 rounded-full shadow-[0_20px_50px_rgba(0,0,0,0.4)] p-1.5 flex items-center gap-1 transition-all">
+                                {/* Progress Circular/Pill */}
+                                <div className="bg-blue-600 rounded-full px-3 py-1.5 flex items-center gap-2">
+                                    <div className="flex flex-col items-start leading-none">
+                                        <span className="text-[10px] text-blue-100/70 font-bold uppercase tracking-tighter">Tiến độ</span>
+                                        <span className="text-white font-black text-sm">{answeredQs}/{totalQs}</span>
+                                    </div>
+                                    <div className="h-6 w-px bg-white/20" />
+                                    <span className="text-white font-black text-sm">{completionPercent}%</span>
+                                </div>
+
+                                {/* Timer Section */}
+                                <div className={cn(
+                                    "flex items-center gap-2 px-3 py-1.5 rounded-full transition-colors",
+                                    isTimeLow ? "bg-red-500/20 text-red-500 animate-pulse" : "text-slate-300"
+                                )}>
+                                    <Clock className="h-4 w-4" />
+                                    <span className="font-mono font-black text-sm md:text-base">{formatTime(timeLeft)}</span>
+                                </div>
+
+                                {/* Actions Group */}
+                                <div className="flex items-center gap-1 pl-1 border-l border-slate-700">
+                                    {/* TOC Button - Integrated */}
+                                    <button 
+                                        onClick={() => setShowMobileTOC(true)}
+                                        className="h-9 w-9 flex items-center justify-center rounded-full text-slate-400 hover:text-white hover:bg-slate-800 transition-all"
+                                        title="Mục lục"
+                                    >
+                                        <List className="h-4 w-4" />
+                                    </button>
+                                    
+                                    <button 
+                                        onClick={() => setShowSubmitConfirm(true)}
+                                        className="h-9 px-4 bg-white hover:bg-slate-100 text-slate-900 rounded-full font-black text-xs md:text-sm transition-all flex items-center gap-2 shadow-lg"
+                                    >
+                                        <Send className="h-3.5 w-3.5" /> 
+                                        <span className="hidden xs:block">Nộp bài</span>
+                                    </button>
+                                </div>
+                            </div>
+
+                            {/* Scroll to Top - Positioned next to navbar */}
+                            <button
+                                onClick={() => window.scrollTo({ top: 0, behavior: 'smooth' })}
+                                className={cn(
+                                    "h-12 w-12 flex items-center justify-center rounded-full bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 shadow-xl text-blue-600 transition-all duration-300 transform",
+                                    showScrollTop ? "scale-100 opacity-100" : "scale-0 opacity-0 pointer-events-none"
+                                )}
+                                title="Lên đầu trang"
+                            >
+                                <ArrowUp className="h-5 w-5" />
+                            </button>
+                        </div>
+                    </div>,
+                    document.body
+                )}
+
+                {/* Mobile TOC Drawer - Portaled */}
+                {showMobileTOC && createPortal(
+                    <div className="fixed inset-0 z-[1000] flex items-end sm:items-center justify-center p-4">
+                        <div 
+                            className="absolute inset-0 bg-slate-900/40 backdrop-blur-[2px] animate-in fade-in" 
+                            onClick={() => setShowMobileTOC(false)} 
+                        />
+                        <div className="relative w-full max-w-md bg-white dark:bg-slate-900 rounded-3xl shadow-2xl overflow-hidden animate-in slide-in-from-bottom-5 duration-300">
+                            <div className="p-5 border-b border-slate-100 dark:border-slate-800 flex items-center justify-between">
+                                <h4 className="flex items-center gap-2 font-black text-slate-800 dark:text-gray-100">
+                                    <List className="h-5 w-5 text-blue-500" /> Danh sách câu hỏi
+                                </h4>
+                                <button 
+                                    onClick={() => setShowMobileTOC(false)}
+                                    className="p-1 hover:bg-slate-100 dark:hover:bg-slate-800 rounded-full"
+                                >
+                                    <XCircle className="h-5 w-5 text-slate-400" />
+                                </button>
+                            </div>
+                            
+                            <div className="p-5 max-h-[60vh] overflow-y-auto">
+                                <div className="space-y-6">
+                                    {/* Part 1 */}
+                                    {shuffledP1.length > 0 && (
+                                        <div>
+                                            <p className="text-[11px] font-black text-slate-400 uppercase tracking-widest mb-3">Phần 1: Trắc nghiệm</p>
+                                            <div className="grid grid-cols-5 gap-2">
+                                                {shuffledP1.map((q, idx) => (
+                                                    <button
+                                                        key={q.id}
+                                                        onClick={() => { scrollToQuestion(`p1-${q.id}`); setShowMobileTOC(false); }}
+                                                        className={cn(
+                                                            'h-10 rounded-xl font-bold transition-all border-2',
+                                                            part1Answers[q.id] !== undefined 
+                                                                ? 'bg-blue-600 border-blue-600 text-white shadow-md shadow-blue-200' 
+                                                                : 'bg-white dark:bg-slate-800 border-slate-100 dark:border-slate-700 text-slate-400'
+                                                        )}
+                                                    >
+                                                        {idx + 1}
+                                                    </button>
+                                                ))}
+                                            </div>
+                                        </div>
+                                    )}
+
+                                    {/* Part 2 */}
+                                    {shuffledP2.length > 0 && (
+                                        <div>
+                                            <p className="text-[11px] font-black text-slate-400 uppercase tracking-widest mb-3">Phần 2: Đúng/Sai</p>
+                                            <div className="grid grid-cols-5 gap-2">
+                                                {shuffledP2.map((q, idx) => {
+                                                    const isDone = q.subQuestions.every(sq => part2Answers[`${q.id}-${sq.id}`] !== undefined);
+                                                    const someDone = q.subQuestions.some(sq => part2Answers[`${q.id}-${sq.id}`] !== undefined);
+                                                    return (
+                                                        <button
+                                                            key={q.id}
+                                                            onClick={() => { scrollToQuestion(`p2-${q.id}`); setShowMobileTOC(false); }}
+                                                            className={cn(
+                                                                'h-10 rounded-xl font-bold transition-all border-2',
+                                                                isDone ? 'bg-blue-600 border-blue-600 text-white shadow-md shadow-blue-200' :
+                                                                someDone ? 'bg-blue-50 text-blue-600 border-blue-200' :
+                                                                'bg-white dark:bg-slate-800 border-slate-100 dark:border-slate-700 text-slate-400'
+                                                            )}
+                                                        >
+                                                            {shuffledP1.length + idx + 1}
+                                                        </button>
+                                                    );
+                                                })}
+                                            </div>
+                                        </div>
+                                    )}
+
+                                    {/* Part 3 */}
+                                    {shuffledP3.length > 0 && (
+                                        <div>
+                                            <p className="text-[11px] font-black text-slate-400 uppercase tracking-widest mb-3">Phần 3: Trả lời ngắn</p>
+                                            <div className="grid grid-cols-5 gap-2">
+                                                {shuffledP3.map((q, idx) => (
+                                                    <button
+                                                        key={q.id}
+                                                        onClick={() => { scrollToQuestion(`p3-${q.id}`); setShowMobileTOC(false); }}
+                                                        className={cn(
+                                                            'h-10 rounded-xl font-bold transition-all border-2',
+                                                            (part3Answers[q.id] || '').trim()
+                                                                ? 'bg-blue-600 border-blue-600 text-white shadow-md shadow-blue-200' 
+                                                                : 'bg-white dark:bg-slate-800 border-slate-100 dark:border-slate-700 text-slate-400'
+                                                        )}
+                                                    >
+                                                        {shuffledP1.length + shuffledP2.length + idx + 1}
+                                                    </button>
+                                                ))}
+                                            </div>
+                                        </div>
+                                    )}
+                                </div>
+                            </div>
+                            
+                            <div className="p-5 border-t border-slate-100 dark:border-slate-800 bg-gray-50/50">
+                                <Button className="w-full h-12 rounded-2xl font-black text-base" onClick={() => { setShowMobileTOC(false); setShowSubmitConfirm(true); }}>
+                                    <Send className="h-4 w-4 mr-2" /> Nộp bài thi ngay
+                                </Button>
+                            </div>
+                        </div>
+                    </div>,
+                    document.body
+                )}
             </div>
         );
     }

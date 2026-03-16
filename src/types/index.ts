@@ -19,6 +19,7 @@ export interface AllowedUser {
     addedAt?: string;
     classes?: string[];         // For students
     assignedClasses?: string[]; // For teachers
+    lastActive?: string;        // ISO timestamp
 }
 
 export type DeviceType = 'desktop' | 'mobile';
