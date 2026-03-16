@@ -354,14 +354,6 @@ export default function PracticeExam() {
     }
 
     const subject = getSubjects().find((s) => s.id === exam.subjectId);
-    const part1Count = exam.part1?.length || 0;
-    const part2AnswerUnitCount = (exam.part2 || []).reduce((sum: number, q: Part2Question) => sum + q.subQuestions.length, 0);
-    const part3Count = exam.part3?.length || 0;
-    const totalAnswerUnits = part1Count + part2AnswerUnitCount + part3Count;
-    const part1AnsweredCount = Object.values(part1Answers).filter(v => v !== undefined).length;
-    const part2AnsweredCount = Object.values(part2Answers).filter(v => v !== undefined).length;
-    const part3AnsweredCount = Object.values(part3Answers).filter(v => (v || '').trim()).length;
-    const answeredAnswerUnits = part1AnsweredCount + part2AnsweredCount + part3AnsweredCount;
 
     // ==================== READY VIEW ====================
     if (mode === 'ready') {
