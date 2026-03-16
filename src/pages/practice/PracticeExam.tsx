@@ -28,6 +28,7 @@ import {
     ChevronUp,
     History,
     Trophy,
+    Shuffle,
 } from 'lucide-react';
 
 type ExamMode = 'ready' | 'taking' | 'result';
@@ -61,6 +62,12 @@ export default function PracticeExam() {
     const [duration, setDuration] = useState(0);
     const [examHistory, setExamHistory] = useState<PracticeHistory[]>([]);
     const [expandedResults, setExpandedResults] = useState<Record<string, boolean>>({});
+
+    // Shuffled versions of questions
+    const [shuffledP1, setShuffledP1] = useState<Part1Question[]>([]);
+    const [shuffledP2, setShuffledP2] = useState<Part2Question[]>([]);
+    const [shuffledP3, setShuffledP3] = useState<Part3Question[]>([]);
+    const [isShuffled, setIsShuffled] = useState(false);
     
     // Feature: History View & Filters
     const [selectedHistoryId, setSelectedHistoryId] = useState<string | null>(null);
@@ -85,6 +92,9 @@ export default function PracticeExam() {
                 setExamHistory(historyData);
                 if (examData) {
                     setTimeLeft(examData.time * 60);
+                    setShuffledP1(examData.part1 || []);
+                    setShuffledP2(examData.part2 || []);
+                    setShuffledP3(examData.part3 || []);
                 }
             } catch (err) {
                 console.error('[PracticeExam] Load error:', err);
@@ -123,6 +133,112 @@ export default function PracticeExam() {
         startTimeRef.current = Date.now();
     };
 
+    // Helper: Fisher-Yates shuffle
+    const shuffleArray = <T,>(array: T[]): T[] => {
+        const arr = [...array];
+        for (let i = arr.length - 1; i > 0; i--) {
+            const j = Math.floor(Math.random() * (i + 1));
+            const temp = arr[i]!;
+            arr[i] = arr[j]!;
+            arr[j] = temp;
+        }
+        return arr;
+    };
+
+    const handleShuffle = () => {
+        if (!exam) return;
+
+        // Current answers for mapping if needed
+        const newPart1Answers = { ...part1Answers };
+
+        // Shuffle Part 1: Shuffle questions + shuffle options within questions
+        // We'll map the current selected option index to the new index
+        const newP1 = shuffleArray(shuffledP1.length > 0 ? shuffledP1 : (exam.part1 || [])).map(q => {
+            const currentSelectedIdx = part1Answers[q.id];
+            const originalOptions = [...q.options];
+            const originalCorrectText = (q.options[q.correct] || '') as string;
+            
+            // If user had selected an answer, find its text
+            const selectedText = currentSelectedIdx !== undefined ? originalOptions[currentSelectedIdx] : null;
+
+            const newOptions = shuffleArray(originalOptions);
+            const newCorrect = newOptions.indexOf(originalCorrectText);
+            
+            // Update the answer in part1Answers if exists
+            if (selectedText !== null && selectedText !== undefined) {
+                const newSelectedIdx = newOptions.indexOf(selectedText);
+                newPart1Answers[q.id] = newSelectedIdx === -1 ? undefined : newSelectedIdx;
+            }
+
+            return {
+                ...q,
+                options: newOptions,
+                correct: (newCorrect === -1 ? 0 : newCorrect) as 0 | 1 | 2 | 3
+            };
+        });
+
+        // Shuffle Part 2 & 3 questions (order only)
+        const newP2 = shuffleArray(shuffledP2.length > 0 ? shuffledP2 : (exam.part2 || []));
+        const newP3 = shuffleArray(shuffledP3.length > 0 ? shuffledP3 : (exam.part3 || []));
+
+        setShuffledP1(newP1);
+        setShuffledP2(newP2);
+        setShuffledP3(newP3);
+        setPart1Answers(newPart1Answers);
+        setIsShuffled(true);
+
+        setAlertState({
+            open: true,
+            title: 'Đã xáo trộn!',
+            message: 'Thứ tự câu hỏi và đáp án đã được thay đổi ngẫu nhiên.',
+            type: 'success'
+        });
+    };
+
+    const handleResetQuestions = () => {
+        if (!exam) return;
+        
+        // When resetting, we need to map the answers back to the original indices
+        const newPart1Answers = { ...part1Answers };
+        (exam.part1 || []).forEach(originalQ => {
+            const currentDisplayQ = shuffledP1.find(q => q.id === originalQ.id);
+            if (currentDisplayQ) {
+                const currentSelectedIdx = part1Answers[originalQ.id];
+                if (currentSelectedIdx !== undefined) {
+                    const selectedText = currentDisplayQ.options[currentSelectedIdx];
+                    if (selectedText !== undefined) {
+                        const originalIdx = originalQ.options.indexOf(selectedText);
+                        newPart1Answers[originalQ.id] = originalIdx === -1 ? undefined : originalIdx;
+                    }
+                }
+            }
+        });
+
+        setShuffledP1(exam.part1 || []);
+        setShuffledP2(exam.part2 || []);
+        setShuffledP3(exam.part3 || []);
+        setPart1Answers(newPart1Answers);
+        setIsShuffled(false);
+        setAlertState({
+            open: true,
+            title: 'Đã khôi phục!',
+            message: 'Thứ tự câu hỏi đã quay lại ban đầu.',
+            type: 'info'
+        });
+    };
+
+    const handlePart1Select = (qId: number, optionIdx: number) => {
+        setPart1Answers({ ...part1Answers, [qId]: optionIdx });
+    };
+
+    const handlePart2Select = (qId: number, sqId: string, value: boolean) => {
+        setPart2Answers({ ...part2Answers, [`${qId}-${sqId}`]: value });
+    };
+
+    const handlePart3Change = (qId: number, value: string) => {
+        setPart3Answers({ ...part3Answers, [qId]: value });
+    };
+
     const handleSubmit = useCallback(async () => {
         clearInterval(timerRef.current);
         if (!exam) return;
@@ -130,38 +246,33 @@ export default function PracticeExam() {
         let correct = 0;
         let total = 0;
 
-        // ── Part 1: Multiple choice ──
-        // Only count as correct if the user actually selected an answer (not undefined)
-        // AND it matches the correct option
-        (exam.part1 || []).forEach((q: Part1Question) => {
+        // ── Part 1 ──
+        // Important: use CURRENT display questions (shuffledP1) because indices in part1Answers match them
+        shuffledP1.forEach((q: Part1Question) => {
             total++;
             const userAns = part1Answers[q.id];
-            // Guard: userAns must be a number (0-3), not undefined
             if (userAns !== undefined && userAns === q.correct) {
                 correct++;
             }
         });
 
-        // ── Part 2: True/False ──
-        // Only count correct if the user explicitly chose true/false (not undefined)
-        (exam.part2 || []).forEach((q: Part2Question) => {
+        // ── Part 2 ──
+        shuffledP2.forEach((q: Part2Question) => {
             q.subQuestions.forEach((sq) => {
                 total++;
                 const key = `${q.id}-${sq.id}`;
                 const userAns = part2Answers[key];
-                // Guard: undefined means not answered — don't credit
                 if (userAns !== undefined && userAns === sq.correct) {
                     correct++;
                 }
             });
         });
 
-        // ── Part 3: Short answer ──
-        (exam.part3 || []).forEach((q: Part3Question) => {
+        // ── Part 3 ──
+        shuffledP3.forEach((q: Part3Question) => {
             total++;
             const userAnswer = (part3Answers[q.id] || '').trim().toLowerCase();
             const correctAnswer = q.correct.trim().toLowerCase();
-            // Guard: only match if BOTH are non-empty
             if (userAnswer && correctAnswer && userAnswer === correctAnswer) {
                 correct++;
             }
@@ -351,9 +462,8 @@ export default function PracticeExam() {
             }
         };
 
-        // TOC answered counts
         const p1Answered = Object.values(part1Answers).filter(v => v !== undefined).length;
-
+        const p2Answered = Object.values(part2Answers).filter(v => v !== undefined).length;
         const p3Answered = Object.values(part3Answers).filter(v => (v || '').trim()).length;
 
         return (
@@ -365,9 +475,40 @@ export default function PracticeExam() {
                             <button onClick={() => setShowSubmitConfirm(true)} className="p-1 hover:bg-muted rounded-full transition-colors">
                                 <ArrowLeft className="h-5 w-5" />
                             </button>
-                            <h2 className="text-sm font-bold truncate max-w-[150px] sm:max-w-none lg:text-base">{exam.title}</h2>
+                            <h2 className="text-sm font-bold truncate max-w-[150px] sm:max-w-none lg:text-base flex items-center gap-2">
+                                {exam.title}
+                                {isShuffled && (
+                                    <span className="bg-blue-100 text-blue-600 dark:bg-blue-900/30 dark:text-blue-400 text-[10px] px-2 py-0.5 rounded-full font-black uppercase tracking-wider">
+                                        Đang xáo trộn
+                                    </span>
+                                )}
+                            </h2>
                         </div>
                         <div className="flex items-center gap-3">
+                            {/* Shuffle/Reset Buttons */}
+                            <div className="flex bg-slate-100 dark:bg-slate-800 rounded-lg p-1 border border-slate-200">
+                                <Button 
+                                    variant="ghost" 
+                                    size="sm" 
+                                    onClick={handleShuffle}
+                                    title="Xáo trộn đề thi"
+                                    className="h-8 px-2 text-slate-600 hover:text-blue-600 dark:text-slate-400"
+                                >
+                                    <Shuffle className="h-4 w-4 mr-1" />
+                                    <span className="hidden sm:inline">Xáo trộn</span>
+                                </Button>
+                                <Button 
+                                    variant="ghost" 
+                                    size="sm" 
+                                    onClick={handleResetQuestions}
+                                    title="Khôi phục thứ tự ban đầu"
+                                    className="h-8 px-2 text-slate-600 hover:text-amber-600 dark:text-slate-400"
+                                >
+                                    <RotateCcw className="h-4 w-4 mr-1" />
+                                    <span className="hidden sm:inline">Khôi phục</span>
+                                </Button>
+                            </div>
+
                             <div className={cn(
                                 'flex items-center gap-1.5 rounded-full px-4 py-1.5 text-sm font-mono font-bold transition-all',
                                 isTimeLow ? 'bg-red-100 text-red-700 animate-pulse dark:bg-red-900/30 dark:text-red-400' : 'bg-muted text-foreground'
@@ -385,22 +526,22 @@ export default function PracticeExam() {
                 <div className="flex flex-col gap-6 lg:flex-row lg:items-start">
                     {/* Main Content: Questions */}
                     <div className="flex-1 space-y-8 min-w-0">
-                        {/* Part 1: Multiple Choice */}
-                        {(exam.part1?.length || 0) > 0 && (
+                        {/* Part 1 */}
+                        {shuffledP1.length > 0 && (
                             <section>
-                                <div className="mb-4 flex items-center gap-2 border-l-4 border-primary pl-3">
+                                <div className="mb-4 flex items-center gap-2 border-l-4 border-blue-500 pl-3">
                                     <h3 className="text-xl font-bold">Phần 1: Trắc nghiệm</h3>
-                                    <span className="text-sm text-muted-foreground">({exam.part1?.length} câu)</span>
+                                    <span className="text-sm text-muted-foreground">({shuffledP1.length} câu)</span>
                                 </div>
                                 <div className="space-y-6">
-                                    {exam.part1?.map((q, idx) => (
+                                    {shuffledP1.map((q, idx) => (
                                         <div key={q.id} id={`q-p1-${q.id}`} className="rounded-2xl border border-border bg-card p-5 shadow-sm transition-all hover:shadow-md">
-                                            <p className="mb-4 text-base font-semibold leading-relaxed">
-                                                <span className="mr-3 inline-flex h-7 w-7 items-center justify-center rounded-lg bg-primary/10 text-xs font-bold text-primary">
+                                            <div className="mb-4 text-base font-semibold leading-relaxed">
+                                                <span className="mr-3 inline-flex h-7 w-7 items-center justify-center rounded-lg bg-blue-100 text-xs font-bold text-blue-600">
                                                     {idx + 1}
                                                 </span>
                                                 <LatexContent content={q.text} />
-                                            </p>
+                                            </div>
                                             {q.image && (
                                                 <div className="mb-4 flex justify-center">
                                                     <img src={q.image} alt="" className="max-h-64 rounded-xl object-contain shadow-sm" />
@@ -412,19 +553,19 @@ export default function PracticeExam() {
                                                     return (
                                                         <button
                                                             key={oIdx}
-                                                            onClick={() => setPart1Answers({ ...part1Answers, [q.id]: oIdx })}
+                                                            onClick={() => handlePart1Select(q.id, oIdx)}
                                                             className={cn(
                                                                 'group flex items-center rounded-xl border-2 p-4 text-left text-sm transition-all duration-200 ease-out active:scale-[0.97]',
                                                                 isSelected
-                                                                    ? 'border-primary bg-primary/8 text-primary shadow-sm ring-2 ring-primary/15 scale-[1.01]'
-                                                                    : 'border-transparent bg-muted/30 hover:border-primary/40 hover:bg-muted/60 hover:scale-[1.005]'
+                                                                    ? 'border-blue-500 bg-blue-50/50 text-blue-900 shadow-sm'
+                                                                    : 'border-transparent bg-muted/30 hover:border-blue-300 hover:bg-muted/60'
                                                             )}
                                                         >
                                                             <span className={cn(
                                                                 'mr-3 flex h-6 w-6 shrink-0 items-center justify-center rounded-md border text-[10px] font-bold transition-all duration-200',
                                                                 isSelected
-                                                                    ? 'border-primary bg-primary text-primary-foreground shadow-sm'
-                                                                    : 'border-muted-foreground/30 bg-background text-muted-foreground group-hover:border-primary/60 group-hover:text-primary/70'
+                                                                    ? 'border-blue-500 bg-blue-500 text-white'
+                                                                    : 'border-muted-foreground/30 bg-background text-muted-foreground'
                                                             )}>
                                                                 {String.fromCharCode(65 + oIdx)}
                                                             </span>
@@ -439,51 +580,47 @@ export default function PracticeExam() {
                             </section>
                         )}
 
-                        {/* Part 2: True/False */}
-                        {(exam.part2?.length || 0) > 0 && (
+                        {/* Part 2 */}
+                        {shuffledP2.length > 0 && (
                             <section>
-                                <div className="mb-4 flex items-center gap-2 border-l-4 border-primary pl-3">
+                                <div className="mb-4 flex items-center gap-2 border-l-4 border-amber-500 pl-3">
                                     <h3 className="text-xl font-bold">Phần 2: Đúng/Sai</h3>
-                                    <span className="text-sm text-muted-foreground">({exam.part2?.length} câu)</span>
+                                    <span className="text-sm text-muted-foreground">({shuffledP2.length} câu)</span>
                                 </div>
                                 <div className="space-y-6">
-                                    {exam.part2?.map((q, idx) => (
+                                    {shuffledP2.map((q, idx) => (
                                         <div key={q.id} id={`q-p2-${q.id}`} className="rounded-2xl border border-border bg-card p-5 shadow-sm">
-                                            <p className="mb-4 text-base font-semibold leading-relaxed">
-                                                <span className="mr-3 inline-flex h-7 w-7 items-center justify-center rounded-lg bg-primary/10 text-xs font-bold text-primary">
-                                                    {(exam.part1?.length || 0) + idx + 1}
+                                            <div className="mb-4 text-base font-semibold leading-relaxed">
+                                                <span className="mr-3 inline-flex h-7 w-7 items-center justify-center rounded-lg bg-amber-100 text-xs font-bold text-amber-600">
+                                                    {(shuffledP1.length) + idx + 1}
                                                 </span>
                                                 <LatexContent content={q.text} />
-                                            </p>
+                                            </div>
                                             <div className="space-y-3">
                                                 {q.subQuestions.map((sq) => {
                                                     const key = `${q.id}-${sq.id}`;
-                                                    const userAns = part2Answers[key]; // undefined | true | false
+                                                    const userAns = part2Answers[key];
                                                     return (
                                                         <div key={key} className="flex flex-col gap-3 rounded-xl border border-border/50 bg-muted/20 p-4 sm:flex-row sm:items-center">
                                                             <div className="flex flex-1 items-start gap-2">
-                                                                <span className="mt-0.5 text-xs font-black text-primary/60 uppercase">{sq.id})</span>
+                                                                <span className="mt-0.5 text-xs font-black text-amber-600 uppercase">{sq.id})</span>
                                                                 <LatexContent content={sq.text} className="text-sm leading-relaxed" />
                                                             </div>
                                                             <div className="flex shrink-0 items-center gap-2">
                                                                 <button
-                                                                    onClick={() => setPart2Answers({ ...part2Answers, [key]: true })}
+                                                                    onClick={() => handlePart2Select(q.id, sq.id, true)}
                                                                     className={cn(
-                                                                        'flex h-10 w-12 items-center justify-center rounded-lg text-sm font-bold transition-all duration-200 active:scale-90',
-                                                                        userAns === true
-                                                                            ? 'bg-emerald-600 text-white shadow-md shadow-emerald-200 dark:shadow-none scale-105'
-                                                                            : 'bg-background hover:bg-emerald-50 hover:text-emerald-700 text-muted-foreground border border-border hover:border-emerald-300'
+                                                                        'flex h-10 w-12 items-center justify-center rounded-lg text-sm font-bold transition-all',
+                                                                        userAns === true ? 'bg-emerald-600 text-white shadow-md' : 'bg-background hover:bg-emerald-50 text-muted-foreground border'
                                                                     )}
                                                                 >
                                                                     Đ
                                                                 </button>
                                                                 <button
-                                                                    onClick={() => setPart2Answers({ ...part2Answers, [key]: false })}
+                                                                    onClick={() => handlePart2Select(q.id, sq.id, false)}
                                                                     className={cn(
-                                                                        'flex h-10 w-12 items-center justify-center rounded-lg text-sm font-bold transition-all duration-200 active:scale-90',
-                                                                        userAns === false
-                                                                            ? 'bg-red-600 text-white shadow-md shadow-red-200 dark:shadow-none scale-105'
-                                                                            : 'bg-background hover:bg-red-50 hover:text-red-700 text-muted-foreground border border-border hover:border-red-300'
+                                                                        'flex h-10 w-12 items-center justify-center rounded-lg text-sm font-bold transition-all',
+                                                                        userAns === false ? 'bg-red-600 text-white shadow-md' : 'bg-background hover:bg-red-50 text-muted-foreground border'
                                                                     )}
                                                                 >
                                                                     S
@@ -499,31 +636,29 @@ export default function PracticeExam() {
                             </section>
                         )}
 
-                        {/* Part 3: Short Answer */}
-                        {(exam.part3?.length || 0) > 0 && (
+                        {/* Part 3 */}
+                        {shuffledP3.length > 0 && (
                             <section>
-                                <div className="mb-4 flex items-center gap-2 border-l-4 border-primary pl-3">
+                                <div className="mb-4 flex items-center gap-2 border-l-4 border-violet-500 pl-3">
                                     <h3 className="text-xl font-bold">Phần 3: Trả lời ngắn</h3>
-                                    <span className="text-sm text-muted-foreground">({exam.part3?.length} câu)</span>
+                                    <span className="text-sm text-muted-foreground">({shuffledP3.length} câu)</span>
                                 </div>
                                 <div className="space-y-6">
-                                    {exam.part3?.map((q, idx) => (
+                                    {shuffledP3.map((q, idx) => (
                                         <div key={q.id} id={`q-p3-${q.id}`} className="rounded-2xl border border-border bg-card p-5 shadow-sm">
-                                            <p className="mb-4 text-base font-semibold leading-relaxed">
-                                                <span className="mr-3 inline-flex h-7 w-7 items-center justify-center rounded-lg bg-primary/10 text-xs font-bold text-primary">
-                                                    {(exam.part1?.length || 0) + (exam.part2?.length || 0) + idx + 1}
+                                            <div className="mb-4 text-base font-semibold leading-relaxed">
+                                                <span className="mr-3 inline-flex h-7 w-7 items-center justify-center rounded-lg bg-violet-100 text-xs font-bold text-violet-600">
+                                                    {(shuffledP1.length) + (shuffledP2.length) + idx + 1}
                                                 </span>
                                                 <LatexContent content={q.text} />
-                                            </p>
-                                            <div className="relative">
-                                                <input
-                                                    type="text"
-                                                    value={part3Answers[q.id] || ''}
-                                                    onChange={(e) => setPart3Answers({ ...part3Answers, [q.id]: e.target.value })}
-                                                    placeholder="Nhập câu trả lời của bạn..."
-                                                    className="w-full rounded-xl border border-input bg-background px-4 py-3 text-sm font-medium outline-none transition-all focus:border-primary focus:ring-4 focus:ring-primary/10"
-                                                />
                                             </div>
+                                            <input
+                                                type="text"
+                                                value={part3Answers[q.id] || ''}
+                                                onChange={(e) => handlePart3Change(q.id, e.target.value)}
+                                                placeholder="Nhập câu trả lời..."
+                                                className="w-full rounded-xl border border-input bg-background px-4 py-3 text-sm font-medium outline-none focus:border-violet-500 focus:ring-4 focus:ring-violet-500/10"
+                                            />
                                         </div>
                                     ))}
                                 </div>
@@ -541,20 +676,25 @@ export default function PracticeExam() {
                             {/* Progress summary */}
                             <div className="mb-4 flex gap-2 text-xs">
                                 <span className="flex-1 text-center rounded-lg bg-primary/10 text-primary font-bold py-1">
-                                    {answeredAnswerUnits}/{totalAnswerUnits} đã làm
+                                    {p1Answered + p2Answered + p3Answered}/{shuffledP1.length + (shuffledP2.reduce((acc, q) => acc + q.subQuestions.length, 0)) + shuffledP3.length} đã làm
                                 </span>
+                                {isShuffled && (
+                                    <span className="flex-1 text-center rounded-lg bg-blue-100 text-blue-600 font-bold py-1">
+                                        Đã xáo trộn
+                                    </span>
+                                )}
                             </div>
 
                             <div className="space-y-5">
                                 {/* Part 1 TOC */}
-                                {(exam.part1?.length || 0) > 0 && (
+                                {shuffledP1.length > 0 && (
                                     <div>
                                         <div className="mb-2 flex items-center justify-between">
                                             <span className="text-[10px] font-bold text-muted-foreground uppercase tracking-tight">Phần 1</span>
-                                            <span className="text-[10px] text-muted-foreground">{p1Answered}/{exam.part1?.length}</span>
+                                            <span className="text-[10px] text-muted-foreground">{p1Answered}/{shuffledP1.length}</span>
                                         </div>
                                         <div className="grid grid-cols-5 gap-1.5">
-                                            {exam.part1?.map((q, idx) => (
+                                            {shuffledP1.map((q, idx) => (
                                                 <button
                                                     key={q.id}
                                                     onClick={() => scrollToQuestion(`p1-${q.id}`)}
@@ -573,13 +713,13 @@ export default function PracticeExam() {
                                 )}
 
                                 {/* Part 2 TOC */}
-                                {(exam.part2?.length || 0) > 0 && (
+                                {shuffledP2.length > 0 && (
                                     <div>
                                         <div className="mb-2 flex items-center justify-between">
                                             <span className="text-[10px] font-bold text-muted-foreground uppercase tracking-tight">Phần 2</span>
                                         </div>
                                         <div className="grid grid-cols-5 gap-1.5">
-                                            {exam.part2?.map((q, idx) => {
+                                            {shuffledP2.map((q, idx) => {
                                                 const isDone = q.subQuestions.every(sq => part2Answers[`${q.id}-${sq.id}`] !== undefined);
                                                 const someDone = q.subQuestions.some(sq => part2Answers[`${q.id}-${sq.id}`] !== undefined);
                                                 return (
@@ -593,7 +733,7 @@ export default function PracticeExam() {
                                                                     'bg-muted text-muted-foreground hover:bg-accent border border-transparent'
                                                         )}
                                                     >
-                                                        {(exam.part1?.length || 0) + idx + 1}
+                                                        {shuffledP1.length + idx + 1}
                                                     </button>
                                                 );
                                             })}
@@ -602,14 +742,14 @@ export default function PracticeExam() {
                                 )}
 
                                 {/* Part 3 TOC */}
-                                {(exam.part3?.length || 0) > 0 && (
+                                {shuffledP3.length > 0 && (
                                     <div>
                                         <div className="mb-2 flex items-center justify-between">
                                             <span className="text-[10px] font-bold text-muted-foreground uppercase tracking-tight">Phần 3</span>
-                                            <span className="text-[10px] text-muted-foreground">{p3Answered}/{exam.part3?.length}</span>
+                                            <span className="text-[10px] text-muted-foreground">{p3Answered}/{shuffledP3.length}</span>
                                         </div>
                                         <div className="grid grid-cols-5 gap-1.5">
-                                            {exam.part3?.map((q, idx) => (
+                                            {shuffledP3.map((q, idx) => (
                                                 <button
                                                     key={q.id}
                                                     onClick={() => scrollToQuestion(`p3-${q.id}`)}
@@ -620,7 +760,7 @@ export default function PracticeExam() {
                                                             : 'bg-muted text-muted-foreground hover:bg-accent border border-transparent'
                                                     )}
                                                 >
-                                                    {(exam.part1?.length || 0) + (exam.part2?.length || 0) + idx + 1}
+                                                    {shuffledP1.length + shuffledP2.length + idx + 1}
                                                 </button>
                                             ))}
                                         </div>

@@ -42,7 +42,7 @@ export interface Part1Question {
     id: number;
     text: string;
     image?: string;
-    options: [string, string, string, string];
+    options: string[];
     correct: 0 | 1 | 2 | 3;
     explanation?: string;
 }

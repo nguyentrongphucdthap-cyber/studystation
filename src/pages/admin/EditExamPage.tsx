@@ -257,37 +257,65 @@ export default function EditExamPage() {
 
                                 {/* Options */}
                                 {isEditingQ(1, q.id) ? (
-                                    <div className="ml-9 grid grid-cols-1 sm:grid-cols-2 gap-2 mt-3">
-                                        {q.options.map((opt, oIdx) => (
-                                            <div key={oIdx} className="flex items-start gap-2">
-                                                <label className="flex items-center gap-1.5 mt-2 cursor-pointer shrink-0">
-                                                    <input
-                                                        type="radio"
-                                                        name={`p1-correct-${q.id}`}
-                                                        checked={q.correct === oIdx}
-                                                        onChange={() => updateP1(q.id, { correct: oIdx as 0 | 1 | 2 | 3 })}
-                                                        className="accent-indigo-600"
-                                                    />
-                                                    <span className={cn(
-                                                        'w-5 h-5 rounded text-[10px] font-bold flex items-center justify-center',
-                                                        q.correct === oIdx ? 'bg-indigo-600 text-white' : 'bg-slate-100 text-slate-500'
-                                                    )}>
-                                                        {String.fromCharCode(65 + oIdx)}
-                                                    </span>
-                                                </label>
-                                                <textarea
-                                                    value={opt}
-                                                    onChange={e => {
-                                                        const opts = [...q.options] as [string, string, string, string];
-                                                        opts[oIdx] = e.target.value;
-                                                        updateP1(q.id, { options: opts });
-                                                    }}
-                                                    placeholder={`Lựa chọn ${String.fromCharCode(65 + oIdx)}`}
-                                                    rows={1}
-                                                    className="flex-1 text-sm bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-lg px-2 py-1.5 outline-none focus:border-indigo-400 resize-none font-mono"
-                                                />
-                                            </div>
-                                        ))}
+                                    <div className="ml-9 space-y-4 mt-3">
+                                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                                            {q.options.map((opt, oIdx) => (
+                                                <div key={oIdx} className="flex items-start gap-2 group/opt">
+                                                    <label className="flex items-center gap-1.5 mt-2 cursor-pointer shrink-0">
+                                                        <input
+                                                            type="radio"
+                                                            name={`p1-correct-${q.id}`}
+                                                            checked={q.correct === oIdx}
+                                                            onChange={() => updateP1(q.id, { correct: oIdx as 0 | 1 | 2 | 3 })}
+                                                            className="accent-indigo-600"
+                                                        />
+                                                        <span className={cn(
+                                                            'w-5 h-5 rounded text-[10px] font-bold flex items-center justify-center',
+                                                            q.correct === oIdx ? 'bg-indigo-600 text-white' : 'bg-slate-100 text-slate-500'
+                                                        )}>
+                                                            {String.fromCharCode(65 + oIdx)}
+                                                        </span>
+                                                    </label>
+                                                    <div className="flex-1 flex gap-1 items-start">
+                                                        <textarea
+                                                            value={opt}
+                                                            onChange={e => {
+                                                                const opts = [...q.options];
+                                                                opts[oIdx] = e.target.value;
+                                                                updateP1(q.id, { options: opts });
+                                                            }}
+                                                            placeholder={`Lựa chọn ${String.fromCharCode(65 + oIdx)}`}
+                                                            rows={1}
+                                                            className="flex-1 text-sm bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-lg px-2 py-1.5 outline-none focus:border-indigo-400 resize-none font-mono"
+                                                        />
+                                                        <Button 
+                                                            variant="ghost" 
+                                                            size="icon" 
+                                                            onClick={() => {
+                                                                const opts = q.options.filter((_, i) => i !== oIdx);
+                                                                let newCorrect = q.correct;
+                                                                if (q.correct === oIdx) newCorrect = 0;
+                                                                else if (q.correct > oIdx) newCorrect = (q.correct - 1) as any;
+                                                                updateP1(q.id, { options: opts, correct: newCorrect });
+                                                            }}
+                                                            className="h-8 w-8 text-slate-300 hover:text-rose-500 opacity-0 group-hover/opt:opacity-100 transition-opacity"
+                                                        >
+                                                            <Trash2 className="h-3.5 w-3.5" />
+                                                        </Button>
+                                                    </div>
+                                                </div>
+                                            ))}
+                                        </div>
+                                        {q.options.length < 6 && (
+                                            <Button 
+                                                variant="outline" 
+                                                size="sm" 
+                                                onClick={() => updateP1(q.id, { options: [...q.options, ''] })}
+                                                className="dashed-btn text-[10px] h-7 gap-1"
+                                            >
+                                                <Plus className="h-3 w-3" /> Thêm đáp án
+                                            </Button>
+                                        )}
                                     </div>
                                 ) : (
                                     <div className="ml-9 grid grid-cols-1 sm:grid-cols-2 gap-1 mt-1">

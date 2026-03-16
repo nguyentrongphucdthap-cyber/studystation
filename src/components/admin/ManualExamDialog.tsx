@@ -5,6 +5,8 @@ import { getSubjects } from '@/services/exam.service';
 import { PlusCircle, X } from 'lucide-react';
 import { cn } from '@/lib/utils';
 
+// Manual dialog only renders PlusCircle and X icons so keep the import list minimal.
+
 interface ManualExamDialogProps {
     open: boolean;
     onClose: () => void;
