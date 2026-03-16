@@ -1,8 +1,13 @@
 import { useNavigate } from 'react-router-dom';
 import { useState, useEffect, useMemo } from 'react';
 import { 
-    AlarmClock
+    AlarmClock,
+    Calendar,
+    Clock,
+    CheckCircle2,
+    Timer
 } from 'lucide-react';
+import { Dialog } from '../components/ui/Dialog';
 
 const menuItems = [
     {
@@ -97,6 +102,7 @@ export default function Dashboard() {
 
 function ExamScheduleWidget() {
     const [now, setNow] = useState(Date.now());
+    const [showFullSchedule, setShowFullSchedule] = useState(false);
 
     useEffect(() => {
         const timer = setInterval(() => setNow(Date.now()), 1000);
@@ -130,49 +136,124 @@ function ExamScheduleWidget() {
     const mainExam = clearExams[0]!;
 
     return (
-        <div className="relative group overflow-hidden rounded-2xl bg-white/60 dark:bg-slate-900/60 backdrop-blur-md border border-white/50 dark:border-slate-800/50 shadow-sm p-2 px-4 transition-all hover:bg-white dark:hover:bg-slate-900">
-            <div className="flex flex-wrap items-center justify-between gap-x-6 gap-y-2">
-                {/* Main Section: Clear Exams */}
-                <div className="flex flex-wrap items-center gap-x-6 gap-y-1 min-w-0">
-                    <div className="flex items-center gap-2">
-                        <span className="shrink-0 px-2 py-0.5 rounded-md bg-slate-900 text-[10px] font-black text-white uppercase tracking-tighter">
-                            {mainExam.date.split('/')[0]}/{mainExam.date.split('/')[1]}
-                        </span>
-                        <div className="flex flex-wrap items-center gap-x-4 gap-y-0.5">
-                            {clearExams.map((e, idx) => (
-                                <div key={e.id} className="flex items-center gap-1.5 leading-none">
-                                    <h4 className="text-xs font-black text-gray-800 dark:text-gray-200 tracking-tight whitespace-nowrap">
-                                        {e.subject}
-                                    </h4>
-                                    <span className="text-[10px] font-bold text-gray-500">@{e.time}</span>
-                                    {idx < clearExams.length - 1 && <div className="w-1 h-1 rounded-full bg-gray-300 mx-1" />}
-                                </div>
-                            ))}
+        <>
+            <button 
+                onClick={() => setShowFullSchedule(true)}
+                className="w-full text-left relative group overflow-hidden rounded-2xl bg-white/60 dark:bg-slate-900/60 backdrop-blur-md border border-white/50 dark:border-slate-800/50 shadow-sm p-2 px-4 transition-all hover:bg-white dark:hover:bg-slate-900 active:scale-[0.99]"
+            >
+                <div className="flex flex-wrap items-center justify-between gap-x-6 gap-y-2">
+                    {/* Main Section: Clear Exams */}
+                    <div className="flex flex-wrap items-center gap-x-6 gap-y-1 min-w-0">
+                        <div className="flex items-center gap-2">
+                            <span className="shrink-0 px-2 py-0.5 rounded-md bg-slate-900 text-[10px] font-black text-white uppercase tracking-tighter">
+                                {mainExam.date.split('/')[0]}/{mainExam.date.split('/')[1]}
+                            </span>
+                            <div className="flex flex-wrap items-center gap-x-4 gap-y-0.5">
+                                {clearExams.map((e, idx) => (
+                                    <div key={e.id} className="flex items-center gap-1.5 leading-none">
+                                        <h4 className="text-xs font-black text-gray-800 dark:text-gray-200 tracking-tight whitespace-nowrap">
+                                            {e.subject}
+                                        </h4>
+                                        <span className="text-[10px] font-bold text-gray-500">@{e.time}</span>
+                                        {idx < clearExams.length - 1 && <div className="w-1 h-1 rounded-full bg-gray-300 mx-1" />}
+                                    </div>
+                                ))}
+                            </div>
+                        </div>
+
+                        {/* Dimmed Section: Next Day's First Exam */}
+                        {dimmedExam && (
+                            <div className="flex items-center gap-2 opacity-40 group-hover:opacity-100 transition-opacity border-l border-gray-100 dark:border-slate-800 pl-4">
+                                <span className="text-[10px] font-black text-gray-400 uppercase tracking-tighter">Kế:</span>
+                                <span className="text-[10px] font-bold text-gray-600 dark:text-gray-400 whitespace-nowrap">
+                                    {dimmedExam.subject} ({dimmedExam.date.split('/')[0]}/{dimmedExam.date.split('/')[1]})
+                                </span>
+                            </div>
+                        )}
+                    </div>
+                    
+                    {/* Countdown */}
+                    <div className="flex items-center gap-2 ml-auto">
+                        <div className="flex items-center gap-1.5 px-2 py-1 rounded-lg bg-blue-50 dark:bg-blue-900/20 border border-blue-100/50 dark:border-blue-800/30 shadow-sm">
+                            <AlarmClock className="w-3 h-3 text-blue-500" />
+                            <span className="font-mono font-black text-[11px] text-blue-600 dark:text-blue-400 tracking-wider">
+                                {formatCountdown(mainExam.timestamp)}
+                            </span>
+                        </div>
+                    </div>
+                </div>
+            </button>
+
+            <Dialog open={showFullSchedule} onClose={() => setShowFullSchedule(false)} className="max-w-2xl overflow-hidden p-0 dark:bg-slate-900">
+                <div className="p-6 md:p-8 space-y-6">
+                    <div className="flex items-center gap-4">
+                        <div className="p-3 rounded-2xl bg-blue-50 dark:bg-blue-900/20 text-blue-600 dark:text-blue-400">
+                            <Calendar className="w-6 h-6" />
+                        </div>
+                        <div>
+                            <h2 className="text-xl font-black text-gray-900 dark:text-white tracking-tight">Chi Tiết Lịch Thi</h2>
+                            <p className="text-xs font-bold text-gray-400 uppercase tracking-widest mt-1">Lớp 12 • Tự Nhiên</p>
                         </div>
                     </div>
 
-                    {/* Dimmed Section: Next Day's First Exam */}
-                    {dimmedExam && (
-                        <div className="flex items-center gap-2 opacity-40 hover:opacity-100 transition-opacity border-l border-gray-100 dark:border-slate-800 pl-4">
-                            <span className="text-[10px] font-black text-gray-400 uppercase tracking-tighter">Kế:</span>
-                            <span className="text-[10px] font-bold text-gray-600 dark:text-gray-400 whitespace-nowrap">
-                                {dimmedExam.subject} ({dimmedExam.date.split('/')[0]}/{dimmedExam.date.split('/')[1]})
-                            </span>
-                        </div>
-                    )}
-                </div>
-                
-                {/* Countdown (Sticking to the very first upcoming exam) */}
-                <div className="flex items-center gap-2 ml-auto">
-                    <div className="flex items-center gap-1.5 px-2 py-1 rounded-lg bg-blue-50 dark:bg-blue-900/20 border border-blue-100/50 dark:border-blue-800/30 shadow-sm">
-                        <AlarmClock className="w-3 h-3 text-blue-500" />
-                        <span className="font-mono font-black text-[11px] text-blue-600 dark:text-blue-400 tracking-wider">
-                            {formatCountdown(mainExam.timestamp)}
-                        </span>
+                    <div className="space-y-3 max-h-[60vh] overflow-y-auto pr-2 custom-scrollbar">
+                        {EXAM_SCHEDULE.map((e) => {
+                            const isPast = e.timestamp <= now;
+                            const isNext = e.id === mainExam.id;
+                            
+                            return (
+                                <div 
+                                    key={e.id} 
+                                    className={`
+                                        flex items-center justify-between p-4 rounded-2xl border transition-all
+                                        ${isPast ? 'bg-gray-50/50 dark:bg-slate-800/30 border-gray-100 dark:border-slate-800 opacity-60' : 
+                                          isNext ? 'bg-white dark:bg-slate-800 border-blue-500 dark:border-blue-500 shadow-lg shadow-blue-500/10' : 
+                                          'bg-white dark:bg-slate-800 border-gray-100 dark:border-slate-800 hover:border-gray-200 dark:hover:border-slate-700'}
+                                    `}
+                                >
+                                    <div className="flex items-center gap-4 min-w-0">
+                                        <div className={`
+                                            w-10 h-10 rounded-xl flex items-center justify-center shrink-0 font-black text-xs
+                                            ${isPast ? 'bg-gray-100 text-gray-400' : isNext ? 'bg-blue-600 text-white' : 'bg-slate-900 text-white'}
+                                        `}>
+                                            <div className="text-center">
+                                                {e.date.split('/')[0]}
+                                                <br />
+                                                {e.date.split('/')[1]}
+                                            </div>
+                                        </div>
+                                        <div className="min-w-0">
+                                            <h4 className={`text-sm font-black tracking-tight truncate ${isPast ? 'text-gray-500' : 'text-gray-900 dark:text-white'}`}>
+                                                {e.subject}
+                                            </h4>
+                                            <div className="flex items-center gap-2 mt-1">
+                                                <Clock className="w-3 h-3 text-gray-400" />
+                                                <span className="text-[10px] font-bold text-gray-400 uppercase tracking-wider">{e.time}</span>
+                                            </div>
+                                        </div>
+                                    </div>
+
+                                    {isPast ? (
+                                        <CheckCircle2 className="w-5 h-5 text-emerald-500 shrink-0" />
+                                    ) : isNext ? (
+                                        <div className="flex flex-col items-end gap-1">
+                                            <span className="text-[10px] font-black text-blue-600 uppercase tracking-tighter">Sắp diễn ra</span>
+                                            <div className="px-2 py-1 rounded-lg bg-blue-50 dark:bg-blue-900/40 text-blue-600 dark:text-blue-400 font-mono font-black text-xs">
+                                                {formatCountdown(e.timestamp)}
+                                            </div>
+                                        </div>
+                                    ) : (
+                                        <div className="p-2 rounded-xl bg-gray-50 dark:bg-slate-700 text-gray-400 shrink-0">
+                                            <Timer className="w-4 h-4" />
+                                        </div>
+                                    )}
+                                </div>
+                            );
+                        })}
                     </div>
                 </div>
-            </div>
-        </div>
+            </Dialog>
+        </>
     );
 }
 
