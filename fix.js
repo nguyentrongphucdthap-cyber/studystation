@@ -1,0 +1,14 @@
+const fs = require('fs');
+let c = fs.readFileSync('src/pages/practice/PracticeExam.tsx', 'utf-8');
+c = c.replace(/Pháº§n/g, 'Phần');
+c = c.replace(/cÃ¢u/g, 'câu');
+c = c.replace(/tráº¯c nghiá»‡m/g, 'trắc nghiệm');
+c = c.replace(/Ä\s*Ãºng\/Sai/g, 'Đúng/Sai');
+c = c.replace(/Ä\x90Ãºng\/Sai/g, 'Đúng/Sai');
+c = c.replace(/Ã½/g, 'ý');
+c = c.replace(/tráº£ lá»\s*i ngáº¯n/g, 'trả lời ngắn');
+c = c.replace(/tráº£ lá»i ngáº¯n/g, 'trả lời ngắn');
+c = c.replace(/â€¢/g, '•');
+c = c.replace(/Ä Ãºng\/Sai/g, 'Đúng/Sai');
+fs.writeFileSync('src/pages/practice/PracticeExam.tsx', c, 'utf-8');
+console.log('Fixed PracticeExam.tsx');

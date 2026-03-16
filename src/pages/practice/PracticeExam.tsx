@@ -274,17 +274,17 @@ export default function PracticeExam() {
                             <Clock className="h-4 w-4" /> {exam.time} phÃºt
                         </div>
                         <div className="flex items-center gap-1.5">
-                            <BookOpen className="h-4 w-4" /> {totalQ} cÃ¢u há»i
+                            <BookOpen className="h-4 w-4" /> {totalQ} câu há»i
                         </div>
                     </div>
 
                     <div className="mb-6 rounded-lg bg-muted/50 p-3 text-left text-xs text-muted-foreground">
                         <p className="font-medium text-foreground mb-1">ðŸ“‹ Cáº¥u trÃºc Ä‘á»:</p>
-                        {(exam.part1?.length || 0) > 0 && <p>â€¢ Pháº§n 1: {exam.part1?.length} cÃ¢u tráº¯c nghiá»‡m</p>}
+                        {(exam.part1?.length || 0) > 0 && <p>• Phần 1: {exam.part1?.length} câu trắc nghiệm</p>}
                         {(exam.part2?.length || 0) > 0 && (
-                            <p>â€¢ Pháº§n 2: {exam.part2?.length} cÃ¢u ÄÃºng/Sai ({(exam.part2 || []).reduce((s: number, q: Part2Question) => s + q.subQuestions.length, 0)} Ã½)</p>
+                            <p>• Phần 2: {exam.part2?.length} câu Đúng/Sai ({(exam.part2 || []).reduce((s: number, q: Part2Question) => s + q.subQuestions.length, 0)} ý)</p>
                         )}
-                        {(exam.part3?.length || 0) > 0 && <p>â€¢ Pháº§n 3: {exam.part3?.length} cÃ¢u tráº£ lá»i ngáº¯n</p>}
+                        {(exam.part3?.length || 0) > 0 && <p>• Phần 3: {exam.part3?.length} câu tráº£ lá»i ngáº¯n</p>}
                     </div>
 
                     <Button size="xl" className="w-full" onClick={handleStart}>
@@ -389,8 +389,8 @@ export default function PracticeExam() {
                         {(exam.part1?.length || 0) > 0 && (
                             <section>
                                 <div className="mb-4 flex items-center gap-2 border-l-4 border-primary pl-3">
-                                    <h3 className="text-xl font-bold">Pháº§n 1: Tráº¯c nghiá»‡m</h3>
-                                    <span className="text-sm text-muted-foreground">({exam.part1?.length} cÃ¢u)</span>
+                                    <h3 className="text-xl font-bold">Phần 1: Tráº¯c nghiá»‡m</h3>
+                                    <span className="text-sm text-muted-foreground">({exam.part1?.length} câu)</span>
                                 </div>
                                 <div className="space-y-6">
                                     {exam.part1?.map((q, idx) => (
@@ -443,8 +443,8 @@ export default function PracticeExam() {
                         {(exam.part2?.length || 0) > 0 && (
                             <section>
                                 <div className="mb-4 flex items-center gap-2 border-l-4 border-primary pl-3">
-                                    <h3 className="text-xl font-bold">Pháº§n 2: ÄÃºng/Sai</h3>
-                                    <span className="text-sm text-muted-foreground">({exam.part2?.length} cÃ¢u)</span>
+                                    <h3 className="text-xl font-bold">Phần 2: Đúng/Sai</h3>
+                                    <span className="text-sm text-muted-foreground">({exam.part2?.length} câu)</span>
                                 </div>
                                 <div className="space-y-6">
                                     {exam.part2?.map((q, idx) => (
@@ -503,8 +503,8 @@ export default function PracticeExam() {
                         {(exam.part3?.length || 0) > 0 && (
                             <section>
                                 <div className="mb-4 flex items-center gap-2 border-l-4 border-primary pl-3">
-                                    <h3 className="text-xl font-bold">Pháº§n 3: Tráº£ lá»i ngáº¯n</h3>
-                                    <span className="text-sm text-muted-foreground">({exam.part3?.length} cÃ¢u)</span>
+                                    <h3 className="text-xl font-bold">Phần 3: Tráº£ lá»i ngáº¯n</h3>
+                                    <span className="text-sm text-muted-foreground">({exam.part3?.length} câu)</span>
                                 </div>
                                 <div className="space-y-6">
                                     {exam.part3?.map((q, idx) => (
@@ -520,7 +520,7 @@ export default function PracticeExam() {
                                                     type="text"
                                                     value={part3Answers[q.id] || ''}
                                                     onChange={(e) => setPart3Answers({ ...part3Answers, [q.id]: e.target.value })}
-                                                    placeholder="Nháº­p cÃ¢u tráº£ lá»i cá»§a báº¡n..."
+                                                    placeholder="Nháº­p câu tráº£ lá»i cá»§a báº¡n..."
                                                     className="w-full rounded-xl border border-input bg-background px-4 py-3 text-sm font-medium outline-none transition-all focus:border-primary focus:ring-4 focus:ring-primary/10"
                                                 />
                                             </div>
@@ -550,7 +550,7 @@ export default function PracticeExam() {
                                 {(exam.part1?.length || 0) > 0 && (
                                     <div>
                                         <div className="mb-2 flex items-center justify-between">
-                                            <span className="text-[10px] font-bold text-muted-foreground uppercase tracking-tight">Pháº§n 1</span>
+                                            <span className="text-[10px] font-bold text-muted-foreground uppercase tracking-tight">Phần 1</span>
                                             <span className="text-[10px] text-muted-foreground">{p1Answered}/{exam.part1?.length}</span>
                                         </div>
                                         <div className="grid grid-cols-5 gap-1.5">
@@ -576,7 +576,7 @@ export default function PracticeExam() {
                                 {(exam.part2?.length || 0) > 0 && (
                                     <div>
                                         <div className="mb-2 flex items-center justify-between">
-                                            <span className="text-[10px] font-bold text-muted-foreground uppercase tracking-tight">Pháº§n 2</span>
+                                            <span className="text-[10px] font-bold text-muted-foreground uppercase tracking-tight">Phần 2</span>
                                         </div>
                                         <div className="grid grid-cols-5 gap-1.5">
                                             {exam.part2?.map((q, idx) => {
@@ -605,7 +605,7 @@ export default function PracticeExam() {
                                 {(exam.part3?.length || 0) > 0 && (
                                     <div>
                                         <div className="mb-2 flex items-center justify-between">
-                                            <span className="text-[10px] font-bold text-muted-foreground uppercase tracking-tight">Pháº§n 3</span>
+                                            <span className="text-[10px] font-bold text-muted-foreground uppercase tracking-tight">Phần 3</span>
                                             <span className="text-[10px] text-muted-foreground">{p3Answered}/{exam.part3?.length}</span>
                                         </div>
                                         <div className="grid grid-cols-5 gap-1.5">
@@ -958,7 +958,7 @@ export default function PracticeExam() {
                                             {allCorrect ? <CheckCircle size={16} /> : someIncorrect ? <XCircle size={16} /> : <MinusCircle size={16} />}
                                         </div>
                                         <div>
-                                            <span className="text-xs font-bold text-gray-400 uppercase tracking-widest">CÃ¢u {q.id} (ÄÃºng/Sai)</span>
+                                            <span className="text-xs font-bold text-gray-400 uppercase tracking-widest">CÃ¢u {q.id} (Đúng/Sai)</span>
                                             <p className="text-sm font-semibold text-gray-700 line-clamp-1">{q.text}</p>
                                         </div>
                                     </div>

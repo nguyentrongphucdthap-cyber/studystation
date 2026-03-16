@@ -2,9 +2,8 @@ import { useState } from 'react';
 import { Button } from '@/components/ui/Button';
 import { Dialog } from '@/components/ui/Dialog';
 import { getSubjects } from '@/services/exam.service';
-import { Trash2, ChevronRight, ChevronLeft, Save, PlusCircle, Check, X } from 'lucide-react';
+import { PlusCircle, X } from 'lucide-react';
 import { cn } from '@/lib/utils';
-import { LatexContent } from '@/components/ui/LatexContent';
 
 interface ManualExamDialogProps {
     open: boolean;
