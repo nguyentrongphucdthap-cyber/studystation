@@ -287,7 +287,7 @@ export function AppLayout() {
             )}
 
             {/* Premium Glass Header */}
-            <header className="bg-white/80 backdrop-blur-xl border-b border-white/60 px-6 md:px-10 py-4 sticky top-0 z-30 shadow-soft">
+            <header className="bg-white/80 backdrop-blur-xl border-b border-white/60 px-6 md:px-10 h-16 sticky top-0 z-50 shadow-soft">
                 <div className="max-w-7xl mx-auto flex items-center justify-between">
                     <div
                         className="flex items-center gap-3 cursor-pointer group"
@@ -309,7 +309,7 @@ export function AppLayout() {
             </header>
 
             <main className={cn(
-                "relative z-10 w-full mx-auto px-4 min-h-[calc(100vh-160px)] transition-all duration-300",
+                "relative z-10 w-full mx-auto px-4 min-h-[calc(100vh-64px)] transition-all duration-300",
                 isExamPage ? "max-w-7xl" : "max-w-5xl",
                 isExamPage
                     ? settings.examPadding === 'compact' ? 'py-3 md:py-4'

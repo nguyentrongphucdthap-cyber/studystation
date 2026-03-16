@@ -359,7 +359,7 @@ export default function PracticeExam() {
         return (
             <div className="mx-auto w-full px-4 lg:px-8">
                 {/* Timer header */}
-                <div className="sticky top-14 z-30 -mx-4 mb-6 border-b border-border bg-background/95 px-4 py-3 backdrop-blur-sm lg:-mx-8 lg:px-8">
+                <div className="sticky top-16 z-30 -mx-4 mb-6 border-b border-border bg-background/95 px-4 py-3 backdrop-blur-sm lg:-mx-8 lg:px-8">
                     <div className="flex items-center justify-between">
                         <div className="flex items-center gap-4">
                             <button onClick={() => setShowSubmitConfirm(true)} className="p-1 hover:bg-muted rounded-full transition-colors">
@@ -532,7 +532,7 @@ export default function PracticeExam() {
                     </div>
 
                     {/* Sidebar: Table of Contents — scrolls with user */}
-                    <aside className="hidden w-full shrink-0 lg:block lg:w-[280px] lg:sticky lg:top-[110px] lg:self-start">
+                    <aside className="hidden w-full shrink-0 lg:block lg:w-[280px] lg:sticky lg:top-[120px] lg:self-start">
                         <div className="rounded-2xl border border-border bg-card p-5 shadow-lg">
                             <h4 className="mb-3 flex items-center gap-2 text-sm font-bold uppercase tracking-wider text-muted-foreground">
                                 <BookOpen className="h-4 w-4" /> Mục lục

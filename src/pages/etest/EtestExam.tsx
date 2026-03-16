@@ -151,7 +151,7 @@ export default function EtestExamPage() {
     return (
         <div className={cn('mx-auto w-full', darkMode && 'dark')}>
             {/* Header */}
-            <div className="sticky top-14 z-30 -mx-4 mb-4 border-b border-border bg-background/95 px-4 py-3 backdrop-blur-sm">
+            <div className="sticky top-16 z-30 -mx-4 mb-4 border-b border-border bg-background/95 px-4 py-3 backdrop-blur-sm">
                 <div className="flex items-center justify-between">
                     <div className="flex items-center gap-2">
                         <span className="text-sm font-medium truncate max-w-[150px]">{exam.title}</span>
