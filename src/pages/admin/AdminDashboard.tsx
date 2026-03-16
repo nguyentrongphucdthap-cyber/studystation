@@ -15,7 +15,7 @@ import {
 import { useEffect, useState } from 'react';
 
 export default function AdminDashboard() {
-    const { isSuperAdmin } = useAuth();
+    const { isSuperAdmin, role } = useAuth();
 
     const navItems = [
         { to: '/admin', label: 'Tổng quan', icon: LayoutDashboard, end: true },
@@ -24,7 +24,8 @@ export default function AdminDashboard() {
         { to: '/admin/vocab', label: 'Từ vựng', icon: Languages },
         { to: '/admin/notifications', label: 'Thông báo', icon: Bell },
         { to: '/admin/schedule', label: 'TKB', icon: Calendar },
-        ...(isSuperAdmin ? [{ to: '/admin/students', label: 'Học sinh', icon: Users }] : []),
+        ...(isSuperAdmin || role === 'teacher' ? [{ to: '/admin/students', label: 'Học sinh', icon: Users }] : []),
+        ...(isSuperAdmin ? [{ to: '/admin/teachers', label: 'Giáo viên', icon: Shield }] : []),
     ];
 
     return (

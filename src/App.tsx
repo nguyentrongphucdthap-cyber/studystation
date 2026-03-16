@@ -23,6 +23,7 @@ const AdminEtest = lazy(() => import('@/pages/admin/AdminEtest'));
 const AdminVocab = lazy(() => import('@/pages/admin/AdminVocab'));
 const AdminNotifications = lazy(() => import('@/pages/admin/AdminNotifications'));
 const AdminStudents = lazy(() => import('@/pages/admin/AdminStudents'));
+const AdminTeachers = lazy(() => import('@/pages/admin/AdminTeachers'));
 const AdminSchedule = lazy(() => import('@/pages/admin/AdminSchedule'));
 const EditExamPage = lazy(() => import('@/pages/admin/EditExamPage'));
 
@@ -85,9 +86,13 @@ function App() {
                                         <Route path="/admin/notifications" element={<AdminNotifications />} />
                                         <Route
                                             path="/admin/students"
+                                            element={<AdminStudents />}
+                                        />
+                                        <Route
+                                            path="/admin/teachers"
                                             element={
                                                 <ProtectedRoute requireSuperAdmin>
-                                                    <AdminStudents />
+                                                    <AdminTeachers />
                                                 </ProtectedRoute>
                                             }
                                         />

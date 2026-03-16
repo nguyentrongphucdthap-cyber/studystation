@@ -9,7 +9,7 @@ export interface UserProfile {
     photoURL: string | null;
 }
 
-export type UserRole = 'user' | 'admin' | 'super-admin' | 'admin/user' | 'super-admin/admin/user' | 'guest';
+export type UserRole = 'user' | 'teacher' | 'admin' | 'super-admin' | 'admin/user' | 'super-admin/admin/user' | 'guest';
 
 export interface AllowedUser {
     email: string;
@@ -17,6 +17,8 @@ export interface AllowedUser {
     name?: string;
     addedBy?: string;
     addedAt?: string;
+    classes?: string[];         // For students
+    assignedClasses?: string[]; // For teachers
 }
 
 export type DeviceType = 'desktop' | 'mobile';
@@ -28,6 +30,7 @@ export interface AuthState {
     isLoading: boolean;
     isAdmin: boolean;
     isSuperAdmin: boolean;
+    isTeacher: boolean;
     isGuest: boolean;
 }
 

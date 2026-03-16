@@ -8,6 +8,7 @@ import {
     setUserRole,
     checkIsAdmin as isAdmin,
     checkIsSuperAdmin as isSuperAdmin,
+    checkIsTeacher as isTeacher,
     checkIsGuest as isGuest,
     setupSession,
     registerSession,
@@ -28,6 +29,7 @@ interface AuthContextType {
     isLoading: boolean;
     isAdmin: boolean;
     isSuperAdmin: boolean;
+    isTeacher: boolean;
     isGuest: boolean;
     logout: () => Promise<void>;
 }
@@ -99,6 +101,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         isLoading,
         isAdmin: isAdmin(role),
         isSuperAdmin: isSuperAdmin(role),
+        isTeacher: isTeacher(role),
         isGuest: isGuest(role),
         logout: handleLogout,
     };

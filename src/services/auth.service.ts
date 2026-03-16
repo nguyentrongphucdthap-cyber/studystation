@@ -190,6 +190,10 @@ export function checkIsSuperAdmin(role: string): boolean {
     return /super-admin/i.test(role);
 }
 
+export function checkIsTeacher(role: string): boolean {
+    return /teacher/i.test(role);
+}
+
 export function checkIsGuest(role: string): boolean {
     return role === 'guest';
 }
@@ -258,6 +262,14 @@ export async function addAllowedUser(email: string, role = 'user'): Promise<void
 export async function updateUserRole(email: string, newRole: string): Promise<void> {
     await setDoc(doc(db, 'allowed_users', email), { role: newRole }, { merge: true });
     await logWhitelistAction('update_role', email, newRole);
+}
+
+export async function updateUserClasses(email: string, classes: string[]): Promise<void> {
+    await setDoc(doc(db, 'allowed_users', email), { classes }, { merge: true });
+}
+
+export async function updateTeacherAssignedClasses(email: string, assignedClasses: string[]): Promise<void> {
+    await setDoc(doc(db, 'allowed_users', email), { assignedClasses }, { merge: true });
 }
 
 export async function deleteAllowedUser(email: string): Promise<void> {

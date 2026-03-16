@@ -22,12 +22,16 @@ service cloud.firestore {
       return isInWhitelist() && (getUserRole().matches('.*admin.*') || getUserRole().matches('.*super-admin.*'));
     }
 
+    function isTeacher() {
+      return isInWhitelist() && getUserRole().matches('.*teacher.*');
+    }
+
     // ============================================
     // AUTH & USERS
     // ============================================
     
     match /allowed_users/{email} {
-      allow read: if isLoggedIn() && (request.auth.token.email == email || isAdmin());
+      allow read: if isLoggedIn() && (request.auth.token.email == email || isAdmin() || isTeacher());
       allow create: if isAdmin() || (isLoggedIn() && request.auth.token.email == email); // Self-registration allowed if email matches
       allow update: if isLoggedIn() && (request.auth.token.email == email || isAdmin());
       allow delete: if isAdmin();
