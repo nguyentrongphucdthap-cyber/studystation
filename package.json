@@ -3,9 +3,8 @@
   "private": true,
   "version": "2.0.0",
   "type": "module",
-  "scripts": {
+    "scripts": {
     "dev": "npx wrangler pages dev --port 5173 --proxy 5174 -- npm run vite-dev -- --port 5174",
-    "backend": ".\\backend\\venv\\Scripts\\python.exe -m uvicorn main:app --app-dir .\\backend --port 8000",
     "vite-dev": "vite --no-open",
     "build": "tsc -b --force && vite build",
     "preview": "vite preview",

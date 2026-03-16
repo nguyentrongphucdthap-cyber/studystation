@@ -5,6 +5,13 @@ import { useToast } from '@/components/ui/Toast';
 import { Upload, Wand2 } from 'lucide-react';
 import { getSubjects } from '@/services/exam.service';
 import { generateAIContent } from '@/services/ai.service';
+import * as mammoth from 'mammoth';
+import * as pdfjs from 'pdfjs-dist';
+
+// Configure PDF.js worker
+pdfjs.GlobalWorkerOptions.workerSrc = `//cdnjs.cloudflare.com/ajax/libs/pdf.js/${pdfjs.version}/pdf.worker.min.js`;
+
+const IMGBB_API_KEY = "cba4af8f08a1654c46570add6d3f1055";
 
 interface SmartImportDialogProps {
     open: boolean;
@@ -158,28 +165,52 @@ export function SmartImportDialog({ open, onClose, onImport, type, initialSubjec
 
         setLoading(true);
         try {
-            const formData = new FormData();
-            formData.append("file", file);
+            let text = '';
+            const fileName = file.name.toLowerCase();
 
-            // Call Python backend
-            const backendUrl = import.meta.env.VITE_BACKEND_API_URL || "http://localhost:8000";
-            let res: Response;
-            try {
-                res = await fetch(`${backendUrl}/api/extract`, {
-                    method: "POST",
-                    body: formData,
+            if (fileName.endsWith('.docx')) {
+                const arrayBuffer = await file.arrayBuffer();
+                const result = await (mammoth as any).convertToMarkdown({ arrayBuffer }, {
+                    convertImage: (mammoth.images as any).inline((element: any) => {
+                        return element.read("base64").then(async (imageBuffer: string) => {
+                             try {
+                                const blob = await (await fetch(`data:${element.contentType};base64,${imageBuffer}`)).blob();
+                                const formData = new FormData();
+                                formData.append('key', IMGBB_API_KEY);
+                                formData.append('image', blob);
+                                const imgRes = await fetch('https://api.imgbb.com/1/upload', { method: 'POST', body: formData });
+                                if (imgRes.ok) {
+                                    const imgData = await imgRes.json();
+                                    return { src: imgData.data.url };
+                                }
+                             } catch (e) {
+                                console.warn("Failed to upload image to ImgBB", e);
+                             }
+                             return { src: `data:${element.contentType};base64,${imageBuffer}` };
+                        });
+                    })
                 });
-            } catch (networkErr: any) {
-                throw new Error("Không thể kết nối đến máy chủ xử lý (Python Backend). Đảm bảo backend đang chạy.");
+                text = result.value;
+            } else if (fileName.endsWith('.pdf')) {
+                const arrayBuffer = await file.arrayBuffer();
+                const loadingTask = pdfjs.getDocument({ data: arrayBuffer });
+                const pdf = await loadingTask.promise;
+                let fullText = '';
+                
+                for (let i = 1; i <= pdf.numPages; i++) {
+                    const page = await pdf.getPage(i);
+                    const content: any = await page.getTextContent();
+                    const pageText = content.items
+                        .map((item: any) => item.str || '')
+                        .join(' ');
+                    fullText += pageText + '\n\n';
+                }
+                text = fullText;
+            } else if (fileName.endsWith('.txt')) {
+                text = await file.text();
+            } else {
+                throw new Error("Định dạng file không hỗ trợ. Vui lòng dùng PDF, DOCX hoặc TXT.");
             }
-
-            if (!res.ok) {
-                const errorData = await res.json().catch(() => ({}));
-                throw new Error(errorData.detail || `Server error: ${res.status}`);
-            }
-
-            const data = await res.json();
-            const text = data.text;
 
             if (!text || !text.trim()) throw new Error('File rỗng hoặc không thể trích xuất.');
             setExtractedText(text);
