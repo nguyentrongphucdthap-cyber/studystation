@@ -149,30 +149,41 @@ function tokenize(content: string): Token[] {
 
     while (i < content.length) {
         // ──── Table Detection ────
-        // Check if we are at the start of a line and see a '|'
-        const isStartOfLine = i === 0 || content[i - 1] === '\n';
-        if (isStartOfLine && content[i] === '|') {
-            let j = i;
-            let currentLine = '';
-            const tableLines: string[] = [];
-            
-            while (j < content.length) {
-                const char = content[j];
-                if (char === '\n') {
-                    if (currentLine.trim().startsWith('|') && currentLine.trim().endsWith('|')) {
-                        tableLines.push(currentLine.trim());
-                        currentLine = '';
-                        j++;
-                        // Peek next line
-                        if (content[j] !== '|') break;
-                    } else {
-                        break;
-                    }
-                } else {
-                    currentLine += char;
-                    j++;
-                }
+        // Check if we are at the start of a line and see a '|' (allowing leading spaces)
+        let isStartOfLine = i === 0 || content[i - 1] === '\n';
+        let cursor = i;
+        if (isStartOfLine) {
+            // Skip leading whitespace to find '|'
+            while (cursor < content.length && (content[cursor] === ' ' || content[cursor] === '\t')) {
+                cursor++;
             }
+            if (content[cursor] === '|') {
+                let j = cursor;
+                let currentLine = '';
+                const tableLines: string[] = [];
+                
+                while (j < content.length) {
+                    const char = content[j];
+                    if (char === '\n') {
+                        if (currentLine.trim().startsWith('|') && currentLine.trim().endsWith('|')) {
+                            tableLines.push(currentLine.trim());
+                            currentLine = '';
+                            j++;
+                            // Peek next line (skipping its leading spaces)
+                            let nextRowStart = j;
+                            while (nextRowStart < content.length && (content[nextRowStart] === ' ' || content[nextRowStart] === '\t')) {
+                                nextRowStart++;
+                            }
+                            if (content[nextRowStart] !== '|') break;
+                            j = nextRowStart; // move to next row's '|'
+                        } else {
+                            break;
+                        }
+                    } else {
+                        currentLine += char;
+                        j++;
+                    }
+                }
             // Add the last line if it's a table line
             if (currentLine.trim().startsWith('|') && currentLine.trim().endsWith('|')) {
                 tableLines.push(currentLine.trim());

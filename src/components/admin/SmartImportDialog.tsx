@@ -45,12 +45,16 @@ QUY TẮC CÔNG THỨC & VĂN BẢN (CỰC KỲ QUAN TRỌNG):
 - Các chuỗi phải viết trên CÙNG MỘT DÒNG. Dùng "\\\\n" nếu cần xuống dòng, TUYỆT ĐỐI KHÔNG ấn Enter tạo dòng mới bên giữa chuỗi JSON.
 - QUY TẮC BẢNG (CỰC KỲ QUAN TRỌNG): 
   + Nếu đề bài có bảng số liệu, BẮT BUỘC phải chuyển về định dạng bảng Markdown.
-  + ĐẶC BIỆT: Nếu văn bản trích xuất bị "làm phẳng" (ví dụ: liệt kê một loạt tên loài, sau đó là một loạt các con số % tương ứng), bạn PHẢI TỰ SUY LUẬN cấu trúc bảng (như bảng so sánh, ma trận tương đồng) và chuyển nó về dạng bảng Markdown hoàn chỉnh. KHÔNG được để dữ liệu ở dạng liệt kê dòng đơn lẻ nếu nó vốn dĩ là một bảng.
-  Ví dụ bảng Markdown chuẩn:
+  + ĐẶC BIỆT: Nếu văn bản trích xuất bị "làm phẳng" (liệt kê danh sách tên loài/đối tượng rồi đến một loạt con số), bạn PHẢI TỰ SUY LUẬN để xây dựng lại bảng (thường là bảng so sánh hoặc ma trận). 
+  Ví dụ: Nếu thấy "Loài A, Loài B, 0%, 50%, 0%", hãy chuyển thành:
+  | Loài | Loài A | Loài B |
+  |---|---|---|
+  | Loài A | 0% | 50% |
+  | Loài B | 50% | 0% |
+  + Bảng Markdown chuẩn:
   | Đặc điểm | Quần thể A | Quần thể B |
   |---|---|---|
   | Diện tích | 25 ha | 240 ha |
-  | Mật độ | 10 | 15 |
 - HÌNH ẢNH: Nếu hình ảnh là biểu đồ/đồ thị/minh họa (KHÔNG phải công thức), BẮT BUỘC phải copy y nguyên link thẻ hình (Markdown '![...](url)'). VỊ TRÍ ĐẶT ẢNH: Đặt vào cuối thuộc tính "text" của CÂU HỎI CHÍNH. TUY NHIÊN, NẾU hình ảnh đó chính là MỘT ĐÁP ÁN (A, B, C, D) hoặc nằm trong Ý TRẢ LỜI của đúng/sai, thì ĐƯỢC PHÉP dán thẻ hình ảnh đó vào mảng "options" hoặc thuộc tính "text" của "subQuestions".
 - KHÔNG ĐƯỢC tự ý bỏ qua các bảng số liệu. Bảng số liệu là một phần của câu hỏi.
 
