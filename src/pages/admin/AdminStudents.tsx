@@ -120,7 +120,7 @@ export default function AdminStudents() {
                         </thead>
                         <tbody className="divide-y divide-slate-100 dark:divide-slate-800/60 bg-white dark:bg-slate-900/20">
             {filtered.map((u: AllowedUser) => {
-                                const roleId = roleOptions.find((r) => u.role.includes(r.value))?.value || 'user';
+                                const roleId = roleOptions.find((r) => u.role === r.value)?.value || 'user';
                                 const role = roleOptions.find((r) => r.value === roleId);
                                 const RoleIcon = role?.icon || User;
                                 const roleColor = role?.color || 'bg-slate-100 text-slate-700';
