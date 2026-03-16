@@ -1,8 +1,6 @@
 import { useNavigate } from 'react-router-dom';
 import { useState, useEffect, useMemo } from 'react';
-import { useTheme } from '../contexts/ThemeContext';
 import { 
-    ChevronRight, 
     AlarmClock
 } from 'lucide-react';
 
@@ -98,7 +96,6 @@ export default function Dashboard() {
 }
 
 function ExamScheduleWidget() {
-    const { settings: _settings } = useTheme(); // Not directly used in ribbon but theme context available
     const [now, setNow] = useState(Date.now());
 
     useEffect(() => {
@@ -106,8 +103,17 @@ function ExamScheduleWidget() {
         return () => clearInterval(timer);
     }, []);
 
-    const next = useMemo(() => {
-        return EXAM_SCHEDULE.filter(e => e.timestamp > now).sort((a, b) => a.timestamp - b.timestamp)[0] || null;
+    const { clearExams, dimmedExam } = useMemo(() => {
+        const futureExams = EXAM_SCHEDULE.filter(e => e.timestamp > now).sort((a, b) => a.timestamp - b.timestamp);
+        if (futureExams.length === 0) return { clearExams: [], dimmedExam: null };
+
+        const first = futureExams[0]!;
+        const clear = futureExams.filter(e => e.date === first.date);
+        
+        // Find the first exam of a different day
+        const dimmed = futureExams.find(e => e.date !== first.date) || null;
+
+        return { clearExams: clear, dimmedExam: dimmed };
     }, [now]);
 
     const formatCountdown = (target: number) => {
@@ -119,28 +125,51 @@ function ExamScheduleWidget() {
         return `${h.toString().padStart(2, '0')}:${m.toString().padStart(2, '0')}:${s.toString().padStart(2, '0')}`;
     };
 
-    if (!next) return null;
+    if (clearExams.length === 0) return null;
+
+    const mainExam = clearExams[0]!;
 
     return (
         <div className="relative group overflow-hidden rounded-2xl bg-white/60 dark:bg-slate-900/60 backdrop-blur-md border border-white/50 dark:border-slate-800/50 shadow-sm p-2 px-4 transition-all hover:bg-white dark:hover:bg-slate-900">
-            <div className="flex flex-wrap items-center justify-between gap-x-4 gap-y-1">
-                <div className="flex items-center gap-2 min-w-0">
-                    <span className="shrink-0 px-2 py-0.5 rounded-md bg-slate-900 text-[10px] font-black text-white uppercase tracking-tighter">
-                        {next.date.split('/')[0]}/{next.date.split('/')[1]}
-                    </span>
-                    <h4 className="text-xs font-black text-gray-800 dark:text-gray-200 truncate tracking-tight">
-                        {next.subject} <span className="text-[10px] font-bold text-gray-400 ml-1">@ {next.time}</span>
-                    </h4>
+            <div className="flex flex-wrap items-center justify-between gap-x-6 gap-y-2">
+                {/* Main Section: Clear Exams */}
+                <div className="flex flex-wrap items-center gap-x-6 gap-y-1 min-w-0">
+                    <div className="flex items-center gap-2">
+                        <span className="shrink-0 px-2 py-0.5 rounded-md bg-slate-900 text-[10px] font-black text-white uppercase tracking-tighter">
+                            {mainExam.date.split('/')[0]}/{mainExam.date.split('/')[1]}
+                        </span>
+                        <div className="flex flex-wrap items-center gap-x-4 gap-y-0.5">
+                            {clearExams.map((e, idx) => (
+                                <div key={e.id} className="flex items-center gap-1.5 leading-none">
+                                    <h4 className="text-xs font-black text-gray-800 dark:text-gray-200 tracking-tight whitespace-nowrap">
+                                        {e.subject}
+                                    </h4>
+                                    <span className="text-[10px] font-bold text-gray-500">@{e.time}</span>
+                                    {idx < clearExams.length - 1 && <div className="w-1 h-1 rounded-full bg-gray-300 mx-1" />}
+                                </div>
+                            ))}
+                        </div>
+                    </div>
+
+                    {/* Dimmed Section: Next Day's First Exam */}
+                    {dimmedExam && (
+                        <div className="flex items-center gap-2 opacity-40 hover:opacity-100 transition-opacity border-l border-gray-100 dark:border-slate-800 pl-4">
+                            <span className="text-[10px] font-black text-gray-400 uppercase tracking-tighter">Kế:</span>
+                            <span className="text-[10px] font-bold text-gray-600 dark:text-gray-400 whitespace-nowrap">
+                                {dimmedExam.subject} ({dimmedExam.date.split('/')[0]}/{dimmedExam.date.split('/')[1]})
+                            </span>
+                        </div>
+                    )}
                 </div>
                 
-                <div className="flex items-center gap-2">
-                    <div className="flex items-center gap-1.5 px-2 py-1 rounded-lg bg-blue-50 dark:bg-blue-900/20 border border-blue-100/50 dark:border-blue-800/30">
+                {/* Countdown (Sticking to the very first upcoming exam) */}
+                <div className="flex items-center gap-2 ml-auto">
+                    <div className="flex items-center gap-1.5 px-2 py-1 rounded-lg bg-blue-50 dark:bg-blue-900/20 border border-blue-100/50 dark:border-blue-800/30 shadow-sm">
                         <AlarmClock className="w-3 h-3 text-blue-500" />
                         <span className="font-mono font-black text-[11px] text-blue-600 dark:text-blue-400 tracking-wider">
-                            {formatCountdown(next.timestamp)}
+                            {formatCountdown(mainExam.timestamp)}
                         </span>
                     </div>
-                    <ChevronRight className="w-3 h-3 text-gray-300 group-hover:translate-x-0.5 transition-transform" />
                 </div>
             </div>
         </div>
