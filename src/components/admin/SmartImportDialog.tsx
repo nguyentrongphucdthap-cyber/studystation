@@ -35,15 +35,18 @@ CẤU TRÚC ĐỀ THI:
 
 QUY TẮC CÔNG THỨC & VĂN BẢN (CỰC KỲ QUAN TRỌNG):
 - TẤT CẢ các biểu thức toán/lý/hóa, số kèm đơn vị (VD: $10\\text{ V}$, $50\\text{ Hz}$, $0.5\\text{ m/s}$), các ký hiệu độc lập ($x$, $t$, $\\pi$, $\\Omega$), và phương trình dài (VD: $x = 100\\sqrt{2}\\cos(100\\pi t + \\pi/4)\\text{ cm}$) BẮT BUỘC phải được bọc trọn vẹn trong thẻ LaTeX \`$\`...\`$\` hoặc \`$$\`...\`$$\`. KHÔNG ĐƯỢC để nội dung toán học nằm trơ trọi dưới dạng text thường.
-- Đốivới đơn vị đứng cạnh số, dùng \`\\text{}\` bên trong LaTeX, ví dụ: $100\\text{ V}$.
-- NẾU HÌNH ẢNH LÀ CÔNG THỨC TOÁN HỌC: TUYỆT ĐỐI KHÔNG sao chép thẻ hình ảnh \`![...](url)\`. Thay vào đó, bạn PHẢI tự động "đọc" nội dung trong ảnh và gõ lại toàn bộ công thức đó bằng mã LaTeX. CHỈ GIỮ LẠI thẻ hình ảnh nếu đó là một biểu đồ, đồ thị, hoặc bức tranh minh họa thực sự.
+- ĐẶC BIỆT VỚI HÓA HỌC: Các công thức hóa học, phương trình phản ứng BẮT BUỘC phải dùng lệnh \`\\ce{...}\` và bọc trong cặp dấu $...$. Ví dụ: \`$\\ce{H2O}$\`, \`$\\ce{Fe + CuSO4 -> FeSO4 + Cu}$\`. TUYỆT ĐỐI không viết trơn như H2O hay Fe + CuSO4.
+- CẤU HÌNH ELECTRON: Tương tự hóa học, bọc trong $...$, ví dụ \`$1s^{2} 2s^{2} 2p^{6}$\`. Với cấu hình thu gọn có ngoặc vuông, TUYỆT ĐỐI KHÔNG thêm gạch chéo ngược cho ngoặc vuông. Viết đúng là: \`$[Ne] 3s^{2} 3p^{5}$\`. KHÔNG viết \`\\[Ne\\]\`.
+- Đối với đơn vị đứng cạnh số, dùng \`\\text{}\` bên trong LaTeX, ví dụ: $100\\text{ V}$.
+- NẾU HÌNH ẢNH LÀ CÔNG THỨC TOÁN/HÓA HỌC: TUYỆT ĐỐI KHÔNG sao chép thẻ hình ảnh \`![...](url)\`. Thay vào đó, bạn PHẢI tự động "đọc" nội dung trong ảnh và gõ lại toàn bộ công thức đó bằng mã LaTeX chuẩn. CHỈ GIỮ LẠI thẻ hình ảnh nếu đó là một biểu đồ, đồ thị, hoặc bức tranh minh họa thực sự.
 - TUYỆT ĐỐI KHÔNG dùng dấu "/" để biểu diễn phân số (VD: không viết 1/2). BẮT BUỘC dùng LaTeX \`\\frac{1}{2}\` cho mọi phân số.
 - Các công thức toán học phải được viết đẹp và chuẩn LaTeX (vd: dùng \`\\sqrt{}\`, \`\\pi\`, \`\\cos\`, \`\\Omega\`, v.v...).
-- QUAN TRỌNG: Trong chuỗi JSON, BẤT KỲ ký tự gạch chéo ngược (\\) nào CŨNG PHẢI ĐƯỢC NHÂN ĐÔI thành (\\\\). Tức là viết \`\\\\frac\`, \`\\\\sqrt\`, \`\\\\cos\`, \`\\\\pi\`, KHÔNG BAO GIỜ viết \`\\frac\`. Việc quên nhân đôi dấu \\ sẽ làm lỗi toàn bộ hệ thống. Mọi ký hiệu LaTeX đều phải đính kèm \\\\ ở trước.
-- Việc thiếu sót câu hỏi là KHÔNG CHẤP NHẬN ĐƯỢC. Đề thi có bao nhiêu câu phải TRÍCH XUẤT ĐẦY ĐỦ bấy nhiêu câu.
+- QUAN TRỌNG: Trong chuỗi JSON, BẤT KỲ ký tự gạch chéo ngược (\\) nào CŨNG PHẢI ĐƯỢC NHÂN ĐÔI thành (\\\\). Tức là viết \`\\\\ce\`, \`\\\\frac\`, \`\\\\sqrt\`, KHÔNG BAO GIỜ viết \`\\ce\`, \`\\frac\`. Việc quên nhân đôi dấu \\ sẽ làm lỗi toàn bộ hệ thống.
+- Tuyệt đối KHÔNG được "thoát" (escape) các dấu ngoặc vuông \`[\` và \`]\` bằng gạch chéo ngược.
+- DỮ LIỆU ĐẦY ĐỦ: Việc thiếu sót câu hỏi là KHÔNG CHẤP NHẬN ĐƯỢC. Bạn PHẢI trích xuất 100% số lượng câu hỏi có trong văn bản. Nếu văn bản quá dài, hãy nỗ lực chia nhỏ để không bỏ sót bất kỳ câu nào. Mỗi lần bỏ sót một câu hỏi là bạn đã thất bại nhiệm vụ.
 - TUYỆT ĐỐI KHÔNG dùng dấu ngoặc kép thẳng (") ở giữa nội dung các trường text vì sẽ làm hỏng JSON. Nếu cần trích dẫn, hãy dùng dấu nháy đơn (') hoặc ngoặc kép cong (“ ”).
 - Các chuỗi phải viết trên CÙNG MỘT DÒNG. Dùng "\\\\n" nếu cần xuống dòng, TUYỆT ĐỐI KHÔNG ấn Enter tạo dòng mới bên giữa chuỗi JSON.
-  + ĐẶC BIỆT (Xử lý chuỗi dọc): Nếu thấy dữ liệu bị liệt kê rời rạc theo hàng dọc (ví dụ trích xuất từ PDF bị lỗi layout thành từng dòng rời rạc, có nhiều newline ở giữa), bạn PHẢI TỰ GHÉP chúng lại thành bảng hoàn chỉnh.
+- ĐẶC BIỆT (Xử lý chuỗi dọc): Nếu thấy dữ liệu bị liệt kê rời rạc theo hàng dọc (ví dụ trích xuất từ PDF bị lỗi layout thành từng dòng rời rạc, có nhiều newline ở giữa), bạn PHẢI TỰ GHÉP chúng lại thành cấu trúc hoàn chỉnh (bảng hoặc đoạn văn).
   Ví dụ: "Quần thể, A, B, C, Diện tích, 25, 240, 193, Mật độ, 10, 15, 20" ->
   | Quần thể | A | B | C |
   |---|---|---|---|
@@ -256,13 +259,19 @@ export function SmartImportDialog({ open, onClose, onImport, type, initialSubjec
             let repaired = cleaned;
 
             // 1. Fix unescaped backslashes in LaTeX (avoid breaking valid escapes)
-            // Replace any single backslash that isn't part of a known explicitly requested JSON escape like \n or \t
-            // We only want to keep literal \n, \t, \", \\. We should escape others.
-            repaired = repaired.replace(/\\(?!["\\/bfnrtu])/g, '\\\\');
+            // Replace any single backslash that isn't part of a known explicitly requested JSON escape
+            // but also avoid replacing already-escaped backslashes.
+            repaired = repaired.replace(/(\\+)(?!["\\/bfnrtu])/g, (match) => {
+                // If it's an odd number of backslashes, add one more
+                return match.length % 2 === 1 ? match + '\\' : match;
+            });
+            
+            // 1.1 Remove AI-generated escaped characters which break KaTeX
+            repaired = repaired.replace(/\\+([\[\]_^])/g, '$1');
             
             // For LaTeX commands that happen to start with n, r, t (like \neq, \rightarrow, \tan)
-            // If they are unescaped, JSON.parse will treat \n as newline, and \neq as <newline>eq.
-            // Instead of trying to regex everything, we must ensure the prompt asks for \\.
+            // We need to specifically escape them if they are not escaped.
+            // This is tricky. The best defense is the prompt.
             
             // 2. Fix unescaped newlines inside strings
             repaired = repaired.replace(/"([^"]*)"/g, (_match, p1) => {

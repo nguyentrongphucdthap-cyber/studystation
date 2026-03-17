@@ -1,5 +1,6 @@
 import React, { useMemo } from 'react';
 import 'katex/dist/katex.min.css';
+import 'katex/dist/contrib/mhchem.min.js';
 import { InlineMath, BlockMath } from 'react-katex';
 
 interface LatexContentProps {
@@ -56,7 +57,7 @@ function convertBareSubSup(text: string): string {
     // Pattern: [\p{L}\p{N}]+ là base, theo sau bởi ít nhất 1 cặp [_^][\p{L}\p{N}]+
     // Cờ `u` bật Unicode property escapes → nhận diện đủ ký tự Unicode/tiếng Việt
     return text.replace(
-        /([\p{L}\p{N}]+)((?:[_^][\p{L}\p{N}]+)+)/gu,
+        /([\p{L}\p{N}[\]]+)((?:[_^][\p{L}\p{N}[\]]+)+)/gu,
         (_match, base: string, rest: string): string => {
             // Base: bọc \text{} nếu có ký tự tiếng Việt / có dấu
             const latexBase = needsTextWrap(base) ? `\\text{${base}}` : base;
