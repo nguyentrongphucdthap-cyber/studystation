@@ -1,4 +1,4 @@
-import { useEffect, useState, useCallback, useRef } from 'react';
+import { useEffect, useState, useCallback, useRef, useMemo } from 'react';
 import { createPortal } from 'react-dom';
 import { useParams, useNavigate } from 'react-router-dom';
 import {
@@ -34,6 +34,8 @@ import {
     Shuffle,
     ChevronUp as ArrowUp,
     List,
+    Target,
+    X,
 } from 'lucide-react';
 
 type ExamMode = 'ready' | 'taking' | 'result';
@@ -75,7 +77,9 @@ export default function PracticeExam() {
     const [shuffledP3, setShuffledP3] = useState<Part3Question[]>([]);
     const [isShuffled, setIsShuffled] = useState(false);
     
-    // Feature: History View & Filters
+    // Feature: Practice Mode (One-by-one)
+    const [isPracticeMode, setIsPracticeMode] = useState(false);
+    const [currentPracticeIdx, setCurrentPracticeIdx] = useState(0);
     const [selectedHistoryId, setSelectedHistoryId] = useState<string | null>(null);
     const [resultFilter, setResultFilter] = useState<'all' | 'correct' | 'incorrect'>('all');
 
@@ -89,6 +93,20 @@ export default function PracticeExam() {
     const [alertState, setAlertState] = useState<{ open: boolean; title: string; message: string; type: 'success' | 'error' | 'info' }>({
         open: false, title: '', message: '', type: 'info',
     });
+    const [showFeedback, setShowFeedback] = useState(false);
+    const [showSidebar, setShowSidebar] = useState(true);
+    const [wrongOptId, setWrongOptId] = useState<number | null>(null);
+    const [wrongSubQId, setWrongSubQId] = useState<string | null>(null);
+    const [wrongPart3, setWrongPart3] = useState(false);
+
+    // Practice Queue
+    const practiceQueue = useMemo(() => {
+        return [
+            ...shuffledP1.map(q => ({ type: 'p1', id: q.id, data: q })),
+            ...shuffledP2.map(q => ({ type: 'p2', id: q.id, data: q })),
+            ...shuffledP3.map(q => ({ type: 'p3', id: q.id, data: q }))
+        ];
+    }, [shuffledP1, shuffledP2, shuffledP3]);
 
     useEffect(() => {
         async function load() {
@@ -120,7 +138,7 @@ export default function PracticeExam() {
 
     // Timer
     useEffect(() => {
-        if (mode === 'taking' && timeLeft > 0) {
+        if (mode === 'taking' && timeLeft > 0 && !isPracticeMode) {
             timerRef.current = setInterval(() => {
                 setTimeLeft((prev) => {
                     if (prev <= 1) {
@@ -264,15 +282,64 @@ export default function PracticeExam() {
     };
 
     const handlePart1Select = (qId: number, optionIdx: number) => {
-        setPart1Answers({ ...part1Answers, [qId]: optionIdx });
+        if (isPracticeMode) {
+            const currentQ = practiceQueue[currentPracticeIdx];
+            if (currentQ?.type === 'p1') {
+                const correctIdx = (currentQ.data as Part1Question).correct;
+                if (optionIdx === correctIdx) {
+                    setPart1Answers({ ...part1Answers, [qId]: optionIdx });
+                    setShowFeedback(true);
+                } else {
+                    setWrongOptId(optionIdx);
+                    setTimeout(() => setWrongOptId(null), 800);
+                }
+            }
+        } else {
+            setPart1Answers({ ...part1Answers, [qId]: optionIdx });
+        }
     };
 
     const handlePart2Select = (qId: number, sqId: string, value: boolean) => {
-        setPart2Answers({ ...part2Answers, [`${qId}-${sqId}`]: value });
+        if (isPracticeMode) {
+            const currentQ = practiceQueue[currentPracticeIdx];
+            if (currentQ?.type === 'p2') {
+                const subQ = (currentQ.data as Part2Question).subQuestions.find(s => s.id === sqId);
+                if (subQ) {
+                    if (value === subQ.correct) {
+                        const newPart2Answers = { ...part2Answers, [`${qId}-${sqId}`]: value };
+                        setPart2Answers(newPart2Answers);
+                        const answeredAll = (currentQ.data as Part2Question).subQuestions.every(sq => newPart2Answers[`${currentQ.id}-${sq.id}`] !== undefined);
+                        if (answeredAll) setShowFeedback(true);
+                    } else {
+                        setWrongSubQId(`${qId}-${sqId}-${value}`);
+                        setTimeout(() => setWrongSubQId(null), 800);
+                    }
+                }
+            }
+        } else {
+            setPart2Answers({ ...part2Answers, [`${qId}-${sqId}`]: value });
+        }
     };
 
     const handlePart3Change = (qId: number, value: string) => {
         setPart3Answers({ ...part3Answers, [qId]: value });
+    };
+    
+    const handlePart3Submit = (_qId: number) => {
+        if (isPracticeMode) {
+            const q = practiceQueue[currentPracticeIdx];
+            if (q?.type === 'p3') {
+                const userAns = (part3Answers[q.id] || '').trim().toLowerCase();
+                const correctAns = (q.data as Part3Question).correct.trim().toLowerCase();
+                if (userAns === correctAns) {
+                    setShowFeedback(true);
+                    setWrongPart3(false);
+                } else {
+                    setWrongPart3(true);
+                    setTimeout(() => setWrongPart3(false), 1500);
+                }
+            }
+        }
     };
 
     const handleSubmit = useCallback(async () => {
@@ -358,6 +425,65 @@ export default function PracticeExam() {
             console.error('[Practice] Save result error:', err);
         }
     }, [exam, part1Answers, part2Answers, part3Answers, user, isGuest]);
+
+    const handleSkip = () => {
+        const q = practiceQueue[currentPracticeIdx];
+        if (!q) return;
+
+        if (q.type === 'p1') {
+            const item = shuffledP1.find(x => x.id === q.id);
+            if (item) setShuffledP1(prev => [...prev.filter(x => x.id !== q.id), item]);
+        } else if (q.type === 'p2') {
+            const item = shuffledP2.find(x => x.id === q.id);
+            if (item) setShuffledP2(prev => [...prev.filter(x => x.id !== q.id), item]);
+        } else if (q.type === 'p3') {
+            const item = shuffledP3.find(x => x.id === q.id);
+            if (item) setShuffledP3(prev => [...prev.filter(x => x.id !== q.id), item]);
+        }
+        setShowFeedback(false);
+    };
+
+    const handleNextPractice = () => {
+        if (!practiceQueue || practiceQueue.length === 0) return;
+        
+        // Find next unanswered question
+        let nextIdx = -1;
+        
+        // Check from current + 1 to end
+        for (let i = currentPracticeIdx + 1; i < practiceQueue.length; i++) {
+            const q = practiceQueue[i];
+            if (!q) continue;
+            const isAnswered = q.type === 'p1' ? part1Answers[q.id] !== undefined :
+                              q.type === 'p2' ? (q.data as Part2Question).subQuestions.every(sq => part2Answers[`${q.id}-${sq.id}`] !== undefined) :
+                              (part3Answers[q.id] || '').trim().length > 0;
+            if (!isAnswered) {
+                nextIdx = i;
+                break;
+            }
+        }
+        
+        // If not found, check from 0 to current
+        if (nextIdx === -1) {
+            for (let i = 0; i < currentPracticeIdx; i++) {
+                const q = practiceQueue[i];
+                if (!q) continue;
+                const isAnswered = q.type === 'p1' ? part1Answers[q.id] !== undefined :
+                                  q.type === 'p2' ? (q.data as Part2Question).subQuestions.every(sq => part2Answers[`${q.id}-${sq.id}`] !== undefined) :
+                                  (part3Answers[q.id] || '').trim().length > 0;
+                if (!isAnswered) {
+                    nextIdx = i;
+                    break;
+                }
+            }
+        }
+
+        if (nextIdx !== -1) {
+            setCurrentPracticeIdx(nextIdx);
+            setShowFeedback(false);
+        } else {
+            handleSubmit();
+        }
+    };
 
     const handleReset = () => {
         setPart1Answers({});
@@ -543,6 +669,23 @@ export default function PracticeExam() {
                                     <RotateCcw className="h-4 w-4 mr-1" />
                                     <span className="hidden sm:inline">Khôi phục</span>
                                 </Button>
+                                <Button 
+                                    variant="ghost" 
+                                    size="sm" 
+                                    onClick={() => {
+                                        setIsPracticeMode(!isPracticeMode);
+                                        setCurrentPracticeIdx(0);
+                                        setShowFeedback(false);
+                                    }}
+                                    title={isPracticeMode ? "Chuyển sang chế độ Cổ điển" : "Chuyển sang chế độ Luyện tập"}
+                                    className={cn(
+                                        "h-8 px-2 transition-all",
+                                        isPracticeMode ? "text-emerald-600 bg-emerald-50" : "text-slate-600 dark:text-slate-400"
+                                    )}
+                                >
+                                    <Target className={cn("h-4 w-4 mr-1", isPracticeMode && "animate-pulse")} />
+                                    <span className="hidden sm:inline">Luyện tập</span>
+                                </Button>
                             </div>
 
                             <div className={cn(
@@ -552,9 +695,20 @@ export default function PracticeExam() {
                                 <Clock className="h-4 w-4" />
                                 {formatTime(timeLeft)}
                             </div>
-                            <Button size="sm" onClick={() => setShowSubmitConfirm(true)} className="hidden sm:flex">
-                                <Send className="h-3.5 w-3.5" /> Nộp bài
-                            </Button>
+                                {isPracticeMode && !showSidebar && (
+                                    <Button 
+                                        variant="ghost" 
+                                        size="sm" 
+                                        onClick={() => setShowSidebar(true)}
+                                        className="h-8 w-8 p-0 rounded-lg text-slate-400 hover:text-primary hover:bg-primary/10 transition-all border border-slate-200"
+                                        title="Hiện mục lục"
+                                    >
+                                        <BookOpen className="h-4 w-4" />
+                                    </Button>
+                                )}
+                                <Button size="sm" onClick={() => setShowSubmitConfirm(true)} className="hidden sm:flex">
+                                    <Send className="h-3.5 w-3.5" /> Nộp bài
+                                </Button>
                         </div>
                     </div>
                 </div>
@@ -562,8 +716,208 @@ export default function PracticeExam() {
                 <div className="flex flex-col gap-6 lg:flex-row lg:items-start">
                     {/* Main Content: Questions */}
                     <div className="flex-1 space-y-8 min-w-0">
-                        {/* Part 1 */}
-                        {shuffledP1.length > 0 && (
+                        {isPracticeMode ? (
+                            <div className="space-y-6">
+                                {(() => {
+                                    const q = practiceQueue[currentPracticeIdx];
+                                    if (!q) return <div className="text-center py-20 text-muted-foreground">Đã hoàn thành tất cả câu hỏi!</div>;
+                                    
+                                    const isCorrect = (() => {
+                                        if (q.type === 'p1') return part1Answers[q.id] === (q.data as Part1Question).correct;
+                                        if (q.type === 'p2') return (q.data as Part2Question).subQuestions.every(sq => part2Answers[`${q.id}-${sq.id}`] === sq.correct);
+                                        if (q.type === 'p3') return (part3Answers[q.id] || '').trim().toLowerCase() === (q.data as Part3Question).correct.trim().toLowerCase();
+                                        return false;
+                                    })();
+
+                                    return (
+                                        <div className="space-y-6 animate-in fade-in slide-in-from-right-4 duration-300">
+                                            {/* Progress bar for Practice Mode */}
+                                            <div className="bg-muted rounded-full h-2 w-full overflow-hidden">
+                                                <div 
+                                                    className="h-full bg-emerald-500 transition-all duration-500" 
+                                                    style={{ width: `${((currentPracticeIdx + 1) / practiceQueue.length) * 100}%` }}
+                                                />
+                                            </div>
+                                            <div className="flex justify-between items-center text-xs font-bold text-muted-foreground uppercase tracking-widest">
+                                                <span>Câu {currentPracticeIdx + 1} / {practiceQueue.length}</span>
+                                                <span className="text-emerald-600">Độ chính xác: {Math.round((correctCount / (answeredQs || 1)) * 100)}%</span>
+                                            </div>
+
+                                            {/* Question Card */}
+                                            <div className="rounded-2xl border border-border bg-card p-6 shadow-lg min-h-[300px] flex flex-col">
+                                                <div className="mb-6 text-lg font-semibold leading-relaxed">
+                                                    <span className={cn(
+                                                        "mr-3 inline-flex h-8 w-8 items-center justify-center rounded-lg text-sm font-bold",
+                                                        q.type === 'p1' ? "bg-blue-100 text-blue-600" : q.type === 'p2' ? "bg-amber-100 text-amber-600" : "bg-violet-100 text-violet-600"
+                                                    )}>
+                                                        {currentPracticeIdx + 1}
+                                                    </span>
+                                                    <LatexContent content={q.data.text} />
+                                                </div>
+
+                                                {q.data.image && (
+                                                    <div className="mb-6 flex justify-center">
+                                                        <img src={q.data.image} alt="" className="max-h-80 rounded-xl object-contain shadow-md" />
+                                                    </div>
+                                                )}
+
+                                                <div className="flex-1">
+                                                    {q.type === 'p1' && (
+                                                        <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
+                                                            {(q.data as Part1Question).options.map((opt, oIdx) => {
+                                                                const isSelected = part1Answers[q.id] === oIdx;
+                                                                const isCorrectOpt = oIdx === (q.data as Part1Question).correct;
+                                                                const isWrongFlash = wrongOptId === oIdx;
+                                                                return (
+                                                                    <button
+                                                                        key={oIdx}
+                                                                        onClick={() => handlePart1Select(q.id, oIdx)}
+                                                                        disabled={showFeedback && isCorrect}
+                                                                        className={cn(
+                                                                            'group flex items-center rounded-xl border-2 p-4 text-left text-sm transition-all duration-200 active:scale-[0.97]',
+                                                                            isSelected
+                                                                                ? (isCorrectOpt ? 'border-emerald-500 bg-emerald-50 text-emerald-900' : 'border-red-500 bg-red-50 text-red-900 animate-shake')
+                                                                                : isWrongFlash
+                                                                                    ? 'border-red-500 bg-red-50 text-red-900 animate-shake'
+                                                                                    : (showFeedback && isCorrect && isCorrectOpt ? 'border-emerald-500 bg-emerald-50/50' : 'border-transparent bg-muted/30 hover:border-blue-300 hover:bg-muted/60')
+                                                                        )}
+                                                                    >
+                                                                        <span className={cn(
+                                                                            'mr-3 flex h-6 w-6 shrink-0 items-center justify-center rounded-md border text-[10px] font-bold transition-all',
+                                                                            isSelected
+                                                                                ? (isCorrectOpt ? 'bg-emerald-500 border-emerald-500 text-white' : 'bg-red-500 border-red-500 text-white')
+                                                                                : isWrongFlash
+                                                                                    ? 'bg-red-500 border-red-500 text-white'
+                                                                                    : 'border-muted-foreground/30 bg-background text-muted-foreground'
+                                                                        )}>
+                                                                            {String.fromCharCode(65 + oIdx)}
+                                                                        </span>
+                                                                        <LatexContent content={opt} />
+                                                                    </button>
+                                                                );
+                                                            })}
+                                                        </div>
+                                                    )}
+
+                                                    {q.type === 'p2' && (
+                                                        <div className="space-y-4">
+                                                            {(q.data as Part2Question).subQuestions.map((sq) => {
+                                                                const key = `${q.id}-${sq.id}`;
+                                                                const userAns = part2Answers[key];
+                                                                return (
+                                                                    <div key={key} className="flex flex-col gap-3 rounded-xl border border-border bg-muted/20 p-4 sm:flex-row sm:items-center">
+                                                                        <div className="flex flex-1 items-start gap-2">
+                                                                            <span className="mt-0.5 text-xs font-black text-amber-600 uppercase">{sq.id})</span>
+                                                                            <LatexContent content={sq.text} className="text-sm leading-relaxed" />
+                                                                        </div>
+                                                                        <div className="flex shrink-0 items-center gap-2">
+                                                                            {[true, false].map((val) => (
+                                                                                <button
+                                                                                    key={val ? 'T' : 'F'}
+                                                                                    onClick={() => handlePart2Select(q.id, sq.id, val)}
+                                                                                    disabled={showFeedback && isCorrect}
+                                                                                    className={cn(
+                                                                                        'flex h-10 w-12 items-center justify-center rounded-lg text-sm font-bold transition-all border-2',
+                                                                                        userAns === val 
+                                                                                            ? (val === sq.correct ? 'bg-emerald-500 border-emerald-500 text-white shadow-md' : 'bg-red-500 border-red-500 text-white shadow-md animate-shake') 
+                                                                                            : wrongSubQId === `${q.id}-${sq.id}-${val}`
+                                                                                                ? 'bg-red-500 border-red-500 text-white shadow-md animate-shake'
+                                                                                                : (showFeedback && isCorrect && val === sq.correct ? 'border-emerald-500 text-emerald-600' : 'bg-background text-muted-foreground border-slate-100')
+                                                                                    )}
+                                                                                >
+                                                                                    {val ? 'Đ' : 'S'}
+                                                                                </button>
+                                                                            ))}
+                                                                        </div>
+                                                                    </div>
+                                                                );
+                                                            })}
+                                                        </div>
+                                                    )}
+
+                                                    {q.type === 'p3' && (
+                                                        <div className="space-y-4">
+                                                            <div className="relative">
+                                                                <input
+                                                                    type="text"
+                                                                    value={part3Answers[q.id] || ''}
+                                                                    onChange={(e) => handlePart3Change(q.id, e.target.value)}
+                                                                    onKeyDown={(e) => e.key === 'Enter' && handlePart3Submit(q.id)}
+                                                                    placeholder="Nhập câu trả lời..."
+                                                                    disabled={showFeedback && isCorrect}
+                                                                    className={cn( // Fixed: Added cn()
+                                                                        "w-full rounded-xl border px-4 py-4 text-base font-medium outline-none transition-all",
+                                                                        wrongPart3 
+                                                                            ? "border-red-500 bg-red-50 text-red-900 animate-shake"
+                                                                            : showFeedback 
+                                                                                ? (isCorrect ? "border-emerald-500 bg-emerald-50 text-emerald-900" : "border-red-500 bg-red-50 text-red-900")
+                                                                                : "border-input bg-background focus:border-violet-500 focus:ring-4 focus:ring-violet-500/10"
+                                                                    )}
+                                                                />
+                                                                {!showFeedback && (
+                                                                    <Button 
+                                                                        size="sm" 
+                                                                        onClick={() => handlePart3Submit(q.id)}
+                                                                        className="absolute right-2 top-2 bottom-2 bg-violet-600 hover:bg-violet-700"
+                                                                    >
+                                                                        Kiểm tra
+                                                                    </Button>
+                                                                )}
+                                                            </div>
+                                                            {showFeedback && !isCorrect && (
+                                                                <p className="text-xs text-red-600 font-bold animate-shake">Chưa chính xác, hãy thử lại!</p>
+                                                            )}
+                                                            {showFeedback && isCorrect && (
+                                                                <div className="p-4 rounded-xl bg-emerald-100 text-emerald-800 text-sm font-bold animate-bounce-in">
+                                                                    ✨ Chính xác! Đáp án là: {(q.data as Part3Question).correct}
+                                                                </div>
+                                                            )}
+                                                        </div>
+                                                    )}
+                                                </div>
+
+                                                {/* Navigation Buttons for Practice Mode */}
+                                                <div className="mt-8 pt-6 border-t flex flex-col sm:flex-row gap-4 justify-between items-center">
+                                                    <Button variant="ghost" className="text-muted-foreground" onClick={handleSkip}>
+                                                        <RotateCcw className="h-4 w-4 mr-2" /> Bỏ qua & làm sau
+                                                    </Button>
+                                                    
+                                                    <div className="flex gap-3 w-full sm:w-auto">
+                                                        {showFeedback && (
+                                                            <Button 
+                                                                className={cn(
+                                                                    "flex-1 sm:w-40 font-bold h-12 rounded-xl transition-all",
+                                                                    isCorrect ? "bg-emerald-600 hover:bg-emerald-700 shadow-emerald-200" : "bg-slate-200 text-slate-500 cursor-not-allowed"
+                                                                )}
+                                                                disabled={!isCorrect}
+                                                                onClick={handleNextPractice}
+                                                            >
+                                                                {currentPracticeIdx === practiceQueue.length - 1 ? 'Xem kết quả' : 'Câu tiếp theo'}
+                                                            </Button>
+                                                        )}
+                                                    </div>
+                                                </div>
+                                            </div>
+
+                                            {/* Explanation (Shown when correct) */}
+                                            {showFeedback && isCorrect && (q.data as any).explanation && (
+                                                <div className="p-6 rounded-2xl bg-blue-50 border border-blue-100 animate-in fade-in zoom-in-95 duration-500">
+                                                    <h5 className="flex items-center gap-2 text-blue-700 font-black text-xs uppercase tracking-widest mb-3">
+                                                        <BookOpen size={16} /> Lời giải chi tiết
+                                                    </h5>
+                                                    <div className="text-sm text-blue-900 leading-relaxed">
+                                                        <LatexContent content={(q.data as any).explanation} />
+                                                    </div>
+                                                </div>
+                                            )}
+                                        </div>
+                                    );
+                                })()}
+                            </div>
+                        ) : (
+                            <>
+                                {/* Part 1 */}
+                                {shuffledP1.length > 0 && (
                             <section>
                                 <div className="mb-4 flex items-center gap-2 border-l-4 border-blue-500 pl-3">
                                     <h3 className="text-xl font-bold">Phần 1: Trắc nghiệm</h3>
@@ -706,14 +1060,26 @@ export default function PracticeExam() {
                                 </div>
                             </section>
                         )}
+                        </>
+                    )}
                     </div>
 
                     {/* Sidebar: Table of Contents — scrolls with user */}
-                    <aside className="hidden w-full shrink-0 lg:block lg:w-[280px] lg:sticky lg:top-[120px] lg:self-start">
-                        <div className="rounded-2xl border border-border bg-card p-5 shadow-lg">
-                            <h4 className="mb-3 flex items-center gap-2 text-sm font-bold uppercase tracking-wider text-muted-foreground">
-                                <BookOpen className="h-4 w-4" /> Mục lục
-                            </h4>
+                    {showSidebar && (
+                        <aside className="hidden w-full shrink-0 lg:block lg:w-[280px] lg:sticky lg:top-[120px] lg:self-start transition-all animate-in slide-in-from-right-4">
+                            <div className="relative rounded-2xl border border-border bg-card p-5 shadow-lg">
+                                <Button 
+                                    variant="ghost" 
+                                    size="icon" 
+                                    className="absolute top-3 right-3 h-8 w-8 text-muted-foreground hover:bg-red-50 hover:text-red-500 rounded-full transition-colors"
+                                    onClick={() => setShowSidebar(false)}
+                                    title="Ẩn mục lục"
+                                >
+                                    <X className="h-4 w-4" />
+                                </Button>
+                                <h4 className="mb-3 flex items-center gap-2 text-sm font-bold uppercase tracking-wider text-muted-foreground">
+                                    <BookOpen className="h-4 w-4" /> Mục lục
+                                </h4>
 
                             {/* Progress summary */}
                             <div className="mb-4 flex gap-2 text-xs">
@@ -736,20 +1102,34 @@ export default function PracticeExam() {
                                             <span className="text-[10px] text-muted-foreground">{p1Answered}/{shuffledP1.length}</span>
                                         </div>
                                         <div className="grid grid-cols-5 gap-1.5">
-                                            {shuffledP1.map((q, idx) => (
-                                                <button
-                                                    key={q.id}
-                                                    onClick={() => scrollToQuestion(`p1-${q.id}`)}
-                                                    className={cn(
-                                                        'flex h-9 items-center justify-center rounded-lg text-xs font-bold transition-all duration-150',
-                                                        part1Answers[q.id] !== undefined
-                                                            ? 'bg-primary text-primary-foreground shadow-sm scale-[0.97]'
-                                                            : 'bg-muted text-muted-foreground hover:bg-accent hover:text-foreground border border-transparent'
-                                                    )}
-                                                >
-                                                    {idx + 1}
-                                                </button>
-                                            ))}
+                                            {shuffledP1.map((q, idx) => {
+                                                const isCurrent = isPracticeMode && practiceQueue[currentPracticeIdx]?.id === q.id && practiceQueue[currentPracticeIdx]?.type === 'p1';
+                                                return (
+                                                    <button
+                                                        key={q.id}
+                                                        onClick={() => {
+                                                            if (isPracticeMode) {
+                                                                const qIdx = practiceQueue.findIndex(x => x.type === 'p1' && x.id === q.id);
+                                                                if (qIdx !== -1) {
+                                                                    setCurrentPracticeIdx(qIdx);
+                                                                    setShowFeedback(false);
+                                                                }
+                                                            } else {
+                                                                scrollToQuestion(`p1-${q.id}`);
+                                                            }
+                                                        }}
+                                                        className={cn(
+                                                            'flex h-9 items-center justify-center rounded-lg text-xs font-bold transition-all duration-150',
+                                                            isCurrent ? 'ring-2 ring-emerald-500 ring-offset-2 z-10' : '',
+                                                            part1Answers[q.id] !== undefined
+                                                                ? 'bg-primary text-primary-foreground shadow-sm scale-[0.97]'
+                                                                : 'bg-muted text-muted-foreground hover:bg-accent hover:text-foreground border border-transparent'
+                                                        )}
+                                                    >
+                                                        {idx + 1}
+                                                    </button>
+                                                );
+                                            })}
                                         </div>
                                     </div>
                                 )}
@@ -764,12 +1144,25 @@ export default function PracticeExam() {
                                             {shuffledP2.map((q, idx) => {
                                                 const isDone = q.subQuestions.every(sq => part2Answers[`${q.id}-${sq.id}`] !== undefined);
                                                 const someDone = q.subQuestions.some(sq => part2Answers[`${q.id}-${sq.id}`] !== undefined);
+                                                const isCurrent = isPracticeMode && practiceQueue[currentPracticeIdx]?.id === q.id && practiceQueue[currentPracticeIdx]?.type === 'p2';
+                                                
                                                 return (
                                                     <button
                                                         key={q.id}
-                                                        onClick={() => scrollToQuestion(`p2-${q.id}`)}
+                                                        onClick={() => {
+                                                            if (isPracticeMode) {
+                                                                const qIdx = practiceQueue.findIndex(x => x.type === 'p2' && x.id === q.id);
+                                                                if (qIdx !== -1) {
+                                                                    setCurrentPracticeIdx(qIdx);
+                                                                    setShowFeedback(false);
+                                                                }
+                                                            } else {
+                                                                scrollToQuestion(`p2-${q.id}`);
+                                                            }
+                                                        }}
                                                         className={cn(
                                                             'flex h-9 items-center justify-center rounded-lg text-xs font-bold transition-all duration-150',
+                                                            isCurrent ? 'ring-2 ring-emerald-500 ring-offset-2 z-10' : '',
                                                             isDone ? 'bg-primary text-primary-foreground shadow-sm scale-[0.97]' :
                                                                 someDone ? 'bg-primary/25 text-primary border border-primary/30' :
                                                                     'bg-muted text-muted-foreground hover:bg-accent border border-transparent'
@@ -791,20 +1184,36 @@ export default function PracticeExam() {
                                             <span className="text-[10px] text-muted-foreground">{p3Answered}/{shuffledP3.length}</span>
                                         </div>
                                         <div className="grid grid-cols-5 gap-1.5">
-                                            {shuffledP3.map((q, idx) => (
-                                                <button
-                                                    key={q.id}
-                                                    onClick={() => scrollToQuestion(`p3-${q.id}`)}
-                                                    className={cn(
-                                                        'flex h-9 items-center justify-center rounded-lg text-xs font-bold transition-all duration-150',
-                                                        (part3Answers[q.id] || '').trim()
-                                                            ? 'bg-primary text-primary-foreground shadow-sm scale-[0.97]'
-                                                            : 'bg-muted text-muted-foreground hover:bg-accent border border-transparent'
-                                                    )}
-                                                >
-                                                    {shuffledP1.length + shuffledP2.length + idx + 1}
-                                                </button>
-                                            ))}
+                                            {shuffledP3.map((q, idx) => {
+                                                const isCurrent = isPracticeMode && practiceQueue[currentPracticeIdx]?.id === q.id && practiceQueue[currentPracticeIdx]?.type === 'p3';
+                                                const answered = (part3Answers[q.id] || '').trim().length > 0;
+                                                
+                                                return (
+                                                    <button
+                                                        key={q.id}
+                                                        onClick={() => {
+                                                            if (isPracticeMode) {
+                                                                const qIdx = practiceQueue.findIndex(x => x.type === 'p3' && x.id === q.id);
+                                                                if (qIdx !== -1) {
+                                                                    setCurrentPracticeIdx(qIdx);
+                                                                    setShowFeedback(false);
+                                                                }
+                                                            } else {
+                                                                scrollToQuestion(`p3-${q.id}`);
+                                                            }
+                                                        }}
+                                                        className={cn(
+                                                            'flex h-9 items-center justify-center rounded-lg text-xs font-bold transition-all duration-150',
+                                                            isCurrent ? 'ring-2 ring-emerald-500 ring-offset-2 z-10' : '',
+                                                            answered
+                                                                ? 'bg-primary text-primary-foreground shadow-sm scale-[0.97]'
+                                                                : 'bg-muted text-muted-foreground hover:bg-accent border border-transparent'
+                                                        )}
+                                                    >
+                                                        {shuffledP1.length + shuffledP2.length + idx + 1}
+                                                    </button>
+                                                );
+                                            })}
                                         </div>
                                     </div>
                                 )}
@@ -817,6 +1226,7 @@ export default function PracticeExam() {
                             </div>
                         </div>
                     </aside>
+                    )}
                 </div>
 
                 <ConfirmDialog
