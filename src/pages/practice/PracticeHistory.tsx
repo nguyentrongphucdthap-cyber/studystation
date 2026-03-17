@@ -118,8 +118,10 @@ export default function PracticeHistoryPage() {
                                     });
 
                                     // Simple path: Straight lines for logic, we can add curves later if path logic is stable.
+                                    const firstPoint = points[0];
+                                    const lastPoint = points[points.length - 1];
                                     const pathD = points.length > 0 ? `M ${points.map(p => `${p.x.toFixed(2)},${p.y.toFixed(2)}`).join(' L ')}` : '';
-                                    const areaD = points.length > 0 ? `${pathD} L ${points[points.length-1].x.toFixed(2)},${height} L ${points[0].x.toFixed(2)},${height} Z` : '';
+                                    const areaD = (pathD && firstPoint && lastPoint) ? `${pathD} L ${lastPoint.x.toFixed(2)},${height} L ${firstPoint.x.toFixed(2)},${height} Z` : '';
 
                                     return (
                                         <svg className="w-full h-full overflow-visible drop-shadow-sm" viewBox={`0 0 ${width} ${height + 20}`}>
