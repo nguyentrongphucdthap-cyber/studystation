@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { getAllExams, createExam, deleteExam, getSubjects } from '@/services/exam.service';
+import { getAllExams, createExam, deleteExam, getSubjects, getExamContent } from '@/services/exam.service';
 import { useToast } from '@/components/ui/Toast';
 import { Spinner } from '@/components/ui/Spinner';
 import { Button } from '@/components/ui/Button';
@@ -12,6 +12,7 @@ import {
 import { SmartImportDialog } from '@/components/admin/SmartImportDialog';
 import { ManualExamDialog } from '@/components/admin/ManualExamDialog';
 import { cn } from '@/lib/utils';
+import { downloadJSON } from '@/lib/exportUtils';
 
 export default function AdminPractice() {
     const navigate = useNavigate();
@@ -104,8 +105,18 @@ export default function AdminPractice() {
         setDeleteTarget(null);
     };
 
-    const handleExportJSON = (_exam: ExamMetadata) => {
-        toast({ title: 'Export', message: 'Đang xây dựng tính năng...', type: 'info' });
+    const handleExportJSON = async (exam: ExamMetadata) => {
+        try {
+            const fullExam = await getExamContent(exam.id, true);
+            if (!fullExam) {
+                toast({ title: 'Lỗi', message: 'Không thể tải nội dung đề thi để export', type: 'error' });
+                return;
+            }
+            downloadJSON(fullExam, `StudyStation_Exam_${exam.id}_${new Date().toISOString().split('T')[0]}`);
+            toast({ title: 'Export hoàn tất', message: `Đã tải xuống file JSON cho đề "${exam.title}"`, type: 'success' });
+        } catch (err) {
+            toast({ title: 'Lỗi Export', message: String(err), type: 'error' });
+        }
     };
 
     if (loading) return <div className="flex justify-center py-10"><Spinner size="md" label="Đang tải..." /></div>;

@@ -9,9 +9,10 @@ import { LatexContent } from '@/components/ui/LatexContent';
 import type { Exam, Part1Question, Part2Question, Part3Question } from '@/types';
 import {
     ArrowLeft, Save, Plus, Trash2, Edit3, Check,
-    ChevronDown, ChevronUp
+    ChevronDown, ChevronUp, Download
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
+import { downloadJSON } from '@/lib/exportUtils';
 
 export default function EditExamPage() {
     const { examId } = useParams<{ examId: string }>();
@@ -69,6 +70,22 @@ export default function EditExamPage() {
             toast({ title: 'Lỗi khi lưu', message: String(err), type: 'error' });
         }
         setSaving(false);
+    };
+
+    const handleExport = () => {
+        if (!exam) return;
+        const exportData = {
+            ...exam,
+            title,
+            time,
+            subjectId,
+            part1,
+            part2,
+            part3,
+            updatedAt: new Date().toISOString()
+        };
+        downloadJSON(exportData, `StudyStation_Exam_${examId}_${new Date().toISOString().split('T')[0]}`);
+        toast({ title: 'Đã xuất file JSON', type: 'success' });
     };
 
     // ---- Part 1 helpers ----
@@ -184,9 +201,14 @@ export default function EditExamPage() {
                         </div>
                     </div>
                 </div>
-                <Button onClick={handleSave} isLoading={saving} className="admin-btn-primary gap-2 px-5 rounded-xl shrink-0">
-                    <Save className="h-4 w-4" /> Lưu tất cả
-                </Button>
+                <div className="flex gap-2 shrink-0">
+                    <Button variant="outline" onClick={handleExport} className="gap-2 px-4 rounded-xl border-slate-200">
+                        <Download className="h-4 w-4" /> Export
+                    </Button>
+                    <Button onClick={handleSave} isLoading={saving} className="admin-btn-primary gap-2 px-5 rounded-xl">
+                        <Save className="h-4 w-4" /> Lưu tất cả
+                    </Button>
+                </div>
             </div>
 
             {/* PART 1 */}

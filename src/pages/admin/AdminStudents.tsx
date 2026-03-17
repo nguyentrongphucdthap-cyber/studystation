@@ -9,10 +9,11 @@ import { cn } from '@/lib/utils';
 import type { AllowedUser, ActivityLog } from '@/types';
 import { 
     Users, Plus, Trash2, Search, Shield, ShieldCheck, User, Tags, Activity, 
-    History as ActivityHistory, Clock, Globe, Filter, UserCheck, LayoutGrid 
+    History as ActivityHistory, Clock, Globe, Filter, UserCheck, LayoutGrid, Download 
 } from 'lucide-react';
 import { formatRelativeActiveTime } from '@/lib/utils';
 import { getUserActivityLogsByEmail, subscribeToOnlineUsersList } from '@/services/auth.service';
+import { downloadCSV } from '@/lib/exportUtils';
 
 const roleOptions = [
     { value: 'user', label: 'Học sinh', icon: User, color: 'bg-blue-100 text-blue-700' },
@@ -88,6 +89,24 @@ export default function AdminStudents() {
         const matchesClass = classFilter === 'all' || (u.classes || []).includes(classFilter);
 
         return matchesSearch && matchesRole && matchesStatus && matchesClass;
+    }).sort((a, b) => {
+        const roleOrder: Record<string, number> = {
+            'admin': 1,
+            'super-admin': 2,
+            'teacher': 3,
+            'user': 4
+        };
+        const priorityA = roleOrder[a.role] || 5;
+        const priorityB = roleOrder[b.role] || 5;
+        
+        if (priorityA !== priorityB) {
+            return priorityA - priorityB;
+        }
+        
+        // Secondary sort by name or email
+        const nameA = (a.name || a.email).toLowerCase();
+        const nameB = (b.name || b.email).toLowerCase();
+        return nameA.localeCompare(nameB);
     });
 
     const handleAdd = async () => {
@@ -138,6 +157,18 @@ export default function AdminStudents() {
         setLoadingLogs(false);
     };
 
+    const handleExportCSV = () => {
+        const exportData = filtered.map(u => ({
+            'Họ và tên': u.name || 'N/A',
+            'Email': u.email,
+            'Quyền': roleOptions.find(r => r.value === u.role)?.label || u.role,
+            'Lớp': (u.classes || []).join(', '),
+            'Hoạt động cuối': u.lastActive ? new Date(u.lastActive).toLocaleString('vi-VN') : 'N/A'
+        }));
+        downloadCSV(exportData, `StudyStation_Students_${new Date().toISOString().split('T')[0]}`);
+        toast({ title: 'Export hoàn tất', message: `Đã xuất ${exportData.length} sinh viên ra file CSV`, type: 'success' });
+    };
+
     if (loading) return <div className="flex justify-center py-10"><Spinner size="md" /></div>;
 
     return (
@@ -158,7 +189,14 @@ export default function AdminStudents() {
                             </p>
                         </div>
                     </div>
-                    <Button onClick={() => setShowAdd(true)} className="admin-btn-primary rounded-xl gap-2 font-bold px-6 py-6 h-auto shadow-indigo-100"><Plus className="h-5 w-5" /> Thêm mới</Button>
+                    <div className="flex gap-2">
+                        <Button variant="outline" onClick={handleExportCSV} className="rounded-xl gap-2 font-bold px-6 py-6 h-auto border-slate-200">
+                            <Download className="h-5 w-5" /> Xuất CSV
+                        </Button>
+                        <Button onClick={() => setShowAdd(true)} className="admin-btn-primary rounded-xl gap-2 font-bold px-6 py-6 h-auto shadow-indigo-100">
+                            <Plus className="h-5 w-5" /> Thêm mới
+                        </Button>
+                    </div>
                 </div>
 
                 {/* Filters Section */}
