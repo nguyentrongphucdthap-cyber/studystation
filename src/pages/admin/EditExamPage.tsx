@@ -41,7 +41,7 @@ export default function EditExamPage() {
     useEffect(() => {
         async function load() {
             if (!examId) return;
-            const data = await getExamContent(examId);
+            const data = await getExamContent(examId, true);
             if (!data) {
                 toast({ title: 'Không tìm thấy đề thi', type: 'error' });
                 navigate('/admin/practice');

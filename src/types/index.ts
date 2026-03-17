@@ -81,6 +81,7 @@ export interface Exam {
     part3?: Part3Question[];
     attemptCount?: number;
     createdAt?: string;
+    updatedAt?: string;
     createdBy?: string;
     examCode?: string;
 }
@@ -92,6 +93,7 @@ export interface ExamMetadata {
     time: number;
     attemptCount?: number;
     createdAt?: string;
+    updatedAt?: string;
     examCode?: string;
     questionCount?: {
         part1: number;

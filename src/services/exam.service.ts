@@ -74,43 +74,47 @@ export async function getAllExams(): Promise<ExamMetadata[]> {
     }
 }
 
-export async function getExamContent(examId: string): Promise<Exam | null> {
-    // 1. Check memory cache
-    if (examContentCache.has(examId)) {
+export async function getExamContent(examId: string, forceRefresh = false): Promise<Exam | null> {
+    // 1. Check memory cache (ONLY if not forcing refresh)
+    if (!forceRefresh && examContentCache.has(examId)) {
         return examContentCache.get(examId) || null;
     }
 
-    // 2. Check localStorage cache
-    try {
-        const cached = localStorage.getItem(`exam_content_${examId}`);
-        if (cached) {
-            const parsed = JSON.parse(cached);
-            // Optional: check version/timestamp here
-            examContentCache.set(examId, parsed);
-            return parsed;
+    // 2. Check localStorage cache (ONLY if not forcing refresh)
+    let cachedExam: Exam | null = null;
+    if (!forceRefresh) {
+        try {
+            const cached = localStorage.getItem(`exam_content_${examId}`);
+            if (cached) {
+                cachedExam = JSON.parse(cached);
+            }
+        } catch (e) {
+            console.warn('[Exam] Cache read failed', e);
         }
-    } catch (e) {
-        console.warn('[Exam] Cache read failed', e);
     }
 
     try {
-        // 3. Try to fetch from exam_contents (New Structure)
+        // 3. Fetch metadata to check for updates OR if we have no cache
+        const metaSnap = await getDoc(doc(db, 'exams', examId));
+        if (!metaSnap.exists()) return null;
+        const meta = metaSnap.data();
+
+        // 4. If we have a cache, check if it's still valid
+        if (cachedExam && meta.updatedAt === cachedExam.updatedAt) {
+            examContentCache.set(examId, cachedExam);
+            return cachedExam;
+        }
+
+        // 5. Cache is missing or stale, fetch full content from exam_contents
         let contentSnap = await getDoc(doc(db, 'exam_contents', examId));
         let examData: Partial<Exam> = {};
 
         if (contentSnap.exists()) {
             examData = contentSnap.data();
-            // Fetch metadata to complete the object
-            const metaSnap = await getDoc(doc(db, 'exams', examId));
-            if (metaSnap.exists()) {
-                const meta = metaSnap.data();
-                examData = { ...meta, ...examData };
-            }
+            examData = { ...meta, ...examData };
         } else {
-            // 4. Fallback to exams collection (Old Structure)
-            const oldSnap = await getDoc(doc(db, 'exams', examId));
-            if (!oldSnap.exists()) return null;
-            examData = oldSnap.data();
+            // Fallback to exams collection (Old Structure - already fetched meta)
+            examData = meta;
         }
 
         const exam: Exam = {
@@ -124,6 +128,7 @@ export async function getExamContent(examId: string): Promise<Exam | null> {
             attemptCount: examData.attemptCount || 0,
             createdAt: examData.createdAt || '',
             createdBy: examData.createdBy || '',
+            updatedAt: examData.updatedAt, // Pass through updatedAt
             examCode: examData.examCode,
         };
 
@@ -202,12 +207,12 @@ export async function updateExam(examId: string, examData: Partial<Exam>): Promi
             if (part1) updatePayload.part1 = part1;
             if (part2) updatePayload.part2 = part2;
             if (part3) updatePayload.part3 = part3;
-
-            updatePayload.questionCount = {
-                part1: part1 ? part1.length : (metadata as any).questionCount?.part1,
-                part2: part2 ? part2.length : (metadata as any).questionCount?.part2,
-                part3: part3 ? part3.length : (metadata as any).questionCount?.part3,
-            };
+            
+            // If any parts are missing from the update, we SHOULD NOT overwrite the whole questionCount object
+            // but Firestore update can't partially update a nested object without dot notation.
+            if (part1) updatePayload['questionCount.part1'] = part1.length;
+            if (part2) updatePayload['questionCount.part2'] = part2.length;
+            if (part3) updatePayload['questionCount.part3'] = part3.length;
         }
         batch.update(metaRef, updatePayload);
     }
