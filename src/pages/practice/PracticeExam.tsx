@@ -395,6 +395,25 @@ export default function PracticeExam() {
             await logPracticeAttempt(exam.id, exam.title, exam.subjectId, 'classic', dur);
             if (!isGuest && user) {
                 const newAttemptId = crypto.randomUUID(); // Fallback ID for local optimism
+                // Map shuffled answers back to original indices for database consistency
+                const unshuffledP1: Record<number, number> = {};
+                if (exam.part1) {
+                    Object.entries(part1Answers).forEach(([qIdStr, ansIdx]) => {
+                        const qId = parseInt(qIdStr);
+                        const shuffledQ = shuffledP1.find(q => q.id === qId);
+                        const originalQ = exam.part1?.find(q => q.id === qId);
+                        if (shuffledQ && originalQ && ansIdx !== undefined) {
+                            const selectedText = shuffledQ.options[ansIdx];
+                            if (selectedText) {
+                                const originalIdx = originalQ.options.indexOf(selectedText);
+                                if (originalIdx !== -1) {
+                                    unshuffledP1[qId] = originalIdx;
+                                }
+                            }
+                        }
+                    });
+                }
+
                 await savePracticeResult({
                     examId: exam.id,
                     examTitle: exam.title,
@@ -403,7 +422,7 @@ export default function PracticeExam() {
                     correctCount: correct,
                     totalQuestions: total,
                     durationSeconds: dur,
-                    answers: { part1: part1Answers, part2: part2Answers, part3: part3Answers },
+                    answers: { part1: unshuffledP1, part2: part2Answers, part3: part3Answers },
                 });
                 
                 // Optimistically update local examHistory so it instantly appears on chart
@@ -417,7 +436,7 @@ export default function PracticeExam() {
                     correctCount: correct,
                     totalQuestions: total,
                     durationSeconds: dur,
-                    answers: { part1: part1Answers, part2: part2Answers, part3: part3Answers },
+                    answers: { part1: unshuffledP1, part2: part2Answers, part3: part3Answers },
                     timestamp: new Date().toISOString()
                 }, ...prev]);
             }
@@ -1647,7 +1666,7 @@ export default function PracticeExam() {
 
                 <div className="space-y-3">
                     {/* Part 1 review */}
-                    {exam.part1?.map((q) => {
+                    {(selectedHistoryId ? (exam.part1 || []) : shuffledP1).map((q: Part1Question, idx) => {
                         const userAns = displayPart1Answers[q.id];
                         const answered = userAns !== undefined;
                         const isCorrect = answered && userAns === q.correct;
@@ -1670,7 +1689,7 @@ export default function PracticeExam() {
                                             {isCorrect ? <CheckCircle size={16} /> : !answered ? <MinusCircle size={16} /> : <XCircle size={16} />}
                                         </div>
                                         <div>
-                                            <span className="text-xs font-bold text-gray-400 uppercase tracking-widest">Câu {q.id} (Trắc nghiệm)</span>
+                                            <span className="text-xs font-bold text-gray-400 uppercase tracking-widest">Câu {idx + 1} (Trắc nghiệm)</span>
                                             <p className="text-sm font-semibold text-gray-700 line-clamp-1">{q.text}</p>
                                         </div>
                                     </div>
@@ -1712,7 +1731,7 @@ export default function PracticeExam() {
                     })}
 
                     {/* Part 2 rewrite similarly ... but it's long, I will simplify if needed */}
-                    {exam.part2?.map((q) => {
+                    {(selectedHistoryId ? (exam.part2 || []) : shuffledP2).map((q: Part2Question, idx) => {
                         const isExpanded = expandedResults[`p2-${q.id}`];
                         const subResults = q.subQuestions.map(sq => {
                             const key = `${q.id}-${sq.id}`;
@@ -1739,7 +1758,7 @@ export default function PracticeExam() {
                                             {allCorrect ? <CheckCircle size={16} /> : someIncorrect ? <XCircle size={16} /> : <MinusCircle size={16} />}
                                         </div>
                                         <div>
-                                            <span className="text-xs font-bold text-gray-400 uppercase tracking-widest">Câu {q.id} (Đúng/Sai)</span>
+                                            <span className="text-xs font-bold text-gray-400 uppercase tracking-widest">Câu {shuffledP1.length + idx + 1} (Đúng/Sai)</span>
                                             <p className="text-sm font-semibold text-gray-700 line-clamp-1">{q.text}</p>
                                         </div>
                                     </div>
@@ -1789,7 +1808,7 @@ export default function PracticeExam() {
                     })}
 
                     {/* Part 3 review */}
-                    {exam.part3?.map((q) => {
+                    {(selectedHistoryId ? (exam.part3 || []) : shuffledP3).map((q: Part3Question, idx) => {
                         const userAnsRaw = displayPart3Answers[q.id] || '';
                         const userAns = userAnsRaw.trim().toLowerCase();
                         const correctAns = q.correct.trim().toLowerCase();
@@ -1814,7 +1833,7 @@ export default function PracticeExam() {
                                             {isCorrect ? <CheckCircle size={16} /> : !answered ? <MinusCircle size={16} /> : <XCircle size={16} />}
                                         </div>
                                         <div>
-                                            <span className="text-xs font-bold text-gray-400 uppercase tracking-widest">Câu {q.id} (Trả lời ngắn)</span>
+                                            <span className="text-xs font-bold text-gray-400 uppercase tracking-widest">Câu {shuffledP1.length + shuffledP2.length + idx + 1} (Trả lời ngắn)</span>
                                             <p className="text-sm font-semibold text-gray-700 line-clamp-1">{q.text}</p>
                                         </div>
                                     </div>
