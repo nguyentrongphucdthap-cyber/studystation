@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
-import { getExamContent, updateExam, getSubjects } from '@/services/exam.service';
+import { createExam, getExamContent, updateExam, getSubjects } from '@/services/exam.service';
 import { useToast } from '@/components/ui/Toast';
 import { Spinner } from '@/components/ui/Spinner';
 import { Button } from '@/components/ui/Button';
@@ -9,7 +9,7 @@ import { LatexContent } from '@/components/ui/LatexContent';
 import type { Exam, Part1Question, Part2Question, Part3Question } from '@/types';
 import {
     ArrowLeft, Save, Plus, Trash2, Edit3, Check,
-    ChevronDown, ChevronUp, Download
+    ChevronDown, ChevronUp, Download, Copy, Search as SearchIcon
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { downloadJSON } from '@/lib/exportUtils';
@@ -33,6 +33,12 @@ export default function EditExamPage() {
 
     // Track which question is being edited
     const [editingQ, setEditingQ] = useState<{ part: number; id: number } | null>(null);
+
+    // Search state
+    const [searchTerm, setSearchTerm] = useState('');
+
+    // Duplicate state
+    const [duplicating, setDuplicating] = useState(false);
 
     // Collapse sections
     const [collapsed, setCollapsed] = useState<Record<string, boolean>>({});
@@ -86,6 +92,26 @@ export default function EditExamPage() {
         };
         downloadJSON(exportData, `StudyStation_Exam_${examId}_${new Date().toISOString().split('T')[0]}`);
         toast({ title: 'Đã xuất file JSON', type: 'success' });
+    };
+
+    const handleDuplicate = async () => {
+        if (!exam) return;
+        setDuplicating(true);
+        try {
+            const newExamId = await createExam({
+                title: `${title} (Bản sao)`,
+                time,
+                subjectId,
+                part1,
+                part2,
+                part3,
+            });
+            toast({ title: 'Đã tạo bản sao thành công!', type: 'success' });
+            navigate(`/admin/practice/edit/${newExamId}`);
+        } catch (err) {
+            toast({ title: 'Lỗi khi tạo bản sao', message: String(err), type: 'error' });
+        }
+        setDuplicating(false);
     };
 
     // ---- Part 1 helpers ----
@@ -201,7 +227,20 @@ export default function EditExamPage() {
                         </div>
                     </div>
                 </div>
+                <div className="flex-1 max-w-sm relative px-2">
+                    <SearchIcon className="absolute left-5 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-400" />
+                    <input
+                        type="text"
+                        value={searchTerm}
+                        onChange={e => setSearchTerm(e.target.value)}
+                        placeholder="Tìm câu hỏi / đáp án..."
+                        className="w-full bg-slate-50 dark:bg-slate-800 border-none rounded-xl py-2 pl-10 pr-4 text-sm outline-none focus:ring-2 focus:ring-indigo-500/50"
+                    />
+                </div>
                 <div className="flex gap-2 shrink-0">
+                    <Button variant="outline" onClick={handleDuplicate} isLoading={duplicating} className="gap-2 px-4 rounded-xl border-slate-200">
+                        <Copy className="h-4 w-4" /> Tạo bản sao
+                    </Button>
                     <Button variant="outline" onClick={handleExport} className="gap-2 px-4 rounded-xl border-slate-200">
                         <Download className="h-4 w-4" /> Export
                     </Button>
@@ -239,12 +278,20 @@ export default function EditExamPage() {
                         {part1.length === 0 && (
                             <p className="py-8 text-center text-sm text-slate-400 italic">Chưa có câu hỏi — nhấn "Thêm câu" để bắt đầu</p>
                         )}
-                        {part1.map((q, idx) => (
+                        {part1
+                            .map((q: Part1Question, rawIdx: number) => ({ q, originalIdx: rawIdx }))
+                            .filter(({ q }: { q: Part1Question }) => {
+                                if (!searchTerm.trim()) return true;
+                                const s = searchTerm.toLowerCase();
+                                return q.text.toLowerCase().includes(s) || 
+                                       q.options.some((opt: string) => opt.toLowerCase().includes(s));
+                            })
+                            .map(({ q, originalIdx }: { q: Part1Question, originalIdx: number }) => (
                             <div key={q.id} className="p-4">
                                 {/* Question header row */}
                                 <div className="flex items-start gap-2 mb-2">
                                     <span className="shrink-0 w-7 h-7 rounded-lg bg-blue-100 dark:bg-blue-900/30 text-blue-700 dark:text-blue-300 flex items-center justify-center text-xs font-bold mt-0.5">
-                                        {idx + 1}
+                                        {originalIdx + 1}
                                     </span>
                                     <div className="flex-1 min-w-0">
                                         {isEditingQ(1, q.id) ? (
@@ -359,6 +406,12 @@ export default function EditExamPage() {
                                 )}
                             </div>
                         ))}
+                        {searchTerm.trim() && part1.length > 0 && part1.filter((q: Part1Question) => {
+                            const s = searchTerm.toLowerCase();
+                            return q.text.toLowerCase().includes(s) || q.options.some((opt: string) => opt.toLowerCase().includes(s));
+                        }).length === 0 && (
+                            <p className="py-12 text-center text-sm text-slate-400 italic bg-slate-50/30">Không tìm thấy câu hỏi phù hợp trong Phần 1</p>
+                        )}
                     </div>
                 )}
             </div>
@@ -391,11 +444,19 @@ export default function EditExamPage() {
                         {part2.length === 0 && (
                             <p className="py-8 text-center text-sm text-slate-400 italic">Chưa có câu hỏi</p>
                         )}
-                        {part2.map((q, idx) => (
+                        {part2
+                            .map((q: Part2Question, rawIdx: number) => ({ q, originalIdx: (part1.length) + rawIdx }))
+                            .filter(({ q }: { q: Part2Question }) => {
+                                if (!searchTerm.trim()) return true;
+                                const s = searchTerm.toLowerCase();
+                                return q.text.toLowerCase().includes(s) || 
+                                       q.subQuestions.some((sq: any) => sq.text.toLowerCase().includes(s));
+                            })
+                            .map(({ q, originalIdx }: { q: Part2Question, originalIdx: number }) => (
                             <div key={q.id} className="p-4">
                                 <div className="flex items-start gap-2 mb-3">
                                     <span className="shrink-0 w-7 h-7 rounded-lg bg-teal-100 dark:bg-teal-900/30 text-teal-700 dark:text-teal-300 flex items-center justify-center text-xs font-bold mt-0.5">
-                                        {(part1.length) + idx + 1}
+                                        {originalIdx + 1}
                                     </span>
                                     <div className="flex-1 min-w-0">
                                         {isEditingQ(2, q.id) ? (
@@ -502,11 +563,19 @@ export default function EditExamPage() {
                         {part3.length === 0 && (
                             <p className="py-8 text-center text-sm text-slate-400 italic">Chưa có câu hỏi</p>
                         )}
-                        {part3.map((q, idx) => (
+                        {part3
+                            .map((q: Part3Question, rawIdx: number) => ({ q, originalIdx: part1.length + part2.length + rawIdx }))
+                            .filter(({ q }: { q: Part3Question }) => {
+                                if (!searchTerm.trim()) return true;
+                                const s = searchTerm.toLowerCase();
+                                return q.text.toLowerCase().includes(s) || 
+                                       q.correct.toLowerCase().includes(s);
+                            })
+                            .map(({ q, originalIdx }: { q: Part3Question, originalIdx: number }) => (
                             <div key={q.id} className="p-4">
                                 <div className="flex items-start gap-2">
                                     <span className="shrink-0 w-7 h-7 rounded-lg bg-violet-100 dark:bg-violet-900/30 text-violet-700 dark:text-violet-300 flex items-center justify-center text-xs font-bold mt-0.5">
-                                        {part1.length + part2.length + idx + 1}
+                                        {originalIdx + 1}
                                     </span>
                                     <div className="flex-1 min-w-0 space-y-3">
                                         {isEditingQ(3, q.id) ? (
