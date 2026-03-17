@@ -90,6 +90,15 @@ export default function AdminStudents() {
 
         return matchesSearch && matchesRole && matchesStatus && matchesClass;
     }).sort((a, b) => {
+        // 1. Primary Sort: Class (ascending, empty/admins first)
+        const classA = (a.classes || [])[0] || "";
+        const classB = (b.classes || [])[0] || "";
+        
+        if (classA !== classB) {
+            return classA.localeCompare(classB);
+        }
+
+        // 2. Secondary Sort: Role Hierarchy
         const roleOrder: Record<string, number> = {
             'admin': 1,
             'super-admin': 2,
@@ -103,7 +112,7 @@ export default function AdminStudents() {
             return priorityA - priorityB;
         }
         
-        // Secondary sort by name or email
+        // 3. Tertiary Sort: Name or Email
         const nameA = (a.name || a.email).toLowerCase();
         const nameB = (b.name || b.email).toLowerCase();
         return nameA.localeCompare(nameB);
