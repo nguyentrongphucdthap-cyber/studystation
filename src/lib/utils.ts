@@ -20,6 +20,16 @@ export function generateSessionId(): string {
     return `${Date.now()}_${Math.random().toString(36).substring(2, 9)}`;
 }
 
+/** Generate a random alphanumeric string */
+export function generateRandomId(length: number = 6): string {
+    const chars = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789';
+    let result = '';
+    for (let i = 0; i < length; i++) {
+        result += chars.charAt(Math.floor(Math.random() * chars.length));
+    }
+    return result;
+}
+
 /** Format datetime to Vietnam timezone (UTC+7) */
 export function formatVietnamTime(date: Date | string): string {
     const d = typeof date === 'string' ? new Date(date) : date;

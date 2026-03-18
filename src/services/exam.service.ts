@@ -18,6 +18,7 @@ import {
 } from 'firebase/firestore';
 import { auth, db } from '@/config/firebase';
 import type { Exam, ExamMetadata, PracticeLog, PracticeHistory, HighestScores } from '@/types';
+import { generateRandomId } from '@/lib/utils';
 
 // ============================================================
 // CACHING
@@ -145,12 +146,20 @@ export async function getExamContent(examId: string, forceRefresh = false): Prom
 
 export async function createExam(examData: Omit<Exam, 'id'>, customId?: string): Promise<string> {
     // 1. Generate ID
-    let examId = customId;
-    if (!examId) {
-        const existingExams = await getAllExams();
-        const subjectExams = existingExams.filter((e) => e.subjectId === examData.subjectId);
-        const nextNum = (subjectExams.length + 1).toString().padStart(3, '0');
-        examId = `${examData.subjectId}-${nextNum}`;
+    const existingExams = await getAllExams();
+    let examId = '';
+    
+    if (customId) {
+        examId = customId;
+    } else {
+        let isUnique = false;
+        while (!isUnique) {
+            const newId = generateRandomId(6);
+            if (!existingExams.some((e) => e.id === newId)) {
+                examId = newId;
+                isUnique = true;
+            }
+        }
     }
 
     const { part1, part2, part3, ...metadata } = examData;
