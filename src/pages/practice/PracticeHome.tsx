@@ -206,7 +206,7 @@ export default function PracticeHome() {
                     <p className="text-gray-400 font-medium">Không tìm thấy đề thi nào khớp với từ khóa.</p>
                 </div>
             ) : (
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4 md:gap-5">
                     {filteredExams.map((exam) => {
                         const totalQ = (exam.questionCount?.part1 || 0) +
                             (exam.questionCount?.part2 || 0) +
@@ -217,24 +217,24 @@ export default function PracticeHome() {
                             <button
                                 key={exam.id}
                                 onClick={() => navigate(`/practice/${exam.id}`)}
-                                className="group relative bg-white/85 backdrop-blur-md p-6 rounded-[24px] border border-white/70 shadow-card hover:shadow-card-hover hover:-translate-y-1 transition-all duration-500 text-left flex flex-col justify-between active:scale-[0.98]"
+                                className="group relative bg-white/85 backdrop-blur-md p-5 rounded-[22px] border border-white/70 shadow-card hover:shadow-card-hover hover:-translate-y-1 transition-all duration-500 text-left flex flex-col justify-between active:scale-[0.98]"
                             >
-                                <div className="space-y-3">
-                                    <h3 className="text-lg font-extrabold text-gray-800 line-clamp-2 group-hover:text-blue-600 transition-colors tracking-tight leading-snug">
+                                <div className="space-y-4">
+                                    <h3 className="text-base font-extrabold text-gray-800 line-clamp-2 group-hover:text-blue-600 transition-colors tracking-tight leading-snug">
                                         {exam.title}
                                     </h3>
-                                    <div className="flex flex-wrap items-center gap-4 text-[12px] text-gray-500 font-bold uppercase tracking-wider">
-                                        <span className="flex items-center gap-1.5 opacity-70"><Clock className="h-3.5 w-3.5" /> {exam.time}'</span>
-                                        <span className="flex items-center gap-1.5 opacity-70"><Book className="h-3.5 w-3.5" /> {totalQ} CHƯƠNG</span>
-                                        <span className="flex items-center gap-1.5 opacity-70">{exam.attemptCount || 0} LƯỢT</span>
+                                    <div className="flex flex-wrap items-center gap-3 text-[10px] text-gray-400 font-black uppercase tracking-widest">
+                                        <span className="flex items-center gap-1"><Clock className="h-3 w-3" /> {exam.time}'</span>
+                                        <span className="flex items-center gap-1"><Book className="h-3 w-3" /> {totalQ} CHƯƠNG</span>
+                                        <span className="flex items-center gap-1">{exam.attemptCount || 0} LƯỢT</span>
                                     </div>
                                 </div>
 
                                 {highScore && typeof highScore.highestScore === 'number' && !isNaN(highScore.highestScore) && (
-                                    <div className="mt-6 flex items-center justify-between border-t border-gray-100/50 pt-4">
-                                        <span className="text-[10px] text-gray-400 font-extrabold uppercase tracking-widest">Best Score</span>
-                                        <div className="flex items-center gap-2 text-[13px] font-black text-amber-600 bg-amber-50/50 px-3 py-1 rounded-xl border border-amber-100/50 shadow-sm">
-                                            <Trophy className="h-3.5 w-3.5" /> {highScore.highestScore.toFixed(1)} / 10
+                                    <div className="mt-4 flex items-center justify-between border-t border-gray-100/50 pt-3">
+                                        <span className="text-[9px] text-gray-400 font-extrabold uppercase tracking-widest">Best</span>
+                                        <div className="flex items-center gap-1.5 text-[11px] font-black text-amber-600 bg-amber-50/50 px-2 py-0.5 rounded-lg border border-amber-100/30 shadow-sm">
+                                            <Trophy className="h-3 w-3" /> {highScore.highestScore.toFixed(1)} / 10
                                         </div>
                                     </div>
                                 )}
