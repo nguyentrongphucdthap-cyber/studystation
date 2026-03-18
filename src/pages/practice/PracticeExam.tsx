@@ -656,7 +656,6 @@ export default function PracticeExam() {
 
         const totalQs = shuffledP1.length + (shuffledP2.reduce((acc, q) => acc + q.subQuestions.length, 0)) + shuffledP3.length;
         const answeredQs = p1Answered + p2Answered + p3Answered;
-        const completionPercent = totalQs > 0 ? Math.round((answeredQs / totalQs) * 100) : 0;
 
         const isTimeLow = timeLeft < 300;
 
@@ -1260,8 +1259,6 @@ export default function PracticeExam() {
                                     style={{ backgroundColor: settings.accentColor }}
                                 >
                                     <span className="text-white font-black text-sm">{answeredQs}/{totalQs}</span>
-                                    <div className="h-4 w-px bg-white/30" />
-                                    <span className="text-white/90 font-bold text-[11px]">{completionPercent}%</span>
                                 </div>
 
                                 {/* Timer Section */}
