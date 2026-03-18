@@ -265,7 +265,7 @@ export default function PracticeHome() {
                                 key={exam.id}
                                 onClick={() => navigate(`/practice/${exam.id}`)}
                                 className={cn(
-                                    "group relative bg-white/80 backdrop-blur-xl rounded-[28px] p-4.5 border transition-all duration-500 text-left flex flex-col justify-between active:scale-[0.97] overflow-hidden hover:shadow-2xl hover:-translate-y-1.5 hover:ring-4",
+                                    "group relative bg-white/80 backdrop-blur-xl rounded-[32px] p-6 border transition-all duration-500 text-left flex flex-col justify-between active:scale-[0.97] overflow-hidden hover:shadow-2xl hover:-translate-y-2 hover:ring-4",
                                     style.border,
                                     style.ring,
                                     style.shadow
@@ -279,39 +279,39 @@ export default function PracticeHome() {
 
                                 {/* Fixed Background Accent Glow */}
                                 <div className={cn(
-                                    "absolute top-0 right-0 w-24 h-24 -mr-12 -mt-12 rounded-full opacity-[0.06] group-hover:opacity-[0.15] transition-all duration-700 blur-2xl",
+                                    "absolute top-0 right-0 w-28 h-28 -mr-14 -mt-14 rounded-full opacity-[0.08] group-hover:opacity-[0.2] transition-all duration-700 blur-3xl",
                                     style.accent
                                 )} />
 
-                                <div className="relative space-y-4">
-                                    <div className="flex justify-between items-start gap-3">
-                                        <h3 className="text-[14.5px] font-extrabold text-gray-800 line-clamp-2 leading-snug pr-6 group-hover:text-gray-950 transition-colors tracking-tight">
+                                <div className="relative space-y-5">
+                                    <div className="flex justify-between items-start gap-4">
+                                        <h3 className="text-[15px] font-extrabold text-gray-800 line-clamp-2 leading-tight pr-10 group-hover:text-gray-950 transition-colors tracking-tight">
                                             {exam.title}
                                         </h3>
                                         {highScore !== undefined && !isNaN(highScore) && (
                                             <div className={cn(
-                                                "shrink-0 w-11 h-11 rounded-2xl flex flex-col items-center justify-center border-2 shadow-sm transition-transform group-hover:scale-110 duration-500",
+                                                "shrink-0 w-14 h-14 rounded-[22px] flex flex-col items-center justify-center border-2 shadow-sm transition-all group-hover:scale-110 group-hover:rotate-3 duration-500",
                                                 style.badge
                                             )}>
-                                                <span className="text-[14px] font-black leading-none">
+                                                <span className="text-[18px] font-black leading-none tracking-tighter">
                                                     {highScore.toFixed(highScore === 10 ? 0 : 1)}
                                                 </span>
-                                                <span className="text-[7px] font-black opacity-40 uppercase tracking-tighter mt-0.5">Score</span>
+                                                <span className="text-[8px] font-black opacity-40 uppercase tracking-widest mt-1">Score</span>
                                             </div>
                                         )}
                                     </div>
 
-                                    <div className="flex flex-wrap items-center gap-2.5">
-                                        <div className="flex items-center gap-1.5 px-2 py-1 bg-gray-50/50 rounded-xl text-[9.5px] text-gray-500 font-black tracking-tight border border-gray-100/50 shadow-sm group-hover:bg-white transition-colors">
-                                            <Clock className="h-3 w-3 opacity-50 text-blue-500" />
+                                    <div className="flex flex-wrap items-center gap-3">
+                                        <div className="flex items-center gap-2 px-2.5 py-1.5 bg-gray-50/50 rounded-xl text-[10px] text-gray-500 font-black tracking-tight border border-gray-100/50 shadow-sm group-hover:bg-white transition-colors">
+                                            <Clock className="h-3.5 w-3.5 opacity-50 text-blue-500" />
                                             {exam.time}'
                                         </div>
-                                        <div className="flex items-center gap-1.5 px-2 py-1 bg-gray-50/50 rounded-xl text-[9.5px] text-gray-500 font-black tracking-tight border border-gray-100/50 shadow-sm group-hover:bg-white transition-colors">
-                                            <Book className="h-3 w-3 opacity-50 text-emerald-500" />
+                                        <div className="flex items-center gap-2 px-2.5 py-1.5 bg-gray-50/50 rounded-xl text-[10px] text-gray-500 font-black tracking-tight border border-gray-100/50 shadow-sm group-hover:bg-white transition-colors">
+                                            <Book className="h-3.5 w-3.5 opacity-50 text-emerald-500" />
                                             {totalQ} Q
                                         </div>
-                                        <div className="flex items-center gap-1.5 px-2 py-1 bg-gray-50/50 rounded-xl text-[9.5px] text-gray-400 font-black tracking-tight border border-gray-100/50 ml-auto group-hover:bg-white transition-colors">
-                                            <Users className="h-3 w-3 opacity-40" />
+                                        <div className="flex items-center gap-2 px-2.5 py-1.5 bg-gray-50/50 rounded-xl text-[10px] text-gray-400 font-black tracking-tight border border-gray-100/50 ml-auto group-hover:bg-white transition-colors">
+                                            <Users className="h-3.5 w-3.5 opacity-40" />
                                             {exam.attemptCount || 0}
                                         </div>
                                     </div>
