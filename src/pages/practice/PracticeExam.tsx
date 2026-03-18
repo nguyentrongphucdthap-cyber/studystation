@@ -11,6 +11,7 @@ import {
 import { logUserActivity } from '@/services/auth.service';
 import { useAuth } from '@/contexts/AuthContext';
 import { useTheme } from '@/contexts/ThemeContext';
+import { useUI } from '@/contexts/UIContext';
 import { cn, formatTime } from '@/lib/utils';
 import { Spinner } from '@/components/ui/Spinner';
 import { Button } from '@/components/ui/Button';
@@ -36,6 +37,7 @@ import {
     List,
     Target,
     X,
+    Settings,
 } from 'lucide-react';
 
 type ExamMode = 'ready' | 'taking' | 'result';
@@ -45,6 +47,7 @@ export default function PracticeExam() {
     const navigate = useNavigate();
     const { user, isGuest } = useAuth();
     const { settings } = useTheme();
+    const { setTakingExam, setHubForcedVisible } = useUI();
 
     const [exam, setExam] = useState<Exam | null>(null);
     const [loading, setLoading] = useState(true);
@@ -98,6 +101,8 @@ export default function PracticeExam() {
     const [wrongOptId, setWrongOptId] = useState<number | null>(null);
     const [wrongSubQId, setWrongSubQId] = useState<string | null>(null);
     const [wrongPart3, setWrongPart3] = useState(false);
+    const [showActionMenu, setShowActionMenu] = useState(false);
+    const actionMenuRef = useRef<HTMLDivElement>(null);
 
     // Practice Queue
     const practiceQueue = useMemo(() => {
@@ -151,6 +156,17 @@ export default function PracticeExam() {
             }, 1000);
         }
         return () => clearInterval(timerRef.current);
+    }, [mode, timeLeft, isPracticeMode]);
+
+    // Update global UI state when entering/leaving exam
+    useEffect(() => {
+        if (mode === 'taking') {
+            setTakingExam(true);
+            setHubForcedVisible(false); // Reset manual override on new exam
+        } else {
+            setTakingExam(false);
+        }
+        return () => setTakingExam(false);
     }, [mode]);
 
     useEffect(() => {
@@ -181,6 +197,19 @@ export default function PracticeExam() {
         window.addEventListener('scroll', handleScroll, { passive: true });
         return () => window.removeEventListener('scroll', handleScroll);
     }, [lastScrollY]);
+
+    // Close action menu on click outside
+    useEffect(() => {
+        const handleClickOutside = (event: MouseEvent) => {
+            if (actionMenuRef.current && !actionMenuRef.current.contains(event.target as Node)) {
+                setShowActionMenu(false);
+            }
+        };
+        if (showActionMenu) {
+            document.addEventListener('mousedown', handleClickOutside);
+        }
+        return () => document.removeEventListener('mousedown', handleClickOutside);
+    }, [showActionMenu]);
 
     const handleStart = () => {
         setMode('taking');
@@ -647,13 +676,13 @@ export default function PracticeExam() {
         return (
             <div className="mx-auto w-full px-4 lg:px-8">
                 {/* Timer header */}
-                <div className="sticky top-16 z-30 -mx-4 mb-6 border-b border-border bg-background/95 px-4 py-3 backdrop-blur-sm lg:-mx-8 lg:px-8">
+                <div className="sticky top-14 md:top-16 z-30 -mx-4 mb-4 md:mb-6 border-b border-border bg-background/95 px-3 md:px-4 py-2 md:py-3 backdrop-blur-sm lg:-mx-8 lg:px-8">
                     <div className="flex items-center justify-between">
-                        <div className="flex items-center gap-4">
-                            <button onClick={() => setShowSubmitConfirm(true)} className="p-1 hover:bg-muted rounded-full transition-colors">
-                                <ArrowLeft className="h-5 w-5" />
+                        <div className="flex items-center gap-2 md:gap-4">
+                            <button onClick={() => setShowSubmitConfirm(true)} className="p-1.5 hover:bg-muted rounded-full transition-colors active:scale-95">
+                                <ArrowLeft className="h-4 w-4 md:h-5 md:h-5" />
                             </button>
-                            <h2 className="text-sm font-bold truncate max-w-[150px] sm:max-w-none lg:text-base flex items-center gap-2">
+                            <h2 className="text-xs sm:text-sm font-bold truncate max-w-[120px] sm:max-w-[300px] lg:text-base flex items-center gap-1 md:gap-2">
                                 {exam.title}
                                 {isShuffled && (
                                     <span 
@@ -666,52 +695,11 @@ export default function PracticeExam() {
                             </h2>
                         </div>
                         <div className="flex items-center gap-3">
-                            {/* Shuffle/Reset Buttons */}
-                            <div className="flex bg-slate-100 dark:bg-slate-800 rounded-lg p-1 border border-slate-200">
-                                <Button 
-                                    variant="ghost" 
-                                    size="sm" 
-                                    onClick={handleShuffle}
-                                    title="Xáo trộn đề thi"
-                                    className="h-8 px-2 text-slate-600 hover:text-blue-600 dark:text-slate-400"
-                                >
-                                    <Shuffle className="h-4 w-4 mr-1" />
-                                    <span className="hidden sm:inline">Xáo trộn</span>
-                                </Button>
-                                <Button 
-                                    variant="ghost" 
-                                    size="sm" 
-                                    onClick={handleResetQuestions}
-                                    title="Khôi phục thứ tự ban đầu"
-                                    className="h-8 px-2 text-slate-600 hover:text-amber-600 dark:text-slate-400"
-                                >
-                                    <RotateCcw className="h-4 w-4 mr-1" />
-                                    <span className="hidden sm:inline">Khôi phục</span>
-                                </Button>
-                                <Button 
-                                    variant="ghost" 
-                                    size="sm" 
-                                    onClick={() => {
-                                        setIsPracticeMode(!isPracticeMode);
-                                        setCurrentPracticeIdx(0);
-                                        setShowFeedback(false);
-                                    }}
-                                    title={isPracticeMode ? "Chuyển sang chế độ Cổ điển" : "Chuyển sang chế độ Luyện tập"}
-                                    className={cn(
-                                        "h-8 px-2 transition-all",
-                                        isPracticeMode ? "text-emerald-600 bg-emerald-50" : "text-slate-600 dark:text-slate-400"
-                                    )}
-                                >
-                                    <Target className={cn("h-4 w-4 mr-1", isPracticeMode && "animate-pulse")} />
-                                    <span className="hidden sm:inline">Luyện tập</span>
-                                </Button>
-                            </div>
-
                             <div className={cn(
-                                'flex items-center gap-1.5 rounded-full px-4 py-1.5 text-sm font-mono font-bold transition-all',
+                                'flex items-center gap-1 md:gap-1.5 rounded-full px-2.5 md:px-4 py-1 md:py-1.5 text-xs md:text-sm font-mono font-bold transition-all',
                                 isTimeLow ? 'bg-red-100 text-red-700 animate-pulse dark:bg-red-900/30 dark:text-red-400' : 'bg-muted text-foreground'
                             )}>
-                                <Clock className="h-4 w-4" />
+                                <Clock className="h-3.5 w-3.5 md:h-4 md:h-4" />
                                 {formatTime(timeLeft)}
                             </div>
                                 {isPracticeMode && !showSidebar && (
@@ -763,10 +751,10 @@ export default function PracticeExam() {
                                             </div>
 
                                             {/* Question Card */}
-                                            <div className="rounded-2xl border border-border bg-card p-6 shadow-lg min-h-[300px] flex flex-col">
-                                                <div className="mb-6 text-lg font-semibold leading-relaxed">
+                                            <div className="rounded-2xl border border-border bg-card p-4 md:p-6 shadow-lg min-h-[300px] flex flex-col">
+                                                <div className="mb-4 md:mb-6 text-base md:text-lg font-semibold leading-relaxed">
                                                     <span className={cn(
-                                                        "mr-3 inline-flex h-8 w-8 items-center justify-center rounded-lg text-sm font-bold",
+                                                        "mr-2 md:mr-3 inline-flex h-7 w-7 md:h-8 md:w-8 items-center justify-center rounded-lg text-xs md:text-sm font-bold",
                                                         q.type === 'p1' ? "bg-blue-100 text-blue-600" : q.type === 'p2' ? "bg-amber-100 text-amber-600" : "bg-violet-100 text-violet-600"
                                                     )}>
                                                         {currentPracticeIdx + 1}
@@ -1266,17 +1254,14 @@ export default function PracticeExam() {
                         <div className="flex items-center gap-2">
                             {/* Main Pill */}
                             <div className="bg-slate-900/90 dark:bg-slate-900/95 backdrop-blur-xl border border-slate-800 rounded-full shadow-[0_20px_50px_rgba(0,0,0,0.4)] p-1.5 flex items-center gap-1 transition-all">
-                                {/* Progress Circular/Pill */}
+                                {/* Progress Section (Simplified) */}
                                 <div 
-                                    className="rounded-full px-3 py-1.5 flex items-center gap-2"
+                                    className="rounded-full px-4 py-1.5 flex items-center gap-2 shadow-inner"
                                     style={{ backgroundColor: settings.accentColor }}
                                 >
-                                    <div className="flex flex-col items-start leading-none">
-                                        <span className="text-[10px] text-white/70 font-bold uppercase tracking-tighter">Tiến độ</span>
-                                        <span className="text-white font-black text-sm">{answeredQs}/{totalQs}</span>
-                                    </div>
-                                    <div className="h-6 w-px bg-white/20" />
-                                    <span className="text-white font-black text-sm">{completionPercent}%</span>
+                                    <span className="text-white font-black text-sm">{answeredQs}/{totalQs}</span>
+                                    <div className="h-4 w-px bg-white/30" />
+                                    <span className="text-white/90 font-bold text-[11px]">{completionPercent}%</span>
                                 </div>
 
                                 {/* Timer Section */}
@@ -1289,8 +1274,52 @@ export default function PracticeExam() {
                                 </div>
 
                                 {/* Actions Group */}
-                                <div className="flex items-center gap-1 pl-1 border-l border-slate-700">
-                                    {/* TOC Button - Integrated */}
+                                <div className="flex items-center gap-1 pl-1 border-l border-slate-700 relative" ref={actionMenuRef}>
+                                    {/* Action Menu Toggle */}
+                                    <button 
+                                        onClick={() => setShowActionMenu(!showActionMenu)}
+                                        className={cn(
+                                            "h-9 w-9 flex items-center justify-center rounded-full transition-all",
+                                            showActionMenu ? "bg-white text-slate-900" : "text-slate-400 hover:text-white hover:bg-slate-800"
+                                        )}
+                                        title="Tùy chỉnh đề thi"
+                                    >
+                                        <Settings className={cn("h-4 w-4 transition-transform duration-300", showActionMenu && "rotate-90")} />
+                                    </button>
+
+                                    {/* Dropdown Menu */}
+                                    {showActionMenu && (
+                                        <div className="absolute bottom-full mb-3 right-0 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-2xl shadow-2xl p-1.5 min-w-[160px] animate-in slide-in-from-bottom-2 duration-200">
+                                            <button 
+                                                onClick={() => { handleShuffle(); setShowActionMenu(false); }}
+                                                className="w-full flex items-center gap-3 px-3 py-2.5 rounded-xl hover:bg-slate-100 dark:hover:bg-slate-800 text-sm font-semibold text-slate-700 dark:text-slate-300 transition-colors"
+                                            >
+                                                <Shuffle className="h-4 w-4 text-blue-500" /> Xáo trộn
+                                            </button>
+                                            <button 
+                                                onClick={() => { handleResetQuestions(); setShowActionMenu(false); }}
+                                                className="w-full flex items-center gap-3 px-3 py-2.5 rounded-xl hover:bg-slate-100 dark:hover:bg-slate-800 text-sm font-semibold text-slate-700 dark:text-slate-300 transition-colors"
+                                            >
+                                                <RotateCcw className="h-4 w-4 text-amber-500" /> Khôi phục
+                                            </button>
+                                            <div className="h-px bg-slate-100 dark:bg-slate-800 my-1 mx-2" />
+                                            <button 
+                                                onClick={() => {
+                                                    setIsPracticeMode(!isPracticeMode);
+                                                    setCurrentPracticeIdx(0);
+                                                    setShowFeedback(false);
+                                                    setShowActionMenu(false);
+                                                }}
+                                                className="w-full flex items-center gap-3 px-3 py-2.5 rounded-xl hover:bg-slate-100 dark:hover:bg-slate-800 text-sm font-semibold text-slate-700 dark:text-slate-300 transition-colors"
+                                            >
+                                                <Target className={cn("h-4 w-4", isPracticeMode ? "text-emerald-500" : "text-slate-400")} /> 
+                                                <span>Luyện tập</span>
+                                                {isPracticeMode && <div className="ml-auto w-1.5 h-1.5 rounded-full bg-emerald-500" />}
+                                            </button>
+                                        </div>
+                                    )}
+
+                                    {/* TOC Button */}
                                     <button 
                                         onClick={() => setShowMobileTOC(true)}
                                         className="h-9 w-9 flex items-center justify-center rounded-full text-slate-400 hover:text-white hover:bg-slate-800 transition-all"

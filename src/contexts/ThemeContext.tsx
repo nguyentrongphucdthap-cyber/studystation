@@ -11,6 +11,7 @@ export interface ThemeSettings {
     bgDarkness: number;           // 0–0.9, độ tối overlay
     examPadding: 'compact' | 'normal' | 'spacious'; // độ dãn vùng làm bài
     fontFamily: 'Be Vietnam Pro' | 'Roboto' | 'Times New Roman' | 'Montserrat (Đậm)';
+    autoHideHub: boolean;          // tự động ẩn Flow khi làm bài
 }
 
 interface ThemeContextType {
@@ -31,6 +32,7 @@ const DEFAULT_SETTINGS: ThemeSettings = {
     bgDarkness: 0,
     examPadding: 'normal',
     fontFamily: 'Be Vietnam Pro',
+    autoHideHub: true,
 };
 
 const FONT_SIZES: Record<string, string> = {

@@ -4,12 +4,14 @@ import { useTheme } from '@/contexts/ThemeContext';
 import { useEffect, useState, useRef } from 'react';
 import { subscribeToOnlineUsers } from '@/services/auth.service';
 import { cn } from '@/lib/utils';
-import { LogOut, Settings, Bell, ChevronDown, Music4, BarChart3 } from 'lucide-react';
+import { LogOut, Settings, Bell, ChevronDown, Music4, BarChart3, Sparkles } from 'lucide-react';
 import { FloatingHub } from '@/components/FloatingHub';
+import { useUI } from '@/contexts/UIContext';
 
 export function AppLayout() {
     const { user, isAdmin, logout } = useAuth();
     const { settings } = useTheme();
+    const { isTakingExam, isHubForcedVisible, setHubForcedVisible } = useUI();
     const navigate = useNavigate();
     const location = useLocation();
     const [onlineCount, setOnlineCount] = useState(0);
@@ -46,6 +48,8 @@ export function AppLayout() {
         navigate('/login');
     };
 
+    const shouldShowHub = !isTakingExam || !settings.autoHideHub || isHubForcedVisible;
+
     // --- Admin layout ---
     if (isAdminRoute) {
         return (
@@ -79,7 +83,7 @@ export function AppLayout() {
                 <main className="w-full px-4 sm:px-6 lg:px-8 py-6">
                     <Outlet />
                 </main>
-                <FloatingHub />
+                {shouldShowHub && <FloatingHub />}
             </div>
         );
     }
@@ -125,6 +129,19 @@ export function AppLayout() {
                                     <Settings className="h-4 w-4" />
                                 </div>
                                 Khu vực Giáo Viên
+                            </button>
+                        )}
+
+                        {/* Force Show Hub Button (only when hidden during exam) */}
+                        {isTakingExam && !shouldShowHub && (
+                            <button
+                                onClick={() => { setShowUserMenu(false); setHubForcedVisible(true); }}
+                                className="w-full text-left px-4 py-2.5 text-[14px] text-emerald-600 hover:bg-emerald-50 rounded-2xl flex items-center gap-3 transition-all font-medium"
+                            >
+                                <div className="p-2 bg-emerald-50 rounded-xl text-emerald-500">
+                                    <Sparkles className="h-4 w-4" />
+                                </div>
+                                Hiện Flow
                             </button>
                         )}
 
@@ -257,7 +274,7 @@ export function AppLayout() {
                         <Outlet />
                     </div>
                 </main>
-                <FloatingHub />
+                {shouldShowHub && <FloatingHub />}
             </div>
         );
     }
@@ -322,7 +339,7 @@ export function AppLayout() {
                 </div>
             </main>
 
-            <FloatingHub />
+            {shouldShowHub && <FloatingHub />}
         </div>
     );
 }

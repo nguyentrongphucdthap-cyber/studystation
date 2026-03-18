@@ -2234,6 +2234,22 @@ function ThemeTab() {
                     </div>
                 </div>
 
+                {/* Auto-hide Hub Toggle */}
+                <div className="theme-option" style={{ flexDirection: 'column', alignItems: 'flex-start', gap: '8px', borderTop: '1px solid rgba(0,0,0,0.05)', paddingTop: '16px', marginTop: '8px' }}>
+                    <div style={{ display: 'flex', justifyContent: 'space-between', width: '100%', alignItems: 'center' }}>
+                        <label style={{ display: 'flex', alignItems: 'center', gap: '6px', fontSize: '13px', fontWeight: 600 }}>
+                            🚀 Tự động ẩn Flow khi làm bài
+                        </label>
+                        <button
+                            className={`toggle-switch ${settings.autoHideHub !== false ? 'on' : ''}`}
+                            onClick={() => updateSetting('autoHideHub', settings.autoHideHub === false ? true : false)}
+                        />
+                    </div>
+                    <p style={{ fontSize: '11px', color: '#9ca3af', lineHeight: '1.4' }}>
+                        Ẩn nút này khi bạn bắt đầu làm bài để tập trung tối đa. Để hiện lại, nhấn vào <b>Avatar</b> và chọn <b>"Hiện Flow"</b>.
+                    </p>
+                </div>
+
                 {/* Reset */}
                 <button
                     onClick={resetToDefaults}
