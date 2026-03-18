@@ -1,5 +1,6 @@
 import { useEffect, useState, useMemo } from 'react';
 import { useNavigate, useSearchParams } from 'react-router-dom';
+import { cn } from '@/lib/utils';
 import { getAllExams, getSubjects, getHighestScores } from '@/services/exam.service';
 import { logUserActivity } from '@/services/auth.service';
 import { Spinner } from '@/components/ui/Spinner';
@@ -206,38 +207,95 @@ export default function PracticeHome() {
                     <p className="text-gray-400 font-medium">Không tìm thấy đề thi nào khớp với từ khóa.</p>
                 </div>
             ) : (
-                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4 md:gap-5">
+                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-5 md:gap-6">
                     {filteredExams.map((exam) => {
                         const totalQ = (exam.questionCount?.part1 || 0) +
                             (exam.questionCount?.part2 || 0) +
                             (exam.questionCount?.part3 || 0);
-                        const highScore = scores[exam.id];
+                        const highScore = scores[exam.id]?.highestScore;
+
+                        // Helper for score-based styling
+                        const getScoreStyle = (score: number | undefined) => {
+                            if (score === undefined || isNaN(score)) return {
+                                border: 'border-slate-100',
+                                badge: 'bg-slate-50 text-slate-400 border-slate-100',
+                                accent: 'bg-slate-400',
+                                shadow: 'shadow-sm'
+                            };
+                            if (score >= 8.0) return {
+                                border: 'border-emerald-100/50',
+                                badge: 'bg-emerald-50 text-emerald-600 border-emerald-100/50',
+                                accent: 'bg-emerald-500',
+                                shadow: 'shadow-emerald-100/20'
+                            };
+                            if (score >= 6.5) return {
+                                border: 'border-blue-100/50',
+                                badge: 'bg-blue-50 text-blue-600 border-blue-100/50',
+                                accent: 'bg-blue-500',
+                                shadow: 'shadow-blue-100/20'
+                            };
+                            if (score >= 4.0) return {
+                                border: 'border-orange-100/50',
+                                badge: 'bg-orange-50 text-orange-600 border-orange-100/50',
+                                accent: 'bg-orange-500',
+                                shadow: 'shadow-orange-100/20'
+                            };
+                            return {
+                                border: 'border-red-100/50',
+                                badge: 'bg-red-50 text-red-600 border-red-100/50',
+                                accent: 'bg-red-500',
+                                shadow: 'shadow-red-100/20'
+                            };
+                        };
+
+                        const style = getScoreStyle(highScore);
 
                         return (
                             <button
                                 key={exam.id}
                                 onClick={() => navigate(`/practice/${exam.id}`)}
-                                className="group relative bg-white/85 backdrop-blur-md p-5 rounded-[22px] border border-white/70 shadow-card hover:shadow-card-hover hover:-translate-y-1 transition-all duration-500 text-left flex flex-col justify-between active:scale-[0.98]"
+                                className={cn(
+                                    "group relative bg-white rounded-[26px] p-5 border transition-all duration-500 text-left flex flex-col justify-between active:scale-[0.98] overflow-hidden hover:shadow-xl hover:-translate-y-1.5",
+                                    style.border,
+                                    style.shadow
+                                )}
                             >
-                                <div className="space-y-4">
-                                    <h3 className="text-base font-extrabold text-gray-800 line-clamp-2 group-hover:text-blue-600 transition-colors tracking-tight leading-snug">
-                                        {exam.title}
-                                    </h3>
-                                    <div className="flex flex-wrap items-center gap-3 text-[10px] text-gray-400 font-black uppercase tracking-widest">
-                                        <span className="flex items-center gap-1"><Clock className="h-3 w-3" /> {exam.time}'</span>
-                                        <span className="flex items-center gap-1"><Book className="h-3 w-3" /> {totalQ} CHƯƠNG</span>
-                                        <span className="flex items-center gap-1">{exam.attemptCount || 0} LƯỢT</span>
-                                    </div>
-                                </div>
+                                {/* Background Accent Gradient */}
+                                <div className={cn(
+                                    "absolute top-0 right-0 w-32 h-32 -mr-16 -mt-16 rounded-full opacity-[0.03] group-hover:opacity-[0.07] transition-opacity duration-700",
+                                    style.accent
+                                )} />
 
-                                {highScore && typeof highScore.highestScore === 'number' && !isNaN(highScore.highestScore) && (
-                                    <div className="mt-4 flex items-center justify-between border-t border-gray-100/50 pt-3">
-                                        <span className="text-[9px] text-gray-400 font-extrabold uppercase tracking-widest">Best</span>
-                                        <div className="flex items-center gap-1.5 text-[11px] font-black text-amber-600 bg-amber-50/50 px-2 py-0.5 rounded-lg border border-amber-100/30 shadow-sm">
-                                            <Trophy className="h-3 w-3" /> {highScore.highestScore.toFixed(1)} / 10
+                                <div className="relative space-y-4">
+                                    <div className="flex justify-between items-start gap-3">
+                                        <h3 className="text-[15px] font-bold text-gray-800 line-clamp-2 leading-snug group-hover:text-gray-950 transition-colors">
+                                            {exam.title}
+                                        </h3>
+                                        {highScore !== undefined && !isNaN(highScore) && (
+                                            <div className={cn(
+                                                "shrink-0 w-10 h-10 rounded-full flex items-center justify-center text-[12px] font-black border shadow-sm",
+                                                style.badge
+                                            )}>
+                                                {highScore.toFixed(highScore === 10 ? 0 : 1)}
+                                            </div>
+                                        )}
+                                    </div>
+
+                                    <div className="flex flex-wrap items-center gap-3">
+                                        <div className="flex items-center gap-1.5 px-2.5 py-1 bg-gray-50 rounded-lg text-[10px] text-gray-500 font-bold tracking-tight border border-gray-100/50">
+                                            <Clock className="h-3 w-3 opacity-60" />
+                                            {exam.time}'
+                                        </div>
+                                        <div className="flex items-center gap-1.5 px-2.5 py-1 bg-gray-50 rounded-lg text-[10px] text-gray-500 font-bold tracking-tight border border-gray-100/50">
+                                            <Book className="h-3 w-3 opacity-60" />
+                                            {totalQ} Q
+                                        </div>
+                                        <div className="flex items-center gap-1.5 px-2.5 py-1 bg-gray-50 rounded-lg text-[10px] text-gray-400 font-bold tracking-tight border border-gray-100/50 ml-auto">
+                                            <Trophy className="h-3 w-3 opacity-40 ml-0.5" />
+                                            {exam.attemptCount || 0}
                                         </div>
                                     </div>
-                                )}
+                                </div>
                             </button>
                         );
                     })}
