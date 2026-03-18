@@ -207,7 +207,7 @@ export default function PracticeHome() {
                     <p className="text-gray-400 font-medium">Không tìm thấy đề thi nào khớp với từ khóa.</p>
                 </div>
             ) : (
-                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-5 md:gap-6">
+                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-3 md:gap-4">
                     {filteredExams.map((exam) => {
                         const totalQ = (exam.questionCount?.part1 || 0) +
                             (exam.questionCount?.part2 || 0) +
@@ -223,28 +223,28 @@ export default function PracticeHome() {
                                 shadow: 'shadow-sm'
                             };
                             if (score >= 8.0) return {
-                                border: 'border-emerald-100/50',
+                                border: 'border-emerald-100/40',
                                 badge: 'bg-emerald-50 text-emerald-600 border-emerald-100/50',
                                 accent: 'bg-emerald-500',
-                                shadow: 'shadow-emerald-100/20'
+                                shadow: 'shadow-emerald-100/10'
                             };
                             if (score >= 6.5) return {
-                                border: 'border-blue-100/50',
+                                border: 'border-blue-100/40',
                                 badge: 'bg-blue-50 text-blue-600 border-blue-100/50',
                                 accent: 'bg-blue-500',
-                                shadow: 'shadow-blue-100/20'
+                                shadow: 'shadow-blue-100/10'
                             };
                             if (score >= 4.0) return {
-                                border: 'border-orange-100/50',
+                                border: 'border-orange-100/40',
                                 badge: 'bg-orange-50 text-orange-600 border-orange-100/50',
                                 accent: 'bg-orange-500',
-                                shadow: 'shadow-orange-100/20'
+                                shadow: 'shadow-orange-100/10'
                             };
                             return {
-                                border: 'border-red-100/50',
+                                border: 'border-red-100/40',
                                 badge: 'bg-red-50 text-red-600 border-red-100/50',
                                 accent: 'bg-red-500',
-                                shadow: 'shadow-red-100/20'
+                                shadow: 'shadow-red-100/10'
                             };
                         };
 
@@ -255,25 +255,25 @@ export default function PracticeHome() {
                                 key={exam.id}
                                 onClick={() => navigate(`/practice/${exam.id}`)}
                                 className={cn(
-                                    "group relative bg-white rounded-[26px] p-5 border transition-all duration-500 text-left flex flex-col justify-between active:scale-[0.98] overflow-hidden hover:shadow-xl hover:-translate-y-1.5",
+                                    "group relative bg-white/90 rounded-[22px] p-3.5 border transition-all duration-500 text-left flex flex-col justify-between active:scale-[0.98] overflow-hidden hover:shadow-lg hover:-translate-y-1",
                                     style.border,
                                     style.shadow
                                 )}
                             >
-                                {/* Background Accent Gradient */}
+                                {/* Fixed Background Accent Glow (Centered in top-right) */}
                                 <div className={cn(
-                                    "absolute top-0 right-0 w-32 h-32 -mr-16 -mt-16 rounded-full opacity-[0.03] group-hover:opacity-[0.07] transition-opacity duration-700",
+                                    "absolute top-0 right-0 w-24 h-24 -mr-12 -mt-12 rounded-full opacity-[0.05] group-hover:opacity-[0.1] transition-opacity duration-700",
                                     style.accent
                                 )} />
 
-                                <div className="relative space-y-4">
-                                    <div className="flex justify-between items-start gap-3">
-                                        <h3 className="text-[15px] font-bold text-gray-800 line-clamp-2 leading-snug group-hover:text-gray-950 transition-colors">
+                                <div className="relative space-y-3">
+                                    <div className="flex justify-between items-start gap-2">
+                                        <h3 className="text-[13.5px] font-bold text-gray-800 line-clamp-2 leading-tight pr-4 group-hover:text-gray-950 transition-colors">
                                             {exam.title}
                                         </h3>
                                         {highScore !== undefined && !isNaN(highScore) && (
                                             <div className={cn(
-                                                "shrink-0 w-10 h-10 rounded-full flex items-center justify-center text-[12px] font-black border shadow-sm",
+                                                "shrink-0 w-8 h-8 rounded-full flex items-center justify-center text-[10.5px] font-black border shadow-sm",
                                                 style.badge
                                             )}>
                                                 {highScore.toFixed(highScore === 10 ? 0 : 1)}
@@ -281,17 +281,17 @@ export default function PracticeHome() {
                                         )}
                                     </div>
 
-                                    <div className="flex flex-wrap items-center gap-3">
-                                        <div className="flex items-center gap-1.5 px-2.5 py-1 bg-gray-50 rounded-lg text-[10px] text-gray-500 font-bold tracking-tight border border-gray-100/50">
-                                            <Clock className="h-3 w-3 opacity-60" />
+                                    <div className="flex flex-wrap items-center gap-2">
+                                        <div className="flex items-center gap-1 px-1.5 py-0.5 bg-gray-50/80 rounded-md text-[9px] text-gray-500 font-bold tracking-tight border border-gray-100/30">
+                                            <Clock className="h-2.5 w-2.5 opacity-50" />
                                             {exam.time}'
                                         </div>
-                                        <div className="flex items-center gap-1.5 px-2.5 py-1 bg-gray-50 rounded-lg text-[10px] text-gray-500 font-bold tracking-tight border border-gray-100/50">
-                                            <Book className="h-3 w-3 opacity-60" />
+                                        <div className="flex items-center gap-1 px-1.5 py-0.5 bg-gray-50/80 rounded-md text-[9px] text-gray-500 font-bold tracking-tight border border-gray-100/30">
+                                            <Book className="h-2.5 w-2.5 opacity-50" />
                                             {totalQ} Q
                                         </div>
-                                        <div className="flex items-center gap-1.5 px-2.5 py-1 bg-gray-50 rounded-lg text-[10px] text-gray-400 font-bold tracking-tight border border-gray-100/50 ml-auto">
-                                            <Trophy className="h-3 w-3 opacity-40 ml-0.5" />
+                                        <div className="flex items-center gap-1 px-1.5 py-0.5 bg-gray-50/80 rounded-md text-[9px] text-gray-400 font-bold tracking-tight border border-gray-100/30 ml-auto">
+                                            <Trophy className="h-2.5 w-2.5 opacity-30" />
                                             {exam.attemptCount || 0}
                                         </div>
                                     </div>
