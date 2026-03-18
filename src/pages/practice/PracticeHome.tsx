@@ -8,7 +8,7 @@ import type { ExamMetadata, HighestScores } from '@/types';
 import {
     Calculator, FlaskConical, Dna, Clock,
     Monitor, Atom, Languages, Book,
-    ArrowLeft, Search, Trophy, Globe, Scale
+    ArrowLeft, Search, Globe, Scale, Users
 } from 'lucide-react';
 
 export default function PracticeHome() {
@@ -207,7 +207,7 @@ export default function PracticeHome() {
                     <p className="text-gray-400 font-medium">Không tìm thấy đề thi nào khớp với từ khóa.</p>
                 </div>
             ) : (
-                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-3 md:gap-4">
+                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4 md:gap-5">
                     {filteredExams.map((exam) => {
                         const totalQ = (exam.questionCount?.part1 || 0) +
                             (exam.questionCount?.part2 || 0) +
@@ -217,34 +217,44 @@ export default function PracticeHome() {
                         // Helper for score-based styling
                         const getScoreStyle = (score: number | undefined) => {
                             if (score === undefined || isNaN(score)) return {
-                                border: 'border-slate-100',
-                                badge: 'bg-slate-50 text-slate-400 border-slate-100',
+                                border: 'border-slate-200/50',
+                                badge: 'bg-slate-50 text-slate-400 border-slate-200/60',
                                 accent: 'bg-slate-400',
-                                shadow: 'shadow-sm'
+                                shadow: 'shadow-sm',
+                                ring: 'group-hover:ring-slate-100',
+                                glow: 'from-slate-50/50'
                             };
                             if (score >= 8.0) return {
-                                border: 'border-emerald-100/40',
-                                badge: 'bg-emerald-50 text-emerald-600 border-emerald-100/50',
+                                border: 'border-emerald-200/40',
+                                badge: 'bg-emerald-50 text-emerald-600 border-emerald-200/50 shadow-emerald-100/50',
                                 accent: 'bg-emerald-500',
-                                shadow: 'shadow-emerald-100/10'
+                                shadow: 'shadow-emerald-500/5',
+                                ring: 'group-hover:ring-emerald-200/30',
+                                glow: 'from-emerald-50/50'
                             };
                             if (score >= 6.5) return {
-                                border: 'border-blue-100/40',
-                                badge: 'bg-blue-50 text-blue-600 border-blue-100/50',
+                                border: 'border-blue-200/40',
+                                badge: 'bg-blue-50 text-blue-600 border-blue-200/50 shadow-blue-100/50',
                                 accent: 'bg-blue-500',
-                                shadow: 'shadow-blue-100/10'
+                                shadow: 'shadow-blue-500/5',
+                                ring: 'group-hover:ring-blue-200/30',
+                                glow: 'from-blue-50/50'
                             };
                             if (score >= 4.0) return {
-                                border: 'border-orange-100/40',
-                                badge: 'bg-orange-50 text-orange-600 border-orange-100/50',
+                                border: 'border-orange-200/40',
+                                badge: 'bg-orange-50 text-orange-600 border-orange-200/50 shadow-orange-100/50',
                                 accent: 'bg-orange-500',
-                                shadow: 'shadow-orange-100/10'
+                                shadow: 'shadow-orange-500/5',
+                                ring: 'group-hover:ring-orange-200/30',
+                                glow: 'from-orange-50/50'
                             };
                             return {
-                                border: 'border-red-100/40',
-                                badge: 'bg-red-50 text-red-600 border-red-100/50',
+                                border: 'border-red-200/40',
+                                badge: 'bg-red-50 text-red-600 border-red-200/50 shadow-red-100/50',
                                 accent: 'bg-red-500',
-                                shadow: 'shadow-red-100/10'
+                                shadow: 'shadow-red-500/5',
+                                ring: 'group-hover:ring-red-200/30',
+                                glow: 'from-red-50/50'
                             };
                         };
 
@@ -255,43 +265,53 @@ export default function PracticeHome() {
                                 key={exam.id}
                                 onClick={() => navigate(`/practice/${exam.id}`)}
                                 className={cn(
-                                    "group relative bg-white/90 rounded-[22px] p-3.5 border transition-all duration-500 text-left flex flex-col justify-between active:scale-[0.98] overflow-hidden hover:shadow-lg hover:-translate-y-1",
+                                    "group relative bg-white/80 backdrop-blur-xl rounded-[28px] p-4.5 border transition-all duration-500 text-left flex flex-col justify-between active:scale-[0.97] overflow-hidden hover:shadow-2xl hover:-translate-y-1.5 hover:ring-4",
                                     style.border,
+                                    style.ring,
                                     style.shadow
                                 )}
                             >
-                                {/* Fixed Background Accent Glow (Centered in top-right) */}
+                                {/* Decorative Gradient Overlay */}
                                 <div className={cn(
-                                    "absolute top-0 right-0 w-24 h-24 -mr-12 -mt-12 rounded-full opacity-[0.05] group-hover:opacity-[0.1] transition-opacity duration-700",
+                                    "absolute inset-0 bg-gradient-to-br to-white opacity-0 group-hover:opacity-100 transition-opacity duration-500",
+                                    style.glow
+                                )} />
+
+                                {/* Fixed Background Accent Glow */}
+                                <div className={cn(
+                                    "absolute top-0 right-0 w-24 h-24 -mr-12 -mt-12 rounded-full opacity-[0.06] group-hover:opacity-[0.15] transition-all duration-700 blur-2xl",
                                     style.accent
                                 )} />
 
-                                <div className="relative space-y-3">
-                                    <div className="flex justify-between items-start gap-2">
-                                        <h3 className="text-[13.5px] font-bold text-gray-800 line-clamp-2 leading-tight pr-4 group-hover:text-gray-950 transition-colors">
+                                <div className="relative space-y-4">
+                                    <div className="flex justify-between items-start gap-3">
+                                        <h3 className="text-[14.5px] font-extrabold text-gray-800 line-clamp-2 leading-snug pr-6 group-hover:text-gray-950 transition-colors tracking-tight">
                                             {exam.title}
                                         </h3>
                                         {highScore !== undefined && !isNaN(highScore) && (
                                             <div className={cn(
-                                                "shrink-0 w-8 h-8 rounded-full flex items-center justify-center text-[10.5px] font-black border shadow-sm",
+                                                "shrink-0 w-11 h-11 rounded-2xl flex flex-col items-center justify-center border-2 shadow-sm transition-transform group-hover:scale-110 duration-500",
                                                 style.badge
                                             )}>
-                                                {highScore.toFixed(highScore === 10 ? 0 : 1)}
+                                                <span className="text-[14px] font-black leading-none">
+                                                    {highScore.toFixed(highScore === 10 ? 0 : 1)}
+                                                </span>
+                                                <span className="text-[7px] font-black opacity-40 uppercase tracking-tighter mt-0.5">Score</span>
                                             </div>
                                         )}
                                     </div>
 
-                                    <div className="flex flex-wrap items-center gap-2">
-                                        <div className="flex items-center gap-1 px-1.5 py-0.5 bg-gray-50/80 rounded-md text-[9px] text-gray-500 font-bold tracking-tight border border-gray-100/30">
-                                            <Clock className="h-2.5 w-2.5 opacity-50" />
+                                    <div className="flex flex-wrap items-center gap-2.5">
+                                        <div className="flex items-center gap-1.5 px-2 py-1 bg-gray-50/50 rounded-xl text-[9.5px] text-gray-500 font-black tracking-tight border border-gray-100/50 shadow-sm group-hover:bg-white transition-colors">
+                                            <Clock className="h-3 w-3 opacity-50 text-blue-500" />
                                             {exam.time}'
                                         </div>
-                                        <div className="flex items-center gap-1 px-1.5 py-0.5 bg-gray-50/80 rounded-md text-[9px] text-gray-500 font-bold tracking-tight border border-gray-100/30">
-                                            <Book className="h-2.5 w-2.5 opacity-50" />
+                                        <div className="flex items-center gap-1.5 px-2 py-1 bg-gray-50/50 rounded-xl text-[9.5px] text-gray-500 font-black tracking-tight border border-gray-100/50 shadow-sm group-hover:bg-white transition-colors">
+                                            <Book className="h-3 w-3 opacity-50 text-emerald-500" />
                                             {totalQ} Q
                                         </div>
-                                        <div className="flex items-center gap-1 px-1.5 py-0.5 bg-gray-50/80 rounded-md text-[9px] text-gray-400 font-bold tracking-tight border border-gray-100/30 ml-auto">
-                                            <Trophy className="h-2.5 w-2.5 opacity-30" />
+                                        <div className="flex items-center gap-1.5 px-2 py-1 bg-gray-50/50 rounded-xl text-[9.5px] text-gray-400 font-black tracking-tight border border-gray-100/50 ml-auto group-hover:bg-white transition-colors">
+                                            <Users className="h-3 w-3 opacity-40" />
                                             {exam.attemptCount || 0}
                                         </div>
                                     </div>
