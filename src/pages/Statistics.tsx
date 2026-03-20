@@ -8,14 +8,13 @@ import {
     Clock, 
     Target, 
     ArrowLeft, 
-    Calendar, 
     TrendingUp, 
     Award,
     ChevronRight,
     BookOpen,
     Filter
 } from 'lucide-react';
-import { cn, formatTime } from '@/lib/utils';
+import { cn } from '@/lib/utils';
 import type { PracticeHistory } from '@/types';
 
 export default function StatisticsPage() {
@@ -613,10 +612,11 @@ function AvgTimeLineChart({ data }: { data: { label: string, avg: number }[] }) 
         y: padding + (chartHeight - (d.avg / maxValue) * chartHeight)
     }));
 
-    const pathD = points.length > 1 
-        ? `M ${points[0].x},${points[0].y} ` + points.slice(1).map(p => `L ${p.x},${p.y}`).join(' ')
-        : points.length === 1 
-            ? `M ${points[0].x},${points[0].y} L ${points[0].x},${points[0].y}`
+    const p0 = points[0];
+    const pathD = (points.length > 1 && p0) 
+        ? `M ${p0.x},${p0.y} ` + points.slice(1).map(p => `L ${p.x},${p.y}`).join(' ')
+        : (points.length === 1 && p0) 
+            ? `M ${p0.x},${p0.y} L ${p0.x},${p0.y}`
             : '';
 
     return (
@@ -633,35 +633,39 @@ function AvgTimeLineChart({ data }: { data: { label: string, avg: number }[] }) 
             <path d={pathD} fill="none" stroke="#10b981" strokeWidth="4" strokeLinecap="round" strokeLinejoin="round" />
 
             {/* Points & Labels */}
-            {points.map((p, i) => (
-                <g key={i} className="group">
-                    <circle 
-                        cx={p.x} 
-                        cy={p.y} 
-                        r="5" 
-                        fill="white" 
-                        stroke="#10b981" 
-                        strokeWidth="3" 
-                        className="group-hover:r-7 transition-all cursor-crosshair"
-                    />
-                    <text 
-                        x={p.x} 
-                        y={p.y - 15} 
-                        textAnchor="middle" 
-                        className="text-[12px] font-black fill-emerald-600 opacity-0 group-hover:opacity-100 transition-opacity"
-                    >
-                        {data[i].avg}m
-                    </text>
-                    <text 
-                        x={p.x} 
-                        y={height - 15} 
-                        textAnchor="middle" 
-                        className="text-[12px] font-bold fill-gray-400"
-                    >
-                        {data[i].label}
-                    </text>
-                </g>
-            ))}
+            {points.map((p, i) => {
+                const d = data[i];
+                if (!d) return null;
+                return (
+                    <g key={i} className="group">
+                        <circle 
+                            cx={p.x} 
+                            cy={p.y} 
+                            r="5" 
+                            fill="white" 
+                            stroke="#10b981" 
+                            strokeWidth="3" 
+                            className="group-hover:r-7 transition-all cursor-crosshair"
+                        />
+                        <text 
+                            x={p.x} 
+                            y={p.y - 15} 
+                            textAnchor="middle" 
+                            className="text-[12px] font-black fill-emerald-600 opacity-0 group-hover:opacity-100 transition-opacity"
+                        >
+                            {d.avg}m
+                        </text>
+                        <text 
+                            x={p.x} 
+                            y={height - 15} 
+                            textAnchor="middle" 
+                            className="text-[12px] font-bold fill-gray-400"
+                        >
+                            {d.label}
+                        </text>
+                    </g>
+                );
+            })}
         </svg>
     );
 }
