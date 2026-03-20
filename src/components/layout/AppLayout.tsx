@@ -132,6 +132,16 @@ export function AppLayout() {
                             </button>
                         )}
 
+                        <button
+                            onClick={() => { setShowUserMenu(false); navigate('/statistics'); }}
+                            className="w-full text-left px-4 py-2.5 text-[14px] text-indigo-600 hover:bg-indigo-50 rounded-2xl flex items-center gap-3 transition-all font-medium"
+                        >
+                            <div className="p-2 bg-indigo-50 rounded-xl text-indigo-500">
+                                <BarChart3 className="h-4 w-4" />
+                            </div>
+                            Thống kê học tập
+                        </button>
+
                         {/* Force Show Hub Button (only when hidden during exam) */}
                         {isTakingExam && !shouldShowHub && (
                             <button

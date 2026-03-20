@@ -30,7 +30,7 @@ import {
     remove,
 } from 'firebase/database';
 import { auth, db, rtdb } from '@/config/firebase';
-import type { AllowedUser, UserRole, DeviceType } from '@/types';
+import type { AllowedUser, UserRole, DeviceType, BlacklistEntry } from '@/types';
 import { getDeviceType, generateSessionId } from '@/lib/utils';
 
 // ============================================================
@@ -623,3 +623,48 @@ export async function getActivityStats() {
         uniqueUsers: recentUsers.size,
     };
 }
+
+// ============================================================
+// BLACKLIST MANAGEMENT (Super-Admin only)
+// ============================================================
+
+export async function getBlacklist(): Promise<BlacklistEntry[]> {
+    try {
+        const snapshot = await getDocs(collection(db, 'blacklist'));
+        return snapshot.docs.map((d) => ({
+            ...d.data(),
+        })) as BlacklistEntry[];
+    } catch (err) {
+        console.warn('[AuthService] Failed to fetch blacklist (likely permission denied):', err);
+        return [];
+    }
+}
+
+export async function addToBlacklist(email: string, reason?: string): Promise<void> {
+    try {
+        const targetEmail = email.toLowerCase().trim();
+        console.log('[AuthService] Adding to blacklist:', targetEmail);
+        await setDoc(doc(db, 'blacklist', targetEmail), {
+            email: targetEmail,
+            reason: reason || '',
+            addedAt: new Date().toISOString(),
+            addedBy: auth.currentUser?.email || 'unknown',
+        });
+        console.log('[AuthService] Successfully added to blacklist:', targetEmail);
+    } catch (err) {
+        console.error('[AuthService] Failed to add to blacklist:', err);
+        throw err;
+    }
+}
+
+export async function removeFromBlacklist(email: string): Promise<void> {
+    try {
+        console.log('[AuthService] Removing from blacklist:', email);
+        await deleteDoc(doc(db, 'blacklist', email.toLowerCase().trim()));
+        console.log('[AuthService] Successfully removed from blacklist:', email);
+    } catch (err) {
+        console.error('[AuthService] Failed to remove from blacklist:', err);
+        throw err;
+    }
+}
+

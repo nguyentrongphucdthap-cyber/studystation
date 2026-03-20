@@ -347,3 +347,11 @@ export interface HubThemeSettings {
     accentColor: string;
     fontSize: 'small' | 'medium' | 'large';
 }
+
+export interface BlacklistEntry {
+    email: string;
+    reason?: string;
+    addedAt: string;
+    addedBy: string;
+}
+

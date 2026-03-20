@@ -31,7 +31,10 @@ export async function generateAIContent(messages: AIChatMessage[], options?: AIC
     if (import.meta.env.VITE_GEMINI_API_KEY_3) apiKeys.push(import.meta.env.VITE_GEMINI_API_KEY_3);
 
     if (apiKeys.length === 0) {
+        console.warn('[AI Service] No Gemini keys found, falling back to Firebase key.');
         apiKeys.push(import.meta.env.VITE_FIREBASE_API_KEY || '');
+    } else {
+        console.log(`[AI Service] Found ${apiKeys.length} Gemini keys.`);
     }
     apiKeys = apiKeys.filter(Boolean);
     if (apiKeys.length === 0) throw new Error('No API key found');
@@ -64,12 +67,14 @@ export async function generateAIContent(messages: AIChatMessage[], options?: AIC
 
     // Try each key; skip to next on quota / rate-limit errors
     for (const key of apiKeys) {
+        const maskedKey = key.slice(0, 8) + '...' + key.slice(-4);
+        console.log(`[AI Service] Attempting request with key: ${maskedKey}`);
         const url = `https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent?key=${key}`;
         try {
             const response = await fetch(url, {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
-                referrerPolicy: 'no-referrer',
+                referrerPolicy: 'strict-origin-when-cross-origin',
                 body: bodyStr,
             });
 
@@ -149,7 +154,7 @@ export async function checkApiKeyHealth(apiKey: string): Promise<ApiKeyStatus> {
         const response = await fetch(url, {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
-            referrerPolicy: 'no-referrer',
+            referrerPolicy: 'strict-origin-when-cross-origin',
             body: JSON.stringify({
                 contents: [{ role: 'user', parts: [{ text: 'Hi' }] }],
                 generationConfig: { maxOutputTokens: 5 },

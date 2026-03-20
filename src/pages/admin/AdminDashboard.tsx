@@ -1,7 +1,7 @@
 import { NavLink, Outlet } from 'react-router-dom';
 import { useAuth } from '@/contexts/AuthContext';
 import { getAllExams } from '@/services/exam.service';
-import { getAllAllowedUsers, getActivityStats } from '@/services/auth.service';
+import { getAllAllowedUsers, getActivityStats, getBlacklist } from '@/services/auth.service';
 import { getAllEtestExams } from '@/services/etest.service';
 import { getAllVocabSets } from '@/services/vocab.service';
 import { getApiKeys, checkApiKeyHealth, type ApiKeyStatus } from '@/services/ai.service';
@@ -15,7 +15,7 @@ import {
 import { useEffect, useState } from 'react';
 
 export default function AdminDashboard() {
-    const { isSuperAdmin, role } = useAuth();
+    const { isSuperAdmin, isAdmin, role } = useAuth();
 
     const navItems = [
         { to: '/admin', label: 'Tổng quan', icon: LayoutDashboard, end: true },
@@ -24,7 +24,7 @@ export default function AdminDashboard() {
         { to: '/admin/vocab', label: 'Từ vựng', icon: Languages },
         { to: '/admin/notifications', label: 'Thông báo', icon: Bell },
         { to: '/admin/schedule', label: 'TKB', icon: Calendar },
-        ...(isSuperAdmin || role === 'teacher' ? [{ to: '/admin/students', label: 'Học sinh', icon: Users }] : []),
+        ...(isSuperAdmin || isAdmin || role === 'teacher' ? [{ to: '/admin/students', label: 'Học sinh', icon: Users }] : []),
         ...(isSuperAdmin ? [{ to: '/admin/teachers', label: 'Giáo viên', icon: Shield }] : []),
     ];
 
@@ -75,7 +75,7 @@ export default function AdminDashboard() {
 // ============================================================
 
 export function AdminOverview() {
-    const { isSuperAdmin } = useAuth();
+    const { isSuperAdmin, isAdmin } = useAuth();
     const [stats, setStats] = useState({
         totalExams: 0, totalEtests: 0, totalVocab: 0, totalUsers: 0,
         totalAccess: 0, uniqueUsers: 0,
@@ -85,28 +85,37 @@ export function AdminOverview() {
     useEffect(() => {
         async function load() {
             try {
-                const [exams, etests, vocab, users, activity] = await Promise.all([
+                const [exams, etests, vocab, users, activity, blacklist] = await Promise.all([
                     getAllExams(),
                     getAllEtestExams(),
                     getAllVocabSets(),
-                    isSuperAdmin ? getAllAllowedUsers() : Promise.resolve([]),
+                    (isSuperAdmin || isAdmin) ? getAllAllowedUsers() : Promise.resolve([]),
                     getActivityStats(),
+                    (isSuperAdmin || isAdmin) ? getBlacklist() : Promise.resolve([]),
                 ]);
+
+                let filteredUsers = users;
+                if (!isSuperAdmin && isAdmin && blacklist) {
+                    const blacklistedEmails = (blacklist || []).map(b => b.email.toLowerCase());
+                    filteredUsers = users.filter(u => !blacklistedEmails.includes(u.email.toLowerCase()));
+                }
+
                 setStats({
                     totalExams: exams.length,
                     totalEtests: etests.length,
                     totalVocab: vocab.length,
-                    totalUsers: users.length,
+                    totalUsers: filteredUsers.length,
                     totalAccess: activity.totalAccess,
                     uniqueUsers: activity.uniqueUsers,
                 });
             } catch (err) {
                 console.error('[AdminOverview] Error:', err);
+            } finally {
+                setLoading(false);
             }
-            setLoading(false);
         }
         load();
-    }, [isSuperAdmin]);
+    }, [isSuperAdmin, isAdmin]);
 
     // API Key health check (super-admin only)
     const [keyStatuses, setKeyStatuses] = useState<ApiKeyStatus[]>([]);
@@ -146,7 +155,7 @@ export function AdminOverview() {
                 <StatBox label="Đề thi Practice" value={stats.totalExams} icon={GraduationCap} colorClass="text-indigo-600 bg-indigo-100" />
                 <StatBox label="Bài E-test" value={stats.totalEtests} icon={FileText} colorClass="text-teal-600 bg-teal-100" />
                 <StatBox label="Bộ từ vựng" value={stats.totalVocab} icon={Languages} colorClass="text-amber-600 bg-amber-100" />
-                {isSuperAdmin && <StatBox label="Học sinh" value={stats.totalUsers} icon={Users} colorClass="text-rose-600 bg-rose-100" />}
+                {(isSuperAdmin || isAdmin) && <StatBox label="Học sinh" value={stats.totalUsers} icon={Users} colorClass="text-rose-600 bg-rose-100" />}
                 <StatBox label="Lượt truy cập" value={stats.totalAccess} icon={BarChart3} colorClass="text-blue-600 bg-blue-100" />
                 <StatBox label="Users hoạt động" value={stats.uniqueUsers} icon={LayoutDashboard} colorClass="text-violet-600 bg-violet-100" />
             </div>

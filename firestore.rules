@@ -98,6 +98,12 @@ service cloud.firestore {
       allow read, write: if isAdmin();
     }
 
+    // Blacklist (super-admin manages, admin reads)
+    match /blacklist/{email} {
+      allow read: if isAdmin();
+      allow write: if isAdmin();
+    }
+
     // ============================================
     // SYSTEM & FEEDBACK
     // ============================================

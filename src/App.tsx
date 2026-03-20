@@ -27,6 +27,7 @@ const AdminStudents = lazy(() => import('@/pages/admin/AdminStudents'));
 const AdminTeachers = lazy(() => import('@/pages/admin/AdminTeachers'));
 const AdminSchedule = lazy(() => import('@/pages/admin/AdminSchedule'));
 const EditExamPage = lazy(() => import('@/pages/admin/EditExamPage'));
+const StatisticsPage = lazy(() => import('@/pages/Statistics'));
 
 // Lazy-load AdminOverview from same file
 const AdminOverview = lazy(() =>
@@ -63,6 +64,7 @@ function App() {
 
                                         {/* Schedule (Student) */}
                                         <Route path="/schedule" element={<Schedule />} />
+                                        <Route path="/statistics" element={<StatisticsPage />} />
 
                                         {/* E-test */}
                                         <Route path="/etest" element={<EtestHome />} />

@@ -1,15 +1,15 @@
 import { useEffect, useState } from 'react';
 import { useAuth } from '@/contexts/AuthContext';
-import { getAllAllowedUsers, addAllowedUser, updateUserRole, deleteAllowedUser, updateUserClasses } from '@/services/auth.service';
+import { getAllAllowedUsers, addAllowedUser, updateUserRole, deleteAllowedUser, updateUserClasses, getBlacklist, addToBlacklist, removeFromBlacklist } from '@/services/auth.service';
 import { useToast } from '@/components/ui/Toast';
 import { Spinner } from '@/components/ui/Spinner';
 import { Button } from '@/components/ui/Button';
 import { Dialog, ConfirmDialog } from '@/components/ui/Dialog';
 import { cn } from '@/lib/utils';
-import type { AllowedUser, ActivityLog } from '@/types';
+import type { AllowedUser, ActivityLog, BlacklistEntry } from '@/types';
 import { 
     Users, Plus, Trash2, Search, Shield, ShieldCheck, User, Tags, Activity, 
-    History as ActivityHistory, Clock, Globe, Filter, UserCheck, LayoutGrid, Download 
+    History as ActivityHistory, Clock, Globe, Filter, UserCheck, LayoutGrid, Download, Ban 
 } from 'lucide-react';
 import { formatRelativeActiveTime } from '@/lib/utils';
 import { getUserActivityLogsByEmail, subscribeToOnlineUsersList } from '@/services/auth.service';
@@ -23,8 +23,9 @@ const roleOptions = [
 
 export default function AdminStudents() {
     const { toast } = useToast();
-    const { isSuperAdmin, isTeacher, user: currentUserProfile } = useAuth();
+    const { isSuperAdmin, isAdmin, isTeacher, user: currentUserProfile } = useAuth();
     const [users, setUsers] = useState<AllowedUser[]>([]);
+    const [blacklist, setBlacklist] = useState<BlacklistEntry[]>([]);
     const [loading, setLoading] = useState(true);
     const [search, setSearch] = useState('');
     const [roleFilter, setRoleFilter] = useState('all');
@@ -37,8 +38,11 @@ export default function AdminStudents() {
     const [trackingUser, setTrackingUser] = useState<AllowedUser | null>(null);
     const [trackingLogs, setTrackingLogs] = useState<ActivityLog[]>([]);
     const [loadingLogs, setLoadingLogs] = useState(false);
+    
+    // Blacklist state
+    const [newBlacklist, setNewBlacklist] = useState({ email: '', reason: '' });
 
-    useEffect(() => { loadUsers(); }, []);
+    useEffect(() => { loadUsers(); }, [isSuperAdmin, isAdmin, isTeacher, currentUserProfile?.email]);
 
     useEffect(() => {
         const unsubscribe = subscribeToOnlineUsersList((onlineList) => {
@@ -46,31 +50,50 @@ export default function AdminStudents() {
         });
         return () => unsubscribe();
     }, []);
-    
-    async function loadUsers() { 
+        async function loadUsers() { 
         setLoading(true); 
-        const allUsers = await getAllAllowedUsers();
-        
-        if (isSuperAdmin) {
-            setUsers(allUsers);
-        } else if (isTeacher) {
-            // Find current teacher's meta
-            const teacherMeta = allUsers.find(u => u.email === currentUserProfile?.email);
-            const assigned = teacherMeta?.assignedClasses || [];
+        try {
+            const [allUsers, bl] = await Promise.all([
+                getAllAllowedUsers(),
+                (isSuperAdmin || isAdmin) ? getBlacklist() : Promise.resolve([])
+            ]);
             
-            // Filter list: only students in assigned classes
-            const myStudents = allUsers.filter(u => {
-                // Must be a normal user (student)
-                if (u.role !== 'user') return false;
-                // Must be in one of the teacher's classes
-                return (u.classes || []).some(c => assigned.includes(c));
+            setBlacklist(bl || []);
+            
+            if (isSuperAdmin) {
+                setUsers(allUsers);
+            } else if (isAdmin) {
+                const blacklistedEmails = (bl || []).map(b => b.email.toLowerCase());
+                const filteredUsers = allUsers.filter(u => !blacklistedEmails.includes(u.email.toLowerCase()));
+                setUsers(filteredUsers);
+            } else if (isTeacher) {
+                // Find current teacher's meta
+                const teacherMeta = allUsers.find(u => u.email === currentUserProfile?.email);
+                const assigned = teacherMeta?.assignedClasses || [];
+                
+                // Filter list: only students in assigned classes
+                const myStudents = allUsers.filter(u => {
+                    // Must be a normal user (student)
+                    if (u.role !== 'user') return false;
+                    // Must be in one of the teacher's classes
+                    return (u.classes || []).some(c => assigned.includes(c));
+                });
+                setUsers(myStudents);
+            } else {
+                setUsers([]);
+            }
+        } catch (err) {
+            console.error('[AdminStudents] Load error:', err);
+            toast({ 
+                title: 'Lỗi tải dữ liệu', 
+                message: 'Có lỗi xảy ra khi tải danh sách học sinh. Vui lòng kiểm tra quyền hạn của bạn.', 
+                type: 'error' 
             });
-            setUsers(myStudents);
-        } else {
-            setUsers([]);
+        } finally {
+            setLoading(false);
         }
-        setLoading(false); 
     }
+
 
     const allAvailableClasses = Array.from(new Set(users.flatMap(u => u.classes || []))).sort();
 
@@ -179,12 +202,47 @@ export default function AdminStudents() {
         const exportData = filtered.map(u => ({
             'Họ và tên': u.name || 'N/A',
             'Email': u.email,
-            'Quyền': roleOptions.find(r => r.value === u.role)?.label || u.role,
+            ...(isSuperAdmin ? { 'Quyền': roleOptions.find(r => r.value === u.role)?.label || u.role } : {}),
             'Lớp': (u.classes || []).join(', '),
             'Hoạt động cuối': u.lastActive ? new Date(u.lastActive).toLocaleString('vi-VN') : 'N/A'
         }));
         downloadCSV(exportData, `StudyStation_Students_${new Date().toISOString().split('T')[0]}`);
         toast({ title: 'Export hoàn tất', message: `Đã xuất ${exportData.length} sinh viên ra file CSV`, type: 'success' });
+    };
+
+    const handleAddToBlacklist = async () => {
+        if (!newBlacklist.email.trim()) { toast({ title: 'Nhập email', type: 'warning' }); return; }
+        try {
+            await addToBlacklist(newBlacklist.email.trim(), newBlacklist.reason.trim());
+            toast({ title: 'Đã thêm vào blacklist', type: 'success' });
+            setNewBlacklist({ email: '', reason: '' });
+            await loadUsers();
+        } catch (err) {
+            console.error('[AdminStudents] handleAddToBlacklist error:', err);
+            toast({ title: 'Lỗi thêm vào blacklist', message: 'Kiểm tra quyền Firestore hoặc kết nối mạng.', type: 'error' });
+        }
+    };
+
+    const handleQuickBlacklist = async (email: string) => {
+        try {
+            await addToBlacklist(email, 'Thêm nhanh từ bảng');
+            toast({ title: `Đã chặn ${email}`, type: 'success' });
+            await loadUsers();
+        } catch (err) {
+            console.error('[AdminStudents] handleQuickBlacklist error:', err);
+            toast({ title: 'Lỗi chặn người dùng', message: 'Kiểm tra quyền Firestore hoặc kết nối mạng.', type: 'error' });
+        }
+    };
+
+    const handleRemoveFromBlacklist = async (email: string) => {
+        try {
+            await removeFromBlacklist(email);
+            toast({ title: 'Đã xóa khỏi blacklist', type: 'success' });
+            await loadUsers();
+        } catch (err) {
+            console.error('[AdminStudents] handleRemoveFromBlacklist error:', err);
+            toast({ title: 'Lỗi bỏ chặn', message: 'Kiểm tra quyền Firestore hoặc kết nối mạng.', type: 'error' });
+        }
     };
 
     if (loading) return <div className="flex justify-center py-10"><Spinner size="md" /></div>;
@@ -211,9 +269,11 @@ export default function AdminStudents() {
                         <Button variant="outline" onClick={handleExportCSV} className="rounded-xl gap-2 font-bold px-6 py-6 h-auto border-slate-200">
                             <Download className="h-5 w-5" /> Xuất CSV
                         </Button>
-                        <Button onClick={() => setShowAdd(true)} className="admin-btn-primary rounded-xl gap-2 font-bold px-6 py-6 h-auto shadow-indigo-100">
-                            <Plus className="h-5 w-5" /> Thêm mới
-                        </Button>
+                        {isSuperAdmin && (
+                            <Button onClick={() => setShowAdd(true)} className="admin-btn-primary rounded-xl gap-2 font-bold px-6 py-6 h-auto shadow-indigo-100">
+                                <Plus className="h-5 w-5" /> Thêm mới
+                            </Button>
+                        )}
                     </div>
                 </div>
 
@@ -262,9 +322,9 @@ export default function AdminStudents() {
                                 <th className="px-6 py-4 text-left font-bold text-xs uppercase tracking-wider text-slate-500">Học sinh</th>
                                 <th className="px-6 py-4 text-left font-bold text-xs uppercase tracking-wider text-slate-500">Lớp học</th>
                                 {isSuperAdmin && <th className="px-6 py-4 text-left font-bold text-xs uppercase tracking-wider text-slate-500">Hoạt động</th>}
-                                <th className="px-6 py-4 text-left font-bold text-xs uppercase tracking-wider text-slate-500">Phân quyền</th>
+                                {isSuperAdmin && <th className="px-6 py-4 text-left font-bold text-xs uppercase tracking-wider text-slate-500">Phân quyền</th>}
                                 {isSuperAdmin && <th className="px-6 py-4 text-center font-bold text-xs uppercase tracking-wider text-slate-500">Thay đổi quyền</th>}
-                                <th className="px-6 py-4 text-right font-bold text-xs uppercase tracking-wider text-slate-500">Thao tác</th>
+                                {isSuperAdmin && <th className="px-6 py-4 text-right font-bold text-xs uppercase tracking-wider text-slate-500">Thao tác</th>}
                             </tr>
                         </thead>
                         <tbody className="divide-y divide-slate-100 dark:divide-slate-800/60 bg-white dark:bg-slate-900/20">
@@ -313,7 +373,8 @@ export default function AdminStudents() {
                                                         defaultValue={(u.classes || []).join(', ')}
                                                         onBlur={(e) => handleUpdateClasses(u.email, e.target.value)}
                                                         placeholder="Nhập lớp (VD: 10A1, 10A2)..."
-                                                        className="w-full text-[11px] bg-slate-50 border-none rounded-md pl-7 pr-2 py-1 outline-none focus:ring-1 focus:ring-blue-500/30"
+                                                        readOnly={!isSuperAdmin}
+                                                        className={cn("w-full text-[11px] bg-slate-50 border-none rounded-md pl-7 pr-2 py-1 outline-none", !isSuperAdmin ? "cursor-not-allowed opacity-70" : "focus:ring-1 focus:ring-blue-500/30")}
                                                     />
                                                 </div>
                                             </div>
@@ -328,12 +389,14 @@ export default function AdminStudents() {
                                                 </div>
                                             </td>
                                         )}
-                                        <td className="px-6 py-4">
-                                            <div className={cn('inline-flex items-center gap-1.5 rounded-full px-3 py-1 font-bold text-[11px] shadow-sm', roleColor)}>
-                                                <RoleIcon className="h-3 w-3" />
-                                                {roleLabel}
-                                            </div>
-                                        </td>
+                                        {isSuperAdmin && (
+                                            <td className="px-6 py-4">
+                                                <div className={cn('inline-flex items-center gap-1.5 rounded-full px-3 py-1 font-bold text-[11px] shadow-sm', roleColor)}>
+                                                    <RoleIcon className="h-3 w-3" />
+                                                    {roleLabel}
+                                                </div>
+                                            </td>
+                                        )}
                                         {isSuperAdmin && (
                                             <td className="px-6 py-4 text-center">
                                                 <div className="inline-block relative">
@@ -350,18 +413,21 @@ export default function AdminStudents() {
                                                 </div>
                                             </td>
                                         )}
-                                         <td className="px-6 py-4 text-right">
-                                            <div className="flex justify-end gap-2 opacity-40 group-hover:opacity-100 transition-opacity">
-                                                {isSuperAdmin && (
+                                         {isSuperAdmin && (
+                                            <td className="px-6 py-4 text-right">
+                                                <div className="flex justify-end gap-2 opacity-40 group-hover:opacity-100 transition-opacity">
                                                     <Button variant="ghost" size="icon" onClick={() => handleTrackUser(u)} className="text-slate-400 hover:text-indigo-600 hover:bg-indigo-50 dark:hover:bg-indigo-900/30 dark:hover:text-indigo-400 h-8 w-8 rounded-lg" title="Xem lịch sử hoạt động">
                                                         <Activity className="h-4 w-4" />
                                                     </Button>
-                                                )}
-                                                <Button variant="ghost" size="icon" onClick={() => setDeleteTarget(u.email)} className="text-slate-400 hover:text-rose-600 hover:bg-rose-50 dark:hover:bg-rose-900/30 dark:hover:text-rose-400 h-8 w-8 rounded-lg" title="Xóa người dùng">
-                                                    <Trash2 className="h-4 w-4" />
-                                                </Button>
-                                            </div>
-                                        </td>
+                                                    <Button variant="ghost" size="icon" onClick={() => handleQuickBlacklist(u.email)} className="text-slate-400 hover:text-rose-500 hover:bg-rose-50 dark:hover:bg-rose-900/30 dark:hover:text-rose-400 h-8 w-8 rounded-lg" title="Thêm vào Blacklist">
+                                                        <Ban className="h-4 w-4" />
+                                                    </Button>
+                                                    <Button variant="ghost" size="icon" onClick={() => setDeleteTarget(u.email)} className="text-slate-400 hover:text-rose-600 hover:bg-rose-50 dark:hover:bg-rose-900/30 dark:hover:text-rose-400 h-8 w-8 rounded-lg" title="Xóa người dùng">
+                                                        <Trash2 className="h-4 w-4" />
+                                                    </Button>
+                                                </div>
+                                            </td>
+                                        )}
                                     </tr>
                                 );
                             })}
@@ -377,6 +443,103 @@ export default function AdminStudents() {
                     )}
                 </div>
             </div>
+
+            {/* Blacklist Section - Super Admin Only */}
+            {isSuperAdmin && (
+                <div className="admin-card overflow-hidden mt-8">
+                    <div className="p-6 border-b border-slate-100 dark:border-slate-800 flex items-center justify-between bg-white dark:bg-slate-900/40">
+                        <div className="flex items-center gap-4">
+                            <div className="p-3 bg-rose-500 text-white rounded-2xl shadow-lg shadow-rose-200 dark:shadow-none">
+                                <Ban className="h-6 w-6" />
+                            </div>
+                            <div>
+                                <h2 className="text-2xl font-black text-slate-800 dark:text-slate-100">Danh sách chặn (Blacklist)</h2>
+                                <p className="text-sm font-medium text-slate-500 mt-0.5 whitespace-nowrap">Học sinh trong danh sách này sẽ bị ẩn khỏi tầm nhìn của Admin</p>
+                            </div>
+                        </div>
+                        <span className="px-3 py-1 bg-rose-100 text-rose-600 rounded-full text-xs font-black ring-4 ring-rose-50">
+                            {blacklist.length} EMAIL
+                        </span>
+                    </div>
+
+                    <div className="p-6 bg-slate-50/50 dark:bg-slate-800/20 border-b border-slate-100 dark:border-slate-800">
+                        <div className="grid grid-cols-1 md:grid-cols-12 gap-4 items-end">
+                            <div className="md:col-span-5 space-y-1.5">
+                                <label className="text-[10px] font-black uppercase tracking-widest text-slate-400 ml-1">Email học sinh</label>
+                                <input 
+                                    type="email" 
+                                    value={newBlacklist.email} 
+                                    onChange={(e) => setNewBlacklist({ ...newBlacklist, email: e.target.value })}
+                                    placeholder="hocsinh@example.com"
+                                    className="w-full rounded-xl border-none bg-white dark:bg-slate-800 shadow-sm py-2.5 px-4 text-sm outline-none focus:ring-2 focus:ring-rose-500/50 transition-all font-medium"
+                                />
+                            </div>
+                            <div className="md:col-span-5 space-y-1.5">
+                                <label className="text-[10px] font-black uppercase tracking-widest text-slate-400 ml-1">Lý do chặn (không bắt buộc)</label>
+                                <input 
+                                    type="text" 
+                                    value={newBlacklist.reason} 
+                                    onChange={(e) => setNewBlacklist({ ...newBlacklist, reason: e.target.value })}
+                                    placeholder="Vi phạm quy định..."
+                                    className="w-full rounded-xl border-none bg-white dark:bg-slate-800 shadow-sm py-2.5 px-4 text-sm outline-none focus:ring-2 focus:ring-rose-500/50 transition-all font-medium"
+                                />
+                            </div>
+                            <div className="md:col-span-2">
+                                <Button 
+                                    onClick={handleAddToBlacklist}
+                                    className="w-full bg-rose-600 hover:bg-rose-700 text-white rounded-xl py-2.5 font-bold shadow-lg shadow-rose-100 dark:shadow-none transition-all flex items-center justify-center gap-2"
+                                >
+                                    <Ban className="h-4 w-4" /> Chặn
+                                </Button>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div className="overflow-x-auto">
+                        <table className="w-full text-sm">
+                            <thead className="bg-slate-50/80 border-b border-slate-100 dark:bg-slate-800/50 dark:border-slate-800">
+                                <tr>
+                                    <th className="px-6 py-3 text-left font-bold text-[10px] uppercase tracking-wider text-slate-400">Email</th>
+                                    <th className="px-6 py-3 text-left font-bold text-[10px] uppercase tracking-wider text-slate-400">Lý do</th>
+                                    <th className="px-6 py-3 text-left font-bold text-[10px] uppercase tracking-wider text-slate-400">Người thực hiện</th>
+                                    <th className="px-6 py-3 text-right font-bold text-[10px] uppercase tracking-wider text-slate-400">Thao tác</th>
+                                </tr>
+                            </thead>
+                            <tbody className="divide-y divide-slate-100 dark:divide-slate-800/60 bg-white dark:bg-slate-900/10">
+                                {blacklist.map((entry) => (
+                                    <tr key={entry.email} className="group hover:bg-slate-50/50 transition-colors">
+                                        <td className="px-6 py-4 font-bold text-slate-700 dark:text-slate-300">{entry.email}</td>
+                                        <td className="px-6 py-4 text-slate-500 italic text-xs">{entry.reason || 'Không có lý do'}</td>
+                                        <td className="px-6 py-4">
+                                            <div className="flex flex-col">
+                                                <span className="text-[11px] font-black text-slate-600">{entry.addedBy}</span>
+                                                <span className="text-[10px] text-slate-400">{new Date(entry.addedAt).toLocaleDateString('vi-VN')}</span>
+                                            </div>
+                                        </td>
+                                        <td className="px-6 py-4 text-right">
+                                            <Button 
+                                                variant="ghost" 
+                                                size="sm"
+                                                onClick={() => handleRemoveFromBlacklist(entry.email)}
+                                                className="text-rose-500 hover:bg-rose-50 hover:text-rose-600 h-8 font-bold px-3 rounded-lg border border-transparent hover:border-rose-100 transition-all opacity-0 group-hover:opacity-100"
+                                            >
+                                                Bỏ chặn
+                                            </Button>
+                                        </td>
+                                    </tr>
+                                ))}
+                                {blacklist.length === 0 && (
+                                    <tr>
+                                        <td colSpan={4} className="py-12 text-center text-slate-400 font-medium">
+                                            Chưa có ai trong danh sách đen
+                                        </td>
+                                    </tr>
+                                )}
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            )}
 
             <Dialog open={showAdd} onClose={() => setShowAdd(false)}>
                 <div className="p-1">
