@@ -270,7 +270,10 @@ export default function AdminStudents() {
                         <div>
                             <h2 className="text-2xl font-black text-slate-800 dark:text-slate-100">Quản lý học sinh</h2>
                             <p className="text-sm font-medium text-slate-500 mt-0.5 flex items-center gap-2">
-                                <span className="flex items-center gap-1"><UserCheck className="h-3 w-3 text-emerald-500" /> {onlineEmails.length} đang online</span>
+                                <span className="flex items-center gap-1">
+                                    <UserCheck className="h-3 w-3 text-emerald-500" /> 
+                                    {users.filter(u => onlineEmails.includes(u.email.toLowerCase())).length} đang online
+                                </span>
                                 <span className="text-slate-300">•</span>
                                 <span>Tổng {users.length} tài khoản</span>
                             </p>

@@ -95,9 +95,17 @@ export function AdminOverview() {
                 ]);
 
                 let filteredUsers = users;
+                let filteredUniqueCount = activity.uniqueUsers;
+
                 if ((isSuperAdmin || isAdmin) && blacklist) {
                     const blacklistedEmails = (blacklist || []).map(b => b.email.toLowerCase());
                     filteredUsers = users.filter(u => !blacklistedEmails.includes(u.email.toLowerCase()));
+                    
+                    if (activity.recentEmails) {
+                        filteredUniqueCount = activity.recentEmails.filter(email => 
+                            !blacklistedEmails.includes(email.toLowerCase())
+                        ).length;
+                    }
                 }
 
                 setStats({
@@ -106,7 +114,7 @@ export function AdminOverview() {
                     totalVocab: vocab.length,
                     totalUsers: filteredUsers.length,
                     totalAccess: activity.totalAccess,
-                    uniqueUsers: activity.uniqueUsers,
+                    uniqueUsers: filteredUniqueCount,
                 });
             } catch (err) {
                 console.error('[AdminOverview] Error:', err);

@@ -621,6 +621,7 @@ export async function getActivityStats() {
         totalAccess: logs.length,
         moduleStats,
         uniqueUsers: recentUsers.size,
+        recentEmails: Array.from(recentUsers),
     };
 }
 
