@@ -23,7 +23,7 @@ const roleOptions = [
 
 export default function AdminStudents() {
     const { toast } = useToast();
-    const { isSuperAdmin, isAdmin, isTeacher, user: currentUserProfile } = useAuth();
+    const { isSuperAdmin, isAdmin, isTeacher, user: currentUserProfile, role } = useAuth();
     const [users, setUsers] = useState<AllowedUser[]>([]);
     const [blacklist, setBlacklist] = useState<BlacklistEntry[]>([]);
     const [loading, setLoading] = useState(true);
@@ -53,18 +53,29 @@ export default function AdminStudents() {
         async function loadUsers() { 
         setLoading(true); 
         try {
+            console.log('[AdminStudents] role:', role);
+            console.log('[AdminStudents] isSuperAdmin:', isSuperAdmin, 'isAdmin:', isAdmin);
+            
             const [allUsers, bl] = await Promise.all([
                 getAllAllowedUsers(),
                 (isSuperAdmin || isAdmin) ? getBlacklist() : Promise.resolve([])
             ]);
             
-            setBlacklist(bl || []);
+            const fetchedBlacklist = bl || [];
+            console.log('[AdminStudents] Fetched blacklist count:', fetchedBlacklist.length);
+            setBlacklist(fetchedBlacklist);
             
-            if (isSuperAdmin) {
-                setUsers(allUsers);
-            } else if (isAdmin) {
-                const blacklistedEmails = (bl || []).map(b => b.email.toLowerCase());
-                const filteredUsers = allUsers.filter(u => !blacklistedEmails.includes(u.email.toLowerCase()));
+            if (isSuperAdmin || isAdmin) {
+                const blacklistedEmails = fetchedBlacklist.map(b => b.email.toLowerCase());
+                console.log('[AdminStudents] blacklistedEmails:', blacklistedEmails);
+                
+                const filteredUsers = allUsers.filter(u => {
+                    const isBlacklisted = blacklistedEmails.includes(u.email.toLowerCase());
+                    if (isBlacklisted) console.log('[AdminStudents] Hiding blacklisted user:', u.email);
+                    return !isBlacklisted;
+                });
+                
+                console.log('[AdminStudents] Total visible users:', filteredUsers.length);
                 setUsers(filteredUsers);
             } else if (isTeacher) {
                 // Find current teacher's meta

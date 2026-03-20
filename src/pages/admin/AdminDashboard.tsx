@@ -95,7 +95,7 @@ export function AdminOverview() {
                 ]);
 
                 let filteredUsers = users;
-                if (!isSuperAdmin && isAdmin && blacklist) {
+                if ((isSuperAdmin || isAdmin) && blacklist) {
                     const blacklistedEmails = (blacklist || []).map(b => b.email.toLowerCase());
                     filteredUsers = users.filter(u => !blacklistedEmails.includes(u.email.toLowerCase()));
                 }
