@@ -2,7 +2,7 @@ import { Outlet, useNavigate, useLocation } from 'react-router-dom';
 import { useAuth } from '@/contexts/AuthContext';
 import { useTheme } from '@/contexts/ThemeContext';
 import { useEffect, useState, useRef } from 'react';
-import { subscribeToOnlineUsers } from '@/services/auth.service';
+import { subscribeToOnlineUsersList, getBlacklist } from '@/services/auth.service';
 import { cn } from '@/lib/utils';
 import { LogOut, Settings, Bell, ChevronDown, Music4, BarChart3, Sparkles } from 'lucide-react';
 import { FloatingHub } from '@/components/FloatingHub';
@@ -22,9 +22,35 @@ export function AppLayout() {
     const isDashboard = location.pathname === '/';
 
     useEffect(() => {
-        const unsubscribe = subscribeToOnlineUsers(setOnlineCount);
-        return () => unsubscribe();
-    }, []);
+        let unsubscribe: (() => void) | null = null;
+        
+        async function setup() {
+            let blEmails: string[] = [];
+            if (isAdmin) {
+                try {
+                    const bl = await getBlacklist();
+                    blEmails = bl.map(b => b.email.toLowerCase());
+                } catch (err) {
+                    console.error('[AppLayout] Blacklist fetch error:', err);
+                }
+            }
+
+            unsubscribe = subscribeToOnlineUsersList((onlineList) => {
+                const emails = onlineList.map(u => u.email.toLowerCase());
+                if (isAdmin) {
+                    const filteredCount = emails.filter(email => !blEmails.includes(email)).length;
+                    setOnlineCount(filteredCount);
+                } else {
+                    setOnlineCount(emails.length);
+                }
+            });
+        }
+
+        setup();
+        return () => {
+            if (unsubscribe) unsubscribe();
+        };
+    }, [isAdmin]);
 
     // Close dropdown on click outside
     useEffect(() => {
