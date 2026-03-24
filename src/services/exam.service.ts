@@ -19,6 +19,7 @@ import {
 import { auth, db } from '@/config/firebase';
 import type { Exam, ExamMetadata, PracticeLog, PracticeHistory, HighestScores } from '@/types';
 import { generateRandomId } from '@/lib/utils';
+import { normalizeEnglishExam } from '@/lib/englishExamUtils';
 
 // ============================================================
 // CACHING
@@ -63,6 +64,7 @@ export async function getAllExams(): Promise<ExamMetadata[]> {
                     part2: (data.part2 || []).length,
                     part3: (data.part3 || []).length,
                 },
+                hasGroups: (data.questionGroups || []).length > 0,
             } as ExamMetadata;
         });
 
@@ -78,7 +80,7 @@ export async function getAllExams(): Promise<ExamMetadata[]> {
 export async function getExamContent(examId: string, forceRefresh = false): Promise<Exam | null> {
     // 1. Check memory cache (ONLY if not forcing refresh)
     if (!forceRefresh && examContentCache.has(examId)) {
-        return examContentCache.get(examId) || null;
+        return normalizeEnglishExam(examContentCache.get(examId)!);
     }
 
     // 2. Check localStorage cache (ONLY if not forcing refresh)
@@ -102,8 +104,9 @@ export async function getExamContent(examId: string, forceRefresh = false): Prom
 
         // 4. If we have a cache, check if it's still valid
         if (cachedExam && meta.updatedAt === cachedExam.updatedAt) {
-            examContentCache.set(examId, cachedExam);
-            return cachedExam;
+            const normalized = normalizeEnglishExam(cachedExam);
+            examContentCache.set(examId, normalized);
+            return normalized;
         }
 
         // 5. Cache is missing or stale, fetch full content from exam_contents
@@ -126,6 +129,7 @@ export async function getExamContent(examId: string, forceRefresh = false): Prom
             part1: examData.part1 || [],
             part2: examData.part2 || [],
             part3: examData.part3 || [],
+            questionGroups: examData.questionGroups || [],
             attemptCount: examData.attemptCount || 0,
             createdAt: examData.createdAt || '',
             createdBy: examData.createdBy || '',
@@ -134,10 +138,11 @@ export async function getExamContent(examId: string, forceRefresh = false): Prom
         };
 
         // Update caches
-        examContentCache.set(examId, exam);
-        localStorage.setItem(`exam_content_${examId}`, JSON.stringify(exam));
+        const normalizedExam = normalizeEnglishExam(exam);
+        examContentCache.set(examId, normalizedExam);
+        localStorage.setItem(`exam_content_${examId}`, JSON.stringify(normalizedExam));
 
-        return exam;
+        return normalizedExam;
     } catch (error) {
         console.error('[Exam] Failed to fetch exam content:', error);
         return null;
@@ -162,7 +167,7 @@ export async function createExam(examData: Omit<Exam, 'id'>, customId?: string):
         }
     }
 
-    const { part1, part2, part3, ...metadata } = examData;
+    const { part1, part2, part3, questionGroups, ...metadata } = examData;
     const now = new Date().toISOString();
 
     // 2. Use Batch to save metadata and content separately (Atomic)
@@ -176,6 +181,7 @@ export async function createExam(examData: Omit<Exam, 'id'>, customId?: string):
         part1: part1 || [],
         part2: part2 || [],
         part3: part3 || [],
+        questionGroups: questionGroups || [],
         questionCount: {
             part1: (part1 || []).length,
             part2: (part2 || []).length,
@@ -193,6 +199,7 @@ export async function createExam(examData: Omit<Exam, 'id'>, customId?: string):
         part1: part1 || [],
         part2: part2 || [],
         part3: part3 || [],
+        questionGroups: questionGroups || [],
     });
 
     await batch.commit();
@@ -202,7 +209,7 @@ export async function createExam(examData: Omit<Exam, 'id'>, customId?: string):
 }
 
 export async function updateExam(examId: string, examData: Partial<Exam>): Promise<void> {
-    const { id: _id, part1, part2, part3, ...metadata } = examData;
+    const { id: _id, part1, part2, part3, questionGroups, ...metadata } = examData;
     const now = new Date().toISOString();
 
     const batch = writeBatch(db);
@@ -216,6 +223,7 @@ export async function updateExam(examId: string, examData: Partial<Exam>): Promi
             if (part1) updatePayload.part1 = part1;
             if (part2) updatePayload.part2 = part2;
             if (part3) updatePayload.part3 = part3;
+            if (questionGroups) updatePayload.questionGroups = questionGroups;
             
             // If any parts are missing from the update, we SHOULD NOT overwrite the whole questionCount object
             // but Firestore update can't partially update a nested object without dot notation.
@@ -227,12 +235,13 @@ export async function updateExam(examId: string, examData: Partial<Exam>): Promi
     }
 
     // 2. Update exam_contents collection
-    if (part1 || part2 || part3) {
+    if (part1 || part2 || part3 || questionGroups) {
         const contentRef = doc(db, 'exam_contents', examId);
         const contentPayload: any = {};
         if (part1) contentPayload.part1 = part1;
         if (part2) contentPayload.part2 = part2;
         if (part3) contentPayload.part3 = part3;
+        if (questionGroups) contentPayload.questionGroups = questionGroups;
         batch.set(contentRef, contentPayload, { merge: true });
     }
 
@@ -449,7 +458,6 @@ export function getSubjects() {
         { id: 'van', name: 'Ngữ Văn', icon: '📖', color: '#EF4444', gradient: 'bg-gradient-to-br from-red-400 to-rose-500' },
         { id: 'su', name: 'Lịch Sử', icon: '🏛️', color: '#D97706', gradient: 'bg-gradient-to-br from-yellow-500 to-amber-600' },
         { id: 'dia', name: 'Địa Lý', icon: '🌍', color: '#06B6D4', gradient: 'bg-gradient-to-br from-cyan-500 to-teal-600' },
-        { id: 'anh', name: 'Tiếng Anh', icon: '🇬🇧', color: '#EC4899', gradient: 'bg-gradient-to-br from-pink-500 to-rose-600' },
         { id: 'gdcd', name: 'GDCD', icon: '⚖️', color: '#14B8A6', gradient: 'bg-gradient-to-br from-teal-400 to-emerald-500' },
         { id: 'tin', name: 'Tin Học', icon: '💻', color: '#6366F1', gradient: 'bg-gradient-to-br from-indigo-500 to-violet-600' },
     ];

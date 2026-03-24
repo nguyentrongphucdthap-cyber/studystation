@@ -17,7 +17,7 @@ import { Spinner } from '@/components/ui/Spinner';
 import { Button } from '@/components/ui/Button';
 import { AlertDialog, ConfirmDialog } from '@/components/ui/Dialog';
 import { LatexContent } from '@/components/ui/LatexContent';
-import type { Exam, Part1Question, Part2Question, Part3Question, PracticeHistory } from '@/types';
+import type { Exam, Part1Question, Part2Question, Part3Question, QuestionGroup, PracticeHistory } from '@/types';
 import {
     ArrowLeft,
     Clock,
@@ -36,8 +36,9 @@ import {
     ChevronUp as ArrowUp,
     List,
     Target,
-    X,
     Settings,
+    X,
+    Check,
 } from 'lucide-react';
 
 type ExamMode = 'ready' | 'taking' | 'result';
@@ -78,6 +79,7 @@ export default function PracticeExam() {
     const [shuffledP1, setShuffledP1] = useState<Part1Question[]>([]);
     const [shuffledP2, setShuffledP2] = useState<Part2Question[]>([]);
     const [shuffledP3, setShuffledP3] = useState<Part3Question[]>([]);
+    const [shuffledGroups, setShuffledGroups] = useState<QuestionGroup[]>([]);
     const [isShuffled, setIsShuffled] = useState(false);
     
     // Feature: Practice Mode (One-by-one)
@@ -97,6 +99,7 @@ export default function PracticeExam() {
         open: false, title: '', message: '', type: 'info',
     });
     const [showFeedback, setShowFeedback] = useState(false);
+    const [splitScreenMode, setSplitScreenMode] = useState(true);
     const [showSidebar, setShowSidebar] = useState(true);
     const [wrongOptId, setWrongOptId] = useState<number | null>(null);
     const [wrongSubQId, setWrongSubQId] = useState<string | null>(null);
@@ -113,6 +116,24 @@ export default function PracticeExam() {
         ];
     }, [shuffledP1, shuffledP2, shuffledP3]);
 
+    const p1ItemsToDisplay = useMemo(() => {
+        const result: ({ type: 'group'; data: QuestionGroup } | { type: 'standalone'; data: Part1Question })[] = [];
+        const seenGroupIds = new Set<string>();
+        
+        shuffledP1.forEach(q => {
+            const group = shuffledGroups.find(g => g.questionIds.includes(q.id));
+            if (group) {
+                if (!seenGroupIds.has(group.id)) {
+                    result.push({ type: 'group', data: group });
+                    seenGroupIds.add(group.id);
+                }
+            } else {
+                result.push({ type: 'standalone', data: q });
+            }
+        });
+        return result;
+    }, [shuffledP1, shuffledGroups]);
+
     useEffect(() => {
         async function load() {
             if (!examId) return;
@@ -128,7 +149,12 @@ export default function PracticeExam() {
                     setShuffledP1(examData.part1 || []);
                     setShuffledP2(examData.part2 || []);
                     setShuffledP3(examData.part3 || []);
+                    setShuffledGroups(examData.questionGroups || []);
                     
+                    // Default split screen ON if English and has passages
+                    const hasPassages = (examData.questionGroups || []).some(g => g.passage);
+                    setSplitScreenMode(hasPassages);
+
                     // Log viewing the exam
                     logUserActivity('PracticeExam', `Xem đề: ${examData.title}`);
                 }
@@ -231,42 +257,80 @@ export default function PracticeExam() {
     const handleShuffle = () => {
         if (!exam) return;
 
-        // Current answers for mapping if needed
+        const newGroups = exam.questionGroups || [];
+        const part1Qs = exam.part1 || [];
         const newPart1Answers = { ...part1Answers };
 
-        // Shuffle Part 1: Shuffle questions + shuffle options within questions
-        // We'll map the current selected option index to the new index
-        const newP1 = shuffleArray(shuffledP1.length > 0 ? shuffledP1 : (exam.part1 || [])).map(q => {
-            const currentSelectedIdx = part1Answers[q.id];
-            const originalOptions = [...q.options];
-            const originalCorrectText = (q.options[q.correct] || '') as string;
-            
-            // If user had selected an answer, find its text
-            const selectedText = currentSelectedIdx !== undefined ? originalOptions[currentSelectedIdx] : null;
+        // Identify standalone questions (not in any group)
+        const groupedQIds = new Set(newGroups.flatMap(g => g.questionIds));
+        const standaloneQs = part1Qs.filter(q => !groupedQIds.has(q.id));
 
-            const newOptions = shuffleArray(originalOptions);
-            const newCorrect = newOptions.indexOf(originalCorrectText);
-            
-            // Update the answer in part1Answers if exists
-            if (selectedText !== null && selectedText !== undefined) {
-                const newSelectedIdx = newOptions.indexOf(selectedText);
-                newPart1Answers[q.id] = newSelectedIdx === -1 ? undefined : newSelectedIdx;
+        // Create random items: each is either a QuestionGroup or a standalone Part1Question
+        type ShuffleItem = { type: 'group'; data: QuestionGroup } | { type: 'standalone'; data: Part1Question };
+        const itemsToShuffle: ShuffleItem[] = [
+            ...newGroups.map(g => ({ type: 'group' as const, data: g })),
+            ...standaloneQs.map(q => ({ type: 'standalone' as const, data: q }))
+        ];
+
+        const shuffledItems = shuffleArray(itemsToShuffle);
+
+        // Rebuild shuffledP1 based on new order
+        const newP1: Part1Question[] = [];
+        const newShuffledGroups: QuestionGroup[] = [];
+
+        shuffledItems.forEach(item => {
+            if (item.type === 'standalone') {
+                const q = item.data;
+                const currentDisplayQ = shuffledP1.find(x => x.id === q.id) || q;
+                const currentSelectedIdx = part1Answers[q.id];
+                
+                const originalOptions = [...q.options];
+                const originalCorrectText = q.options[q.correct] as string;
+                
+                // If we are already shuffled, we should map from current display back to original for base
+                // but handleShuffle usually shuffles from the current state to a NEW state.
+                // To keep it simple and consistent with how options are shuffled:
+                const selectedText = currentSelectedIdx !== undefined ? currentDisplayQ.options[currentSelectedIdx] : null;
+
+                const newOptions = shuffleArray(originalOptions);
+                const newCorrect = newOptions.indexOf(originalCorrectText);
+                
+                newP1.push({ ...q, options: newOptions, correct: newCorrect as any });
+                
+                if (selectedText !== null && selectedText !== undefined) {
+                    const newSelectedIdx = newOptions.indexOf(selectedText);
+                    newPart1Answers[q.id] = newSelectedIdx === -1 ? undefined : newSelectedIdx;
+                }
+            } else {
+                const group = item.data;
+                newShuffledGroups.push(group);
+                group.questionIds.forEach(qId => {
+                    const q = part1Qs.find(x => x.id === qId);
+                    if (q) {
+                        const currentDisplayQ = shuffledP1.find(x => x.id === q.id) || q;
+                        const currentSelectedIdx = part1Answers[q.id];
+                        const originalOptions = [...q.options];
+                        const originalCorrectText = q.options[q.correct] as string;
+                        const selectedText = currentSelectedIdx !== undefined ? currentDisplayQ.options[currentSelectedIdx] : null;
+
+                        const newOptions = shuffleArray(originalOptions);
+                        const newCorrect = newOptions.indexOf(originalCorrectText);
+                        
+                        newP1.push({ ...q, options: newOptions, correct: newCorrect as any });
+                        
+                        if (selectedText !== null && selectedText !== undefined) {
+                            const newSelectedIdx = newOptions.indexOf(selectedText);
+                            newPart1Answers[q.id] = newSelectedIdx === -1 ? undefined : newSelectedIdx;
+                        }
+                    }
+                });
             }
-
-            return {
-                ...q,
-                options: newOptions,
-                correct: (newCorrect === -1 ? 0 : newCorrect) as 0 | 1 | 2 | 3
-            };
         });
 
-        // Shuffle Part 2 & 3 questions (order only)
-        const newP2 = shuffleArray(shuffledP2.length > 0 ? shuffledP2 : (exam.part2 || []));
-        const newP3 = shuffleArray(shuffledP3.length > 0 ? shuffledP3 : (exam.part3 || []));
-
         setShuffledP1(newP1);
-        setShuffledP2(newP2);
-        setShuffledP3(newP3);
+        setShuffledGroups(newShuffledGroups);
+        setShuffledP2(shuffleArray(shuffledP2.length > 0 ? shuffledP2 : (exam.part2 || [])));
+        setShuffledP3(shuffleArray(shuffledP3.length > 0 ? shuffledP3 : (exam.part3 || [])));
         setPart1Answers(newPart1Answers);
         setIsShuffled(true);
 
@@ -300,6 +364,7 @@ export default function PracticeExam() {
         setShuffledP1(exam.part1 || []);
         setShuffledP2(exam.part2 || []);
         setShuffledP3(exam.part3 || []);
+        setShuffledGroups(exam.questionGroups || []);
         setPart1Answers(newPart1Answers);
         setIsShuffled(false);
         setAlertState({
@@ -929,49 +994,155 @@ export default function PracticeExam() {
                                     <h3 className="text-xl font-bold">Phần 1: Trắc nghiệm</h3>
                                     <span className="text-sm text-muted-foreground">({shuffledP1.length} câu)</span>
                                 </div>
-                                <div className="space-y-6">
-                                    {shuffledP1.map((q, idx) => (
-                                        <div key={q.id} id={`q-p1-${q.id}`} className="rounded-2xl border border-border bg-card p-5 shadow-sm transition-all hover:shadow-md">
-                                            <div className="mb-4 text-base font-semibold leading-relaxed">
-                                                <span className="mr-3 inline-flex h-7 w-7 items-center justify-center rounded-lg bg-blue-100 text-xs font-bold text-blue-600">
-                                                    {idx + 1}
-                                                </span>
-                                                <LatexContent content={q.text} />
-                                            </div>
-                                            {q.image && (
-                                                <div className="mb-4 flex justify-center">
-                                                    <img src={q.image} alt="" className="max-h-64 rounded-xl object-contain shadow-sm" />
+                                <div className="space-y-8">
+                                    {p1ItemsToDisplay.map((item) => {
+                                        if (item.type === 'standalone') {
+                                            const q = item.data;
+                                            const qIdx = shuffledP1.findIndex(x => x.id === q.id);
+                                            return (
+                                                <div key={`p1-solo-${q.id}`} id={`q-p1-${q.id}`} className="rounded-2xl border border-border bg-card p-5 shadow-sm transition-all hover:shadow-md">
+                                                    <div className="mb-4 text-base font-semibold leading-relaxed">
+                                                        <span className="mr-3 inline-flex h-7 w-7 items-center justify-center rounded-lg bg-blue-100 text-xs font-bold text-blue-600">
+                                                            {qIdx + 1}
+                                                        </span>
+                                                        <LatexContent content={q.text} />
+                                                    </div>
+                                                    {q.image && (
+                                                        <div className="mb-4 flex justify-center">
+                                                            <img src={q.image} alt="" className="max-h-64 rounded-xl object-contain shadow-sm" />
+                                                        </div>
+                                                    )}
+                                                    <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
+                                                        {q.options.map((opt, oIdx) => {
+                                                            const isSelected = part1Answers[q.id] === oIdx;
+                                                            return (
+                                                                <button
+                                                                    key={oIdx}
+                                                                    onClick={() => handlePart1Select(q.id, oIdx)}
+                                                                    className={cn(
+                                                                        'group flex items-center rounded-xl border-2 p-4 text-left text-sm transition-all duration-200 ease-out active:scale-[0.97]',
+                                                                        isSelected
+                                                                            ? 'border-blue-500 bg-blue-50/50 text-blue-900 shadow-sm'
+                                                                            : 'border-transparent bg-muted/30 hover:border-blue-300 hover:bg-muted/60'
+                                                                    )}
+                                                                >
+                                                                    <span className={cn(
+                                                                        'mr-3 flex h-7 w-7 shrink-0 items-center justify-center rounded-lg text-xs font-black transition-all',
+                                                                        isSelected
+                                                                            ? 'bg-blue-600 text-white shadow-lg shadow-blue-200 scale-110'
+                                                                            : 'bg-background text-muted-foreground group-hover:bg-blue-100 group-hover:text-blue-600'
+                                                                    )}>
+                                                                        {String.fromCharCode(65 + oIdx)}
+                                                                    </span>
+                                                                    <span className="font-medium"><LatexContent content={opt} /></span>
+                                                                </button>
+                                                            );
+                                                        })}
+                                                    </div>
                                                 </div>
-                                            )}
-                                            <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
-                                                {q.options.map((opt, oIdx) => {
-                                                    const isSelected = part1Answers[q.id] === oIdx;
-                                                    return (
-                                                        <button
-                                                            key={oIdx}
-                                                            onClick={() => handlePart1Select(q.id, oIdx)}
-                                                            className={cn(
-                                                                'group flex items-center rounded-xl border-2 p-4 text-left text-sm transition-all duration-200 ease-out active:scale-[0.97]',
-                                                                isSelected
-                                                                    ? 'border-blue-500 bg-blue-50/50 text-blue-900 shadow-sm'
-                                                                    : 'border-transparent bg-muted/30 hover:border-blue-300 hover:bg-muted/60'
+                                            );
+                                        } else {
+                                            const group = item.data;
+                                            const groupQs = shuffledP1.filter(q => group.questionIds.includes(q.id));
+                                            if (groupQs.length === 0) return null;
+                                            
+                                            const isSplit = splitScreenMode && group.passage;
+
+                                            return (
+                                                <div 
+                                                    key={`p1-group-${group.id}`} 
+                                                    className={cn(
+                                                        "space-y-6 scroll-mt-24",
+                                                        isSplit ? "lg:grid lg:grid-cols-12 lg:gap-8 lg:items-start" : ""
+                                                    )}
+                                                >
+                                                    {/* Passage / Header Column */}
+                                                    {(group.passage || group.title) && (
+                                                        <div className={cn(
+                                                            "space-y-4",
+                                                            isSplit ? "lg:col-span-6 lg:sticky lg:top-24" : ""
+                                                        )}>
+                                                            {group.title && (
+                                                                <div className="bg-pink-50 border-l-4 border-pink-500 p-4 rounded-r-xl shadow-sm">
+                                                                    <h4 className="text-sm font-black text-pink-700 uppercase tracking-widest flex items-center gap-2">
+                                                                        <Settings size={16} className="text-pink-400" /> Yêu cầu
+                                                                    </h4>
+                                                                    <p className="mt-1 text-sm font-bold text-slate-800 leading-relaxed italic whitespace-pre-wrap">
+                                                                        {group.title}
+                                                                    </p>
+                                                                </div>
                                                             )}
-                                                        >
-                                                            <span className={cn(
-                                                                'mr-3 flex h-6 w-6 shrink-0 items-center justify-center rounded-md border text-[10px] font-bold transition-all duration-200',
-                                                                isSelected
-                                                                    ? 'border-blue-500 bg-blue-500 text-white'
-                                                                    : 'border-muted-foreground/30 bg-background text-muted-foreground'
-                                                            )}>
-                                                                {String.fromCharCode(65 + oIdx)}
-                                                            </span>
-                                                            <LatexContent content={opt} />
-                                                        </button>
-                                                    );
-                                                })}
-                                            </div>
-                                        </div>
-                                    ))}
+                                                            {group.passage && (
+                                                                <div className="bg-slate-50 border border-slate-200 p-6 rounded-2xl shadow-inner relative overflow-hidden group/passage">
+                                                                    <div className="absolute top-0 right-0 p-2 opacity-5 group-hover/passage:opacity-10 transition-opacity">
+                                                                        <BookOpen size={48} />
+                                                                    </div>
+                                                                    <div className={cn(
+                                                                        "relative text-sm md:text-base text-slate-700 leading-loose text-justify font-medium custom-scrollbar",
+                                                                        isSplit ? "lg:max-h-[calc(100vh-280px)] lg:overflow-y-auto lg:pr-4" : "max-h-[500px] overflow-y-auto pr-2"
+                                                                    )}>
+                                                                        <LatexContent content={group.passage} />
+                                                                    </div>
+                                                                </div>
+                                                            )}
+                                                        </div>
+                                                    )}
+
+                                                    {/* Questions Column */}
+                                                    <div className={cn(
+                                                        "space-y-6",
+                                                        isSplit ? "lg:col-span-6" : ""
+                                                    )}>
+                                                        {groupQs.map(q => {
+                                                            const qIdx = shuffledP1.findIndex(x => x.id === q.id);
+                                                            return (
+                                                                <div key={q.id} id={`q-p1-${q.id}`} className="rounded-2xl border border-border bg-card p-5 shadow-sm transition-all hover:shadow-md">
+                                                                    <div className="mb-4 text-base font-semibold leading-relaxed">
+                                                                        <span className="mr-3 inline-flex h-7 w-7 items-center justify-center rounded-lg bg-blue-100 text-xs font-bold text-blue-600">
+                                                                            {qIdx + 1}
+                                                                        </span>
+                                                                        <LatexContent content={q.text} />
+                                                                    </div>
+                                                                    {q.image && (
+                                                                        <div className="mb-4 flex justify-center">
+                                                                            <img src={q.image} alt="" className="max-h-64 rounded-xl object-contain shadow-sm" />
+                                                                        </div>
+                                                                    )}
+                                                                    <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
+                                                                        {q.options.map((opt, oIdx) => {
+                                                                            const isSelected = part1Answers[q.id] === oIdx;
+                                                                            return (
+                                                                                <button
+                                                                                    key={oIdx}
+                                                                                    onClick={() => handlePart1Select(q.id, oIdx)}
+                                                                                    className={cn(
+                                                                                        'group flex items-center rounded-xl border-2 p-4 text-left text-sm transition-all duration-200 ease-out active:scale-[0.97]',
+                                                                                        isSelected
+                                                                                            ? 'border-blue-500 bg-blue-50/50 text-blue-900 shadow-sm'
+                                                                                            : 'border-transparent bg-muted/30 hover:border-blue-300 hover:bg-muted/60'
+                                                                                    )}
+                                                                                >
+                                                                                    <span className={cn(
+                                                                                        'mr-3 flex h-7 w-7 shrink-0 items-center justify-center rounded-lg text-xs font-black transition-all',
+                                                                                        isSelected
+                                                                                            ? 'bg-blue-600 text-white shadow-lg shadow-blue-200 scale-110'
+                                                                                            : 'bg-background text-muted-foreground group-hover:bg-blue-100 group-hover:text-blue-600'
+                                                                                    )}>
+                                                                                        {String.fromCharCode(65 + oIdx)}
+                                                                                    </span>
+                                                                                    <span className="font-medium"><LatexContent content={opt} /></span>
+                                                                                </button>
+                                                                            );
+                                                                        })}
+                                                                    </div>
+                                                                </div>
+                                                            );
+                                                        })}
+                                                    </div>
+                                                </div>
+                                            );
+                                        }
+                                    })}
                                 </div>
                             </section>
                         )}
@@ -1102,41 +1273,79 @@ export default function PracticeExam() {
                             <div className="space-y-5">
                                 {/* Part 1 TOC */}
                                 {shuffledP1.length > 0 && (
-                                    <div>
+                                    <div className="space-y-4">
                                         <div className="mb-2 flex items-center justify-between">
                                             <span className="text-[10px] font-bold text-muted-foreground uppercase tracking-tight">Phần 1</span>
                                             <span className="text-[10px] text-muted-foreground">{p1Answered}/{shuffledP1.length}</span>
                                         </div>
-                                        <div className="grid grid-cols-5 gap-1.5">
-                                            {shuffledP1.map((q, idx) => {
-                                                const isCurrent = isPracticeMode && practiceQueue[currentPracticeIdx]?.id === q.id && practiceQueue[currentPracticeIdx]?.type === 'p1';
-                                                return (
-                                                    <button
-                                                        key={q.id}
-                                                        onClick={() => {
-                                                            if (isPracticeMode) {
-                                                                const qIdx = practiceQueue.findIndex(x => x.type === 'p1' && x.id === q.id);
-                                                                if (qIdx !== -1) {
-                                                                    setCurrentPracticeIdx(qIdx);
-                                                                    setShowFeedback(false);
-                                                                }
-                                                            } else {
-                                                                scrollToQuestion(`p1-${q.id}`);
-                                                            }
-                                                        }}
-                                                        className={cn(
-                                                            'flex h-9 items-center justify-center rounded-lg text-xs font-bold transition-all duration-150',
-                                                            isCurrent ? 'ring-2 ring-emerald-500 ring-offset-2 z-10' : '',
-                                                            part1Answers[q.id] !== undefined
-                                                                ? 'bg-primary text-primary-foreground shadow-sm scale-[0.97]'
-                                                                : 'bg-muted text-muted-foreground hover:bg-accent hover:text-foreground border border-transparent'
-                                                        )}
-                                                    >
-                                                        {idx + 1}
-                                                    </button>
-                                                );
-                                            })}
-                                        </div>
+
+                                        {/* Grouped Questions in TOC */}
+                                        {shuffledGroups.map(group => (
+                                            <div key={group.id} className="space-y-1.5">
+                                                <div className="flex items-center gap-1.5 px-1">
+                                                    <div className="h-1 w-1 rounded-full bg-pink-400" />
+                                                    <span className="text-[9px] font-black text-pink-600/70 uppercase truncate max-w-[180px]" title={group.title}>
+                                                        {group.title || 'Nhóm câu hỏi'}
+                                                    </span>
+                                                </div>
+                                                <div className="grid grid-cols-6 gap-1.5">
+                                                    {group.questionIds.map(qId => {
+                                                        const idx = shuffledP1.findIndex(x => x.id === qId);
+                                                        if (idx === -1) return null;
+                                                        const isAnswered = part1Answers[qId] !== undefined;
+                                                        return (
+                                                            <button
+                                                                key={qId}
+                                                                onClick={() => {
+                                                                    const el = document.getElementById(`q-p1-${qId}`);
+                                                                    if (el) el.scrollIntoView({ behavior: 'smooth', block: 'center' });
+                                                                }}
+                                                                className={cn(
+                                                                    "h-7 w-7 rounded-lg text-[10px] font-bold border transition-all flex items-center justify-center",
+                                                                    isAnswered
+                                                                        ? "bg-blue-600 border-blue-600 text-white shadow-sm"
+                                                                        : "bg-white border-slate-200 text-slate-400 hover:border-slate-300 hover:bg-slate-50"
+                                                                )}
+                                                            >
+                                                                {idx + 1}
+                                                            </button>
+                                                        );
+                                                    })}
+                                                </div>
+                                            </div>
+                                        ))}
+
+                                        {/* Standalone questions in TOC */}
+                                        {(() => {
+                                            const groupedQIds = new Set(shuffledGroups.flatMap(g => g.questionIds));
+                                            const standaloneQs = shuffledP1.filter(q => !groupedQIds.has(q.id));
+                                            if (standaloneQs.length === 0) return null;
+                                            return (
+                                                <div className="grid grid-cols-6 gap-1.5 pt-1">
+                                                    {standaloneQs.map(q => {
+                                                        const idx = shuffledP1.findIndex(x => x.id === q.id);
+                                                        const isAnswered = part1Answers[q.id] !== undefined;
+                                                        return (
+                                                            <button
+                                                                key={q.id}
+                                                                onClick={() => {
+                                                                    const el = document.getElementById(`q-p1-${q.id}`);
+                                                                    if (el) el.scrollIntoView({ behavior: 'smooth', block: 'center' });
+                                                                }}
+                                                                className={cn(
+                                                                    "h-7 w-7 rounded-lg text-[10px] font-bold border transition-all flex items-center justify-center",
+                                                                    isAnswered
+                                                                        ? "bg-blue-600 border-blue-600 text-white shadow-sm"
+                                                                        : "bg-white border-slate-200 text-slate-400 hover:border-slate-300 hover:bg-slate-50"
+                                                                )}
+                                                            >
+                                                                {idx + 1}
+                                                            </button>
+                                                        );
+                                                    })}
+                                                </div>
+                                            );
+                                        })()}
                                     </div>
                                 )}
 
@@ -1313,6 +1522,18 @@ export default function PracticeExam() {
                                                 <span>Luyện tập</span>
                                                 {isPracticeMode && <div className="ml-auto w-1.5 h-1.5 rounded-full bg-emerald-500" />}
                                             </button>
+
+                                            {(shuffledGroups || []).some(g => g.passage) && (
+                                                <button 
+                                                    onClick={() => { setSplitScreenMode(!splitScreenMode); setShowActionMenu(false); }}
+                                                    className="w-full flex items-center gap-3 px-3 py-2.5 rounded-xl hover:bg-slate-100 dark:hover:bg-slate-800 text-sm font-semibold text-slate-700 dark:text-slate-300 transition-colors"
+                                                >
+                                                    <div className={cn("h-4 w-4 rounded border-2 flex items-center justify-center transition-all", splitScreenMode ? "bg-pink-500 border-pink-500 text-white" : "border-slate-300 dark:border-slate-600")} >
+                                                        {splitScreenMode && <Check className="h-2.5 w-2.5 stroke-[4]" />}
+                                                    </div>
+                                                    <span>Chia đôi màn hình</span>
+                                                </button>
+                                            )}
                                         </div>
                                     )}
 
@@ -1376,25 +1597,72 @@ export default function PracticeExam() {
                                 <div className="space-y-6">
                                     {/* Part 1 */}
                                     {shuffledP1.length > 0 && (
-                                        <div>
-                                            <p className="text-[11px] font-black text-slate-400 uppercase tracking-widest mb-3">Phần 1: Trắc nghiệm</p>
-                                            <div className="grid grid-cols-5 gap-2">
-                                                {shuffledP1.map((q, idx) => (
-                                                    <button
-                                                        key={q.id}
-                                                        onClick={() => { scrollToQuestion(`p1-${q.id}`); setShowMobileTOC(false); }}
-                                                        className={cn(
-                                                            'h-10 rounded-xl font-bold transition-all border-2',
-                                                            part1Answers[q.id] !== undefined 
-                                                                ? 'text-white' 
-                                                                : 'bg-white dark:bg-slate-800 border-slate-100 dark:border-slate-700 text-slate-400'
-                                                        )}
-                                                        style={part1Answers[q.id] !== undefined ? { backgroundColor: settings.accentColor, borderColor: settings.accentColor, boxShadow: `0 4px 12px rgba(var(--accent-rgb), 0.3)` } : {}}
-                                                    >
-                                                        {idx + 1}
-                                                    </button>
-                                                ))}
-                                            </div>
+                                        <div className="space-y-4">
+                                            <p className="text-[11px] font-black text-slate-400 uppercase tracking-widest mb-1">Phần 1: Trắc nghiệm</p>
+                                            
+                                            {/* Grouped Questions in Mobile TOC */}
+                                            {shuffledGroups.map(group => (
+                                                <div key={group.id} className="space-y-2">
+                                                    <div className="flex items-center gap-2 px-1">
+                                                        <div className="h-1 w-1 rounded-full bg-pink-400" />
+                                                        <span className="text-[10px] font-bold text-pink-600/80 uppercase truncate max-w-[250px]">
+                                                            {group.title || 'Nhóm câu hỏi'}
+                                                        </span>
+                                                    </div>
+                                                    <div className="grid grid-cols-5 gap-2">
+                                                        {group.questionIds.map(qId => {
+                                                            const idx = shuffledP1.findIndex(x => x.id === qId);
+                                                            if (idx === -1) return null;
+                                                            const isAnswered = part1Answers[qId] !== undefined;
+                                                            return (
+                                                                <button
+                                                                    key={qId}
+                                                                    onClick={() => { scrollToQuestion(`p1-${qId}`); setShowMobileTOC(false); }}
+                                                                    className={cn(
+                                                                        'h-11 rounded-2xl font-black text-sm transition-all border-2 flex items-center justify-center',
+                                                                        isAnswered 
+                                                                            ? 'text-white' 
+                                                                            : 'bg-white dark:bg-slate-800 border-slate-100 dark:border-slate-700 text-slate-400'
+                                                                    )}
+                                                                    style={isAnswered ? { backgroundColor: settings.accentColor, borderColor: settings.accentColor, boxShadow: `0 4px 12px rgba(var(--accent-rgb), 0.3)` } : {}}
+                                                                >
+                                                                    {idx + 1}
+                                                                </button>
+                                                            );
+                                                        })}
+                                                    </div>
+                                                </div>
+                                            ))}
+
+                                            {/* Standalone questions in Mobile TOC */}
+                                            {(() => {
+                                                const groupedQIds = new Set(shuffledGroups.flatMap(g => g.questionIds));
+                                                const standaloneQs = shuffledP1.filter(q => !groupedQIds.has(q.id));
+                                                if (standaloneQs.length === 0) return null;
+                                                return (
+                                                    <div className="grid grid-cols-5 gap-2 pt-1 border-t border-slate-50 dark:border-slate-800 mt-2">
+                                                        {standaloneQs.map(q => {
+                                                            const idx = shuffledP1.findIndex(x => x.id === q.id);
+                                                            const isAnswered = part1Answers[q.id] !== undefined;
+                                                            return (
+                                                                <button
+                                                                    key={q.id}
+                                                                    onClick={() => { scrollToQuestion(`p1-${q.id}`); setShowMobileTOC(false); }}
+                                                                    className={cn(
+                                                                        'h-11 rounded-2xl font-black text-sm transition-all border-2 flex items-center justify-center',
+                                                                        isAnswered 
+                                                                            ? 'text-white' 
+                                                                            : 'bg-white dark:bg-slate-800 border-slate-100 dark:border-slate-700 text-slate-400'
+                                                                    )}
+                                                                    style={isAnswered ? { backgroundColor: settings.accentColor, borderColor: settings.accentColor, boxShadow: `0 4px 12px rgba(var(--accent-rgb), 0.3)` } : {}}
+                                                                >
+                                                                    {idx + 1}
+                                                                </button>
+                                                            );
+                                                        })}
+                                                    </div>
+                                                );
+                                            })()}
                                         </div>
                                     )}
 
@@ -1701,8 +1969,19 @@ export default function PracticeExam() {
                         if (resultFilter === 'correct' && !isCorrect) return null;
                         if (resultFilter === 'incorrect' && isCorrect) return null;
 
+                        // Identify group for review
+                        const group = (exam.questionGroups || []).find(g => g.questionIds.includes(q.id));
+                        const isFirstInGroup = group && group.questionIds[0] === q.id;
+
                         return (
-                            <div key={`p1-${q.id}`} className="bg-white rounded-2xl border border-gray-100 shadow-sm overflow-hidden transition-all">
+                            <div key={`p1-${q.id}`} className="space-y-2">
+                                {isFirstInGroup && (
+                                    <div className="mt-4 mb-2 p-3 bg-pink-50/50 border border-pink-100 rounded-xl">
+                                        <p className="text-[10px] font-black text-pink-600 uppercase tracking-widest mb-1">Nhóm câu hỏi</p>
+                                        <p className="text-xs font-bold text-slate-700 italic">{group.title}</p>
+                                    </div>
+                                )}
+                                <div className="bg-white rounded-2xl border border-gray-100 shadow-sm overflow-hidden transition-all">
                                 <button
                                     onClick={() => setExpandedResults({ ...expandedResults, [`p1-${q.id}`]: !isExpanded })}
                                     className="w-full flex items-center justify-between px-5 py-4 text-left"
@@ -1753,10 +2032,11 @@ export default function PracticeExam() {
                                     </div>
                                 )}
                             </div>
-                        );
-                    })}
+                        </div>
+                    );
+                })}
 
-                    {/* Part 2 rewrite similarly ... but it's long, I will simplify if needed */}
+                {/* Part 2 rewrite similarly ... but it's long, I will simplify if needed */}
                     {(selectedHistoryId ? (exam.part2 || []) : shuffledP2).map((q: Part2Question, idx) => {
                         const isExpanded = expandedResults[`p2-${q.id}`];
                         const subResults = q.subQuestions.map(sq => {

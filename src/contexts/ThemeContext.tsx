@@ -12,6 +12,7 @@ export interface ThemeSettings {
     examPadding: 'compact' | 'normal' | 'spacious'; // độ dãn vùng làm bài
     fontFamily: 'Be Vietnam Pro' | 'Roboto' | 'Times New Roman' | 'Montserrat (Đậm)';
     autoHideHub: boolean;          // tự động ẩn Flow khi làm bài
+    autoSkipLearn: boolean;        // tự động bỏ qua Flashcard Learn
 }
 
 interface ThemeContextType {
@@ -33,6 +34,7 @@ const DEFAULT_SETTINGS: ThemeSettings = {
     examPadding: 'normal',
     fontFamily: 'Be Vietnam Pro',
     autoHideHub: true,
+    autoSkipLearn: false,
 };
 
 const FONT_SIZES: Record<string, string> = {

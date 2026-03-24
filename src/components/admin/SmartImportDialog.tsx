@@ -1,6 +1,7 @@
 import React, { useState, useRef } from 'react';
 import { Dialog } from '@/components/ui/Dialog';
 import { Button } from '@/components/ui/Button';
+import { cn } from '@/lib/utils';
 import { useToast } from '@/components/ui/Toast';
 import { Upload, Wand2 } from 'lucide-react';
 import { getSubjects } from '@/services/exam.service';
@@ -59,16 +60,22 @@ QUY TẮC CÔNG THỨC & VĂN BẢN (CỰC KỲ QUAN TRỌNG):
 - HÌNH ẢNH: Nếu hình ảnh là biểu đồ/đồ thị/minh họa (KHÔNG phải công thức), BẮT BUỘC phải copy y nguyên link thẻ hình (Markdown '![...](url)'). VỊ TRÍ ĐẶT ẢNH: Đặt vào cuối thuộc tính "text" của CÂU HỎI CHÍNH. TUY NHIÊN, NẾU hình ảnh đó chính là MỘT ĐÁP ÁN (A, B, C, D) hoặc nằm trong Ý TRẢ LỜI của đúng/sai, thì ĐƯỢC PHÉP dán thẻ hình ảnh đó vào mảng "options" hoặc thuộc tính "text" của "subQuestions".
 - KHÔNG ĐƯỢC tự ý bỏ qua các bảng số liệu. Bảng số liệu là một phần của câu hỏi.
 
-JSON FORMAT (PHẢI TUÂN THỦ TUYỆT ĐỐI):
+JSON FORMAT:
 {
-  "part1": [{ "id": 1, "text": "...", "options": ["A", "B", "C", "D"], "correct": 0, "explanation": "..." }],
-  "part2": [{ "id": 1, "text": "...", "subQuestions": [{ "id": "a", "text": "...", "correct": true }] }],
-  "part3": [{ "id": 1, "text": "...", "correct": "10" }]
+  "title": "...",
+  "time": 50,
+  "part1": [
+    { "text": "...", "options": ["A", "B", "C", "D"], "correct": 0, "groupId": "group1" }
+  ],
+  "part2": [],
+  "part3": [],
+  "questionGroups": [
+    { "id": "group1", "title": "...", "passage": "..." }
+  ]
 }
-QUY TẮC CỰC KỲ QUAN TRỌNG:
-1. Phải có dấu phẩy (,) ngăn cách giữa các đối tượng trong mảng và giữa các thuộc tính.
-2. KHÔNG được có dấu phẩy dư ở cuối mảng hoặc cuối đối tượng.
-3. Chỉ xuất JSON thuần, không giải thích gì thêm.`,
+QUY TẮC ĐỊNH DẠNG (BẮT BUỘC):
+- Giữ nguyên định dạng gạch chân (__word__) và in đậm (**word**) từ văn bản gốc.
+Chỉ xuất JSON thuần.`,
 
     etest: `Bạn là chuyên gia phân tích đề thi tiếng Anh. Nhiệm vụ: trích xuất nội dung và xuất JSON.
     
@@ -77,6 +84,8 @@ CẤU TRÚC:
 
 JSON FORMAT:
 {
+  "title": "...",
+  "time": 50,
   "sections": [
     {
       "passage": "...",
@@ -86,11 +95,17 @@ JSON FORMAT:
     }
   ]
 }
+QUY TẮC ĐỊNH DẠNG (BẮT BUỘC):
+- BẮT BUỘC giữ nguyên định dạng gạch chân (__word__) và in đậm (**word**) từ văn bản gốc, đặc biệt là trong các câu hỏi tìm lỗi sai hoặc câu hỏi về từ vựng.
+- Nếu câu hỏi yêu cầu "chọn từ có phần gạch chân phát âm khác", hãy đảm bảo phần gạch chân đó được bao bởi dấu __.
 Chỉ xuất JSON thuần.`,
 
     vocab: `Trích xuất từ vựng từ văn bản và xuất JSON.
+Hãy tự gợi ý một tiêu đề (title) ngắn gọn, súc tích và chọn một danh mục (category) phù hợp nhất ('gdpt', 'advanced_gdpt', hoặc 'topic').
 JSON FORMAT:
 {
+  "title": "Tên bộ từ vựng gợi ý",
+  "category": "topic",
   "words": [
     { "word": "apple", "meaning": "quả táo", "example": "I eat an apple.", "pronunciation": "/ˈæp.əl/", "partOfSpeech": "noun" }
   ]
@@ -188,7 +203,7 @@ export function SmartImportDialog({ open, onClose, onImport, type, initialSubjec
 
             if (fileName.endsWith('.docx')) {
                 const arrayBuffer = await file.arrayBuffer();
-                const result = await (mammoth as any).convertToMarkdown({ arrayBuffer }, {
+                const result = await (mammoth as any).convertToHtml({ arrayBuffer }, {
                     convertImage: (mammoth.images as any).inline((element: any) => {
                         return element.read("base64").then(async (imageBuffer: string) => {
                              try {
@@ -208,7 +223,15 @@ export function SmartImportDialog({ open, onClose, onImport, type, initialSubjec
                         });
                     })
                 });
-                text = result.value;
+                // Convert common HTML tags to markdown-like syntax for AI
+                text = result.value
+                    .replace(/<strong>([\s\S]*?)<\/strong>/g, '**$1**')
+                    .replace(/<b>([\s\S]*?)<\/b>/g, '**$1**')
+                    .replace(/<em>([\s\S]*?)<\/em>/g, '*$1*')
+                    .replace(/<i>([\s\S]*?)<\/i>/g, '*$1*')
+                    .replace(/<u>([\s\S]*?)<\/u>/g, '<u>$1</u>') // Keep <u>, LatexContent will handle it
+                    .replace(/<p>([\s\S]*?)<\/p>/g, '$1\n\n')
+                    .replace(/<br\s*\/?>/g, '\n');
             } else if (fileName.endsWith('.pdf')) {
                 const arrayBuffer = await file.arrayBuffer();
                 const loadingTask = pdfjs.getDocument({ data: arrayBuffer });
@@ -431,16 +454,18 @@ export function SmartImportDialog({ open, onClose, onImport, type, initialSubjec
                 ) : (
                     <div className="space-y-5">
                         <div className="grid grid-cols-1 md:grid-cols-3 gap-4 p-4 bg-muted/30 rounded-xl border">
-                            <div className="md:col-span-1">
+                            <div className={cn(type === 'etest' ? "md:col-span-2" : "md:col-span-1")}>
                                 <label className="text-[10px] font-bold uppercase text-muted-foreground mb-1 block">Tiêu đề</label>
                                 <input type="text" value={title} onChange={(e) => setTitle(e.target.value)} className="w-full border rounded-md px-3 py-1.5 text-sm" />
                             </div>
-                            <div>
-                                <label className="text-[10px] font-bold uppercase text-muted-foreground mb-1 block">Môn học</label>
-                                <select value={subjectId} onChange={(e) => setSubjectId(e.target.value)} className="w-full border rounded-md px-3 py-1.5 text-sm">
-                                    {subjects.map(s => <option key={s.id} value={s.id}>{s.icon} {s.name}</option>)}
-                                </select>
-                            </div>
+                            {type !== 'etest' && (
+                                <div>
+                                    <label className="text-[10px] font-bold uppercase text-muted-foreground mb-1 block">Môn học</label>
+                                    <select value={subjectId} onChange={(e) => setSubjectId(e.target.value)} className="w-full border rounded-md px-3 py-1.5 text-sm">
+                                        {subjects.map(s => <option key={s.id} value={s.id}>{s.icon} {s.name}</option>)}
+                                    </select>
+                                </div>
+                            )}
                             <div>
                                 <label className="text-[10px] font-bold uppercase text-muted-foreground mb-1 block">Thời gian</label>
                                 <input type="number" value={time} onChange={(e) => setTime(Number(e.target.value))} className="w-full border rounded-md px-3 py-1.5 text-sm" />

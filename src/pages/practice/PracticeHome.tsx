@@ -7,7 +7,7 @@ import { Spinner } from '@/components/ui/Spinner';
 import type { ExamMetadata, HighestScores } from '@/types';
 import {
     Calculator, FlaskConical, Dna, Clock,
-    Monitor, Atom, Languages, Book,
+    Monitor, Atom, Book,
     ArrowLeft, Search, Globe, Scale, Users
 } from 'lucide-react';
 
@@ -68,7 +68,6 @@ export default function PracticeHome() {
             case 'van': return { icon: <Book className="h-6 w-6 text-rose-500" />, bg: 'bg-rose-50' };
             case 'su': return { icon: <Clock className="h-6 w-6 text-orange-500" />, bg: 'bg-orange-50' };
             case 'dia': return { icon: <Globe className="h-6 w-6 text-cyan-500" />, bg: 'bg-cyan-50' };
-            case 'anh': return { icon: <Languages className="h-6 w-6 text-pink-500" />, bg: 'bg-pink-50' };
             case 'gdcd': return { icon: <Scale className="h-6 w-6 text-teal-500" />, bg: 'bg-teal-50' };
             case 'tin': return { icon: <Monitor className="h-6 w-6 text-purple-500" />, bg: 'bg-purple-50' };
             default: return { icon: <Book className="h-6 w-6 text-gray-500" />, bg: 'bg-gray-50' };

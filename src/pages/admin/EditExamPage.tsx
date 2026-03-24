@@ -6,7 +6,7 @@ import { Spinner } from '@/components/ui/Spinner';
 import { Button } from '@/components/ui/Button';
 import { LaTeXEditor } from '@/components/ui/LaTeXEditor';
 import { LatexContent } from '@/components/ui/LatexContent';
-import type { Exam, Part1Question, Part2Question, Part3Question } from '@/types';
+import type { Exam, Part1Question, Part2Question, Part3Question, QuestionGroup } from '@/types';
 import {
     ArrowLeft, Save, Plus, Trash2, Edit3, Check,
     ChevronDown, ChevronUp, Download, Copy, Search as SearchIcon
@@ -30,6 +30,7 @@ export default function EditExamPage() {
     const [part1, setPart1] = useState<Part1Question[]>([]);
     const [part2, setPart2] = useState<Part2Question[]>([]);
     const [part3, setPart3] = useState<Part3Question[]>([]);
+    const [questionGroups, setQuestionGroups] = useState<QuestionGroup[]>([]);
 
     // Track which question is being edited
     const [editingQ, setEditingQ] = useState<{ part: number; id: number } | null>(null);
@@ -61,6 +62,7 @@ export default function EditExamPage() {
             setPart1(data.part1 || []);
             setPart2(data.part2 || []);
             setPart3(data.part3 || []);
+            setQuestionGroups(data.questionGroups || []);
             setLoading(false);
         }
         load();
@@ -70,7 +72,7 @@ export default function EditExamPage() {
         if (!examId) return;
         setSaving(true);
         try {
-            await updateExam(examId, { title, time, subjectId, part1, part2, part3 });
+            await updateExam(examId, { title, time, subjectId, part1, part2, part3, questionGroups });
             toast({ title: 'Đã lưu thành công!', type: 'success' });
         } catch (err) {
             toast({ title: 'Lỗi khi lưu', message: String(err), type: 'error' });
@@ -88,6 +90,7 @@ export default function EditExamPage() {
             part1,
             part2,
             part3,
+            questionGroups,
             updatedAt: new Date().toISOString()
         };
         downloadJSON(exportData, `StudyStation_Exam_${examId}_${new Date().toISOString().split('T')[0]}`);
@@ -105,6 +108,7 @@ export default function EditExamPage() {
                 part1,
                 part2,
                 part3,
+                questionGroups,
             });
             toast({ title: 'Đã tạo bản sao thành công!', type: 'success' });
             navigate(`/admin/practice/edit/${newExamId}`);
@@ -178,6 +182,38 @@ export default function EditExamPage() {
         setPart3(part3.map(q => q.id === id ? { ...q, ...updates } : q));
     };
 
+    // ---- Question Group helpers ----
+    const addGroup = () => {
+        const newId = `grp-${Date.now()}`;
+        const group: QuestionGroup = {
+            id: newId,
+            title: '',
+            passage: '',
+            questionIds: []
+        };
+        setQuestionGroups([...questionGroups, group]);
+        setEditingQ({ part: 0, id: Number(newId.split('-')[1]) }); // Hacky way to use editingQ for groups
+    };
+
+    const removeGroup = (id: string) => setQuestionGroups(questionGroups.filter(g => g.id !== id));
+
+    const updateGroup = (id: string, updates: Partial<QuestionGroup>) => {
+        setQuestionGroups(questionGroups.map(g => g.id === id ? { ...g, ...updates } : g));
+    };
+
+    const toggleQuestionInGroup = (groupId: string, qId: number) => {
+        setQuestionGroups(questionGroups.map(g => {
+            if (g.id !== groupId) return g;
+            const exists = g.questionIds.includes(qId);
+            return {
+                ...g,
+                questionIds: exists 
+                    ? g.questionIds.filter(id => id !== qId) 
+                    : [...g.questionIds, qId]
+            };
+        }));
+    };
+
     const toggleCollapse = (key: string) => setCollapsed(c => ({ ...c, [key]: !c[key] }));
 
     if (loading) return (
@@ -249,6 +285,104 @@ export default function EditExamPage() {
                     </Button>
                 </div>
             </div>
+
+            {/* QUESTION GROUPS (English Only) */}
+            {subjectId === 'anh' && (
+                <div className="admin-card overflow-hidden">
+                    <div
+                        className="flex items-center justify-between p-4 cursor-pointer"
+                        onClick={() => toggleCollapse('groups')}
+                    >
+                        <h3 className="font-black flex items-center gap-2 text-slate-800 dark:text-slate-100">
+                            <span className="px-2 py-0.5 rounded-full bg-pink-100 text-pink-700 dark:bg-pink-900/30 dark:text-pink-300 text-xs font-bold">NHÓM CÂU HỎI</span>
+                            Phần bổ trợ Tiếng Anh
+                            <span className="text-sm font-normal text-slate-400">({questionGroups.length} nhóm)</span>
+                        </h3>
+                        <div className="flex items-center gap-2">
+                            <Button
+                                onClick={e => { e.stopPropagation(); addGroup(); }}
+                                size="sm" variant="outline"
+                                className="gap-1 text-xs rounded-xl h-8 border-dashed"
+                            >
+                                <Plus className="h-3.5 w-3.5" /> Thêm nhóm
+                            </Button>
+                            {collapsed['groups'] ? <ChevronDown className="h-4 w-4 text-slate-400" /> : <ChevronUp className="h-4 w-4 text-slate-400" />}
+                        </div>
+                    </div>
+
+                    {!collapsed['groups'] && (
+                        <div className="divide-y divide-slate-100 dark:divide-slate-800">
+                            {questionGroups.length === 0 && (
+                                <p className="py-8 text-center text-sm text-slate-400 italic">Chưa có nhóm — nhấn "Thêm nhóm" cho các phần Passage/Requirement</p>
+                            )}
+                            {questionGroups.map((group, _gIdx) => (
+                                <div key={group.id} className="p-4 bg-pink-50/10">
+                                    <div className="flex items-start gap-4">
+                                        <div className="flex-1 space-y-4">
+                                            <div className="grid grid-cols-1 gap-4">
+                                                <div>
+                                                    <label className="text-[10px] font-bold uppercase text-slate-400 mb-1 block">Yêu cầu / Chỉ dẫn</label>
+                                                    <input 
+                                                        value={group.title}
+                                                        onChange={e => updateGroup(group.id, { title: e.target.value })}
+                                                        placeholder="VD: Read the following passage and mark the letter A, B, C, or D..."
+                                                        className="w-full text-sm bg-white dark:bg-slate-900 border border-slate-200 rounded-lg px-3 py-2 outline-none focus:border-pink-400 font-bold"
+                                                    />
+                                                </div>
+                                                <div>
+                                                    <label className="text-[10px] font-bold uppercase text-slate-400 mb-1 block">Đoạn văn (Passage - tùy chọn)</label>
+                                                    <LaTeXEditor
+                                                        value={group.passage || ''}
+                                                        onChange={v => updateGroup(group.id, { passage: v })}
+                                                        placeholder="Nội dung đoạn văn đọc hiểu... hỗ trợ LaTeX/LatexContent"
+                                                        rows={4}
+                                                    />
+                                                </div>
+                                            </div>
+
+                                            <div>
+                                                <label className="text-[10px] font-bold uppercase text-slate-400 mb-2 block">Chọn các câu hỏi thuộc nhóm này (từ PHẦN 1)</label>
+                                                <div className="flex flex-wrap gap-2">
+                                                    {part1.map((q, p1Idx) => {
+                                                        const isSelected = group.questionIds.includes(q.id);
+                                                        const isUsedByOther = questionGroups.some(other => other.id !== group.id && other.questionIds.includes(q.id));
+                                                        return (
+                                                            <button
+                                                                key={q.id}
+                                                                type="button"
+                                                                disabled={isUsedByOther}
+                                                                onClick={() => toggleQuestionInGroup(group.id, q.id)}
+                                                                className={cn(
+                                                                    "px-3 py-1.5 rounded-lg text-xs font-bold border transition-all",
+                                                                    isSelected 
+                                                                        ? "bg-pink-600 border-pink-600 text-white shadow-sm" 
+                                                                        : isUsedByOther
+                                                                            ? "bg-slate-100 border-slate-100 text-slate-300 cursor-not-allowed opacity-50"
+                                                                            : "bg-white border-slate-200 text-slate-500 hover:border-pink-300"
+                                                                )}
+                                                            >
+                                                                Câu {p1Idx + 1}
+                                                            </button>
+                                                        );
+                                                    })}
+                                                </div>
+                                            </div>
+                                        </div>
+                                        <Button 
+                                            variant="ghost" 
+                                            size="icon" 
+                                            onClick={() => removeGroup(group.id)} 
+                                            className="h-8 w-8 text-slate-400 hover:text-rose-600 rounded-lg shrink-0"
+                                        >
+                                            <Trash2 className="h-4 w-4" />
+                                        </Button>
+                                    </div>
+                                </div>
+                            ))}
+                        </div>
+                    )}
+                </div>
+            )}
 
             {/* PART 1 */}
             <div className="admin-card overflow-hidden">

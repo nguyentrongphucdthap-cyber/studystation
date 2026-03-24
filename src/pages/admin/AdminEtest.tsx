@@ -28,7 +28,12 @@ export default function AdminEtest() {
     const handleImport = async () => {
         try {
             const data = JSON.parse(jsonInput);
-            await createEtestExam({ title: data.title, tag: data.tag, time: data.time, sections: data.sections });
+            await createEtestExam({ 
+                title: data.title, 
+                tag: data.tag || '', 
+                time: data.time || 60, 
+                sections: data.sections || [] 
+            });
             toast({ title: 'Đã tạo bài E-test!', type: 'success' });
             setShowImport(false); setJsonInput('');
             await loadExams();
@@ -37,7 +42,12 @@ export default function AdminEtest() {
 
     const handleSmartImport = async (data: any) => {
         try {
-            await createEtestExam({ title: data.title, tag: data.tag, time: data.time || 60, sections: data.sections });
+            await createEtestExam({ 
+                title: data.title, 
+                tag: data.tag || '', 
+                time: data.time || 60, 
+                sections: data.sections || [] 
+            });
             toast({ title: 'Đã tạo bài E-test!', type: 'success' });
             await loadExams();
         } catch (err) {

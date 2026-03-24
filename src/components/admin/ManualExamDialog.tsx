@@ -28,6 +28,39 @@ export function ManualExamDialog({ open, onClose, onSave, initialSubject }: Manu
     const [part1, setPart1] = useState<any[]>([]);
     const [part2, setPart2] = useState<any[]>([]);
     const [part3, setPart3] = useState<any[]>([]);
+    const [questionGroups, setQuestionGroups] = useState<any[]>([]);
+
+    const addGroup = () => {
+        setQuestionGroups([...questionGroups, {
+            id: Math.random().toString(36).substr(2, 9),
+            title: '',
+            passage: '',
+            questionIds: []
+        }]);
+    };
+
+    const updateGroup = (id: string, updates: any) => {
+        setQuestionGroups(questionGroups.map(g => g.id === id ? { ...g, ...updates } : g));
+    };
+
+    const removeGroup = (id: string) => {
+        setQuestionGroups(questionGroups.filter(g => g.id !== id));
+    };
+
+    const toggleQuestionInGroup = (groupId: string, qId: number) => {
+        setQuestionGroups(questionGroups.map(g => {
+            if (g.id === groupId) {
+                const exists = g.questionIds.includes(qId);
+                return {
+                    ...g,
+                    questionIds: exists 
+                        ? g.questionIds.filter((id: number) => id !== qId)
+                        : [...g.questionIds, qId]
+                };
+            }
+            return g;
+        }));
+    };
 
     const addPart1 = () => {
         setPart1([...part1, {
@@ -70,6 +103,7 @@ export function ManualExamDialog({ open, onClose, onSave, initialSubject }: Manu
                 part1,
                 part2,
                 part3,
+                questionGroups: meta.subjectId === 'anh' ? questionGroups : [],
             });
             onClose();
             setStep(1);
@@ -116,6 +150,61 @@ export function ManualExamDialog({ open, onClose, onSave, initialSubject }: Manu
                                 <input type="number" value={meta.time} onChange={e => setMeta({...meta, time: parseInt(e.target.value) || 0})} className="w-full border rounded-lg px-3 py-2 text-sm outline-none focus:border-primary" />
                             </div>
                         </div>
+
+                        {meta.subjectId === 'anh' && (
+                            <section className="space-y-4 pt-4 border-t">
+                                <div className="flex items-center justify-between">
+                                    <h4 className="font-bold text-pink-600">Nhóm câu hỏi (Dành cho Tiếng Anh)</h4>
+                                    <Button onClick={addGroup} size="sm" variant="outline" className="rounded-full"><PlusCircle className="h-4 w-4 mr-1" /> Thêm nhóm</Button>
+                                </div>
+                                {questionGroups.map((group, gIdx) => (
+                                    <div key={group.id} className="p-4 border border-pink-100 rounded-xl bg-pink-50/30 relative">
+                                        <button onClick={() => removeGroup(group.id)} className="absolute top-2 right-2 text-red-500 hover:text-red-700 transition-colors"><X size={16} /></button>
+                                        <div className="space-y-3">
+                                            <div>
+                                                <label className="text-[10px] font-bold uppercase text-pink-600/70 mb-1 block">Yêu cầu (VD: Mark the letter A, B, C, or D...)</label>
+                                                <input 
+                                                    value={group.title} 
+                                                    onChange={e => updateGroup(group.id, { title: e.target.value })}
+                                                    className="w-full border rounded-lg px-3 py-2 text-sm outline-none focus:border-pink-300"
+                                                    placeholder="Nhập yêu cầu nhóm câu hỏi..."
+                                                />
+                                            </div>
+                                            <div>
+                                                <label className="text-[10px] font-bold uppercase text-pink-600/70 mb-1 block">Đoạn văn (Tùy chọn)</label>
+                                                <textarea 
+                                                    value={group.passage} 
+                                                    onChange={e => updateGroup(group.id, { passage: e.target.value })}
+                                                    className="w-full border rounded-lg px-3 py-2 text-sm outline-none focus:border-pink-300 min-h-[80px]"
+                                                    placeholder="Nhập đoạn văn cho nhóm này (nếu có)..."
+                                                />
+                                            </div>
+                                            <div>
+                                                <label className="text-[10px] font-bold uppercase text-pink-600/70 mb-1 block">Chọn câu hỏi thuộc nhóm (Phần I)</label>
+                                                <div className="flex flex-wrap gap-2">
+                                                    {part1.map((q, idx) => (
+                                                        <button
+                                                            key={q.id}
+                                                            type="button"
+                                                            onClick={() => toggleQuestionInGroup(group.id, q.id)}
+                                                            className={cn(
+                                                                "h-8 w-8 rounded-lg text-xs font-bold border transition-all",
+                                                                group.questionIds.includes(q.id)
+                                                                    ? "bg-pink-500 border-pink-500 text-white shadow-sm"
+                                                                    : "bg-white border-slate-200 text-slate-400"
+                                                            )}
+                                                        >
+                                                            {idx + 1}
+                                                        </button>
+                                                    ))}
+                                                    {part1.length === 0 && <span className="text-xs text-slate-400 italic">Chưa có câu hỏi trắc nghiệm nào ở Phần I</span>}
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </div>
+                                ))}
+                            </section>
+                        )}
 
                         {/* Part 1 */}
                         <section className="space-y-4 pt-4 border-t">

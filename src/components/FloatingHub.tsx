@@ -2250,6 +2250,22 @@ function ThemeTab() {
                     </p>
                 </div>
 
+                {/* Auto Skip Learn Mode Toggle */}
+                <div className="theme-option" style={{ flexDirection: 'column', alignItems: 'flex-start', gap: '8px', borderTop: '1px solid rgba(0,0,0,0.05)', paddingTop: '16px', marginTop: '8px' }}>
+                    <div style={{ display: 'flex', justifyContent: 'space-between', width: '100%', alignItems: 'center' }}>
+                        <label style={{ display: 'flex', alignItems: 'center', gap: '6px', fontSize: '13px', fontWeight: 600 }}>
+                            ⚡ Tự động qua câu trong Learn
+                        </label>
+                        <button
+                            className={`toggle-switch ${settings.autoSkipLearn ? 'on' : ''}`}
+                            onClick={() => updateSetting('autoSkipLearn', !settings.autoSkipLearn)}
+                        />
+                    </div>
+                    <p style={{ fontSize: '11px', color: '#9ca3af', lineHeight: '1.4' }}>
+                        Tự động chuyển sang câu tiếp theo sau 2 giây khi trả lời đúng/sai ở chế độ Learn (Trắc nghiệm). Nếu tắt, bạn cần bấm nút để qua câu.
+                    </p>
+                </div>
+
                 {/* Reset */}
                 <button
                     onClick={resetToDefaults}

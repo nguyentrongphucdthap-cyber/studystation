@@ -71,6 +71,13 @@ export interface Part3Question {
     explanation?: string;
 }
 
+export interface QuestionGroup {
+    id: string;              // unique ID, e.g., "grp-1"
+    title: string;           // Requirement label, e.g., "Find the word closest in meaning"
+    passage?: string;        // Text passage, optional
+    questionIds: number[];   // List of question IDs from Part1 that belong to this group
+}
+
 export interface Exam {
     id: string;
     title: string;
@@ -79,6 +86,7 @@ export interface Exam {
     part1?: Part1Question[];
     part2?: Part2Question[];
     part3?: Part3Question[];
+    questionGroups?: QuestionGroup[]; // NEW - Grouping for English subject
     attemptCount?: number;
     createdAt?: string;
     updatedAt?: string;
@@ -100,6 +108,7 @@ export interface ExamMetadata {
         part2: number;
         part3: number;
     };
+    hasGroups?: boolean; // Optional flag for UI
 }
 
 // ============================================================

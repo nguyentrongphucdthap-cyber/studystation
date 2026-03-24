@@ -386,9 +386,9 @@ export const LatexContent: React.FC<LatexContentProps> = ({ content, className, 
                             .replace(/>/g, '&gt;')
                             .replace(/!\[([^\]]*)\]\(([^)]+)\)/g, '<img src="$2" alt="$1" class="my-3 max-h-64 max-w-full rounded-xl object-contain shadow-sm border border-border" />')
                             .replace(/\*\*([\s\S]+?)\*\*/g, '<strong class="text-blue-600 font-bold">$1</strong>')
-                            .replace(/__([\s\S]+?)__/g, '<strong class="text-blue-600 font-bold">$1</strong>')
+                            .replace(/__([\s\S]+?)__/g, '<u class="underline underline-offset-2 decoration-2 decoration-current">$1</u>')
                             .replace(/\*([\s\S]+?)\*/g, '<em class="italic">$1</em>')
-                            .replace(/_([\s\S]+?)_/g, '<em class="italic">$1</em>');
+                            .replace(/&lt;u&gt;([\s\S]+?)&lt;\/u&gt;/g, '<u class="underline underline-offset-2 decoration-2 decoration-current">$1</u>');
 
                         return (
                             <span
