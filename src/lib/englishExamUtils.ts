@@ -1,4 +1,4 @@
-import { Exam, Part1Question, QuestionGroup } from '@/types';
+import { Exam, QuestionGroup } from '@/types';
 
 /**
  * Normalizes an English exam if it's in the legacy format (no questionGroups).

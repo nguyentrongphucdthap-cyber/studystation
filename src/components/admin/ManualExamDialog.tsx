@@ -157,7 +157,7 @@ export function ManualExamDialog({ open, onClose, onSave, initialSubject }: Manu
                                     <h4 className="font-bold text-pink-600">Nhóm câu hỏi (Dành cho Tiếng Anh)</h4>
                                     <Button onClick={addGroup} size="sm" variant="outline" className="rounded-full"><PlusCircle className="h-4 w-4 mr-1" /> Thêm nhóm</Button>
                                 </div>
-                                {questionGroups.map((group, gIdx) => (
+                                {questionGroups.map((group) => (
                                     <div key={group.id} className="p-4 border border-pink-100 rounded-xl bg-pink-50/30 relative">
                                         <button onClick={() => removeGroup(group.id)} className="absolute top-2 right-2 text-red-500 hover:text-red-700 transition-colors"><X size={16} /></button>
                                         <div className="space-y-3">
