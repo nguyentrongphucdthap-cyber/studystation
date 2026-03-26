@@ -8,12 +8,90 @@ import {
     BookOpen, RotateCcw, CheckCircle, Shuffle, 
     ChevronLeft, Layers, 
     Check, X, Award, Home, RefreshCw,
-    Sparkles, ArrowRight
+    Sparkles, ArrowRight, Search, SortAsc, Filter,
+    ChevronDown
 } from 'lucide-react';
 import { createPortal } from 'react-dom';
 import { useTheme } from '@/contexts/ThemeContext';
 
 type VocabView = 'home' | 'flashcard' | 'result' | 'matching' | 'learn';
+
+interface SelectOption {
+    value: string;
+    label: string;
+}
+
+interface PremiumSelectProps {
+    value: string;
+    onChange: (value: any) => void;
+    options: SelectOption[];
+    icon: React.ReactNode;
+    placeholder: string;
+    className?: string;
+}
+
+function PremiumSelect({ value, onChange, options, icon, placeholder, className }: PremiumSelectProps) {
+    const [isOpen, setIsOpen] = useState(false);
+    const containerRef = useRef<HTMLDivElement>(null);
+    const selectedOption = options.find(opt => opt.value === value);
+
+    useEffect(() => {
+        const handleClickOutside = (event: MouseEvent) => {
+            if (containerRef.current && !containerRef.current.contains(event.target as Node)) {
+                setIsOpen(false);
+            }
+        };
+        document.addEventListener('mousedown', handleClickOutside);
+        return () => document.removeEventListener('mousedown', handleClickOutside);
+    }, []);
+
+    return (
+        <div className={cn("relative", className)} ref={containerRef}>
+            <button
+                onClick={() => setIsOpen(!isOpen)}
+                className={cn(
+                    "w-full flex items-center justify-between gap-2 px-4 py-2.5 bg-white dark:bg-slate-800 border-none rounded-2xl text-[11px] font-black uppercase tracking-wider shadow-sm transition-all outline-none",
+                    isOpen ? "ring-2 ring-purple-500 shadow-lg" : "hover:bg-gray-50 dark:hover:bg-slate-700"
+                )}
+            >
+                <div className="flex items-center gap-2 overflow-hidden">
+                    <div className="text-gray-400 shrink-0">{icon}</div>
+                    <span className="truncate dark:text-white">
+                        {selectedOption && selectedOption.value !== 'default' && selectedOption.value !== 'all' 
+                            ? selectedOption.label 
+                            : placeholder}
+                    </span>
+                </div>
+                <ChevronDown className={cn("h-3.5 w-3.5 text-gray-400 transition-transform duration-300 shrink-0", isOpen && "rotate-180")} />
+            </button>
+
+            {isOpen && (
+                <div className="absolute top-full left-0 right-0 mt-2 p-1.5 bg-white/90 dark:bg-slate-900/95 backdrop-blur-xl border border-white/20 dark:border-slate-800 rounded-2xl shadow-2xl z-50 animate-in fade-in slide-in-from-top-2 duration-200">
+                    <div className="flex flex-col gap-1">
+                        {options.map((option) => (
+                            <button
+                                key={option.value}
+                                onClick={() => {
+                                    onChange(option.value);
+                                    setIsOpen(false);
+                                }}
+                                className={cn(
+                                    "flex items-center justify-between px-3.5 py-2.5 rounded-xl text-[11px] font-bold uppercase transition-all",
+                                    value === option.value
+                                        ? "bg-purple-600 text-white shadow-md shadow-purple-500/20"
+                                        : "text-gray-600 dark:text-slate-300 hover:bg-gray-100 dark:hover:bg-slate-800"
+                                )}
+                            >
+                                <span>{option.label}</span>
+                                {value === option.value && <Check className="h-3 w-3" />}
+                            </button>
+                        ))}
+                    </div>
+                </div>
+            )}
+        </div>
+    );
+}
 
 export default function VocabPage() {
     const { settings } = useTheme();
@@ -26,6 +104,11 @@ export default function VocabPage() {
     const [activeCategory, setActiveCategory] = useState<string>('all');
     const [error, setError] = useState<string | null>(null);
 
+    // Filter & Sort state
+    const [searchQuery, setSearchQuery] = useState('');
+    const [sortBy, setSortBy] = useState<'default' | 'a-z' | 'z-a' | 'progress-high' | 'progress-low' | 'words-high' | 'words-low'>('default');
+    const [progressFilter, setProgressFilter] = useState<'all' | 'not-started' | 'in-progress' | 'completed'>('all');
+
     // Flashcard core state
     const [currentIndex, setCurrentIndex] = useState(0);
     const [flipped, setFlipped] = useState(false);
@@ -33,6 +116,7 @@ export default function VocabPage() {
     const [unknownIds, setUnknownIds] = useState<number[]>([]);
     const [isReviewingUnknown, setIsReviewingUnknown] = useState(false);
     const [currentWords, setCurrentWords] = useState<VocabWord[]>([]);
+    const [history, setHistory] = useState<number[]>([]);
     
     // Swipe animation state
     const [swipeDir, setSwipeDir] = useState<'left' | 'right' | null>(null);
@@ -79,10 +163,49 @@ export default function VocabPage() {
         { id: 'all', label: 'Tất cả' },
         { id: 'gdpt', label: 'GDPT' },
         { id: 'advanced_gdpt', label: 'Nâng cao' },
-        { id: 'topic', label: 'Theo chủ đề' },
+        { id: 'topic', label: 'Chủ đề' },
     ];
 
-    const filteredSets = activeCategory === 'all' ? sets : sets.filter((s) => s.category === activeCategory);
+    // Helper: Get progress for a set
+    const getSetProgress = useCallback((vocabSet: VocabSet) => {
+        const learnedKey = `vocab_learned_${vocabSet.id}`;
+        const learnedIds = JSON.parse(localStorage.getItem(learnedKey) || '[]');
+        return vocabSet.words.length > 0 ? Math.round((learnedIds.length / vocabSet.words.length) * 100) : 0;
+    }, []);
+
+    const filteredAndSortedSets = useMemo(() => {
+        let result = activeCategory === 'all' ? [...sets] : sets.filter((s) => s.category === activeCategory);
+
+        // 1. Search filter
+        if (searchQuery.trim()) {
+            const query = searchQuery.toLowerCase();
+            result = result.filter(s => s.title.toLowerCase().includes(query));
+        }
+
+        // 2. Progress filter
+        if (progressFilter !== 'all') {
+            result = result.filter(s => {
+                const p = getSetProgress(s);
+                if (progressFilter === 'not-started') return p === 0;
+                if (progressFilter === 'completed') return p === 100;
+                if (progressFilter === 'in-progress') return p > 0 && p < 100;
+                return true;
+            });
+        }
+
+        // 3. Sorting
+        result.sort((a, b) => {
+            if (sortBy === 'a-z') return a.title.localeCompare(b.title);
+            if (sortBy === 'z-a') return b.title.localeCompare(a.title);
+            if (sortBy === 'progress-high') return getSetProgress(b) - getSetProgress(a);
+            if (sortBy === 'progress-low') return getSetProgress(a) - getSetProgress(b);
+            if (sortBy === 'words-high') return b.words.length - a.words.length;
+            if (sortBy === 'words-low') return a.words.length - b.words.length;
+            return 0;
+        });
+
+        return result;
+    }, [sets, activeCategory, searchQuery, sortBy, progressFilter, getSetProgress]);
 
     // --- HELPER: Prioritize Unlearned ---
     const getPreparedWords = (vocabSet: VocabSet, limit: number | 'all') => {
@@ -144,7 +267,42 @@ export default function VocabPage() {
         setView('flashcard');
         setOffset({ x: 0, y: 0 });
         setSwipeDir(null);
+        setHistory([]);
         setShowStudyMenu(false);
+    };
+
+    const handleUndo = () => {
+        if (history.length === 0 || currentIndex === 0) return;
+        
+        const lastIndex = history[history.length - 1];
+        const newHistory = history.slice(0, -1);
+        
+        // Remove from known/unknown
+        setKnownIds(prev => prev.filter(id => id !== lastIndex));
+        setUnknownIds(prev => prev.filter(id => id !== lastIndex));
+        
+        // If it was marked as learned in localStorage, we can't easily undo that without knowing if it was already learned before this session,
+        // but for the UI session, we just move the index back.
+        
+        setHistory(newHistory);
+        setCurrentIndex(prev => prev - 1);
+        setFlipped(false);
+        setOffset({ x: 0, y: 0 });
+        setSwipeDir(null);
+    };
+
+    const handleShuffleRemaining = () => {
+        if (!activeSet) return;
+        
+        const remaining = currentWords.slice(currentIndex);
+        const shuffled = [...remaining].sort(() => Math.random() - 0.5);
+        
+        const newWords = [...currentWords.slice(0, currentIndex), ...shuffled];
+        setCurrentWords(newWords);
+        
+        // Visual feedback
+        setOffset({ x: 0, y: -20 });
+        setTimeout(() => setOffset({ x: 0, y: 0 }), 200);
     };
 
     const handleNextCard = (known: boolean) => {
@@ -152,6 +310,8 @@ export default function VocabPage() {
         
         const wordObj = currentWords[currentIndex] as VocabWord & { originalIndex?: number };
         const finalIndex = wordObj.originalIndex !== undefined ? wordObj.originalIndex : currentIndex;
+        
+        setHistory(prev => [...prev, finalIndex]);
         
         if (known) {
             setKnownIds(prev => [...prev, finalIndex]);
@@ -197,9 +357,9 @@ export default function VocabPage() {
         if (!isDragging || swipeDir) return;
         setIsDragging(false);
         
-        if (offset.x > 100) {
+        if (offset.x > 120) {
             handleNextCard(true);
-        } else if (offset.x < -100) {
+        } else if (offset.x < -120) {
             handleNextCard(false);
         } else {
             setOffset({ x: 0, y: 0 });
@@ -407,71 +567,123 @@ export default function VocabPage() {
                     </div>
                 </div>
 
-                <div className="flex flex-wrap gap-2 mb-2 p-1 bg-gray-100 dark:bg-slate-800 w-fit rounded-2xl border border-gray-200 dark:border-slate-700">
-                    {categories.map((cat) => (
-                        <button
-                            key={cat.id}
-                            onClick={() => setActiveCategory(cat.id)}
-                            className={cn(
-                                'rounded-[14px] px-6 py-2.5 text-xs font-black uppercase tracking-widest transition-all duration-300',
-                                activeCategory === cat.id
-                                    ? 'bg-white dark:bg-slate-600 text-purple-600 dark:text-white shadow-md'
-                                    : 'text-gray-500 hover:text-gray-900 dark:hover:text-slate-200'
-                            )}
-                        >
-                            {cat.label}
-                        </button>
-                    ))}
+                <div className="flex flex-col md:flex-row gap-4 items-center justify-between bg-white/50 dark:bg-slate-900/30 p-2 rounded-3xl border border-gray-100 dark:border-slate-800">
+                    <div className="flex flex-wrap gap-1.5 w-full md:w-auto">
+                        {categories.map((cat) => (
+                            <button
+                                key={cat.id}
+                                onClick={() => setActiveCategory(cat.id)}
+                                className={cn(
+                                    'rounded-2xl px-5 py-2.5 text-[10px] font-black uppercase tracking-widest transition-all duration-300 whitespace-nowrap',
+                                    activeCategory === cat.id
+                                        ? 'bg-purple-600 text-white shadow-lg shadow-purple-200 dark:shadow-none'
+                                        : 'text-gray-500 hover:bg-gray-100 dark:hover:bg-slate-800'
+                                )}
+                            >
+                                {cat.label}
+                            </button>
+                        ))}
+                    </div>
+
+                    <div className="flex flex-col sm:flex-row gap-2 w-full md:w-auto items-center">
+                        <div className="relative w-full sm:w-64">
+                            <Search className="absolute left-4 top-1/2 -translate-y-1/2 h-4 w-4 text-gray-400" />
+                            <input 
+                                type="text"
+                                placeholder="Tìm bộ từ vựng..."
+                                value={searchQuery}
+                                onChange={(e) => setSearchQuery(e.target.value)}
+                                className="w-full pl-11 pr-4 py-2.5 bg-white dark:bg-slate-800 border-none rounded-2xl text-[13px] font-bold focus:ring-2 focus:ring-purple-500 shadow-sm outline-none dark:text-white"
+                            />
+                        </div>
+
+                        <div className="flex gap-2 w-full sm:w-auto">
+                            <PremiumSelect 
+                                value={sortBy}
+                                onChange={setSortBy}
+                                icon={<SortAsc className="h-3.5 w-3.5" />}
+                                placeholder="Sắp xếp"
+                                className="flex-1 sm:w-36"
+                                options={[
+                                    { value: 'default', label: 'Mặc định' },
+                                    { value: 'a-z', label: 'A → Z' },
+                                    { value: 'z-a', label: 'Z → A' },
+                                    { value: 'progress-high', label: 'Tiến độ ↑' },
+                                    { value: 'progress-low', label: 'Tiến độ ↓' },
+                                    { value: 'words-high', label: 'Số lượng từ ↑' },
+                                    { value: 'words-low', label: 'Số lượng từ ↓' },
+                                ]}
+                            />
+
+                            <PremiumSelect 
+                                value={progressFilter}
+                                onChange={setProgressFilter}
+                                icon={<Filter className="h-3.5 w-3.5" />}
+                                placeholder="Trạng thái"
+                                className="flex-1 sm:w-36"
+                                options={[
+                                    { value: 'all', label: 'Tất cả' },
+                                    { value: 'not-started', label: 'Chưa làm' },
+                                    { value: 'in-progress', label: 'Đang làm' },
+                                    { value: 'completed', label: 'Đã xong' },
+                                ]}
+                            />
+                        </div>
+                    </div>
                 </div>
 
-                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-                    {filteredSets.map((vocabSet) => (
+                <div className="grid grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 2xl:grid-cols-5 gap-4">
+                    {filteredAndSortedSets.map((vocabSet) => (
                         <div key={vocabSet.id} className="group relative cursor-pointer" onClick={() => { setActiveSet(vocabSet); setShowStudyMenu(true); }}>
-                            <div className="absolute inset-0 bg-gradient-to-br from-purple-600 to-indigo-600 rounded-[32px] translate-y-2 opacity-0 group-hover:opacity-20 transition-all duration-500 blur-xl" />
-                            <div className="relative bg-white dark:bg-slate-900 p-8 rounded-[32px] border border-gray-100 dark:border-slate-800 shadow-card hover:shadow-heavy transition-all duration-500 flex flex-col h-full overflow-hidden">
-                                <div className="absolute -top-6 -right-6 w-24 h-24 bg-purple-50 dark:bg-purple-900/10 rounded-full group-hover:scale-150 transition-transform duration-700" />
+                            <div className="absolute inset-0 bg-gradient-to-br from-purple-600 to-indigo-600 rounded-[24px] translate-y-1 opacity-0 group-hover:opacity-10 transition-all duration-500 blur-lg" />
+                            <div className="relative bg-white dark:bg-slate-900 p-5 rounded-[24px] border border-gray-100 dark:border-slate-800 shadow-sm hover:shadow-xl transition-all duration-500 flex flex-col h-full overflow-hidden">
+                                <div className="absolute -top-4 -right-4 w-16 h-16 bg-purple-50 dark:bg-purple-900/10 rounded-full group-hover:scale-150 transition-transform duration-700 z-0" />
                                 
-                                <div className="mb-4">
-                                    <div className="flex items-center gap-2 mb-4">
+                                <div className="flex-1 relative z-10">
+                                    <div className="flex items-center justify-between mb-4">
                                         <span className={cn(
-                                            "px-3 py-1 rounded-full text-[10px] font-black uppercase tracking-widest",
-                                            vocabSet.category === 'gdpt' ? "bg-blue-100 text-blue-600" :
-                                            vocabSet.category === 'advanced_gdpt' ? "bg-amber-100 text-amber-600" :
-                                            "bg-purple-100 text-purple-600"
+                                            "px-2.5 py-1 rounded-lg text-[9px] font-black uppercase tracking-widest shrink-0",
+                                            vocabSet.category === 'gdpt' ? "bg-blue-100 text-blue-600 dark:bg-blue-900/20" :
+                                            vocabSet.category === 'advanced_gdpt' ? "bg-amber-100 text-amber-600 dark:bg-amber-900/20" :
+                                            "bg-purple-100 text-purple-600 dark:bg-purple-900/20"
                                         )}>
                                             {vocabSet.category}
                                         </span>
-                                        <span className="text-gray-300 dark:text-slate-700">|</span>
-                                        <span className="text-[11px] font-bold text-gray-400">
-                                            {vocabSet.words.length} Vocabulary Cards
-                                        </span>
+                                        <div className="flex items-center gap-1 bg-gray-100 dark:bg-slate-800 px-2 py-1 rounded-lg">
+                                            <Layers className="h-3 w-3 text-gray-400" />
+                                            <span className="text-[10px] font-black text-gray-600 dark:text-slate-300">
+                                                {vocabSet.words.length} 
+                                            </span>
+                                        </div>
                                     </div>
+
                                     {(() => {
-                                        const learnedKey = `vocab_learned_${vocabSet.id}`;
-                                        const learnedIds = JSON.parse(localStorage.getItem(learnedKey) || '[]');
-                                        const progress = vocabSet.words.length > 0 ? Math.round((learnedIds.length / vocabSet.words.length) * 100) : 0;
+                                        const progress = getSetProgress(vocabSet);
                                         return (
-                                            <div className="mb-4">
-                                                <div className="flex justify-between items-center mb-1">
-                                                    <span className="text-[10px] font-bold text-gray-400">TIẾN ĐỘ HỌC</span>
-                                                    <span className="text-[10px] font-black text-emerald-500">{progress}%</span>
+                                            <div className="mb-3">
+                                                <div className="flex justify-between items-center mb-1.5">
+                                                    <span className="text-[9px] font-black text-gray-400 uppercase tracking-widest">Tiến độ</span>
+                                                    <span className="text-[9px] font-black text-emerald-500">{progress}%</span>
                                                 </div>
-                                                <div className="h-1.5 w-full bg-gray-100 dark:bg-slate-800 rounded-full overflow-hidden">
-                                                    <div className="h-full bg-emerald-500 rounded-full" style={{ width: `${progress}%` }} />
+                                                <div className="h-1 w-full bg-gray-100 dark:bg-slate-800 rounded-full overflow-hidden">
+                                                    <div className="h-full bg-emerald-500 rounded-full transition-all duration-500" style={{ width: `${progress}%` }} />
                                                 </div>
                                             </div>
                                         );
                                     })()}
-                                    <h3 className="text-xl font-black text-gray-900 dark:text-white group-hover:text-purple-600 transition-colors leading-tight mb-3">
+
+                                    <h3 className="text-[15px] font-black text-gray-900 dark:text-white group-hover:text-purple-600 transition-colors leading-snug line-clamp-2">
                                         {vocabSet.title}
                                     </h3>
-                                    <p className="text-sm text-gray-500 dark:text-slate-400 font-medium line-clamp-2">
-                                        Bắt đầu hành trình chinh phục từ vựng với các chế độ học tập đa dạng.
-                                    </p>
                                 </div>
                             </div>
                         </div>
                     ))}
+                    {filteredAndSortedSets.length === 0 && (
+                        <div className="col-span-full py-20 text-center">
+                            <p className="text-gray-400 font-bold uppercase tracking-widest text-sm">Không tìm thấy bộ từ vựng nào</p>
+                        </div>
+                    )}
                 </div>
 
                 {/* Study Menu Modal */}
@@ -625,6 +837,24 @@ export default function VocabPage() {
                     </div>
                 </div>
 
+                {/* Swipe Corner Indicators (Screen Corners, not on card) */}
+                <div 
+                    className="fixed top-0 left-0 w-64 h-64 bg-orange-500/20 rounded-br-full blur-3xl pointer-events-none transition-opacity duration-300 z-0"
+                    style={{ opacity: Math.max(0, -offset.x / 200) }}
+                />
+                <div 
+                    className="fixed top-0 right-0 w-64 h-64 bg-emerald-500/20 rounded-bl-full blur-3xl pointer-events-none transition-opacity duration-300 z-0"
+                    style={{ opacity: Math.max(0, offset.x / 200) }}
+                />
+                <div 
+                    className="fixed bottom-0 left-0 w-64 h-64 bg-orange-500/10 rounded-tr-full blur-3xl pointer-events-none transition-opacity duration-300 z-0"
+                    style={{ opacity: Math.max(0, -offset.x / 300) }}
+                />
+                <div 
+                    className="fixed bottom-0 right-0 w-64 h-64 bg-emerald-500/10 rounded-tl-full blur-3xl pointer-events-none transition-opacity duration-300 z-0"
+                    style={{ opacity: Math.max(0, offset.x / 300) }}
+                />
+
                 {/* Cards Container */}
                 <div className="relative w-full max-w-[320px] aspect-[3/4.2] perspective-1000 select-none">
                     
@@ -650,10 +880,10 @@ export default function VocabPage() {
                         onTouchEnd={onEnd}
                         onClick={() => setFlipped(!flipped)}
                         className={cn(
-                            "absolute inset-0 preserve-3d cursor-grab active:cursor-grabbing transition-shadow duration-300 z-10",
+                            "absolute inset-0 preserve-3d cursor-grab active:cursor-grabbing z-10 will-change-transform",
                             swipeDir === 'right' && "animate-swipe-right",
                             swipeDir === 'left' && "animate-swipe-left",
-                            !swipeDir && !isDragging && "transition-transform duration-300"
+                            !swipeDir && !isDragging && "transition-all duration-300 ease-out"
                         )}
                         style={{
                             "--swipe-x" : `${offset.x}px`,
@@ -662,11 +892,13 @@ export default function VocabPage() {
                             transform: swipeDir 
                                 ? undefined 
                                 : `translate3d(${offset.x}px, ${offset.y}px, 0) rotateZ(${rotateZ}deg) rotateY(${rotationY}deg)`,
-                            boxShadow: isDragging ? '0 20px 40px -10px rgba(0,0,0,0.15)' : '0 10px 30px -10px rgba(0,0,0,0.1)'
+                            boxShadow: isDragging ? '0 20px 40px -10px rgba(0,0,0,0.15)' : '0 10px 30px -10px rgba(0,0,0,0.1)',
                         } as React.CSSProperties}
                     >
                         {/* Front Side */}
-                        <div className="absolute inset-0 bg-white dark:bg-slate-900 rounded-[32px] p-8 border border-white dark:border-slate-800 backface-hidden flex flex-col items-center justify-center text-center shadow-card overflow-hidden">
+                        <div 
+                            className="absolute inset-0 bg-white dark:bg-slate-900 rounded-[32px] p-8 border border-white dark:border-slate-800 backface-hidden flex flex-col items-center justify-center text-center shadow-card overflow-hidden"
+                        >
                             <div className="flex flex-col items-center">
                                 <span className="mb-4 text-[11px] font-black uppercase tracking-[0.2em] text-purple-600 bg-purple-50 dark:bg-purple-900/20 px-4 py-1.5 rounded-full">
                                     {word.partOfSpeech || 'Vocabulary'}
@@ -687,24 +919,12 @@ export default function VocabPage() {
                                 </div>
                                 <span className="text-[10px] uppercase font-black tracking-widest text-gray-300">Nhấn thẻ để xem nghĩa</span>
                             </div>
-
-                            {/* Swipe Indicators */}
-                            <div className="absolute left-6 top-1/2 -translate-y-1/2 opacity-0 flex flex-col items-center transition-opacity" style={{ opacity: Math.max(0, -offset.x / 100) }}>
-                                <div className="w-12 h-12 bg-red-100 rounded-full flex items-center justify-center text-red-600 mb-2">
-                                    <X className="h-6 w-6" />
-                                </div>
-                                <span className="text-[10px] font-black text-red-500 uppercase">CHƯA THUỘC</span>
-                            </div>
-                            <div className="absolute right-6 top-1/2 -translate-y-1/2 opacity-0 flex flex-col items-center transition-opacity" style={{ opacity: Math.max(0, offset.x / 100) }}>
-                                <div className="w-12 h-12 bg-emerald-100 rounded-full flex items-center justify-center text-emerald-600 mb-2">
-                                    <Check className="h-6 w-6" />
-                                </div>
-                                <span className="text-[10px] font-black text-emerald-500 uppercase">ĐÃ THUỘC</span>
-                            </div>
                         </div>
 
-                        {/* Back Side */}
-                        <div className="absolute inset-0 bg-white dark:bg-slate-900 rounded-[32px] p-8 border border-white dark:border-slate-800 backface-hidden rotate-y-180 flex flex-col items-center justify-center text-center shadow-card overflow-hidden">
+                        {/* Back Side (Differentiated color) */}
+                        <div 
+                            className="absolute inset-0 bg-blue-50 dark:bg-indigo-950/40 rounded-[32px] p-8 border border-blue-100 dark:border-indigo-900/30 backface-hidden rotate-y-180 flex flex-col items-center justify-center text-center shadow-card overflow-hidden"
+                        >
                             <div className="flex-1 flex flex-col items-center justify-center">
                                 <span className="mb-4 text-[11px] font-black uppercase tracking-[0.2em] text-indigo-600 bg-indigo-50 dark:bg-indigo-900/20 px-4 py-1.5 rounded-full">
                                     Nghĩa của từ
@@ -729,30 +949,34 @@ export default function VocabPage() {
                 {/* Bottom Controls */}
                 <div className="flex items-center gap-12 mt-12 bg-white/50 dark:bg-slate-900/50 backdrop-blur-md px-10 py-5 rounded-[40px] border border-white dark:border-slate-800 shadow-soft">
                     <button 
-                        onClick={() => handleNextCard(false)}
-                        className="group flex flex-col items-center gap-2"
+                        onClick={handleUndo}
+                        disabled={history.length === 0}
+                        className={cn(
+                            "group flex flex-col items-center gap-2 transition-opacity",
+                            history.length === 0 && "opacity-30 cursor-not-allowed"
+                        )}
                     >
-                        <div className="w-14 h-14 bg-white dark:bg-slate-800 rounded-full flex items-center justify-center shadow-sm border border-red-100 dark:border-red-900/30 group-hover:bg-red-500 group-hover:scale-110 transition-all">
-                            <X className="h-6 w-6 text-red-500 group-hover:text-white" />
+                        <div className="w-14 h-14 bg-white dark:bg-slate-800 rounded-full flex items-center justify-center shadow-sm border border-gray-100 dark:border-slate-800 group-hover:bg-gray-100 dark:group-hover:bg-slate-700 group-hover:scale-110 transition-all">
+                            <RotateCcw className="h-6 w-6 text-gray-500" />
                         </div>
-                        <span className="text-[10px] font-black text-gray-400 group-hover:text-red-500 transition-colors uppercase">Chưa thuộc</span>
+                        <span className="text-[10px] font-black text-gray-400 group-hover:text-gray-600 dark:group-hover:text-slate-300 transition-colors uppercase">Quay lại</span>
                     </button>
                     
                     <button 
                         onClick={() => setFlipped(!flipped)}
-                        className="p-5 bg-purple-600 text-white rounded-3xl shadow-lg hover:shadow-purple-200 dark:shadow-none hover:scale-105 active:scale-95 transition-all"
+                        className="p-5 bg-purple-600 text-white rounded-3xl shadow-lg hover:shadow-purple-200 dark:shadow-none hover:scale-110 active:scale-95 transition-all"
                     >
-                        <Shuffle className="h-6 w-6" />
+                        <RefreshCw className={cn("h-6 w-6", flipped && "rotate-180 transition-transform duration-500")} />
                     </button>
 
                     <button 
-                        onClick={() => handleNextCard(true)}
+                        onClick={handleShuffleRemaining}
                         className="group flex flex-col items-center gap-2"
                     >
-                        <div className="w-14 h-14 bg-white dark:bg-slate-800 rounded-full flex items-center justify-center shadow-sm border border-emerald-100 dark:border-emerald-900/30 group-hover:bg-emerald-500 group-hover:scale-110 transition-all">
-                            <Check className="h-6 w-6 text-emerald-500 group-hover:text-white" />
+                        <div className="w-14 h-14 bg-white dark:bg-slate-800 rounded-full flex items-center justify-center shadow-sm border border-gray-100 dark:border-slate-800 group-hover:bg-purple-500 group-hover:scale-110 transition-all">
+                            <Shuffle className="h-6 w-6 text-purple-500 group-hover:text-white" />
                         </div>
-                        <span className="text-[10px] font-black text-gray-400 group-hover:text-emerald-500 transition-colors uppercase">Đã thuộc</span>
+                        <span className="text-[10px] font-black text-gray-400 group-hover:text-purple-500 transition-colors uppercase">Xáo trộn</span>
                     </button>
                 </div>
             </div>
