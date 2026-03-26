@@ -313,43 +313,6 @@ export interface Friend {
     addedAt: string;
 }
 
-export interface StudyRoom {
-    id: string;
-    name: string;
-    subject: string;
-    ownerEmail: string;
-    ownerName: string;
-    members: StudyRoomMember[];
-    isPrivate: boolean;
-    passcode?: string;
-    createdAt: number;
-    lastActive: number;
-    timerState?: {
-        mode: 'focus' | 'shortBreak' | 'longBreak';
-        timeLeft: number;
-        isRunning: boolean;
-        updatedAt: number;
-        cycle: number;
-        sessions: number;
-    };
-}
-
-export interface StudyRoomMember {
-    email: string;
-    name: string;
-    photoURL?: string;
-    role: 'owner' | 'member';
-    joinedAt: number;
-}
-
-export interface StudyRoomMessage {
-    id: string;
-    roomId: string;
-    senderEmail: string;
-    senderName: string;
-    text: string;
-    timestamp: number;
-}
 
 export interface HubThemeSettings {
     mode: 'light' | 'dark';

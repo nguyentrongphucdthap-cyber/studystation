@@ -7,7 +7,6 @@ import {
     MessageCircle,
     Timer,
     StickyNote,
-    BarChart3,
     Palette,
     Send,
     Plus,
@@ -23,7 +22,6 @@ import {
     ExternalLink,
     Moon,
     Type,
-    Flame,
     Pin,
     PinOff,
     Users,
@@ -31,19 +29,10 @@ import {
     Upload,
     Settings,
     LogOut,
+    ChevronRight,
 } from 'lucide-react';
 import { useAuth } from '@/contexts/AuthContext';
 import { useTheme } from '@/contexts/ThemeContext';
-import {
-    createStudyRoom,
-    subscribeToRooms,
-    subscribeToRoom,
-    joinStudyRoom,
-    leaveStudyRoom,
-    sendRoomMessage,
-    subscribeToRoomMessages,
-    updateRoomTimer
-} from '../services/studyroom.service';
 import {
     subscribeFriends,
     sendFriendRequest,
@@ -70,7 +59,7 @@ import {
     subscribeToMagoMessages,
 } from '../services/chat.service';
 import { generateAIContent, type AIChatMessage } from '@/services/ai.service';
-import type { ChatMessage, Friend, GroupChat, StudyRoom, StudyRoomMessage } from '@/types';
+import type { ChatMessage, Friend, GroupChat } from '@/types';
 import './FloatingHub.css';
 import { APP_VERSION } from '@/version';
 import MathText from './MathText';
@@ -78,14 +67,12 @@ import MathText from './MathText';
 // ============================================================
 // CONSTANTS
 // ============================================================
-type TabId = 'chat' | 'pomodoro' | 'notes' | 'study' | 'rooms' | 'music' | 'theme';
+type TabId = 'chat' | 'pomodoro' | 'notes' | 'music' | 'theme';
 
 const TABS: { id: TabId; icon: typeof MessageCircle; label: string }[] = [
     { id: 'chat', icon: MessageCircle, label: 'Chat' },
     { id: 'pomodoro', icon: Timer, label: 'Pomodoro' },
     { id: 'notes', icon: StickyNote, label: 'Ghi chú' },
-    { id: 'study', icon: BarChart3, label: 'Học tập' },
-    { id: 'rooms', icon: Users, label: 'Phòng học' },
     { id: 'music', icon: Music, label: 'Nhạc' },
     { id: 'theme', icon: Palette, label: 'Giao diện' },
 ];
@@ -378,13 +365,7 @@ export function FloatingHub() {
                                     }}
                                 />
                             )}
-                            {activeTab === 'rooms' && (
-                                <StudyRoomsTab
-                                    user={{ email: user.email, name: user.displayName || user.email, photoURL: user.photoURL || undefined }}
-                                />
-                            )}
                             {activeTab === 'notes' && <NotesTab userEmail={user.email} />}
-                            {activeTab === 'study' && <StudyTrackerTab userEmail={user.email} />}
                             {activeTab === 'music' && <MusicTab />}
                             {activeTab === 'theme' && <ThemeTab />}
                         </div>
@@ -833,7 +814,7 @@ function ChatTab({ user, onUnreadChange }: { user: { email: string; displayName:
                                     return (
                                         <div key={f.email} className={`chat-contact-item ${hasUnread ? 'unread' : ''} ${isPinned ? 'pinned' : ''}`} onClick={() => setActiveChat(f.email)}>
                                             <div className="chat-contact-avatar-wrap">
-                                                <div className="chat-contact-avatar" style={{ background: '#e0e7ff', color: '#4f46e5', overflow: 'hidden' }}>
+                                                <div className="chat-contact-avatar" style={{ background: 'var(--hub-surface-alt)', color: 'var(--accent-color)', overflow: 'hidden' }}>
                                                     {f.photoURL ? <img src={f.photoURL} alt="" style={{ width: '100%', height: '100%', objectFit: 'cover' }} /> : f.displayName.charAt(0).toUpperCase()}
                                                 </div>
                                                 <span className={`chat-status-dot ${isOnline ? 'online' : 'offline'}`} />
@@ -862,11 +843,11 @@ function ChatTab({ user, onUnreadChange }: { user: { email: string; displayName:
                             <p className="chat-section-label">Đã gửi lời mời</p>
                             {friends.filter(f => f.status === 'pending_sent').map(f => (
                                 <div key={f.email} className="chat-contact-item sent-request">
-                                    <div className="chat-contact-avatar" style={{ background: '#f3f4f6', color: '#9ca3af' }}>
+                                    <div className="chat-contact-avatar" style={{ background: 'var(--hub-surface-alt)', color: 'var(--hub-text-muted)' }}>
                                         {f.email.charAt(0).toUpperCase()}
                                     </div>
                                     <div className="chat-contact-info">
-                                        <p className="chat-contact-name" style={{ color: '#6b7280' }}>{f.email}</p>
+                                        <p className="chat-contact-name" style={{ color: 'var(--hub-text-muted)' }}>{f.email}</p>
                                         <p className="chat-contact-preview">Đang chờ chấp nhận...</p>
                                     </div>
                                     <button
@@ -882,7 +863,7 @@ function ChatTab({ user, onUnreadChange }: { user: { email: string; displayName:
                     )}
 
                     {friends.filter(f => f.status === 'accepted').length === 0 && friends.filter(f => f.status === 'pending_sent').length === 0 && (
-                        <div style={{ textAlign: 'center', padding: '30px 0', color: '#9ca3af' }}>
+                        <div style={{ textAlign: 'center', padding: '30px 0', color: 'var(--hub-text-muted)' }}>
                             <UserPlus size={32} style={{ margin: '0 auto 8px', opacity: 0.4 }} />
                             <p style={{ fontSize: '12px' }}>Thêm bạn bè bằng email</p>
                             <button
@@ -918,7 +899,7 @@ function ChatTab({ user, onUnreadChange }: { user: { email: string; displayName:
                         </div>
                     ) : (
                         <div className="chat-contact-avatar-wrap" style={{ width: 28, height: 28 }}>
-                            <div className="chat-header-avatar" style={{ background: '#e0e7ff', color: '#4f46e5', width: 28, height: 28, fontSize: 11, overflow: 'hidden' }}>
+                            <div className="chat-header-avatar" style={{ background: 'var(--hub-surface-alt)', color: 'var(--accent-color)', width: 28, height: 28, fontSize: 11, overflow: 'hidden' }}>
                                 {chatPartner?.photoURL ? <img src={chatPartner.photoURL} alt="" style={{ width: '100%', height: '100%', objectFit: 'cover', borderRadius: '50%' }} /> : chatPartnerName.charAt(0).toUpperCase()}
                             </div>
                             <span className={`chat-status-dot small ${isPartnerOnline ? 'online' : 'offline'}`} />
@@ -1108,7 +1089,7 @@ function PomodoroTab({ mode, timeLeft, isRunning, sessions, cycle, onSetMode, on
         <>
             <div className="hub-content-header">
                 <h3><Timer size={16} style={{ verticalAlign: '-3px', marginRight: '6px' }} /> Pomodoro</h3>
-                <span style={{ fontSize: '12px', color: '#9ca3af', fontWeight: 600 }}>
+                <span style={{ fontSize: '12px', color: 'var(--hub-text-muted)', fontWeight: 600 }}>
                     {sessions} phiên
                 </span>
             </div>
@@ -1303,7 +1284,7 @@ function NotesTab({ userEmail }: { userEmail: string }) {
                 </div>
                 <div className="hub-content-body">
                     {notes.length === 0 ? (
-                        <div style={{ textAlign: 'center', padding: '40px 0', color: '#9ca3af' }}>
+                        <div style={{ textAlign: 'center', padding: '40px 0', color: 'var(--hub-text-muted)' }}>
                             <StickyNote size={36} style={{ margin: '0 auto 10px', opacity: 0.4 }} />
                             <p style={{ fontSize: '13px', fontWeight: 600 }}>Chưa có ghi chú</p>
                             <button
@@ -1412,879 +1393,322 @@ function NotesTab({ userEmail }: { userEmail: string }) {
     );
 }
 
-// ============================================================
-// STUDY TRACKER TAB
-// ============================================================
-
-function StudyTrackerTab({ userEmail }: { userEmail: string }) {
-    const [stats, setStats] = useState({ totalExams: 0, avgScore: 0, streak: 0 });
-    const [loading, setLoading] = useState(true);
-
-    useEffect(() => {
-        // Fetch practice history from Firestore
-        async function fetchStats() {
-            try {
-                const { collection, query, where, getDocs, orderBy } = await import('firebase/firestore');
-                const { db } = await import('@/config/firebase');
-
-                const q = query(
-                    collection(db, 'practice_logs'),
-                    where('userEmail', '==', userEmail),
-                    orderBy('timestamp', 'desc')
-                );
-                const snap = await getDocs(q);
-                const logs = snap.docs.map(d => d.data());
-
-                let totalScore = 0;
-                let scored = 0;
-                for (const log of logs) {
-                    if (typeof log.score === 'number') {
-                        totalScore += log.score;
-                        scored++;
-                    }
-                }
-
-                // Calculate streak (consecutive days with activity)
-                const days = new Set(logs.map(l => {
-                    const d = new Date(l.timestamp as string);
-                    return `${d.getFullYear()}-${d.getMonth()}-${d.getDate()}`;
-                }));
-
-                let streak = 0;
-                const today = new Date();
-                for (let i = 0; i < 365; i++) {
-                    const d = new Date(today);
-                    d.setDate(d.getDate() - i);
-                    const key = `${d.getFullYear()}-${d.getMonth()}-${d.getDate()}`;
-                    if (days.has(key)) streak++;
-                    else if (i > 0) break;
-                }
-
-                setStats({
-                    totalExams: logs.length,
-                    avgScore: scored > 0 ? Math.round(totalScore / scored * 10) / 10 : 0,
-                    streak,
-                });
-            } catch (err) {
-                console.warn('[StudyTracker] Error:', err);
-            } finally {
-                setLoading(false);
-            }
-        }
-        fetchStats();
-    }, [userEmail]);
-
-    return (
-        <>
-            <div className="hub-content-header">
-                <h3><BarChart3 size={16} style={{ verticalAlign: '-3px', marginRight: '6px' }} /> Theo dõi học tập</h3>
-            </div>
-            <div className="hub-content-body">
-                {loading ? (
-                    <div style={{ textAlign: 'center', padding: '40px 0', color: '#9ca3af' }}>
-                        <div style={{ fontSize: '24px', animation: 'hubPulse 1.5s ease-in-out infinite', display: 'flex', justifyContent: 'center' }}><BarChart3 size={24} /></div>
-                        <p style={{ fontSize: '12px', marginTop: '8px' }}>Đang tải...</p>
-                    </div>
-                ) : (
-                    <>
-                        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: '8px', marginBottom: '16px' }}>
-                            <div className="stat-card">
-                                <div className="stat-value">{stats.totalExams}</div>
-                                <div className="stat-label">Bài thi</div>
-                            </div>
-                            <div className="stat-card">
-                                <div className="stat-value">{stats.avgScore}</div>
-                                <div className="stat-label">Điểm TB</div>
-                            </div>
-                            <div className="stat-card">
-                                <div className="stat-value">{stats.streak}</div>
-                                <div className="stat-label">Streak <Flame size={12} style={{ verticalAlign: '-2px', color: '#f59e0b' }} /></div>
-                            </div>
-                        </div>
-
-                        {stats.totalExams === 0 && (
-                            <div style={{ textAlign: 'center', padding: '20px 0', color: '#9ca3af' }}>
-                                <p style={{ fontSize: '28px', marginBottom: '8px' }}>📚</p>
-                                <p style={{ fontSize: '12px' }}>Chưa có dữ liệu học tập.</p>
-                                <p style={{ fontSize: '11px', marginTop: '4px' }}>Hãy làm bài thi để bắt đầu theo dõi!</p>
-                            </div>
-                        )}
-
-                        {stats.totalExams > 0 && (
-                            <div style={{ background: '#f9fafb', borderRadius: '12px', padding: '14px', marginTop: '8px' }}>
-                                <p style={{ fontSize: '12px', fontWeight: 600, color: '#374151', marginBottom: '8px' }}>Tóm tắt</p>
-                                <p style={{ fontSize: '12px', color: '#6b7280', lineHeight: 1.8 }}>
-                                    Bạn đã hoàn thành <strong style={{ color: 'var(--accent-color, #3b82f6)' }}>{stats.totalExams}</strong> bài thi
-                                    với điểm trung bình <strong style={{ color: 'var(--accent-color, #3b82f6)' }}>{stats.avgScore}</strong>.
-                                    {stats.streak > 0 && <> Streak hiện tại: <strong style={{ color: '#f59e0b' }}>{stats.streak}</strong> ngày liên tiếp 🔥</>}
-                                </p>
-                            </div>
-                        )}
-                    </>
-                )}
-            </div>
-        </>
-    );
-}
 
 // ============================================================
-// STUDY ROOMS TAB — Real-time collaborative sessions
+// THEME TAB — uses global ThemeContext
 // ============================================================
 
-function StudyRoomsTab({ user }: { user: { email: string; name: string; photoURL?: string } }) {
-    const [rooms, setRooms] = useState<StudyRoom[]>([]);
-    const [activeRoom, setActiveRoom] = useState<StudyRoom | null>(null);
-    const [messages, setMessages] = useState<StudyRoomMessage[]>([]);
-    const [input, setInput] = useState('');
-    const [showCreate, setShowCreate] = useState(false);
-    const [newRoomData, setNewRoomData] = useState({ name: '', subject: 'Khác', isPrivate: false });
-    const [localTimeLeft, setLocalTimeLeft] = useState(25 * 60);
-    const messagesEndRef = useRef<HTMLDivElement>(null);
-    const timerIntervalRef = useRef<ReturnType<typeof setInterval> | null>(null);
+type SubTabId = 'main' | 'appearance' | 'typography' | 'background' | 'behavior';
 
-    // Subscribe to all rooms
-    useEffect(() => {
-        if (!user?.email) return;
-        let unsub: (() => void) | undefined;
-        try {
-            unsub = subscribeToRooms(setRooms);
-        } catch (err) {
-            console.error('[StudyRooms] Failed to set up listener:', err);
-        }
+function ThemeTab() {
+    const { settings, updateSetting, resetToDefaults } = useTheme();
+    const [activeSubTab, setActiveSubTab] = useState<SubTabId>('main');
 
-        return () => {
-            if (unsub) {
-                try {
-                    unsub();
-                } catch (e) {
-                    // Ignore cleanup errors to prevent app crash
-                }
-            }
-        };
-    }, [user?.email]);
+    const categories: { id: SubTabId; label: string; icon: any; class: string }[] = [
+        { id: 'appearance', label: 'Giao diện', icon: Palette, class: 'icon-bg-appearance' },
+        { id: 'typography', label: 'Kiểu chữ', icon: Type, class: 'icon-bg-typography' },
+        { id: 'background', label: 'Hình nền', icon: Image, class: 'icon-bg-background' },
+        { id: 'behavior', label: 'Hành vi', icon: Settings, class: 'icon-bg-behavior' },
+    ];
 
-    // Subscribe to room details and messages when joined
-    useEffect(() => {
-        if (!activeRoom || !user?.email) return;
-
-        let unsubRoom: (() => void) | undefined;
-        let unsubMsgs: (() => void) | undefined;
-
-        try {
-            unsubRoom = subscribeToRoom(activeRoom.id, (room: StudyRoom | null) => {
-                if (!room) {
-                    setActiveRoom(null);
-                    return;
-                }
-                setActiveRoom(room);
-
-                // Synchronize local timer with Firestore
-                if (room.timerState) {
-                    const ts = room.timerState;
-                    if (ts.isRunning) {
-                        const elapsed = Math.floor((Date.now() - ts.updatedAt) / 1000);
-                        const actualTime = Math.max(0, ts.timeLeft - elapsed);
-                        setLocalTimeLeft(actualTime);
-                    } else {
-                        setLocalTimeLeft(ts.timeLeft);
-                    }
-                }
-            });
-            unsubMsgs = subscribeToRoomMessages(activeRoom.id, setMessages);
-        } catch (err) {
-            console.error('[StudyRooms] Failed to subscribe to room details:', err);
-        }
-
-        return () => {
-            if (unsubRoom) { try { unsubRoom(); } catch (e) { } }
-            if (unsubMsgs) { try { unsubMsgs(); } catch (e) { } }
-        };
-    }, [activeRoom?.id, user?.email]);
-
-    // Local ticking effect
-    useEffect(() => {
-        if (timerIntervalRef.current) clearInterval(timerIntervalRef.current);
-
-        if (activeRoom?.timerState?.isRunning && localTimeLeft > 0) {
-            timerIntervalRef.current = setInterval(() => {
-                setLocalTimeLeft(prev => Math.max(0, prev - 1));
-            }, 1000);
-        }
-
-        return () => {
-            if (timerIntervalRef.current) clearInterval(timerIntervalRef.current);
-        };
-    }, [activeRoom?.timerState?.isRunning, localTimeLeft > 0]);
-
-    // Handle timer expiration (Owner only)
-    useEffect(() => {
-        const isOwner = activeRoom?.ownerEmail === user.email;
-        if (isOwner && localTimeLeft === 0 && activeRoom?.timerState?.isRunning) {
-            handleTimerComplete();
-        }
-    }, [localTimeLeft, activeRoom?.ownerEmail, user.email]);
-
-    const handleTimerComplete = async () => {
-        if (!activeRoom || activeRoom.ownerEmail !== user.email) return;
-
-        const ts = activeRoom.timerState!;
-        let nextMode = ts.mode;
-        let nextTime = 0;
-        let nextCycle = ts.cycle;
-        let nextSessions = ts.sessions;
-
-        if (ts.mode === 'focus') {
-            nextSessions += 1;
-            if (ts.cycle < 4) {
-                nextMode = 'shortBreak';
-                nextTime = 5 * 60;
-            } else {
-                nextMode = 'longBreak';
-                nextTime = 15 * 60;
-                nextCycle = 0; // Reset cycle after long break
-            }
-        } else {
-            nextMode = 'focus';
-            nextTime = 25 * 60;
-            if (ts.mode === 'longBreak') nextCycle = 1;
-            else nextCycle += 1;
-        }
-
-        await updateRoomTimer(activeRoom.id, {
-            ...ts,
-            mode: nextMode as any,
-            timeLeft: nextTime,
-            isRunning: true,
-            cycle: nextCycle,
-            sessions: nextSessions,
-            updatedAt: Date.now()
-        });
-        playBeep();
-    };
-
-    useEffect(() => {
-        messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
-    }, [messages]);
-
-    const handleCreate = async () => {
-        if (!newRoomData.name.trim()) return;
-        const rid = await createStudyRoom(newRoomData.name, newRoomData.subject, user.email, user.name, newRoomData.isPrivate);
-        const room: StudyRoom = {
-            id: rid,
-            name: newRoomData.name,
-            subject: newRoomData.subject,
-            ownerEmail: user.email,
-            ownerName: user.name,
-            members: [{ email: user.email, name: user.name, photoURL: user.photoURL, role: 'owner', joinedAt: Date.now() }],
-            isPrivate: newRoomData.isPrivate,
-            createdAt: Date.now(),
-            lastActive: Date.now(),
-            timerState: { mode: 'focus', timeLeft: 25 * 60, isRunning: false, updatedAt: Date.now(), cycle: 1, sessions: 0 }
-        };
-        setActiveRoom(room);
-        setShowCreate(false);
-        setNewRoomData({ name: '', subject: 'Khác', isPrivate: false });
-    };
-
-    const handleJoin = async (room: StudyRoom) => {
-        await joinStudyRoom(room.id, user.email, user.name, user.photoURL);
-        setActiveRoom(room);
-    };
-
-    const handleLeave = async () => {
-        if (!activeRoom) return;
-        if (!window.confirm('Bạn có chắc muốn rời phòng học?')) return;
-        const member = activeRoom.members.find(m => m.email === user.email);
-        if (member) await leaveStudyRoom(activeRoom.id, member.email);
-        setActiveRoom(null);
-    };
-
-    const handleSend = async () => {
-        if (!input.trim() || !activeRoom) return;
-        await sendRoomMessage(activeRoom.id, user.email, user.name, input.trim());
-        setInput('');
-    };
-
-    const syncTimer = (running: boolean) => {
-        if (!activeRoom || activeRoom.ownerEmail !== user.email) return;
-        updateRoomTimer(activeRoom.id, {
-            ...activeRoom.timerState!,
-            timeLeft: localTimeLeft,
-            isRunning: running,
-            updatedAt: Date.now()
-        });
-    };
-
-    const resetTimer = async () => {
-        if (!activeRoom || activeRoom.ownerEmail !== user.email) return;
-        const mode = activeRoom.timerState?.mode || 'focus';
-        const duration = mode === 'focus' ? 25 * 60 : (mode === 'shortBreak' ? 5 * 60 : 15 * 60);
-        await updateRoomTimer(activeRoom.id, {
-            ...activeRoom.timerState!,
-            timeLeft: duration,
-            isRunning: false,
-            updatedAt: Date.now()
-        });
-    };
-
-    const changeMode = async (mode: 'focus' | 'shortBreak' | 'longBreak') => {
-        if (!activeRoom || activeRoom.ownerEmail !== user.email) return;
-        const duration = mode === 'focus' ? 25 * 60 : (mode === 'shortBreak' ? 5 * 60 : 15 * 60);
-        await updateRoomTimer(activeRoom.id, {
-            ...activeRoom.timerState!,
-            mode,
-            timeLeft: duration,
-            isRunning: false,
-            updatedAt: Date.now()
-        });
-    };
-
-    // Room context view
-    if (activeRoom) {
-        const isOwner = activeRoom.ownerEmail === user.email;
-        const ts = activeRoom.timerState;
-
+    if (activeSubTab === 'main') {
         return (
             <>
                 <div className="hub-content-header">
-                    <h3>
-                        <button onClick={handleLeave} style={{ background: 'none', border: 'none', cursor: 'pointer', color: '#6b7280', display: 'flex', alignItems: 'center' }}>
-                            <ChevronLeft size={18} />
-                        </button>
-                        <span style={{ fontSize: '14px' }}>{activeRoom.name}</span>
-                    </h3>
-                    <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-                        <span style={{ fontSize: '11px', color: '#9ca3af', fontWeight: 600 }}>{activeRoom.members.length}</span>
-                        <div className="avatar-group">
-                            {activeRoom.members.map((m, i) => (
-                                <div
-                                    key={`${m.email}-${i}`}
-                                    title={m.name}
-                                    className="avatar-group-item"
-                                    style={{ zIndex: 10 - i }}
-                                >
-                                    {m.photoURL ? <img src={m.photoURL} style={{ width: '100%', height: '100%', objectFit: 'cover' }} /> : m.name[0]}
-                                </div>
-                            ))}
-                        </div>
-                    </div>
+                    <h3><Palette size={16} /> Tùy chỉnh</h3>
+                    <button
+                        onClick={resetToDefaults}
+                        title="Đặt lại cài đặt"
+                        style={{ background: 'none', border: 'none', cursor: 'pointer', color: '#94a3b8' }}
+                    >
+                        <RotateCcw size={16} />
+                    </button>
                 </div>
-
-                <div className="hub-content-body room-content-body">
-                    {/* Synchronized Shared Timer */}
-                    <div className="room-shared-timer" style={{ marginBottom: '24px' }}>
-                        <div className="room-pomodoro-modes" style={{ display: 'flex', gap: '4px', marginBottom: '16px', background: '#f3f4f6', padding: '4px', borderRadius: '12px' }}>
-                            {POMODORO_MODES.map(m => (
-                                <button
-                                    key={m.id}
-                                    disabled={!isOwner}
-                                    onClick={() => changeMode(m.id as any)}
-                                    className={`room-mode-btn ${ts?.mode === m.id ? 'active' : ''}`}
-                                    style={{
-                                        flex: 1, padding: '6px', borderRadius: '8px', border: 'none', fontSize: '11px', fontWeight: 600,
-                                        background: ts?.mode === m.id ? 'white' : 'transparent',
-                                        boxShadow: ts?.mode === m.id ? '0 2px 4px rgba(0,0,0,0.05)' : 'none',
-                                        color: ts?.mode === m.id ? 'var(--accent-color)' : '#6b7280',
-                                        cursor: isOwner ? 'pointer' : 'default', transition: 'all 0.2s'
-                                    }}
-                                >
-                                    {m.label}
-                                </button>
-                            ))}
-                        </div>
-
-                        <div className="pomodoro-ring small" style={{ width: '140px', height: '140px', margin: '0 auto', position: 'relative' }}>
-                            <svg viewBox="0 0 176 176" style={{ width: '100%', height: '100%' }}>
-                                <circle className="ring-bg" cx="88" cy="88" r="80" style={{ fill: 'none', stroke: '#f1f5f9', strokeWidth: '8px' }} />
-                                <circle
-                                    className="ring-progress"
-                                    cx="88" cy="88" r="80"
-                                    style={{
-                                        fill: 'none', stroke: 'var(--accent-color)', strokeWidth: '8px', strokeLinecap: 'round',
-                                        strokeDasharray: 2 * Math.PI * 80,
-                                        strokeDashoffset: (2 * Math.PI * 80) * (1 - (localTimeLeft / (ts?.mode === 'focus' ? 25 * 60 : (ts?.mode === 'shortBreak' ? 5 * 60 : 15 * 60)))),
-                                        transition: 'stroke-dashoffset 1s linear'
-                                    }}
-                                />
-                            </svg>
-                            <div className="pomodoro-time" style={{ position: 'absolute', top: '50%', left: '50%', transform: 'translate(-50%, -50%)', textAlign: 'center' }}>
-                                <span className="time" style={{ fontSize: '24px', fontWeight: 800 }}>
-                                    {Math.floor(localTimeLeft / 60).toString().padStart(2, '0')}:{(localTimeLeft % 60).toString().padStart(2, '0')}
-                                </span>
-                                <div style={{ fontSize: '9px', color: '#9ca3af', fontWeight: 700, textTransform: 'uppercase', marginTop: '-2px' }}>
-                                    {ts?.mode === 'focus' ? 'Focus' : 'Break'}
+                <div className="hub-content-body" style={{ background: 'var(--hub-surface-alt)', padding: '16px' }}>
+                    <div className="theme-group">
+                        {categories.map(cat => (
+                            <div key={cat.id} className="theme-category-item" onClick={() => setActiveSubTab(cat.id)}>
+                                <div className="theme-category-label">
+                                    <div className={`theme-category-icon-wrapper ${cat.class}`}>
+                                        <cat.icon size={18} />
+                                    </div>
+                                    <span>{cat.label}</span>
                                 </div>
+                                <ChevronRight className="theme-category-chevron" size={18} />
                             </div>
-                        </div>
-
-                        <div className="pomodoro-cycle-dots" style={{ display: 'flex', gap: '6px', justifyContent: 'center', margin: '12px 0' }}>
-                            {[1, 2, 3, 4].map(dot => (
-                                <div
-                                    key={dot}
-                                    className={`cycle-dot ${dot <= (ts?.cycle || 0) ? 'filled' : ''} ${dot === (ts?.mode === 'focus' ? ts?.cycle : -1) ? 'active' : ''}`}
-                                    style={{
-                                        width: '6px', height: '6px', borderRadius: '50%',
-                                        background: dot <= (ts?.cycle || 0) ? 'var(--accent-color)' : '#e5e7eb',
-                                        boxShadow: dot === (ts?.mode === 'focus' ? ts?.cycle : -1) ? '0 0 8px var(--accent-color)' : 'none'
-                                    }}
-                                />
-                            ))}
-                        </div>
-
-                        <div style={{ textAlign: 'center' }}>
-                            {isOwner ? (
-                                <div style={{ display: 'flex', gap: '8px', justifyContent: 'center' }}>
-                                    <button
-                                        onClick={resetTimer}
-                                        style={{ padding: '8px 16px', borderRadius: '12px', border: '1.5px solid #f1f5f9', background: 'white', color: '#6b7280', fontSize: '11px', fontWeight: 700, cursor: 'pointer' }}
-                                    >
-                                        <RotateCcw size={14} style={{ verticalAlign: 'middle', marginRight: '4px' }} /> Reset
-                                    </button>
-                                    <button
-                                        onClick={() => syncTimer(!ts?.isRunning)}
-                                        style={{
-                                            padding: '8px 24px', borderRadius: '12px', border: 'none',
-                                            background: ts?.isRunning ? '#ef4444' : 'var(--accent-color)',
-                                            color: 'white', fontSize: '11px', fontWeight: 700, cursor: 'pointer',
-                                            boxShadow: '0 4px 12px rgba(59, 130, 246, 0.2)'
-                                        }}
-                                    >
-                                        {ts?.isRunning ? '⏸ Tạm dừng' : '▶ Bắt đầu'}
-                                    </button>
-                                </div>
-                            ) : (
-                                <div style={{ fontSize: '11px', color: '#10b981', fontWeight: 700, display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '6px' }}>
-                                    <Sparkles size={12} /> Đồng bộ với chủ phòng
-                                </div>
-                            )}
-                        </div>
+                        ))}
                     </div>
 
-                    {/* Room Chat */}
-                    <div className="room-chat-container">
-                        <div className="room-chat-messages">
-                            {messages.map((m) => (
-                                <div key={m.id} style={{ marginBottom: '8px', textAlign: m.senderEmail === user.email ? 'right' : 'left' }}>
-                                    <div style={{ fontSize: '10px', color: '#9ca3af', marginBottom: '2px' }}>{m.senderName}</div>
-                                    <div className={`room-msg-bubble ${m.senderEmail === user.email ? 'room-msg-sent' : 'room-msg-received'}`}>
-                                        <MathText text={m.text} />
-                                    </div>
-                                </div>
-                            ))}
-                            <div ref={messagesEndRef} />
-                        </div>
-                        <div style={{ display: 'flex', gap: '8px', marginTop: '8px', paddingTop: '8px', borderTop: '1px solid #f1f5f9' }}>
-                            <input
-                                type="text"
-                                value={input}
-                                onChange={e => setInput(e.target.value)}
-                                onKeyDown={e => e.key === 'Enter' && handleSend()}
-                                placeholder="Gửi tin nhắn cho phòng..."
-                                style={{ flex: 1, padding: '8px 12px', borderRadius: '12px', border: '1.5px solid #e5e7eb', fontSize: '12px', outline: 'none' }}
-                            />
-                            <button onClick={handleSend} style={{ width: '34px', height: '34px', borderRadius: '50%', background: 'var(--accent-color)', color: 'white', border: 'none', display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer' }}>
-                                <Send size={14} />
-                            </button>
-                        </div>
+                    {/* Version */}
+                    <div style={{ textAlign: 'center', marginTop: 'auto', padding: '16px 0' }}>
+                        <span style={{ fontSize: '11px', color: '#cbd5e1', fontWeight: 600, letterSpacing: '0.5px' }}>STUDYSTATION v{APP_VERSION}</span>
                     </div>
                 </div>
             </>
         );
     }
 
-    // List view
+    const renderSubHeader = (title: string) => (
+        <div className="theme-sub-header">
+            <button className="theme-back-btn" onClick={() => setActiveSubTab('main')}>
+                <ChevronLeft size={20} />
+            </button>
+            <span className="theme-sub-title">{title}</span>
+        </div>
+    );
+
     return (
-        <>
-            <div className="hub-content-header">
-                <h3><Users size={16} style={{ verticalAlign: '-3px', marginRight: '6px' }} /> Phòng học</h3>
-                <button
-                    onClick={() => setShowCreate(true)}
-                    style={{ background: 'var(--accent-color)', color: 'white', border: 'none', borderRadius: '8px', padding: '4px 10px', fontSize: '12px', fontWeight: 600, cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '4px' }}
-                >
-                    <Plus size={14} /> Tạo phòng
-                </button>
-            </div>
-
-            <div className="hub-content-body">
-                {showCreate && (
-                    <div style={{ background: 'white', padding: '12px', borderRadius: '12px', marginBottom: '16px', border: '1.5px solid var(--accent-color)' }}>
-                        <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '10px' }}>
-                            <span style={{ fontWeight: 700, fontSize: '13px' }}>Tạo phòng mới</span>
-                            <button onClick={() => setShowCreate(false)} style={{ background: 'none', border: 'none', color: '#9ca3af', cursor: 'pointer' }}><X size={14} /></button>
-                        </div>
-                        <input
-                            type="text"
-                            placeholder="Tên phòng..."
-                            value={newRoomData.name}
-                            onChange={e => setNewRoomData(prev => ({ ...prev, name: e.target.value }))}
-                            style={{ width: '100%', padding: '8px', borderRadius: '8px', border: '1.5px solid #e5e7eb', marginBottom: '8px', fontSize: '12px', outline: 'none' }}
-                        />
-                        <select
-                            value={newRoomData.subject}
-                            onChange={e => setNewRoomData(prev => ({ ...prev, subject: e.target.value }))}
-                            style={{ width: '100%', padding: '8px', borderRadius: '8px', border: '1.5px solid #e5e7eb', marginBottom: '12px', fontSize: '12px', outline: 'none', color: '#374151' }}
-                        >
-                            <option value="Khác">Chọn môn học</option>
-                            <option value="Toán học">Toán học</option>
-                            <option value="Vật lý">Vật lý</option>
-                            <option value="Hóa học">Hóa học</option>
-                            <option value="Anh văn">Anh văn</option>
-                            <option value="Công nghệ">Công nghệ</option>
-                        </select>
-                        <button
-                            onClick={handleCreate}
-                            disabled={!newRoomData.name.trim()}
-                            style={{ width: '100%', padding: '8px', borderRadius: '8px', background: 'var(--accent-color)', color: 'white', border: 'none', fontWeight: 600, fontSize: '12px', cursor: 'pointer', opacity: !newRoomData.name.trim() ? 0.6 : 1 }}
-                        >
-                            Tạo phòng & Tham gia
-                        </button>
-                    </div>
-                )}
-
-                <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
-                    {rooms.length === 0 ? (
-                        <div style={{ textAlign: 'center', padding: '40px 20px', color: '#9ca3af' }}>
-                            <Users size={32} style={{ opacity: 0.3, marginBottom: '12px' }} />
-                            <p style={{ fontSize: '12px' }}>Chưa có phòng học nào. Hãy là người đầu tiên tạo phòng!</p>
-                        </div>
-                    ) : (
-                        rooms.map(room => (
-                            <div
-                                key={room.id}
-                                onClick={() => handleJoin(room)}
-                                style={{
-                                    padding: '12px', borderRadius: '14px', background: 'white',
-                                    border: '1px solid #f1f5f9', cursor: 'pointer',
-                                    transition: 'all 0.2s', display: 'flex',
-                                    alignItems: 'center', gap: '12px', boxShadow: '0 1px 3px rgba(0,0,0,0.02)'
-                                }}
-                                onMouseEnter={e => e.currentTarget.style.borderColor = 'var(--accent-color)'}
-                                onMouseLeave={e => e.currentTarget.style.borderColor = '#f1f5f9'}
-                            >
-                                <div style={{
-                                    width: '40px', height: '40px', borderRadius: '12px',
-                                    background: 'rgba(var(--accent-rgb), 0.1)', color: 'var(--accent-color)',
-                                    display: 'flex', alignItems: 'center', justifyContent: 'center',
-                                    fontSize: '18px', flexShrink: 0
-                                }}>
-                                    {room.subject === 'Toán học' ? '📐' : room.subject === 'Anh văn' ? '🌍' : '📚'}
+        <div className="theme-view-container">
+            {activeSubTab === 'appearance' && (
+                <>
+                    {renderSubHeader('Giao diện')}
+                    <div className="hub-content-body" style={{ padding: '16px' }}>
+                        <div className="theme-group">
+                            <div className="theme-item">
+                                <div className="theme-item-header">
+                                    <label><Moon size={16} /> Chế độ tối</label>
+                                    <button
+                                        className={`toggle-switch ${settings.mode === 'dark' ? 'on' : ''}`}
+                                        onClick={() => updateSetting('mode', settings.mode === 'dark' ? 'light' : 'dark')}
+                                    />
                                 </div>
-                                <div style={{ flex: 1, minWidth: 0 }}>
-                                    <div style={{ display: 'flex', justifyContent: 'space-between' }}>
-                                        <span style={{ fontWeight: 700, fontSize: '13px', color: '#1f2937' }}>{room.name}</span>
-                                        <span style={{ fontSize: '10px', color: '#9ca3af' }}>{room.members.length} học sinh</span>
+                            </div>
+                            <div className="theme-item">
+                                <div className="theme-item-header has-content">
+                                    <label><Palette size={16} /> Màu chủ đạo</label>
+                                </div>
+                                <div className="color-picker">
+                                    {ACCENT_COLORS.map(color => (
+                                        <button
+                                            key={color}
+                                            className={`color-swatch ${settings.accentColor === color ? 'selected' : ''}`}
+                                            style={{ background: color, color: color }}
+                                            onClick={() => updateSetting('accentColor', color)}
+                                        />
+                                    ))}
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </>
+            )}
+
+            {activeSubTab === 'typography' && (
+                <>
+                    {renderSubHeader('Kiểu chữ')}
+                    <div className="hub-content-body" style={{ padding: '16px' }}>
+                        <div className="theme-group">
+                            <div className="theme-item">
+                                <div className="theme-item-header has-content">
+                                    <label><Type size={16} /> Cỡ chữ</label>
+                                </div>
+                                <div style={{ display: 'flex', gap: '6px' }}>
+                                    {(['small', 'medium', 'large'] as const).map(size => (
+                                        <button
+                                            key={size}
+                                            onClick={() => updateSetting('fontSize', size)}
+                                            style={{
+                                                flex: 1, padding: '8px', borderRadius: '10px',
+                                                border: settings.fontSize === size ? '2px solid var(--accent-color)' : '1.5px solid var(--hub-border)',
+                                                background: settings.fontSize === size ? 'rgba(var(--accent-rgb), 0.1)' : 'var(--hub-surface)',
+                                                color: settings.fontSize === size ? 'var(--accent-color)' : 'var(--hub-text-muted)',
+                                                fontWeight: 700, fontSize: size === 'small' ? '11px' : size === 'large' ? '14px' : '12px',
+                                                cursor: 'pointer', transition: 'all 0.2s'
+                                            }}
+                                        >
+                                            {size === 'small' ? 'Nhỏ' : size === 'medium' ? 'Vừa' : 'Lớn'}
+                                        </button>
+                                    ))}
+                                </div>
+                            </div>
+                            <div className="theme-item">
+                                <div className="theme-item-header has-content">
+                                    <label><Type size={16} /> Phông chữ</label>
+                                </div>
+                                <div style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
+                                    {(['Be Vietnam Pro', 'Roboto', 'Times New Roman', 'Montserrat (Đậm)'] as const).map(font => (
+                                        <button
+                                            key={font}
+                                            onClick={() => updateSetting('fontFamily', font)}
+                                            style={{
+                                                padding: '10px 14px', borderRadius: '10px', textAlign: 'left',
+                                                border: settings.fontFamily === font ? '2.5px solid var(--accent-color)' : '1.5px solid var(--hub-border)',
+                                                background: settings.fontFamily === font ? 'rgba(var(--accent-rgb), 0.05)' : 'var(--hub-surface)',
+                                                color: settings.fontFamily === font ? 'var(--accent-color)' : 'var(--hub-text)',
+                                                fontWeight: font.includes('Montserrat') ? 800 : 600,
+                                                fontFamily: font.replace(' (Đậm)', ''), fontSize: '13px',
+                                                cursor: 'pointer', transition: 'all 0.2s'
+                                            }}
+                                        >
+                                            {font} {settings.fontFamily === font && '✓'}
+                                        </button>
+                                    ))}
+                                </div>
+                            </div>
+                            <div className="theme-item">
+                                <div className="theme-item-header has-content">
+                                    <label>📄 Giãn cách: <b>{settings.examPadding === 'compact' ? 'Gọn' : settings.examPadding === 'normal' ? 'Vừa' : 'Rộng'}</b></label>
+                                </div>
+                                <div style={{ display: 'flex', gap: '6px' }}>
+                                    {(['compact', 'normal', 'spacious'] as const).map(p => (
+                                        <button
+                                            key={p}
+                                            onClick={() => updateSetting('examPadding', p)}
+                                            style={{
+                                                flex: 1, padding: '8px', borderRadius: '10px',
+                                                border: settings.examPadding === p ? '2px solid var(--accent-color)' : '1.5px solid var(--hub-border)',
+                                                background: settings.examPadding === p ? 'rgba(var(--accent-rgb), 0.1)' : 'var(--hub-surface)',
+                                                color: settings.examPadding === p ? 'var(--accent-color)' : 'var(--hub-text-muted)',
+                                                fontWeight: 700, fontSize: '12px',
+                                                cursor: 'pointer', transition: 'all 0.2s'
+                                            }}
+                                        >
+                                            {p === 'compact' ? 'Gọn' : p === 'normal' ? 'Vừa' : 'Rộng'}
+                                        </button>
+                                    ))}
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </>
+            )}
+
+            {activeSubTab === 'background' && (
+                <>
+                    {renderSubHeader('Hình nền học tập')}
+                    <div className="hub-content-body" style={{ padding: '16px' }}>
+                        <div className="theme-group">
+                            <div className="theme-item">
+                                <div className="theme-item-header has-content">
+                                    <label><Image size={16} /> Hình nền tùy chỉnh</label>
+                                </div>
+                                <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
+                                    <div style={{ display: 'flex', gap: '6px' }}>
+                                        <input
+                                            placeholder="Link ảnh (.jpg, .png...)"
+                                            value={settings.customBackground || ''}
+                                            onChange={e => updateSetting('customBackground', e.target.value)}
+                                            style={{
+                                                flex: 1, padding: '10px 14px', borderRadius: '10px',
+                                                border: '1.5px solid var(--hub-border)', fontSize: '12px', outline: 'none',
+                                                background: 'var(--hub-surface-alt)',
+                                                color: 'var(--hub-text)'
+                                            }}
+                                        />
+                                        {settings.customBackground && (
+                                            <button
+                                                onClick={() => updateSetting('customBackground', undefined)}
+                                                style={{
+                                                    padding: '8px', borderRadius: '10px', background: '#fee2e2',
+                                                    color: '#ef4444', border: 'none', cursor: 'pointer'
+                                                }}
+                                            >
+                                                <Trash2 size={16} />
+                                            </button>
+                                        )}
                                     </div>
-                                    <div style={{ display: 'flex', justifyContent: 'space-between', marginTop: '2px' }}>
-                                        <span style={{ fontSize: '11px', color: '#6b7280' }}>{room.subject}</span>
-                                        <span style={{ fontSize: '10px', color: '#10b981', fontWeight: 600 }}>
-                                            {room.timerState?.isRunning ? 'Đang học 🎯' : 'Chờ đợi...'}
-                                        </span>
+                                    <div style={{ position: 'relative', width: '100%', height: '38px', borderRadius: '10px', border: '1.5px dashed var(--hub-border)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '12px', color: 'var(--hub-text-muted)', cursor: 'pointer', background: 'var(--hub-surface)' }}>
+                                        <input
+                                            type="file" accept="image/*"
+                                            style={{ position: 'absolute', inset: 0, opacity: 0, cursor: 'pointer' }}
+                                            onChange={(e) => {
+                                                const file = e.target.files?.[0];
+                                                if (!file) return;
+                                                const reader = new FileReader();
+                                                reader.onload = (ev) => updateSetting('customBackground', ev.target?.result as string);
+                                                reader.readAsDataURL(file);
+                                            }}
+                                        />
+                                        <Upload size={14} style={{ marginRight: '6px' }} /> Tải ảnh từ máy
                                     </div>
                                 </div>
                             </div>
-                        ))
-                    )}
-                </div>
-            </div>
-        </>
-    );
-}
-
-// ============================================================
-// THEME TAB — uses global ThemeContext
-// ============================================================
-
-function ThemeTab() {
-    const { settings, updateSetting, resetToDefaults } = useTheme();
-
-    return (
-        <>
-            <div className="hub-content-header">
-                <h3><Palette size={16} style={{ verticalAlign: '-3px', marginRight: '6px' }} /> Tùy chỉnh</h3>
-            </div>
-            <div className="hub-content-body">
-                {/* Dark mode toggle */}
-                <div className="theme-option">
-                    <label><Moon size={14} style={{ verticalAlign: '-2px', marginRight: '4px' }} /> Chế độ tối</label>
-                    <button
-                        className={`toggle-switch ${settings.mode === 'dark' ? 'on' : ''}`}
-                        onClick={() => updateSetting('mode', settings.mode === 'dark' ? 'light' : 'dark')}
-                    />
-                </div>
-
-                {/* Accent color */}
-                <div className="theme-option" style={{ flexDirection: 'column', alignItems: 'flex-start', gap: '10px' }}>
-                    <label><Palette size={14} style={{ verticalAlign: '-2px', marginRight: '4px' }} /> Màu chủ đạo</label>
-                    <div className="color-picker">
-                        {ACCENT_COLORS.map(color => (
-                            <button
-                                key={color}
-                                className={`color-swatch ${settings.accentColor === color ? 'selected' : ''}`}
-                                style={{ background: color }}
-                                onClick={() => updateSetting('accentColor', color)}
-                            />
-                        ))}
-                    </div>
-                </div>
-
-                {/* Font size */}
-                <div className="theme-option" style={{ flexDirection: 'column', alignItems: 'flex-start', gap: '10px' }}>
-                    <label><Type size={14} style={{ verticalAlign: '-2px', marginRight: '4px' }} /> Cỡ chữ</label>
-                    <div style={{ display: 'flex', gap: '6px' }}>
-                        {(['small', 'medium', 'large'] as const).map(size => (
-                            <button
-                                key={size}
-                                onClick={() => updateSetting('fontSize', size)}
-                                style={{
-                                    padding: '6px 14px',
-                                    borderRadius: '8px',
-                                    border: settings.fontSize === size ? '2px solid var(--accent-color, #3b82f6)' : '1.5px solid #e5e7eb',
-                                    background: settings.fontSize === size ? 'rgba(var(--accent-rgb, 59, 130, 246), 0.1)' : 'white',
-                                    color: settings.fontSize === size ? 'var(--accent-color, #3b82f6)' : '#6b7280',
-                                    fontWeight: 600,
-                                    fontSize: size === 'small' ? '11px' : size === 'large' ? '15px' : '13px',
-                                    cursor: 'pointer',
-                                    transition: 'all 0.2s',
-                                }}
-                            >
-                                {size === 'small' ? 'Nhỏ' : size === 'medium' ? 'Vừa' : 'Lớn'}
-                            </button>
-                        ))}
-                    </div>
-                </div>
-
-                {/* Font Family */}
-                <div className="theme-option" style={{ flexDirection: 'column', alignItems: 'flex-start', gap: '10px' }}>
-                    <label><Type size={14} style={{ verticalAlign: '-2px', marginRight: '4px' }} /> Phông chữ</label>
-                    <div style={{ display: 'flex', flexDirection: 'column', gap: '6px', width: '100%' }}>
-                        {(['Be Vietnam Pro', 'Roboto', 'Times New Roman', 'Montserrat (Đậm)'] as const).map(font => (
-                            <button
-                                key={font}
-                                onClick={() => updateSetting('fontFamily', font)}
-                                style={{
-                                    padding: '8px 14px',
-                                    borderRadius: '8px',
-                                    border: settings.fontFamily === font ? '2px solid var(--accent-color, #3b82f6)' : '1.5px solid #e5e7eb',
-                                    background: settings.fontFamily === font ? 'rgba(var(--accent-rgb, 59, 130, 246), 0.1)' : 'white',
-                                    color: settings.fontFamily === font ? 'var(--accent-color, #3b82f6)' : '#6b7280',
-                                    fontWeight: font.includes('Montserrat') ? 700 : 500,
-                                    fontFamily: font.replace(' (Đậm)', ''),
-                                    textAlign: 'left',
-                                    cursor: 'pointer',
-                                    transition: 'all 0.2s',
-                                }}
-                            >
-                                {font}
-                            </button>
-                        ))}
-                    </div>
-                </div>
-
-                {/* Background Image */}
-                <div className="theme-option" style={{ flexDirection: 'column', alignItems: 'flex-start', gap: '10px' }}>
-                    <label><Image size={14} style={{ verticalAlign: '-2px', marginRight: '4px' }} /> Hình nền</label>
-                    <div style={{ width: '100%', display: 'flex', flexDirection: 'column', gap: '8px' }}>
-                        <div style={{ display: 'flex', gap: '6px' }}>
-                            <input
-                                type="text"
-                                placeholder="Nhập link hình ảnh..."
-                                value={settings.customBackground || ''}
-                                onChange={e => updateSetting('customBackground', e.target.value)}
-                                style={{
-                                    flex: 1, padding: '8px 12px', borderRadius: '10px',
-                                    border: '1.5px solid #e5e7eb', fontSize: '12px', outline: 'none',
-                                    background: 'white'
-                                }}
-                            />
+                            
                             {settings.customBackground && (
-                                <button
-                                    onClick={() => updateSetting('customBackground', undefined)}
-                                    title="Xóa hình nền"
-                                    style={{
-                                        padding: '8px', borderRadius: '10px', background: '#fee2e2',
-                                        color: '#ef4444', border: 'none', cursor: 'pointer'
-                                    }}
-                                >
-                                    <X size={14} />
-                                </button>
+                                <>
+                                    <div className="theme-item">
+                                        <div className="theme-item-header">
+                                            <label><Image size={16} /> Hiện khi làm bài</label>
+                                            <button
+                                                className={`toggle-switch ${settings.bgEnabled !== false ? 'on' : ''}`}
+                                                onClick={() => updateSetting('bgEnabled', settings.bgEnabled !== false ? false : true)}
+                                            />
+                                        </div>
+                                    </div>
+                                    {settings.bgEnabled !== false && (
+                                        <>
+                                            <div className="theme-item">
+                                                <div className="theme-item-header has-content">
+                                                    <label>🌫️ Độ trong suốt: <b>{Math.round((settings.bgOpacity ?? 1) * 100)}%</b></label>
+                                                </div>
+                                                <input
+                                                    type="range" min={10} max={100} step={5}
+                                                    value={Math.round((settings.bgOpacity ?? 1) * 100)}
+                                                    onChange={e => updateSetting('bgOpacity', parseInt(e.target.value) / 100)}
+                                                    style={{ width: '100%', accentColor: 'var(--accent-color)', cursor: 'pointer' }}
+                                                />
+                                            </div>
+                                            <div className="theme-item">
+                                                <div className="theme-item-header has-content">
+                                                    <label>🌑 Độ tối: <b>{Math.round((settings.bgDarkness ?? 0) * 100)}%</b></label>
+                                                </div>
+                                                <input
+                                                    type="range" min={0} max={90} step={5}
+                                                    value={Math.round((settings.bgDarkness ?? 0) * 100)}
+                                                    onChange={e => updateSetting('bgDarkness', parseInt(e.target.value) / 100)}
+                                                    style={{ width: '100%', accentColor: 'var(--accent-color)', cursor: 'pointer' }}
+                                                />
+                                            </div>
+                                        </>
+                                    )}
+                                </>
                             )}
                         </div>
-                        <div
-                            style={{
-                                position: 'relative', width: '100%', height: '36px',
-                                borderRadius: '10px', border: '1.5px dashed #d1d5db',
-                                display: 'flex', alignItems: 'center', justifyContent: 'center',
-                                fontSize: '12px', color: '#6b7280', cursor: 'pointer',
-                                background: '#f9fafb', overflow: 'hidden'
-                            }}
-                        >
-                            <input
-                                type="file"
-                                accept="image/*"
-                                onChange={(e) => {
-                                    const file = e.target.files?.[0];
-                                    if (!file) return;
-                                    const reader = new FileReader();
-                                    reader.onload = (event) => {
-                                        const result = event.target?.result as string;
-                                        updateSetting('customBackground', result);
-                                    };
-                                    reader.readAsDataURL(file);
-                                }}
-                                style={{
-                                    position: 'absolute', inset: 0, opacity: 0, cursor: 'pointer'
-                                }}
-                            />
-                            <Upload size={14} style={{ marginRight: '6px' }} /> Tải ảnh lên
+                    </div>
+                </>
+            )}
+
+            {activeSubTab === 'behavior' && (
+                <>
+                    {renderSubHeader('Hành vi')}
+                    <div className="hub-content-body" style={{ padding: '16px' }}>
+                        <div className="theme-group">
+                            <div className="theme-item">
+                                <div className="theme-item-header">
+                                    <label><Settings size={16} /> Tự ẩn Hub khi thi</label>
+                                    <button
+                                        className={`toggle-switch ${settings.autoHideHub !== false ? 'on' : ''}`}
+                                        onClick={() => updateSetting('autoHideHub', settings.autoHideHub !== false ? false : true)}
+                                    />
+                                </div>
+                            </div>
+                            <div className="theme-item">
+                                <div className="theme-item-header">
+                                    <label><Sparkles size={16} /> Tự chạy Flashcard</label>
+                                    <button
+                                        className={`toggle-switch ${settings.autoSkipLearn ? 'on' : ''}`}
+                                        onClick={() => updateSetting('autoSkipLearn', !settings.autoSkipLearn)}
+                                    />
+                                </div>
+                            </div>
+                            {settings.autoSkipLearn && (
+                                <div className="theme-item">
+                                    <div className="theme-item-header has-content">
+                                        <label>⏱️ Thời gian chờ: <b>{settings.autoSkipLearnDuration}s</b></label>
+                                    </div>
+                                    <input
+                                        type="range" min={0.25} max={10} step={0.25}
+                                        value={settings.autoSkipLearnDuration}
+                                        onChange={e => updateSetting('autoSkipLearnDuration', parseFloat(e.target.value))}
+                                        style={{ width: '100%', accentColor: 'var(--accent-color)', cursor: 'pointer' }}
+                                    />
+                                </div>
+                            )}
                         </div>
-                        {settings.customBackground && (
-                            <p style={{ fontSize: '10px', color: '#10b981', fontWeight: 600 }}>
-                                ✓ Đã áp dụng hình nền tùy chỉnh
-                            </p>
-                        )}
                     </div>
-                </div>
-
-                {/* BG Enabled Toggle — chỉ hiện khi đã có hình nền */}
-                {settings.customBackground && (
-                    <div className="theme-option">
-                        <label style={{ display: 'flex', alignItems: 'center', gap: '4px' }}>
-                            <Image size={14} style={{ verticalAlign: '-2px' }} /> Hiển thị hình nền khi làm bài
-                        </label>
-                        <button
-                            className={`toggle-switch ${settings.bgEnabled !== false ? 'on' : ''}`}
-                            onClick={() => updateSetting('bgEnabled', settings.bgEnabled === false ? true : false)}
-                        />
-                    </div>
-                )}
-
-                {/* Opacity slider — chỉ hiện khi bg bật */}
-                {settings.customBackground && settings.bgEnabled !== false && (
-                    <div className="theme-option" style={{ flexDirection: 'column', alignItems: 'flex-start', gap: '8px' }}>
-                        <label style={{ display: 'flex', justifyContent: 'space-between', width: '100%' }}>
-                            <span>🌫️ Độ trong suốt</span>
-                            <span style={{ fontWeight: 700, color: 'var(--accent-color, #3b82f6)' }}>
-                                {Math.round((settings.bgOpacity ?? 1) * 100)}%
-                            </span>
-                        </label>
-                        <input
-                            type="range"
-                            min={10}
-                            max={100}
-                            step={5}
-                            value={Math.round((settings.bgOpacity ?? 1) * 100)}
-                            onChange={e => updateSetting('bgOpacity', parseInt(e.target.value) / 100)}
-                            style={{ width: '100%', accentColor: 'var(--accent-color, #3b82f6)', cursor: 'pointer' }}
-                        />
-                    </div>
-                )}
-
-                {/* Darkness overlay slider — chỉ hiện khi bg bật */}
-                {settings.customBackground && settings.bgEnabled !== false && (
-                    <div className="theme-option" style={{ flexDirection: 'column', alignItems: 'flex-start', gap: '8px' }}>
-                        <label style={{ display: 'flex', justifyContent: 'space-between', width: '100%' }}>
-                            <span>🌑 Độ tối</span>
-                            <span style={{ fontWeight: 700, color: 'var(--accent-color, #3b82f6)' }}>
-                                {Math.round((settings.bgDarkness ?? 0) * 100)}%
-                            </span>
-                        </label>
-                        <input
-                            type="range"
-                            min={0}
-                            max={90}
-                            step={5}
-                            value={Math.round((settings.bgDarkness ?? 0) * 100)}
-                            onChange={e => updateSetting('bgDarkness', parseInt(e.target.value) / 100)}
-                            style={{ width: '100%', accentColor: 'var(--accent-color, #3b82f6)', cursor: 'pointer' }}
-                        />
-                    </div>
-                )}
-
-                {/* Exam Padding Picker */}
-                <div className="theme-option" style={{ flexDirection: 'column', alignItems: 'flex-start', gap: '10px' }}>
-                    <label>📐 Độ dãn vùng làm bài</label>
-                    <div style={{ display: 'flex', gap: '6px', width: '100%' }}>
-                        {(['compact', 'normal', 'spacious'] as const).map(p => (
-                            <button
-                                key={p}
-                                onClick={() => updateSetting('examPadding', p)}
-                                style={{
-                                    flex: 1,
-                                    padding: '7px 6px',
-                                    borderRadius: '10px',
-                                    border: settings.examPadding === p
-                                        ? '2px solid var(--accent-color, #3b82f6)'
-                                        : '1.5px solid #e5e7eb',
-                                    background: settings.examPadding === p
-                                        ? 'rgba(var(--accent-rgb, 59,130,246), 0.1)'
-                                        : 'white',
-                                    color: settings.examPadding === p
-                                        ? 'var(--accent-color, #3b82f6)'
-                                        : '#6b7280',
-                                    fontWeight: 600,
-                                    fontSize: '12px',
-                                    cursor: 'pointer',
-                                    transition: 'all 0.2s',
-                                    textAlign: 'center' as const,
-                                }}
-                            >
-                                {p === 'compact' ? '🗜️ Gọn' : p === 'normal' ? '📄 Vừa' : '📖 Rộng'}
-                            </button>
-                        ))}
-                    </div>
-                </div>
-
-                {/* Auto-hide Hub Toggle */}
-                <div className="theme-option" style={{ flexDirection: 'column', alignItems: 'flex-start', gap: '8px', borderTop: '1px solid rgba(0,0,0,0.05)', paddingTop: '16px', marginTop: '8px' }}>
-                    <div style={{ display: 'flex', justifyContent: 'space-between', width: '100%', alignItems: 'center' }}>
-                        <label style={{ display: 'flex', alignItems: 'center', gap: '6px', fontSize: '13px', fontWeight: 600 }}>
-                            🚀 Tự động ẩn Flow khi làm bài
-                        </label>
-                        <button
-                            className={`toggle-switch ${settings.autoHideHub !== false ? 'on' : ''}`}
-                            onClick={() => updateSetting('autoHideHub', settings.autoHideHub === false ? true : false)}
-                        />
-                    </div>
-                    <p style={{ fontSize: '11px', color: '#9ca3af', lineHeight: '1.4' }}>
-                        Ẩn nút này khi bạn bắt đầu làm bài để tập trung tối đa. Để hiện lại, nhấn vào <b>Avatar</b> và chọn <b>"Hiện Flow"</b>.
-                    </p>
-                </div>
-
-                {/* Auto Skip Learn Mode Toggle */}
-                <div className="theme-option" style={{ flexDirection: 'column', alignItems: 'flex-start', gap: '8px', borderTop: '1px solid rgba(0,0,0,0.05)', paddingTop: '16px', marginTop: '8px' }}>
-                    <div style={{ display: 'flex', justifyContent: 'space-between', width: '100%', alignItems: 'center' }}>
-                        <label style={{ display: 'flex', alignItems: 'center', gap: '6px', fontSize: '13px', fontWeight: 600 }}>
-                            ⚡ Tự động qua câu trong Learn
-                        </label>
-                        <button
-                            className={`toggle-switch ${settings.autoSkipLearn ? 'on' : ''}`}
-                            onClick={() => updateSetting('autoSkipLearn', !settings.autoSkipLearn)}
-                        />
-                    </div>
-                    <p style={{ fontSize: '11px', color: '#9ca3af', lineHeight: '1.4' }}>
-                        Tự động chuyển sang câu tiếp theo sau 2 giây khi trả lời đúng/sai ở chế độ Learn (Trắc nghiệm). Nếu tắt, bạn cần bấm nút để qua câu.
-                    </p>
-                </div>
-
-                {/* Reset */}
-                <button
-                    onClick={resetToDefaults}
-                    style={{
-                        width: '100%', marginTop: '16px', padding: '10px', borderRadius: '12px',
-                        border: '1.5px solid #e5e7eb', background: 'white', color: '#6b7280',
-                        fontSize: '13px', fontWeight: 600, cursor: 'pointer',
-                        display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '6px',
-                    }}
-                >
-                    <RotateCcw size={14} /> Đặt lại mặc định
-                </button>
-
-                {/* Version */}
-                <div style={{ textAlign: 'center', marginTop: '16px', padding: '8px 0', borderTop: '1px solid rgba(0,0,0,0.05)' }}>
-                    <span style={{ fontSize: '11px', color: '#b0b0b0', fontWeight: 500 }}>StudyStation v{APP_VERSION}</span>
-                </div>
-            </div>
-        </>
+                </>
+            )}
+        </div>
     );
 }
 

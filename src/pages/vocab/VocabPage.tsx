@@ -326,9 +326,10 @@ export default function VocabPage() {
         }
 
         if (settings.autoSkipLearn) {
+            const duration = (settings.autoSkipLearnDuration || 2) * 1000;
             setTimeout(() => {
                 handleNextQuizQuestion();
-            }, 2000);
+            }, duration);
         }
     };
 
@@ -766,7 +767,10 @@ export default function VocabPage() {
         const userAnswer = quizAnswered[currentIndex];
 
         return (
-            <div className="flex flex-col items-center page-fade-in relative max-w-2xl mx-auto min-h-[80vh]">
+            <div className={cn(
+                "flex flex-col items-center page-fade-in relative max-w-2xl mx-auto min-h-[80vh]",
+                userAnswer && !settings.autoSkipLearn && "pb-32 md:pb-0"
+            )}>
                 {/* Navbar */}
                 <div className="w-full flex items-center justify-between mb-8 px-4">
                     <button onClick={() => setView('home')} className="p-3 bg-white dark:bg-slate-800 rounded-full shadow-sm hover:shadow-md transition-all active:scale-90">
@@ -792,14 +796,22 @@ export default function VocabPage() {
 
                 {/* Question Card */}
                 <div className="w-full px-6 flex-1 flex flex-col items-center">
-                    <div className="w-full bg-white dark:bg-slate-900 p-10 rounded-[40px] border border-white dark:border-slate-800 shadow-card flex flex-col items-center justify-center text-center mb-10 overflow-hidden relative">
+                    <div 
+                        className="w-full bg-white dark:bg-slate-900 rounded-[40px] border border-white dark:border-slate-800 shadow-card flex flex-col items-center justify-center text-center mb-10 overflow-hidden relative"
+                        style={{ height: '220px', minHeight: '220px' }}
+                    >
                         <div className="absolute top-0 right-0 p-6 opacity-5">
                             <Sparkles className="h-20 w-20 text-purple-600" />
                         </div>
                         <span className="mb-4 text-[11px] font-black uppercase tracking-[0.2em] text-indigo-600 bg-indigo-50 dark:bg-indigo-900/20 px-4 py-1.5 rounded-full">
                             {q.isEn ? 'English' : 'Tiếng Việt'}
                         </span>
-                        <h3 className="text-4xl font-black text-gray-900 dark:text-white leading-tight">
+                        <h3 
+                            className="font-black text-gray-900 dark:text-white leading-tight px-6"
+                            style={{ 
+                                fontSize: q.word.length > 30 ? '1.25rem' : q.word.length > 20 ? '1.75rem' : q.word.length > 10 ? '2.25rem' : '3rem'
+                            }}
+                        >
                             {q.word}
                         </h3>
                     </div>
@@ -832,11 +844,24 @@ export default function VocabPage() {
                     </div>
 
                     {userAnswer && !settings.autoSkipLearn && (
-                        <div className="w-full flex justify-center mt-8 cursor-pointer z-10 animate-fade-in relative">
-                            <Button onClick={handleNextQuizQuestion} size="lg" className="rounded-2xl px-12 py-6 bg-purple-600 hover:bg-purple-700 text-white font-bold shadow-xl shadow-purple-600/30">
-                                Tiếp tục <ArrowRight className="ml-2 h-5 w-5" />
-                            </Button>
-                        </div>
+                        <>
+                            {/* Desktop Continue Button */}
+                            <div className="hidden md:flex w-full justify-center mt-8 cursor-pointer z-10 animate-fade-in relative">
+                                <Button onClick={handleNextQuizQuestion} size="lg" className="rounded-2xl px-12 py-6 bg-purple-600 hover:bg-purple-700 text-white font-bold shadow-xl shadow-purple-600/30">
+                                    Tiếp tục <ArrowRight className="ml-2 h-5 w-5" />
+                                </Button>
+                            </div>
+
+                            {/* Mobile Sticky Continue Button */}
+                            <div className="md:hidden fixed bottom-6 left-6 right-6 z-[100] animate-slide-up">
+                                <Button 
+                                    onClick={handleNextQuizQuestion} 
+                                    className="w-full h-16 rounded-2xl bg-purple-600 hover:bg-purple-700 text-white text-lg font-black shadow-2xl flex items-center justify-center gap-3 active:scale-95 transition-all"
+                                >
+                                    Tiếp tục <ArrowRight className="h-6 w-6" />
+                                </Button>
+                            </div>
+                        </>
                     )}
                 </div>
             </div>
@@ -882,9 +907,9 @@ export default function VocabPage() {
                                     'group h-24 rounded-[28px] border-2 p-4 font-bold transition-all duration-300 relative overflow-hidden flex items-center justify-center text-center',
                                     isWord ? 'text-sm' : 'text-[13px]',
                                     matchedPairs.has(tile.id) ? 'border-emerald-200 bg-emerald-50 dark:bg-emerald-900/20 text-emerald-500 opacity-40 scale-95' :
-                                    wrongPair === tile.id ? 'border-red-500 bg-red-50 text-red-700 animate-shake' :
-                                    selectedWord === tile.id ? 'border-indigo-600 bg-indigo-600 text-white shadow-xl shadow-indigo-100 scale-105' :
-                                    'border-gray-100 bg-white dark:bg-slate-800 hover:border-indigo-600 hover:shadow-lg'
+                                    wrongPair === tile.id ? 'border-red-500 bg-red-50 dark:bg-red-900/20 text-red-700 dark:text-red-300 animate-shake' :
+                                    selectedWord === tile.id ? 'border-indigo-600 bg-indigo-600 text-white shadow-xl shadow-indigo-100 dark:shadow-indigo-900/20 scale-105' :
+                                    'border-gray-100 dark:border-slate-800 bg-white dark:bg-slate-800 hover:border-indigo-600 hover:shadow-lg'
                                 )}
                             >
                                 {matchedPairs.has(tile.id) && (
@@ -934,7 +959,7 @@ export default function VocabPage() {
                             <span className="text-[10px] font-black text-gray-400 uppercase tracking-widest">Chưa thuộc</span>
                         </div>
                     </div>
-                    <div className="w-full h-3 bg-gray-50 rounded-full flex overflow-hidden">
+                    <div className="w-full h-3 bg-gray-50 dark:bg-slate-800 rounded-full flex overflow-hidden">
                         <div className="h-full bg-emerald-500" style={{ width: `${(knownIds.length / total) * 100}%` }} />
                         <div className="h-full bg-red-400" style={{ width: `${(unknownIds.length / total) * 100}%` }} />
                     </div>

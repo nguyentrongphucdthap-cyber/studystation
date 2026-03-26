@@ -676,19 +676,19 @@ export default function PracticeExam() {
                         <h3 className="text-sm font-black uppercase tracking-[0.2em] text-gray-400 flex items-center gap-2 px-2">
                             <History size={16} /> Lịch sử gần đây
                         </h3>
-                        <div className="bg-white/60 backdrop-blur-md rounded-2xl border border-white/80 shadow-soft overflow-hidden">
+                        <div className="bg-white/60 dark:bg-slate-900/60 backdrop-blur-md rounded-2xl border border-white/80 dark:border-slate-800/50 shadow-soft overflow-hidden">
                             <table className="w-full text-left text-sm">
-                                <thead className="bg-gray-50/50 border-b border-gray-100">
+                                <thead className="bg-gray-50/50 dark:bg-slate-800/50 border-b border-gray-100 dark:border-slate-800/50">
                                     <tr>
                                         <th className="px-4 py-3 font-bold text-gray-500 uppercase text-[10px]">Ngày làm</th>
                                         <th className="px-4 py-3 font-bold text-gray-500 uppercase text-[10px] text-center">Thời gian</th>
                                         <th className="px-4 py-3 font-bold text-gray-500 uppercase text-[10px] text-right">Điểm số</th>
                                     </tr>
                                 </thead>
-                                <tbody className="divide-y divide-gray-100">
+                                <tbody className="divide-y divide-gray-100 dark:divide-slate-800/50">
                                     {examHistory.slice(0, 5).map((log) => (
-                                        <tr key={log.id} className="hover:bg-gray-50/50 transition-all">
-                                            <td className="px-4 py-3 text-gray-600 font-medium">
+                                        <tr key={log.id} className="hover:bg-gray-50/50 dark:hover:bg-slate-800/50 transition-all">
+                                            <td className="px-4 py-3 text-gray-600 dark:text-gray-300 font-medium">
                                                 {new Date(log.timestamp).toLocaleDateString('vi-VN')}
                                             </td>
                                             <td className="px-4 py-3 text-gray-400 text-center font-bold">
@@ -819,7 +819,7 @@ export default function PracticeExam() {
                                                 <div className="mb-4 md:mb-6 text-base md:text-lg font-semibold leading-relaxed">
                                                     <span className={cn(
                                                         "mr-2 md:mr-3 inline-flex h-7 w-7 md:h-8 md:w-8 items-center justify-center rounded-lg text-xs md:text-sm font-bold",
-                                                        q.type === 'p1' ? "bg-blue-100 text-blue-600" : q.type === 'p2' ? "bg-amber-100 text-amber-600" : "bg-violet-100 text-violet-600"
+                                                        q.type === 'p1' ? "bg-blue-100 dark:bg-blue-900/40 text-blue-600 dark:text-blue-400" : q.type === 'p2' ? "bg-amber-100 dark:bg-amber-900/40 text-amber-600 dark:text-amber-400" : "bg-violet-100 dark:bg-violet-900/40 text-violet-600 dark:text-violet-400"
                                                     )}>
                                                         {currentPracticeIdx + 1}
                                                     </span>
@@ -847,10 +847,10 @@ export default function PracticeExam() {
                                                                         className={cn(
                                                                             'group flex items-center rounded-xl border-2 p-4 text-left text-sm transition-all duration-200 active:scale-[0.97]',
                                                                             isSelected
-                                                                                ? (isCorrectOpt ? 'border-emerald-500 bg-emerald-50 text-emerald-900' : 'border-red-500 bg-red-50 text-red-900 animate-shake')
+                                                                                ? (isCorrectOpt ? 'border-emerald-500 bg-emerald-50 dark:bg-emerald-900/20 text-emerald-900 dark:text-emerald-300' : 'border-red-500 bg-red-50 dark:bg-red-900/20 text-red-900 dark:text-red-300 animate-shake')
                                                                                 : isWrongFlash
-                                                                                    ? 'border-red-500 bg-red-50 text-red-900 animate-shake'
-                                                                                    : (showFeedback && isCorrect && isCorrectOpt ? 'border-emerald-500 bg-emerald-50/50' : 'border-transparent bg-muted/30 hover:border-blue-300 hover:bg-muted/60')
+                                                                                    ? 'border-red-500 bg-red-50 dark:bg-red-900/20 text-red-900 dark:text-red-300 animate-shake'
+                                                                                    : (showFeedback && isCorrect && isCorrectOpt ? 'border-emerald-500 bg-emerald-50/50 dark:bg-emerald-900/10' : 'border-transparent bg-muted/30 hover:border-blue-300 hover:bg-muted/60 dark:hover:bg-slate-800')
                                                                         )}
                                                                     >
                                                                         <span className={cn(
@@ -878,8 +878,8 @@ export default function PracticeExam() {
                                                                 return (
                                                                     <div key={key} className="flex flex-col gap-3 rounded-xl border border-border bg-muted/20 p-4 sm:flex-row sm:items-center">
                                                                         <div className="flex flex-1 items-start gap-2">
-                                                                            <span className="mt-0.5 text-xs font-black text-amber-600 uppercase">{sq.id})</span>
-                                                                            <LatexContent content={sq.text} className="text-sm leading-relaxed" />
+                                                                            <span className="mt-0.5 text-xs font-black text-amber-600 dark:text-amber-400 uppercase">{sq.id})</span>
+                                                                            <LatexContent content={sq.text} className="text-sm leading-relaxed dark:text-gray-200" />
                                                                         </div>
                                                                         <div className="flex shrink-0 items-center gap-2">
                                                                             {[true, false].map((val) => (
@@ -893,7 +893,7 @@ export default function PracticeExam() {
                                                                                             ? (val === sq.correct ? 'bg-emerald-500 border-emerald-500 text-white shadow-md' : 'bg-red-500 border-red-500 text-white shadow-md animate-shake') 
                                                                                             : wrongSubQId === `${q.id}-${sq.id}-${val}`
                                                                                                 ? 'bg-red-500 border-red-500 text-white shadow-md animate-shake'
-                                                                                                : (showFeedback && isCorrect && val === sq.correct ? 'border-emerald-500 text-emerald-600' : 'bg-background text-muted-foreground border-slate-100')
+                                                                                                : (showFeedback && isCorrect && val === sq.correct ? 'border-emerald-500 text-emerald-600' : 'bg-background dark:bg-slate-800 text-muted-foreground border-slate-100 dark:border-slate-700')
                                                                                     )}
                                                                                 >
                                                                                     {val ? 'Đ' : 'S'}
@@ -919,10 +919,10 @@ export default function PracticeExam() {
                                                                     className={cn( // Fixed: Added cn()
                                                                         "w-full rounded-xl border px-4 py-4 text-base font-medium outline-none transition-all",
                                                                         wrongPart3 
-                                                                            ? "border-red-500 bg-red-50 text-red-900 animate-shake"
+                                                                            ? "border-red-500 bg-red-50 dark:bg-red-900/20 text-red-900 dark:text-red-300 animate-shake"
                                                                             : showFeedback 
-                                                                                ? (isCorrect ? "border-emerald-500 bg-emerald-50 text-emerald-900" : "border-red-500 bg-red-50 text-red-900")
-                                                                                : "border-input bg-background focus:border-violet-500 focus:ring-4 focus:ring-violet-500/10"
+                                                                                ? (isCorrect ? "border-emerald-500 bg-emerald-50 dark:bg-emerald-900/20 text-emerald-900 dark:text-emerald-300" : "border-red-500 bg-red-50 dark:bg-red-900/20 text-red-900 dark:text-red-300")
+                                                                                : "border-input bg-background dark:bg-slate-800 focus:border-violet-500 focus:ring-4 focus:ring-violet-500/10 dark:text-white"
                                                                     )}
                                                                 />
                                                                 {!showFeedback && (
@@ -939,7 +939,7 @@ export default function PracticeExam() {
                                                                 <p className="text-xs text-red-600 font-bold animate-shake">Chưa chính xác, hãy thử lại!</p>
                                                             )}
                                                             {showFeedback && isCorrect && (
-                                                                <div className="p-4 rounded-xl bg-emerald-100 text-emerald-800 text-sm font-bold animate-bounce-in">
+                                                                <div className="p-4 rounded-xl bg-emerald-100 dark:bg-emerald-900/30 text-emerald-800 dark:text-emerald-400 text-sm font-bold animate-bounce-in">
                                                                     ✨ Chính xác! Đáp án là: {(q.data as Part3Question).correct}
                                                                 </div>
                                                             )}
@@ -972,11 +972,11 @@ export default function PracticeExam() {
 
                                             {/* Explanation (Shown when correct) */}
                                             {showFeedback && isCorrect && (q.data as any).explanation && (
-                                                <div className="p-6 rounded-2xl bg-blue-50 border border-blue-100 animate-in fade-in zoom-in-95 duration-500">
-                                                    <h5 className="flex items-center gap-2 text-blue-700 font-black text-xs uppercase tracking-widest mb-3">
+                                                <div className="p-6 rounded-2xl bg-blue-50 dark:bg-blue-900/20 border border-blue-100 dark:border-blue-800 animate-in fade-in zoom-in-95 duration-500">
+                                                    <h5 className="flex items-center gap-2 text-blue-700 dark:text-blue-400 font-black text-xs uppercase tracking-widest mb-3">
                                                         <BookOpen size={16} /> Lời giải chi tiết
                                                     </h5>
-                                                    <div className="text-sm text-blue-900 leading-relaxed">
+                                                    <div className="text-sm text-blue-900 dark:text-blue-200 leading-relaxed">
                                                         <LatexContent content={(q.data as any).explanation} />
                                                     </div>
                                                 </div>
@@ -1002,7 +1002,7 @@ export default function PracticeExam() {
                                             return (
                                                 <div key={`p1-solo-${q.id}`} id={`q-p1-${q.id}`} className="rounded-2xl border border-border bg-card p-5 shadow-sm transition-all hover:shadow-md">
                                                     <div className="mb-4 text-base font-semibold leading-relaxed">
-                                                        <span className="mr-3 inline-flex h-7 w-7 items-center justify-center rounded-lg bg-blue-100 text-xs font-bold text-blue-600">
+                                                        <span className="mr-3 inline-flex h-7 w-7 items-center justify-center rounded-lg bg-blue-100 dark:bg-blue-900/40 text-xs font-bold text-blue-600 dark:text-blue-400">
                                                             {qIdx + 1}
                                                         </span>
                                                         <LatexContent content={q.text} />
@@ -1022,19 +1022,19 @@ export default function PracticeExam() {
                                                                     className={cn(
                                                                         'group flex items-center rounded-xl border-2 p-4 text-left text-sm transition-all duration-200 ease-out active:scale-[0.97]',
                                                                         isSelected
-                                                                            ? 'border-blue-500 bg-blue-50/50 text-blue-900 shadow-sm'
-                                                                            : 'border-transparent bg-muted/30 hover:border-blue-300 hover:bg-muted/60'
+                                                                            ? 'border-blue-500 bg-blue-50/50 dark:bg-blue-900/20 text-blue-900 dark:text-blue-300 shadow-sm'
+                                                                            : 'border-transparent bg-muted/30 hover:border-blue-300 hover:bg-muted/60 dark:hover:bg-slate-800'
                                                                     )}
                                                                 >
                                                                     <span className={cn(
                                                                         'mr-3 flex h-7 w-7 shrink-0 items-center justify-center rounded-lg text-xs font-black transition-all',
                                                                         isSelected
                                                                             ? 'bg-blue-600 text-white shadow-lg shadow-blue-200 scale-110'
-                                                                            : 'bg-background text-muted-foreground group-hover:bg-blue-100 group-hover:text-blue-600'
+                                                                            : 'bg-background dark:bg-slate-800 text-muted-foreground group-hover:bg-blue-100 dark:group-hover:bg-blue-900/40 group-hover:text-blue-600 dark:group-hover:text-blue-400'
                                                                     )}>
                                                                         {String.fromCharCode(65 + oIdx)}
                                                                     </span>
-                                                                    <span className="font-medium"><LatexContent content={opt} /></span>
+                                                                    <span className="font-medium dark:text-gray-200"><LatexContent content={opt} /></span>
                                                                 </button>
                                                             );
                                                         })}
@@ -1063,22 +1063,22 @@ export default function PracticeExam() {
                                                             isSplit ? "lg:col-span-6 lg:sticky lg:top-24" : ""
                                                         )}>
                                                             {group.title && (
-                                                                <div className="bg-pink-50 border-l-4 border-pink-500 p-4 rounded-r-xl shadow-sm">
-                                                                    <h4 className="text-sm font-black text-pink-700 uppercase tracking-widest flex items-center gap-2">
+                                                                <div className="bg-pink-50 dark:bg-pink-900/20 border-l-4 border-pink-500 p-4 rounded-r-xl shadow-sm">
+                                                                    <h4 className="text-sm font-black text-pink-700 dark:text-pink-400 uppercase tracking-widest flex items-center gap-2">
                                                                         <Settings size={16} className="text-pink-400" /> Yêu cầu
                                                                     </h4>
-                                                                    <p className="mt-1 text-sm font-bold text-slate-800 leading-relaxed italic whitespace-pre-wrap">
+                                                                    <p className="mt-1 text-sm font-bold text-slate-800 dark:text-slate-200 leading-relaxed italic whitespace-pre-wrap">
                                                                         {group.title}
                                                                     </p>
                                                                 </div>
                                                             )}
                                                             {group.passage && (
-                                                                <div className="bg-slate-50 border border-slate-200 p-6 rounded-2xl shadow-inner relative overflow-hidden group/passage">
+                                                                <div className="bg-slate-50 dark:bg-slate-900/40 border border-slate-200 dark:border-slate-800 p-6 rounded-2xl shadow-inner relative overflow-hidden group/passage">
                                                                     <div className="absolute top-0 right-0 p-2 opacity-5 group-hover/passage:opacity-10 transition-opacity">
                                                                         <BookOpen size={48} />
                                                                     </div>
                                                                     <div className={cn(
-                                                                        "relative text-sm md:text-base text-slate-700 leading-loose text-justify font-medium custom-scrollbar",
+                                                                        "relative text-sm md:text-base text-slate-700 dark:text-slate-300 leading-loose text-justify font-medium custom-scrollbar",
                                                                         isSplit ? "lg:max-h-[calc(100vh-280px)] lg:overflow-y-auto lg:pr-4" : "max-h-[500px] overflow-y-auto pr-2"
                                                                     )}>
                                                                         <LatexContent content={group.passage} />
@@ -1098,7 +1098,7 @@ export default function PracticeExam() {
                                                             return (
                                                                 <div key={q.id} id={`q-p1-${q.id}`} className="rounded-2xl border border-border bg-card p-5 shadow-sm transition-all hover:shadow-md">
                                                                     <div className="mb-4 text-base font-semibold leading-relaxed">
-                                                                        <span className="mr-3 inline-flex h-7 w-7 items-center justify-center rounded-lg bg-blue-100 text-xs font-bold text-blue-600">
+                                                                        <span className="mr-3 inline-flex h-7 w-7 items-center justify-center rounded-lg bg-blue-100 dark:bg-blue-900/40 text-xs font-bold text-blue-600 dark:text-blue-400">
                                                                             {qIdx + 1}
                                                                         </span>
                                                                         <LatexContent content={q.text} />
@@ -1118,19 +1118,19 @@ export default function PracticeExam() {
                                                                                     className={cn(
                                                                                         'group flex items-center rounded-xl border-2 p-4 text-left text-sm transition-all duration-200 ease-out active:scale-[0.97]',
                                                                                         isSelected
-                                                                                            ? 'border-blue-500 bg-blue-50/50 text-blue-900 shadow-sm'
-                                                                                            : 'border-transparent bg-muted/30 hover:border-blue-300 hover:bg-muted/60'
+                                                                                            ? 'border-blue-500 bg-blue-50/50 dark:bg-blue-900/20 text-blue-900 dark:text-blue-300 shadow-sm'
+                                                                                            : 'border-transparent bg-muted/30 hover:border-blue-300 hover:bg-muted/60 dark:hover:bg-slate-800'
                                                                                     )}
                                                                                 >
                                                                                     <span className={cn(
                                                                                         'mr-3 flex h-7 w-7 shrink-0 items-center justify-center rounded-lg text-xs font-black transition-all',
                                                                                         isSelected
                                                                                             ? 'bg-blue-600 text-white shadow-lg shadow-blue-200 scale-110'
-                                                                                            : 'bg-background text-muted-foreground group-hover:bg-blue-100 group-hover:text-blue-600'
+                                                                                            : 'bg-background dark:bg-slate-800 text-muted-foreground group-hover:bg-blue-100 dark:group-hover:bg-blue-900/40 group-hover:text-blue-600 dark:group-hover:text-blue-400'
                                                                                     )}>
                                                                                         {String.fromCharCode(65 + oIdx)}
                                                                                     </span>
-                                                                                    <span className="font-medium"><LatexContent content={opt} /></span>
+                                                                                    <span className="font-medium dark:text-gray-200"><LatexContent content={opt} /></span>
                                                                                 </button>
                                                                             );
                                                                         })}
@@ -1158,7 +1158,7 @@ export default function PracticeExam() {
                                     {shuffledP2.map((q, idx) => (
                                         <div key={q.id} id={`q-p2-${q.id}`} className="rounded-2xl border border-border bg-card p-5 shadow-sm">
                                             <div className="mb-4 text-base font-semibold leading-relaxed">
-                                                <span className="mr-3 inline-flex h-7 w-7 items-center justify-center rounded-lg bg-amber-100 text-xs font-bold text-amber-600">
+                                                <span className="mr-3 inline-flex h-7 w-7 items-center justify-center rounded-lg bg-amber-100 dark:bg-amber-900/40 text-xs font-bold text-amber-600 dark:text-amber-400">
                                                     {(shuffledP1.length) + idx + 1}
                                                 </span>
                                                 <LatexContent content={q.text} />
@@ -1168,10 +1168,10 @@ export default function PracticeExam() {
                                                     const key = `${q.id}-${sq.id}`;
                                                     const userAns = part2Answers[key];
                                                     return (
-                                                        <div key={key} className="flex flex-col gap-3 rounded-xl border border-border/50 bg-muted/20 p-4 sm:flex-row sm:items-center">
+                                                        <div key={key} className="flex flex-col gap-3 rounded-xl border border-border/50 dark:border-slate-800/50 bg-muted/20 p-4 sm:flex-row sm:items-center">
                                                             <div className="flex flex-1 items-start gap-2">
-                                                                <span className="mt-0.5 text-xs font-black text-amber-600 uppercase">{sq.id})</span>
-                                                                <LatexContent content={sq.text} className="text-sm leading-relaxed" />
+                                                                <span className="mt-0.5 text-xs font-black text-amber-600 dark:text-amber-400 uppercase">{sq.id})</span>
+                                                                <LatexContent content={sq.text} className="text-sm leading-relaxed dark:text-gray-200" />
                                                             </div>
                                                             <div className="flex shrink-0 items-center gap-2">
                                                                 <button
@@ -1180,7 +1180,7 @@ export default function PracticeExam() {
                                                                         'flex h-10 w-12 items-center justify-center rounded-lg text-sm font-bold transition-all border-2',
                                                                         userAns === true 
                                                                             ? 'text-white shadow-md' 
-                                                                            : 'bg-background hover:bg-slate-50 text-muted-foreground border-slate-100'
+                                                                            : 'bg-background dark:bg-slate-800 hover:bg-slate-50 dark:hover:bg-slate-700 text-muted-foreground border-slate-100 dark:border-slate-700'
                                                                     )}
                                                                     style={userAns === true ? { backgroundColor: settings.accentColor, borderColor: settings.accentColor } : {}}
                                                                 >
@@ -1192,7 +1192,7 @@ export default function PracticeExam() {
                                                                         'flex h-10 w-12 items-center justify-center rounded-lg text-sm font-bold transition-all border-2',
                                                                         userAns === false 
                                                                             ? 'text-white shadow-md' 
-                                                                            : 'bg-background hover:bg-slate-50 text-muted-foreground border-slate-100'
+                                                                            : 'bg-background dark:bg-slate-800 hover:bg-slate-50 dark:hover:bg-slate-700 text-muted-foreground border-slate-100 dark:border-slate-700'
                                                                     )}
                                                                     style={userAns === false ? { backgroundColor: settings.accentColor, borderColor: settings.accentColor } : {}}
                                                                 >
@@ -1220,7 +1220,7 @@ export default function PracticeExam() {
                                     {shuffledP3.map((q, idx) => (
                                         <div key={q.id} id={`q-p3-${q.id}`} className="rounded-2xl border border-border bg-card p-5 shadow-sm">
                                             <div className="mb-4 text-base font-semibold leading-relaxed">
-                                                <span className="mr-3 inline-flex h-7 w-7 items-center justify-center rounded-lg bg-violet-100 text-xs font-bold text-violet-600">
+                                                <span className="mr-3 inline-flex h-7 w-7 items-center justify-center rounded-lg bg-violet-100 dark:bg-violet-900/40 text-xs font-bold text-violet-600 dark:text-violet-400">
                                                     {(shuffledP1.length) + (shuffledP2.length) + idx + 1}
                                                 </span>
                                                 <LatexContent content={q.text} />
@@ -1230,7 +1230,7 @@ export default function PracticeExam() {
                                                 value={part3Answers[q.id] || ''}
                                                 onChange={(e) => handlePart3Change(q.id, e.target.value)}
                                                 placeholder="Nhập câu trả lời..."
-                                                className="w-full rounded-xl border border-input bg-background px-4 py-3 text-sm font-medium outline-none focus:border-violet-500 focus:ring-4 focus:ring-violet-500/10"
+                                                className="w-full rounded-xl border border-input bg-background dark:bg-slate-800 px-4 py-3 text-sm font-medium outline-none focus:border-violet-500 focus:ring-4 focus:ring-violet-500/10 dark:text-white"
                                             />
                                         </div>
                                     ))}
@@ -1304,7 +1304,7 @@ export default function PracticeExam() {
                                                                     "h-7 w-7 rounded-lg text-[10px] font-bold border transition-all flex items-center justify-center",
                                                                     isAnswered
                                                                         ? "bg-blue-600 border-blue-600 text-white shadow-sm"
-                                                                        : "bg-white border-slate-200 text-slate-400 hover:border-slate-300 hover:bg-slate-50"
+                                                                        : "bg-white dark:bg-slate-800 border-slate-200 dark:border-slate-700 text-slate-400 hover:border-slate-300 dark:hover:border-slate-600 hover:bg-slate-50 dark:hover:bg-slate-700"
                                                                 )}
                                                             >
                                                                 {idx + 1}
@@ -1336,7 +1336,7 @@ export default function PracticeExam() {
                                                                     "h-7 w-7 rounded-lg text-[10px] font-bold border transition-all flex items-center justify-center",
                                                                     isAnswered
                                                                         ? "bg-blue-600 border-blue-600 text-white shadow-sm"
-                                                                        : "bg-white border-slate-200 text-slate-400 hover:border-slate-300 hover:bg-slate-50"
+                                                                        : "bg-white dark:bg-slate-800 border-slate-200 dark:border-slate-700 text-slate-400 hover:border-slate-300 dark:hover:border-slate-600 hover:bg-slate-50 dark:hover:bg-slate-700"
                                                                 )}
                                                             >
                                                                 {idx + 1}

@@ -30,7 +30,7 @@ export default function EtestExamPage() {
     const [mobileTab, setMobileTab] = useState<TabView>('passage');
     const [viewMode, setViewMode] = useState<'exam' | 'optimized'>('exam');
     const { settings } = useTheme();
-    const [darkMode, setDarkMode] = useState(false);
+    const [darkMode, setDarkMode] = useState(settings.mode === 'dark');
 
     // Navbar Visibility Logic
     const [isNavbarVisible, setIsNavbarVisible] = useState(true);
@@ -150,7 +150,7 @@ export default function EtestExamPage() {
                 <div className="mb-6 rounded-2xl border border-border bg-card p-6 text-center shadow-lg">
                     <div className={cn(
                         'mx-auto mb-4 flex h-24 w-24 items-center justify-center rounded-full text-4xl font-bold',
-                        score >= 8 ? 'bg-emerald-100 text-emerald-700' : score >= 5 ? 'bg-amber-100 text-amber-700' : 'bg-red-100 text-red-700'
+                        score >= 8 ? 'bg-emerald-100 dark:bg-emerald-900/40 text-emerald-700 dark:text-emerald-400' : score >= 5 ? 'bg-amber-100 dark:bg-amber-900/40 text-amber-700 dark:text-amber-400' : 'bg-red-100 dark:bg-red-900/40 text-red-700 dark:text-red-400'
                     )}>{score}</div>
                     <h2 className="text-xl font-bold">{score >= 8 ? '🎉 Excellent!' : score >= 5 ? '👍 Good job!' : '💪 Keep trying!'}</h2>
                     <p className="mt-1 text-sm text-muted-foreground">{correctCount}/{total} correct</p>
@@ -171,7 +171,7 @@ export default function EtestExamPage() {
                                 const key = `${si}-${qi}`;
                                 const isCorrect = answers[key] === q.correct;
                                 return (
-                                    <div key={qi} className={cn('flex items-start gap-2 rounded-md px-3 py-1.5 text-xs mb-1', isCorrect ? 'text-emerald-700' : 'text-red-600')}>
+                                    <div key={qi} className={cn('flex items-start gap-2 rounded-md px-3 py-1.5 text-xs mb-1', isCorrect ? 'text-emerald-700 dark:text-emerald-400' : 'text-red-600 dark:text-red-400')}>
                                         {isCorrect ? <CheckCircle className="h-3 w-3 mt-0.5 flex-shrink-0" /> : <XCircle className="h-3 w-3 mt-0.5 flex-shrink-0" />}
                                         <span className="flex-1">Q{qi + 1}: {q.text.substring(0, 80)}... → {q.options[q.correct]}</span>
                                     </div>
@@ -251,8 +251,8 @@ export default function EtestExamPage() {
                                             )}
                                             style={answers[key] === oi ? {
                                                 borderColor: settings.accentColor,
-                                                backgroundColor: `${settings.accentColor}10`,
-                                                color: settings.accentColor
+                                                backgroundColor: darkMode ? `${settings.accentColor}20` : `${settings.accentColor}10`,
+                                                color: darkMode ? '#ffffff' : settings.accentColor
                                             } : {}}
                                         >
                                             {String.fromCharCode(65 + oi)}. <LatexContent content={opt} />
@@ -418,8 +418,8 @@ export default function EtestExamPage() {
                                                         isAnswered 
                                                             ? "bg-indigo-600 border-indigo-600 text-white shadow-lg shadow-indigo-200"
                                                             : isActive 
-                                                                ? "border-slate-200 bg-slate-50 text-slate-600 hover:border-indigo-400"
-                                                                : "border-slate-100 bg-slate-50 opacity-50"
+                                                                ? "border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800 text-slate-600 dark:text-slate-300 hover:border-indigo-400"
+                                                                : "border-slate-100 dark:border-slate-800 bg-slate-50 dark:bg-slate-900 transparency-50 opacity-50"
                                                     )}
                                                 >
                                                     {qi + 1}

@@ -13,6 +13,7 @@ export interface ThemeSettings {
     fontFamily: 'Be Vietnam Pro' | 'Roboto' | 'Times New Roman' | 'Montserrat (Đậm)';
     autoHideHub: boolean;          // tự động ẩn Flow khi làm bài
     autoSkipLearn: boolean;        // tự động bỏ qua Flashcard Learn
+    autoSkipLearnDuration: number; // số giây chờ trước khi tự qua câu (1-10)
 }
 
 interface ThemeContextType {
@@ -35,6 +36,7 @@ const DEFAULT_SETTINGS: ThemeSettings = {
     fontFamily: 'Be Vietnam Pro',
     autoHideHub: true,
     autoSkipLearn: false,
+    autoSkipLearnDuration: 2,
 };
 
 const FONT_SIZES: Record<string, string> = {
@@ -59,6 +61,18 @@ function applyThemeToDOM(settings: ThemeSettings) {
     const g = parseInt(hex.substring(2, 4), 16);
     const b = parseInt(hex.substring(4, 6), 16);
     root.style.setProperty('--accent-rgb', `${r}, ${g}, ${b}`);
+
+    // Convert hex to HSL hue for dynamic gradients
+    const max = Math.max(r, g, b), min = Math.min(r, g, b);
+    let h = 0;
+    const d = max - min;
+    if (d !== 0) {
+        if (max === r) h = (g - b) / d + (g < b ? 6 : 0);
+        else if (max === g) h = (b - r) / d + 2;
+        else if (max === b) h = (r - g) / d + 4;
+        h /= 6;
+    }
+    root.style.setProperty('--accent-hue', Math.round(h * 360).toString());
 
     // Font size
     root.style.fontSize = FONT_SIZES[settings.fontSize] || '16px';

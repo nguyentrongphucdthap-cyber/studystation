@@ -203,12 +203,12 @@ export function AppLayout() {
     if (isDashboard || isSchedule) {
         return (
             <div className="min-h-screen bg-[#f8fafc] relative overflow-hidden flex flex-col">
-                {/* Optimized Soft Blue Gradient (Matching New Image) */}
-                <div className="absolute inset-0 pointer-events-none bg-[#f0f9ff]">
-                    {/* Top blue focus blob */}
+                {/* Optimized Dynamic Gradient (Matching Accent Color) */}
+                <div className="absolute inset-0 pointer-events-none bg-background/50">
+                    {/* Top accent focus blob */}
                     <div className="absolute inset-0 opacity-40"
                         style={{
-                            background: 'radial-gradient(circle at 45% 25%, #3b82f6 0%, transparent 60%)'
+                            background: 'radial-gradient(circle at 45% 25%, var(--accent-color) 0%, transparent 60%)'
                         }}
                     />
                     {/* Primary white/light glow in the bottom half */}
@@ -220,13 +220,13 @@ export function AppLayout() {
                     {/* Soft left-middle side glow */}
                     <div className="absolute inset-0 opacity-50"
                         style={{
-                            background: 'radial-gradient(circle at 5% 50%, #bae6fd 0%, transparent 50%)'
+                            background: `radial-gradient(circle at 5% 50%, rgba(var(--accent-rgb), 0.3) 0%, transparent 50%)`
                         }}
                     />
                     {/* Bottom-left accent blob */}
                     <div className="absolute inset-0 opacity-30"
                         style={{
-                            background: 'radial-gradient(circle at 15% 90%, #67e8f9 0%, transparent 40%)'
+                            background: `radial-gradient(circle at 15% 90%, rgba(var(--accent-rgb), 0.4) 0%, transparent 40%)`
                         }}
                     />
                 </div>
@@ -319,7 +319,7 @@ export function AppLayout() {
 
     // --- Sub-pages: modern white header layout ---
     return (
-        <div className="min-h-screen bg-gray-50/50 relative overflow-hidden">
+        <div className="min-h-screen relative overflow-hidden">
             {/* Custom User Background */}
             {settings.customBackground && settings.bgEnabled !== false && (
                 <>

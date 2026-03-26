@@ -61,16 +61,16 @@ export default function PracticeHome() {
     // Icon mapping for subjects
     const getSubjectIcon = (id: string) => {
         switch (id) {
-            case 'toan': return { icon: <Calculator className="h-6 w-6 text-red-500" />, bg: 'bg-red-50' };
-            case 'ly': return { icon: <Atom className="h-6 w-6 text-indigo-500" />, bg: 'bg-indigo-50' };
-            case 'hoa': return { icon: <FlaskConical className="h-6 w-6 text-blue-500" />, bg: 'bg-blue-50' };
-            case 'sinh': return { icon: <Dna className="h-6 w-6 text-emerald-500" />, bg: 'bg-emerald-50' };
-            case 'van': return { icon: <Book className="h-6 w-6 text-rose-500" />, bg: 'bg-rose-50' };
-            case 'su': return { icon: <Clock className="h-6 w-6 text-orange-500" />, bg: 'bg-orange-50' };
-            case 'dia': return { icon: <Globe className="h-6 w-6 text-cyan-500" />, bg: 'bg-cyan-50' };
-            case 'gdcd': return { icon: <Scale className="h-6 w-6 text-teal-500" />, bg: 'bg-teal-50' };
-            case 'tin': return { icon: <Monitor className="h-6 w-6 text-purple-500" />, bg: 'bg-purple-50' };
-            default: return { icon: <Book className="h-6 w-6 text-gray-500" />, bg: 'bg-gray-50' };
+            case 'toan': return { icon: <Calculator className="h-6 w-6 text-red-500" />, bg: 'bg-red-50 dark:bg-red-500/10' };
+            case 'ly': return { icon: <Atom className="h-6 w-6 text-indigo-500" />, bg: 'bg-indigo-50 dark:bg-indigo-500/10' };
+            case 'hoa': return { icon: <FlaskConical className="h-6 w-6 text-blue-500" />, bg: 'bg-blue-50 dark:bg-blue-500/10' };
+            case 'sinh': return { icon: <Dna className="h-6 w-6 text-emerald-500" />, bg: 'bg-emerald-50 dark:bg-emerald-500/10' };
+            case 'van': return { icon: <Book className="h-6 w-6 text-rose-500" />, bg: 'bg-rose-50 dark:bg-rose-500/10' };
+            case 'su': return { icon: <Clock className="h-6 w-6 text-orange-500" />, bg: 'bg-orange-50 dark:bg-orange-500/10' };
+            case 'dia': return { icon: <Globe className="h-6 w-6 text-cyan-500" />, bg: 'bg-cyan-50 dark:bg-cyan-500/10' };
+            case 'gdcd': return { icon: <Scale className="h-6 w-6 text-teal-500" />, bg: 'bg-teal-50 dark:bg-teal-500/10' };
+            case 'tin': return { icon: <Monitor className="h-6 w-6 text-purple-500" />, bg: 'bg-purple-50 dark:bg-purple-500/10' };
+            default: return { icon: <Book className="h-6 w-6 text-gray-500" />, bg: 'bg-gray-50 dark:bg-gray-500/10' };
         }
     };
 
@@ -105,9 +105,9 @@ export default function PracticeHome() {
         return (
             <div className="space-y-6">
                 {/* Header Card */}
-                <div className="bg-white/70 backdrop-blur-xl rounded-[32px] p-8 md:p-10 shadow-soft border border-white/80 flex flex-col md:flex-row md:items-center justify-between gap-6">
+                <div className="bg-white/70 dark:bg-slate-900/40 backdrop-blur-xl rounded-[32px] p-8 md:p-10 shadow-soft border border-white/80 dark:border-slate-800/50 flex flex-col md:flex-row md:items-center justify-between gap-6">
                     <div>
-                        <h2 className="text-2xl md:text-4xl font-extrabold text-gray-900 tracking-tight">Ôn thi THPT QG 2025</h2>
+                        <h2 className="text-2xl md:text-4xl font-extrabold text-gray-900 dark:text-white tracking-tight">Ôn thi THPT QG 2025</h2>
                         <p className="text-gray-500 mt-2 text-sm md:text-lg font-medium opacity-80">
                             Cấu trúc đề mới nhất. Tích hợp công thức Toán/Lý/Hóa.
                         </p>
@@ -122,7 +122,7 @@ export default function PracticeHome() {
                         </button>
                         <button
                             onClick={() => navigate('/')}
-                            className="bg-white hover:bg-gray-50 text-gray-700 px-6 py-3 rounded-2xl font-bold transition-all flex items-center gap-2 shadow-soft hover:shadow-medium active:scale-95 border border-gray-100"
+                            className="bg-white dark:bg-slate-800 hover:bg-gray-50 dark:hover:bg-slate-700 text-gray-700 dark:text-gray-200 px-6 py-3 rounded-2xl font-bold transition-all flex items-center gap-2 shadow-soft hover:shadow-medium active:scale-95 border border-gray-100 dark:border-slate-700"
                         >
                             <ArrowLeft className="h-5 w-5" />
                             Quay lại Menu
@@ -139,7 +139,7 @@ export default function PracticeHome() {
                             <button
                                 key={sub.id}
                                 onClick={() => setSearchParams({ subject: sub.id })}
-                                className="group bg-white/85 backdrop-blur-md p-8 rounded-[28px] border border-white/70 shadow-card hover:shadow-card-hover hover:-translate-y-2 transition-all duration-500 flex flex-col items-center text-center relative overflow-hidden active:scale-95"
+                                className="group bg-white/85 dark:bg-slate-900/60 backdrop-blur-md p-8 rounded-[28px] border border-white/70 dark:border-slate-800/50 shadow-card hover:shadow-card-hover hover:-translate-y-2 transition-all duration-500 flex flex-col items-center text-center relative overflow-hidden active:scale-95"
                             >
                                 <div className={`w-16 h-16 rounded-[22px] ${bg} flex items-center justify-center mb-5 group-hover:scale-110 transition-transform shadow-sm`}>
                                     <div className="scale-110">{icon}</div>
@@ -164,20 +164,20 @@ export default function PracticeHome() {
     return (
         <div className="space-y-6">
             {/* Header for exam list */}
-            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-6 bg-white/80 backdrop-blur-xl p-6 rounded-[28px] border border-white shadow-soft">
+            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-6 bg-white/80 dark:bg-slate-900/40 backdrop-blur-xl p-6 rounded-[28px] border border-white dark:border-slate-800/50 shadow-soft">
                 <div className="flex items-center gap-4">
                     <button
                         onClick={() => setSearchParams({})}
-                        className="p-3 hover:bg-gray-100 rounded-2xl text-gray-500 transition-all active:scale-90 bg-gray-50/50"
+                        className="p-3 hover:bg-gray-100 dark:hover:bg-slate-800 rounded-2xl text-gray-500 transition-all active:scale-90 bg-gray-50/50 dark:bg-slate-800/50"
                         title="Quay lại"
                     >
                         <ArrowLeft className="h-5 w-5" />
                     </button>
                     <div>
-                        <h2 className="text-2xl font-extrabold text-gray-900 tracking-tight">{currentSubject?.name || activeSubject}</h2>
+                        <h2 className="text-2xl font-extrabold text-gray-900 dark:text-white tracking-tight">{currentSubject?.name || activeSubject}</h2>
                         <div className="flex items-center gap-2 mt-1">
                             <span className="w-2 h-2 rounded-full bg-blue-500" />
-                            <p className="text-[11px] text-gray-400 uppercase tracking-[0.15em] font-bold">
+                            <p className="text-[11px] text-gray-400 dark:text-gray-500 uppercase tracking-[0.15em] font-bold">
                                 {filteredExams.length} ĐỀ THI HIỆN CÓ
                             </p>
                         </div>
@@ -192,14 +192,14 @@ export default function PracticeHome() {
                         value={searchQuery}
                         onChange={(e) => setSearchQuery(e.target.value)}
                         placeholder="Tìm kiếm đề thi..."
-                        className="w-full pl-12 pr-5 py-3 bg-gray-50/50 border border-transparent rounded-2xl focus:outline-none focus:ring-2 focus:ring-blue-500 focus:bg-white transition-all text-sm font-medium shadow-inset shadow-sm"
+                        className="w-full pl-12 pr-5 py-3 bg-gray-50/50 dark:bg-slate-800/50 border border-transparent dark:border-slate-700/50 rounded-2xl focus:outline-none focus:ring-2 focus:ring-blue-500 focus:bg-white dark:focus:bg-slate-800 transition-all text-sm font-medium shadow-inset shadow-sm dark:text-white"
                     />
                 </div>
             </div>
 
             {/* Exam list grid */}
             {filteredExams.length === 0 ? (
-                <div className="bg-white rounded-2xl p-12 text-center border border-gray-100 shadow-sm">
+                <div className="bg-white dark:bg-slate-900/40 backdrop-blur-xl rounded-2xl p-12 text-center border border-gray-100 dark:border-slate-800/50 shadow-sm">
                     <div className="w-16 h-16 bg-gray-50 rounded-full flex items-center justify-center mx-auto mb-4">
                         <Search className="h-8 w-8 text-gray-300" />
                     </div>
@@ -264,7 +264,7 @@ export default function PracticeHome() {
                                 key={exam.id}
                                 onClick={() => navigate(`/practice/${exam.id}`)}
                                 className={cn(
-                                    "group relative bg-white/80 backdrop-blur-xl rounded-[28px] p-4 border transition-all duration-500 text-left flex flex-col active:scale-[0.97] overflow-hidden hover:shadow-2xl hover:-translate-y-1.5 hover:ring-4",
+                                    "group relative bg-white/80 dark:bg-slate-900/60 backdrop-blur-xl rounded-[28px] p-4 border transition-all duration-500 text-left flex flex-col active:scale-[0.97] overflow-hidden hover:shadow-2xl hover:-translate-y-1.5 hover:ring-4",
                                     style.border,
                                     style.ring,
                                     style.shadow
@@ -284,7 +284,7 @@ export default function PracticeHome() {
 
                                 <div className="relative space-y-3">
                                     <div className="flex justify-between items-start gap-3">
-                                        <h3 className="text-[14px] font-extrabold text-gray-800 line-clamp-2 leading-tight pr-2 group-hover:text-gray-950 transition-colors tracking-tight">
+                                        <h3 className="text-[14px] font-extrabold text-gray-800 dark:text-white line-clamp-2 leading-tight pr-2 group-hover:text-gray-950 dark:group-hover:text-white transition-colors tracking-tight">
                                             {exam.title}
                                         </h3>
                                         {highScore !== undefined && !isNaN(highScore) && (
@@ -301,15 +301,15 @@ export default function PracticeHome() {
                                     </div>
 
                                     <div className="flex flex-wrap items-center gap-2">
-                                        <div className="flex items-center gap-1 px-1.5 py-0.5 bg-gray-50/50 rounded-lg text-[9px] text-gray-500 font-bold tracking-tight border border-gray-100/50 shadow-sm group-hover:bg-white transition-colors">
+                                        <div className="flex items-center gap-1 px-1.5 py-0.5 bg-gray-50/50 dark:bg-slate-800/50 rounded-lg text-[9px] text-gray-500 dark:text-gray-400 font-bold tracking-tight border border-gray-100/50 dark:border-slate-700/50 shadow-sm group-hover:bg-white dark:group-hover:bg-slate-800 transition-colors">
                                             <Clock className="h-3 w-3 opacity-50 text-blue-500" />
                                             {exam.time}'
                                         </div>
-                                        <div className="flex items-center gap-1 px-1.5 py-0.5 bg-gray-50/50 rounded-lg text-[9px] text-gray-500 font-bold tracking-tight border border-gray-100/50 shadow-sm group-hover:bg-white transition-colors">
+                                        <div className="flex items-center gap-1 px-1.5 py-0.5 bg-gray-50/50 dark:bg-slate-800/50 rounded-lg text-[9px] text-gray-500 dark:text-gray-400 font-bold tracking-tight border border-gray-100/50 dark:border-slate-700/50 shadow-sm group-hover:bg-white dark:group-hover:bg-slate-800 transition-colors">
                                             <Book className="h-3 w-3 opacity-50 text-emerald-500" />
                                             {totalQ} Q
                                         </div>
-                                        <div className="flex items-center gap-1 px-1.5 py-0.5 bg-gray-50/50 rounded-lg text-[9px] text-gray-400 font-bold tracking-tight border border-gray-100/50 shadow-sm group-hover:bg-white transition-colors">
+                                        <div className="flex items-center gap-1 px-1.5 py-0.5 bg-gray-50/50 dark:bg-slate-800/50 rounded-lg text-[9px] text-gray-400 dark:text-gray-500 font-bold tracking-tight border border-gray-100/50 dark:border-slate-700/50 shadow-sm group-hover:bg-white dark:group-hover:bg-slate-800 transition-colors">
                                             <Users className="h-3 w-3 opacity-40" />
                                             {exam.attemptCount || 0}
                                         </div>
