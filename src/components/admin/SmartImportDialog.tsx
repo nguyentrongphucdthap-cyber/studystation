@@ -8,9 +8,10 @@ import { getSubjects } from '@/services/exam.service';
 import { generateAIContent } from '@/services/ai.service';
 import * as mammoth from 'mammoth';
 import * as pdfjs from 'pdfjs-dist';
+import pdfWorker from 'pdfjs-dist/build/pdf.worker.min.mjs?url';
 
 // Configure PDF.js worker
-pdfjs.GlobalWorkerOptions.workerSrc = `//cdnjs.cloudflare.com/ajax/libs/pdf.js/${pdfjs.version}/pdf.worker.min.js`;
+pdfjs.GlobalWorkerOptions.workerSrc = pdfWorker;
 
 const IMGBB_API_KEY = "cba4af8f08a1654c46570add6d3f1055";
 
