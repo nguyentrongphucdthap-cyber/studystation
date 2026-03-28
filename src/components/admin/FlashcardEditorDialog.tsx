@@ -277,56 +277,85 @@ export function FlashcardEditorDialog({ open, onClose, onSave, initialData, mode
                                     <div className="grid grid-cols-1 md:grid-cols-2 gap-8 animate-in fade-in slide-in-from-bottom-2 duration-300">
                                         <div className="space-y-3">
                                             <span className="text-[10px] font-black text-purple-600 uppercase tracking-widest bg-purple-100 px-2 py-1 rounded-md">Mặt trước</span>
-                                            <div className="min-h-[140px] p-6 rounded-3xl bg-white dark:bg-slate-800 border border-purple-100 dark:border-purple-900/30 flex items-center justify-center text-center">
+                                            <div className="min-h-[140px] p-6 rounded-3xl bg-white dark:bg-slate-800 border border-purple-100 dark:border-purple-900/30 flex flex-col items-center justify-center text-center">
+                                                {word.image && <img src={word.image} alt="Front" className="max-h-32 object-contain mb-4 rounded-xl" />}
                                                 <FormattedText text={word.word || 'Chưa nhập nội dung...'} />
                                             </div>
                                         </div>
                                         <div className="space-y-3">
                                             <span className="text-[10px] font-black text-indigo-600 uppercase tracking-widest bg-indigo-100 px-2 py-1 rounded-md">Mặt sau</span>
                                             <div className="min-h-[140px] p-6 rounded-3xl bg-white dark:bg-slate-800 border border-indigo-100 dark:border-indigo-900/30 flex flex-col items-center justify-center text-center space-y-3">
-                                                <FormattedText text={word.meaning || 'Chưa nhập nội dung...'} />
+                                                {word.image && <img src={word.image} alt="Back" className="max-h-32 object-contain mb-2 rounded-xl" />}
+                                                <div className="text-2xl font-black text-gray-900 dark:text-white py-2">
+                                                    <FormattedText text={word.meaning || 'Chưa nhập nội dung...'} />
+                                                </div>
                                                 {word.notes && (
-                                                    <div className="pt-3 border-t border-gray-100 dark:border-slate-700 w-full italic opacity-60 text-sm">
-                                                        <FormattedText text={word.notes} />
+                                                    <div className="mt-2 w-full max-w-sm bg-indigo-50/50 dark:bg-indigo-900/10 border border-indigo-100 dark:border-indigo-900/30 rounded-2xl p-4 flex items-start gap-3 text-left">
+                                                        <div className="p-1.5 bg-indigo-100 dark:bg-indigo-900/30 rounded-lg shrink-0 mt-0.5">
+                                                            <Layers className="h-4 w-4 text-indigo-600 dark:text-indigo-400" />
+                                                        </div>
+                                                        <div className="text-[13px] text-gray-600 dark:text-slate-300 font-medium">
+                                                            <FormattedText text={word.notes} />
+                                                        </div>
                                                     </div>
                                                 )}
                                             </div>
                                         </div>
                                     </div>
                                 ) : (
-                                    <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-                                        <div className="space-y-2">
-                                            <label className="text-[10px] font-black text-gray-400 uppercase tracking-widest ml-1">Nội dung mặt trước</label>
-                                            <textarea 
-                                                ref={(el) => { if (el) textAreaRefs.current[`${index}-word`] = el; }}
-                                                placeholder="Câu hỏi hoặc công thức..."
-                                                value={word.word}
-                                                onFocus={() => setActiveField({ index, field: 'word' })}
-                                                onChange={(e) => updateWord(index, 'word', e.target.value)}
-                                                className="w-full min-h-[120px] rounded-2xl border border-gray-100 dark:border-slate-800 bg-gray-50/30 dark:bg-slate-800/30 p-4 text-sm font-bold outline-none focus:ring-2 focus:ring-purple-500 transition-all resize-none"
-                                            />
+                                    <div className="space-y-6">
+                                        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                                            <div className="space-y-2">
+                                                <label className="text-[10px] font-black text-gray-400 uppercase tracking-widest ml-1">Nội dung mặt trước</label>
+                                                <textarea 
+                                                    ref={(el) => { if (el) textAreaRefs.current[`${index}-word`] = el; }}
+                                                    placeholder="Câu hỏi hoặc công thức..."
+                                                    value={word.word}
+                                                    onFocus={() => setActiveField({ index, field: 'word' })}
+                                                    onChange={(e) => updateWord(index, 'word', e.target.value)}
+                                                    className="w-full min-h-[120px] rounded-2xl border border-gray-100 dark:border-slate-800 bg-gray-50/30 dark:bg-slate-800/30 p-4 text-sm font-bold outline-none focus:ring-2 focus:ring-purple-500 transition-all resize-none"
+                                                />
+                                            </div>
+                                            <div className="space-y-2">
+                                                <label className="text-[10px] font-black text-gray-400 uppercase tracking-widest ml-1">Nội dung mặt sau</label>
+                                                <textarea 
+                                                    ref={(el) => { if (el) textAreaRefs.current[`${index}-meaning`] = el; }}
+                                                    placeholder="Câu trả lời hoặc định nghĩa..."
+                                                    value={word.meaning}
+                                                    onFocus={() => setActiveField({ index, field: 'meaning' })}
+                                                    onChange={(e) => updateWord(index, 'meaning', e.target.value)}
+                                                    className="w-full min-h-[120px] rounded-2xl border border-gray-100 dark:border-slate-800 bg-gray-50/30 dark:bg-slate-800/30 p-4 text-sm font-bold outline-none focus:ring-2 focus:ring-purple-500 transition-all resize-none"
+                                                />
+                                            </div>
                                         </div>
-                                        <div className="space-y-2">
-                                            <label className="text-[10px] font-black text-gray-400 uppercase tracking-widest ml-1">Nội dung mặt sau</label>
-                                            <textarea 
-                                                ref={(el) => { if (el) textAreaRefs.current[`${index}-meaning`] = el; }}
-                                                placeholder="Câu trả lời hoặc định nghĩa..."
-                                                value={word.meaning}
-                                                onFocus={() => setActiveField({ index, field: 'meaning' })}
-                                                onChange={(e) => updateWord(index, 'meaning', e.target.value)}
-                                                className="w-full min-h-[120px] rounded-2xl border border-gray-100 dark:border-slate-800 bg-gray-50/30 dark:bg-slate-800/30 p-4 text-sm font-bold outline-none focus:ring-2 focus:ring-purple-500 transition-all resize-none"
-                                            />
-                                        </div>
-                                        <div className="space-y-2">
-                                            <label className="text-[10px] font-black text-gray-400 uppercase tracking-widest ml-1">Ghi chú / Chú thích</label>
-                                            <textarea 
-                                                ref={(el) => { if (el) textAreaRefs.current[`${index}-notes`] = el; }}
-                                                placeholder="Giải thích thêm (xuất hiện ở mặt sau)..."
-                                                value={word.notes || ''}
-                                                onFocus={() => setActiveField({ index, field: 'notes' })}
-                                                onChange={(e: React.ChangeEvent<HTMLTextAreaElement>) => updateWord(index, 'notes', e.target.value)}
-                                                className="w-full min-h-[120px] rounded-2xl border border-gray-100 dark:border-slate-800 bg-gray-50/30 dark:bg-slate-800/30 p-4 text-sm font-medium outline-none focus:ring-2 focus:ring-purple-500 transition-all resize-none"
-                                            />
+                                        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                                            <div className="space-y-2">
+                                                <label className="text-[10px] font-black text-gray-400 uppercase tracking-widest ml-1">Ghi chú / Thuyết minh đại lượng</label>
+                                                <textarea 
+                                                    ref={(el) => { if (el) textAreaRefs.current[`${index}-notes`] = el; }}
+                                                    placeholder="Giải thích các đại lượng (ví dụ: v là vận tốc, t là thời gian)..."
+                                                    value={word.notes || ''}
+                                                    onFocus={() => setActiveField({ index, field: 'notes' })}
+                                                    onChange={(e: React.ChangeEvent<HTMLTextAreaElement>) => updateWord(index, 'notes', e.target.value)}
+                                                    className="w-full min-h-[80px] rounded-2xl border border-gray-100 dark:border-slate-800 bg-gray-50/30 dark:bg-slate-800/30 p-4 text-sm font-medium outline-none focus:ring-2 focus:ring-purple-500 transition-all resize-none"
+                                                />
+                                            </div>
+                                            <div className="space-y-2">
+                                                <label className="text-[10px] font-black text-gray-400 uppercase tracking-widest ml-1">Hình ảnh (Tuỳ chọn)</label>
+                                                <div className="flex flex-col gap-2 relative">
+                                                    <input 
+                                                        placeholder="Nhập URL hình ảnh (vd: https://...)"
+                                                        value={word.image || ''}
+                                                        onChange={(e) => updateWord(index, 'image', e.target.value)}
+                                                        className="w-full flex h-[46px] rounded-2xl border border-gray-100 dark:border-slate-800 bg-gray-50/30 dark:bg-slate-800/30 px-4 py-2 text-sm font-medium outline-none focus:ring-2 focus:ring-purple-500 transition-all"
+                                                    />
+                                                    {word.image && (
+                                                        <div className="h-16 w-16 p-1 bg-white dark:bg-slate-800 border border-gray-100 dark:border-slate-700 rounded-xl overflow-hidden shadow-sm">
+                                                            <img src={word.image} alt="Preview" className="w-full h-full object-cover rounded-lg" />
+                                                        </div>
+                                                    )}
+                                                </div>
+                                            </div>
                                         </div>
                                     </div>
                                 )}

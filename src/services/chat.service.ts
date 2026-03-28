@@ -521,9 +521,39 @@ export function subscribeToGroupChats(callback: (groups: GroupChat[]) => void) {
 // MAGO AI CHAT — stored in Firestore at chats/{email}/convos/mago
 // ============================================================
 
+export const MAGO_DAILY_LIMIT = 10;
+
+/** Count how many messages the user has sent to Mago today */
+export async function getMagoUsageCountToday(email: string): Promise<number> {
+    try {
+        const docRef = getConvoDocRef(email, 'mago');
+        const snap = await getDoc(docRef);
+        if (!snap.exists()) return 0;
+
+        const msgs = decodeLog(snap.data()?.log || '');
+        const now = new Date();
+        const startOfDay = new Date(now.getFullYear(), now.getMonth(), now.getDate()).getTime();
+
+        return msgs.filter(m => 
+            (m.role === 'user' || !m.role) && 
+            m.senderEmail.toLowerCase() === email.toLowerCase() && 
+            m.timestamp >= startOfDay
+        ).length;
+    } catch (err) {
+        console.error('[Chat] Failed to get Mago usage count:', err);
+        return 0;
+    }
+}
+
 export async function sendMagoMessage(text: string): Promise<void> {
     const currentEmail = getCurrentEmail();
     if (!currentEmail || !text.trim()) return;
+
+    // Check usage limit
+    const count = await getMagoUsageCountToday(currentEmail);
+    if (count >= MAGO_DAILY_LIMIT) {
+        throw new Error('MAGO_LIMIT_REACHED');
+    }
 
     const line = encodeMsg(Date.now(), currentEmail, text.trim(), 'user') + MSG_LINE_BREAK;
     const docRef = getConvoDocRef(currentEmail, 'mago');

@@ -1,5 +1,6 @@
 import { useEffect, useState, useMemo, useCallback, useRef } from 'react';
 import { getAllVocabSets } from '@/services/vocab.service';
+import { saveVocabSession } from '@/services/vocab-stats.service';
 import { Spinner } from '@/components/ui/Spinner';
 import { Button } from '@/components/ui/Button';
 import { cn } from '@/lib/utils';
@@ -144,6 +145,7 @@ export default function VocabPage() {
     const [offset, setOffset] = useState({ x: 0, y: 0 });
     const [isDragging, setIsDragging] = useState(false);
     const dragStart = useRef({ x: 0, y: 0 });
+    const sessionStartTime = useRef<number>(Date.now());
 
     // Matching state
     const [matchWords, setMatchWords] = useState<VocabWord[]>([]);
@@ -332,6 +334,7 @@ export default function VocabPage() {
         setSwipeDir(null);
         setHistory([]);
         setShowStudyMenu(false);
+        sessionStartTime.current = Date.now();
     };
 
     const handleUndo = () => {
@@ -393,6 +396,19 @@ export default function VocabPage() {
                 setOffset({ x: 0, y: 0 });
                 setSwipeDir(null);
             } else {
+                // Save session to Firestore
+                if (activeSet) {
+                    const elapsed = Math.round((Date.now() - sessionStartTime.current) / 1000);
+                    saveVocabSession({
+                        vocabSetId: activeSet.id,
+                        vocabSetTitle: activeSet.title,
+                        wordsStudied: currentWords.length,
+                        knownCount: knownIds.length + (known ? 1 : 0),
+                        unknownCount: unknownIds.length + (known ? 0 : 1),
+                        durationSeconds: elapsed,
+                        timestamp: new Date().toISOString(),
+                    });
+                }
                 setView('result');
             }
         }, 400);
@@ -965,20 +981,12 @@ export default function VocabPage() {
 
                 {/* Swipe Corner Indicators (Screen Corners, not on card) */}
                 <div 
-                    className="fixed top-0 left-0 w-64 h-64 bg-orange-500/20 rounded-br-full blur-3xl pointer-events-none transition-opacity duration-300 z-0"
-                    style={{ opacity: Math.max(0, -offset.x / 200) }}
+                    className="fixed bottom-0 left-0 w-[500px] h-[500px] bg-orange-500/40 rounded-tr-full blur-[100px] pointer-events-none transition-opacity duration-500 ease-out z-0"
+                    style={{ opacity: Math.max(0, Math.min(1, -offset.x / 120)) }}
                 />
                 <div 
-                    className="fixed top-0 right-0 w-64 h-64 bg-emerald-500/20 rounded-bl-full blur-3xl pointer-events-none transition-opacity duration-300 z-0"
-                    style={{ opacity: Math.max(0, offset.x / 200) }}
-                />
-                <div 
-                    className="fixed bottom-0 left-0 w-64 h-64 bg-orange-500/10 rounded-tr-full blur-3xl pointer-events-none transition-opacity duration-300 z-0"
-                    style={{ opacity: Math.max(0, -offset.x / 300) }}
-                />
-                <div 
-                    className="fixed bottom-0 right-0 w-64 h-64 bg-emerald-500/10 rounded-tl-full blur-3xl pointer-events-none transition-opacity duration-300 z-0"
-                    style={{ opacity: Math.max(0, offset.x / 300) }}
+                    className="fixed bottom-0 right-0 w-[500px] h-[500px] bg-emerald-500/40 rounded-tl-full blur-[100px] pointer-events-none transition-opacity duration-500 ease-out z-0"
+                    style={{ opacity: Math.max(0, Math.min(1, offset.x / 120)) }}
                 />
 
                 {/* Cards Container */}
@@ -1029,18 +1037,16 @@ export default function VocabPage() {
                                 <span className="mb-4 text-[11px] font-black uppercase tracking-[0.2em] text-purple-600 bg-purple-50 dark:bg-purple-900/20 px-4 py-1.5 rounded-full">
                                     {(activeSet.subjectId === 'tieng-anh' ? word.partOfSpeech : word.partOfSpeech || 'Nội dung') || 'Ghi nhớ'}
                                 </span>
-                                <h3 className="text-4xl font-black text-gray-900 dark:text-white mb-2 leading-tight">
+                                {word.image && (
+                                    <img src={word.image} alt="Front" className="max-h-32 object-contain mb-4 rounded-xl shadow-sm" />
+                                )}
+                                <h3 className="text-4xl font-black text-gray-900 dark:text-white mb-2 leading-tight px-4 w-full">
                                     <FormattedText text={word.word} />
                                 </h3>
                                 {word.pronunciation && (
                                     <p className="text-gray-400 font-medium tracking-wide">
                                         {activeSet.subjectId === 'tieng-anh' ? `/${word.pronunciation}/` : word.pronunciation}
                                     </p>
-                                )}
-                                {word.notes && (
-                                    <div className="mt-4 text-[13px] text-gray-500 font-medium italic">
-                                        <FormattedText text={word.notes} />
-                                    </div>
                                 )}
                             </div>
                             
@@ -1056,15 +1062,28 @@ export default function VocabPage() {
                         <div 
                             className="absolute inset-0 bg-blue-50 dark:bg-indigo-950/40 rounded-[32px] p-8 border border-blue-100 dark:border-indigo-900/30 backface-hidden rotate-y-180 flex flex-col items-center justify-center text-center shadow-card overflow-hidden"
                         >
-                            <div className="flex-1 flex flex-col items-center justify-center">
+                            <div className="flex-1 flex flex-col items-center justify-center w-full">
                                 <span className="mb-4 text-[11px] font-black uppercase tracking-[0.2em] text-indigo-600 bg-indigo-50 dark:bg-indigo-900/20 px-4 py-1.5 rounded-full">
                                     Nghĩa của từ
                                 </span>
-                                <h3 className="text-3xl font-black text-gray-900 dark:text-white mb-6 leading-tight">
+                                {word.image && (
+                                    <img src={word.image} alt="Back" className="max-h-32 object-contain mb-4 rounded-xl shadow-sm" />
+                                )}
+                                <div className="text-3xl md:text-4xl font-black text-gray-900 dark:text-white mb-6 leading-tight w-full px-4 py-4 overflow-y-auto max-h-[180px] no-scrollbar flex items-center justify-center">
                                     <FormattedText text={word.meaning} />
-                                </h3>
+                                </div>
+                                {word.notes && (
+                                    <div className="w-full max-w-[280px] bg-indigo-100/50 dark:bg-indigo-900/20 border border-indigo-100 dark:border-indigo-900/40 rounded-2xl p-4 flex items-start gap-3 text-left mb-6 shadow-sm">
+                                        <div className="p-1.5 bg-indigo-200/50 dark:bg-indigo-900/50 rounded-xl shrink-0 mt-0.5">
+                                            <Layers className="h-4 w-4 text-indigo-600 dark:text-indigo-400" />
+                                        </div>
+                                        <div className="text-[13px] text-gray-600 dark:text-slate-300 font-medium leading-relaxed">
+                                            <FormattedText text={word.notes} />
+                                        </div>
+                                    </div>
+                                )}
                                 {word.example && (
-                                    <div className="relative">
+                                    <div className="relative w-full max-w-[280px]">
                                         <div className="absolute -left-2 top-0 text-3xl text-indigo-100 font-serif opacity-30">“</div>
                                         <div className="text-sm md:text-base text-gray-500 dark:text-slate-400 font-medium italic px-4 leading-relaxed">
                                             <FormattedText text={word.example} />

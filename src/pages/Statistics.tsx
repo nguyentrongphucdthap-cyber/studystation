@@ -1,6 +1,7 @@
 import { useEffect, useState, useMemo } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { getUserTotalHistory, getSubjects } from '@/services/exam.service';
+import { getUserVocabSessions, getUserActivityForStats, type VocabSession, type ActivityLog } from '@/services/vocab-stats.service.ts';
 import { Spinner } from '@/components/ui/Spinner';
 import { 
     BarChart3, 
@@ -12,7 +13,10 @@ import {
     Award,
     ChevronRight,
     BookOpen,
-    Filter
+    Filter,
+    Layout,
+    Zap,
+    History
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import type { PracticeHistory } from '@/types';
@@ -20,6 +24,8 @@ import type { PracticeHistory } from '@/types';
 export default function StatisticsPage() {
     const navigate = useNavigate();
     const [history, setHistory] = useState<PracticeHistory[]>([]);
+    const [vocabSessions, setVocabSessions] = useState<VocabSession[]>([]);
+    const [activityLogs, setActivityLogs] = useState<ActivityLog[]>([]);
     const [loading, setLoading] = useState(true);
     const [selectedSubject, setSelectedSubject] = useState<string>('all');
     const [timeRange, setTimeRange] = useState<'day' | 'week' | 'month'>('day');
@@ -29,8 +35,14 @@ export default function StatisticsPage() {
     useEffect(() => {
         async function load() {
             try {
-                const data = await getUserTotalHistory();
-                setHistory(data);
+                const [examData, vocabData, activityData] = await Promise.all([
+                    getUserTotalHistory(),
+                    getUserVocabSessions(),
+                    getUserActivityForStats()
+                ]);
+                setHistory(examData);
+                setVocabSessions(vocabData);
+                setActivityLogs(activityData);
             } catch (err) {
                 console.error('[Statistics] Load error:', err);
             } finally {
@@ -143,6 +155,131 @@ export default function StatisticsPage() {
         }).filter(s => s.count > 0).sort((a, b) => b.avg - a.avg);
     }, [history, subjects]);
 
+    // --- Vocab Data Processing ---
+
+    const vocabStats = useMemo(() => {
+        // Total from localStorage (legacy + current) - Approximate
+        let totalLearnedEver = 0;
+        for (let i = 0; i < localStorage.length; i++) {
+            const key = localStorage.key(i);
+            if (key?.startsWith('vocab_learned_')) {
+                try {
+                    const ids = JSON.parse(localStorage.getItem(key) || '[]');
+                    totalLearnedEver += Array.isArray(ids) ? ids.length : 0;
+                } catch(e) {}
+            }
+        }
+
+        const now = new Date();
+        const startOfDay = new Date(now.getFullYear(), now.getMonth(), now.getDate()).getTime();
+        const startOfWeek = now.getTime() - (7 * 24 * 60 * 60 * 1000);
+        const startOfMonth = now.getTime() - (30 * 24 * 60 * 60 * 1000);
+
+        const todaySessions = vocabSessions.filter(s => new Date(s.timestamp).getTime() >= startOfDay);
+        const weekSessions = vocabSessions.filter(s => new Date(s.timestamp).getTime() >= startOfWeek);
+        const monthSessions = vocabSessions.filter(s => new Date(s.timestamp).getTime() >= startOfMonth);
+
+        const totalWordsToday = todaySessions.reduce((acc, s) => acc + s.wordsStudied, 0);
+        const totalWordsWeek = weekSessions.reduce((acc, s) => acc + s.wordsStudied, 0);
+        const totalWordsMonth = monthSessions.reduce((acc, s) => acc + s.wordsStudied, 0);
+
+        const avgWordsPerSession = vocabSessions.length > 0
+            ? vocabSessions.reduce((acc, s) => acc + s.wordsStudied, 0) / vocabSessions.length
+            : 0;
+
+        return {
+            totalLearnedEver,
+            today: totalWordsToday,
+            week: totalWordsWeek,
+            month: totalWordsMonth,
+            avgPerSession: avgWordsPerSession
+        };
+    }, [vocabSessions]);
+
+    const vocabTrendData = useMemo(() => {
+        const now = new Date();
+        const data: { label: string, count: number }[] = [];
+        
+        if (timeRange === 'day') {
+            for (let i = 6; i >= 0; i--) {
+                const d = new Date();
+                d.setDate(now.getDate() - i);
+                const dateStr = d.toLocaleDateString('vi-VN', { day: '2-digit', month: '2-digit' });
+                
+                const dayWords = vocabSessions
+                    .filter(s => {
+                        const sDate = new Date(s.timestamp);
+                        return sDate.getDate() === d.getDate() && sDate.getMonth() === d.getMonth() && sDate.getFullYear() === d.getFullYear();
+                    })
+                    .reduce((acc, s) => acc + s.wordsStudied, 0);
+                
+                data.push({ label: dateStr, count: dayWords });
+            }
+        } else if (timeRange === 'week') {
+            for (let i = 3; i >= 0; i--) {
+                const start = new Date();
+                start.setDate(now.getDate() - (i + 1) * 7);
+                const end = new Date();
+                end.setDate(now.getDate() - i * 7);
+                
+                const weekWords = vocabSessions
+                    .filter(s => {
+                        const sDate = new Date(s.timestamp);
+                        return sDate >= start && sDate < end;
+                    })
+                    .reduce((acc, s) => acc + s.wordsStudied, 0);
+                
+                data.push({ label: `T${4-i}`, count: weekWords });
+            }
+        } else {
+            for (let i = 5; i >= 0; i--) {
+                const d = new Date();
+                d.setMonth(now.getMonth() - i);
+                const monthStr = d.toLocaleDateString('vi-VN', { month: 'short' });
+                
+                const monthWords = vocabSessions
+                    .filter(s => {
+                        const sDate = new Date(s.timestamp);
+                        return sDate.getMonth() === d.getMonth() && sDate.getFullYear() === d.getFullYear();
+                    })
+                    .reduce((acc, s) => acc + s.wordsStudied, 0);
+                
+                data.push({ label: monthStr, count: monthWords });
+            }
+        }
+        return data;
+    }, [vocabSessions, timeRange]);
+
+    // --- Activity & Habit Processing ---
+
+    const hourlyActivityData = useMemo(() => {
+        const hours = Array(24).fill(0);
+        activityLogs.forEach(log => {
+            const date = new Date(log.timestamp);
+            const hour = date.getHours();
+            hours[hour]++;
+        });
+
+        // Normalize for chart (0-100)
+        const max = Math.max(...hours, 1);
+        return hours.map((count, hour) => ({
+            hour,
+            count,
+            percentage: (count / max) * 100,
+            label: `${hour}h`
+        }));
+    }, [activityLogs]);
+
+    const peakStudyHour = useMemo(() => {
+        if (hourlyActivityData.every(d => d.count === 0)) return null;
+        const peak = [...hourlyActivityData].sort((a, b) => b.count - a.count)[0];
+        return peak ? peak.hour : null;
+    }, [hourlyActivityData]);
+
+    const recentActivityTimeline = useMemo(() => {
+        return activityLogs.slice(0, 10);
+    }, [activityLogs]);
+
     if (loading) {
         return (
             <div className="flex flex-col items-center justify-center py-20 gap-4">
@@ -210,11 +347,35 @@ export default function StatisticsPage() {
                         color="bg-blue-50 text-blue-600"
                     />
                     <StatCard 
-                        icon={<Target className="h-6 w-6" />}
+                        icon={<Layout className="h-6 w-6" />}
                         label="Tổng số bài"
                         value={stats.totalExams}
                         suffix="đề thi"
                         color="bg-emerald-50 text-emerald-600"
+                    />
+
+                    {/* NEW Flashcard Stats */}
+                    <StatCard 
+                        icon={<BookOpen className="h-6 w-6" />}
+                        label="Từ vựng đã học"
+                        value={vocabStats.totalLearnedEver}
+                        suffix="từ"
+                        color="bg-indigo-50 text-indigo-600"
+                        trend={`Hôm nay: +${vocabStats.today}`}
+                    />
+                    <StatCard 
+                        icon={<Zap className="h-6 w-6" />}
+                        label="TB từ mỗi phiên"
+                        value={Math.round(vocabStats.avgPerSession)}
+                        suffix="từ/phiên"
+                        color="bg-orange-50 text-orange-600"
+                    />
+                    <StatCard 
+                        icon={<Target className="h-6 w-6" />}
+                        label="Học trong tuần"
+                        value={vocabStats.week}
+                        suffix="từ"
+                        color="bg-pink-50 text-pink-600"
                     />
                 </div>
 
@@ -300,6 +461,17 @@ export default function StatisticsPage() {
                             </div>
                         </div>
 
+                        {/* Vocab Count Variation (NEW) */}
+                        <div className="space-y-4">
+                            <div className="flex items-center justify-between px-2">
+                                <h4 className="text-xs font-black text-gray-400 uppercase tracking-widest">Biến thiên từ vựng</h4>
+                                <span className="text-xs font-black text-orange-600">Tổng: {vocabTrendData.reduce((acc, d) => acc + d.count, 0)} từ</span>
+                            </div>
+                            <div className="h-60">
+                                <CountBarChart data={vocabTrendData} color="#f97316" />
+                            </div>
+                        </div>
+
                         {/* Avg Time Trend (New Chart) */}
                         <div className="space-y-4">
                             <div className="flex items-center justify-between px-2">
@@ -308,6 +480,19 @@ export default function StatisticsPage() {
                             </div>
                             <div className="h-60">
                                 <AvgTimeLineChart data={productivityData} />
+                            </div>
+                        </div>
+
+                        {/* Study Habits - Hourly Access (NEW) */}
+                        <div className="space-y-4">
+                            <div className="flex items-center justify-between px-2">
+                                <h4 className="text-xs font-black text-gray-400 uppercase tracking-widest">Thói quen truy cập</h4>
+                                <span className="text-xs font-black text-indigo-600">
+                                    {peakStudyHour !== null ? `Giờ cao điểm: ${peakStudyHour}h` : 'Chưa có dữ liệu'}
+                                </span>
+                            </div>
+                            <div className="h-60">
+                                <HabitChart data={hourlyActivityData} />
                             </div>
                         </div>
                     </div>
@@ -405,6 +590,62 @@ export default function StatisticsPage() {
                                     </tr>
                                 );
                             })}
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+
+            {/* Access History Timeline (NEW) */}
+            <div className="bg-white/95 backdrop-blur-xl rounded-[40px] border border-white shadow-soft overflow-hidden">
+                <div className="p-8 border-b border-gray-100/60 flex items-center justify-between">
+                    <div className="flex items-center gap-3">
+                        <div className="p-2.5 bg-gray-50 text-gray-600 rounded-2xl">
+                            <History className="h-5 w-5" />
+                        </div>
+                        <h3 className="text-lg font-bold text-gray-900">Lịch sử truy cập StudyStation</h3>
+                    </div>
+                </div>
+                <div className="overflow-x-auto">
+                    <table className="w-full text-left border-collapse">
+                        <thead>
+                            <tr className="bg-gray-50/50">
+                                <th className="px-8 py-4 text-[10px] font-black text-gray-400 uppercase tracking-widest leading-none">Module</th>
+                                <th className="px-8 py-4 text-[10px] font-black text-gray-400 uppercase tracking-widest leading-none">Nội dung</th>
+                                <th className="px-8 py-4 text-[10px] font-black text-gray-400 uppercase tracking-widest leading-none">Ngày/Giờ</th>
+                                <th className="px-8 py-4 text-[10px] font-black text-gray-400 uppercase tracking-widest leading-none">Thiết bị</th>
+                            </tr>
+                        </thead>
+                        <tbody className="divide-y divide-gray-50">
+                            {recentActivityTimeline.map((log) => (
+                                <tr key={log.id} className="group hover:bg-gray-50/50 transition-colors">
+                                    <td className="px-8 py-5">
+                                        <div className="flex items-center gap-3">
+                                            <div className="px-2.5 py-1 rounded-lg bg-indigo-50 text-indigo-600 text-[10px] font-black uppercase tracking-wider">
+                                                {log.moduleName}
+                                            </div>
+                                        </div>
+                                    </td>
+                                    <td className="px-8 py-5">
+                                        <span className="text-sm font-medium text-gray-600 line-clamp-1">{log.moduleLabel || '-'}</span>
+                                    </td>
+                                    <td className="px-8 py-5">
+                                        <div className="flex flex-col">
+                                            <span className="text-sm font-bold text-gray-900">{new Date(log.timestamp).toLocaleDateString('vi-VN')}</span>
+                                            <span className="text-[10px] font-medium text-gray-400">{new Date(log.timestamp).toLocaleTimeString('vi-VN', { hour: '2-digit', minute: '2-digit' })}</span>
+                                        </div>
+                                    </td>
+                                    <td className="px-8 py-5">
+                                        <span className="text-xs font-bold text-gray-400 capitalize">{log.deviceType || 'Unknown'}</span>
+                                    </td>
+                                </tr>
+                            ))}
+                            {recentActivityTimeline.length === 0 && (
+                                <tr>
+                                    <td colSpan={4} className="px-8 py-10 text-center text-gray-400 font-medium italic">
+                                        Chưa có dữ liệu truy cập
+                                    </td>
+                                </tr>
+                            )}
                         </tbody>
                     </table>
                 </div>
@@ -537,7 +778,7 @@ function ScoreTrendChart({ history }: { history: PracticeHistory[] }) {
     );
 }
 
-function CountBarChart({ data }: { data: { label: string, count: number }[] }) {
+function CountBarChart({ data, color = "#6366f1" }: { data: { label: string, count: number }[], color?: string }) {
     const maxValue = Math.max(...data.map(d => d.count), 5);
     const width = 800;
     const height = 300;
@@ -570,14 +811,15 @@ function CountBarChart({ data }: { data: { label: string, count: number }[] }) {
                             width={barWidth} 
                             height={barHeight} 
                             rx="6" 
-                            fill="#6366f1" 
+                            fill={color} 
                             className="opacity-80 group-hover:opacity-100 transition-all duration-300"
                         />
                         <text 
                             x={x + barWidth / 2} 
                             y={y - 10} 
                             textAnchor="middle" 
-                            className="text-[14px] font-black fill-indigo-600 opacity-0 group-hover:opacity-100 transition-opacity"
+                            style={{ fill: color }}
+                            className="text-[14px] font-black opacity-0 group-hover:opacity-100 transition-opacity"
                         >
                             {d.count}
                         </text>
@@ -589,6 +831,60 @@ function CountBarChart({ data }: { data: { label: string, count: number }[] }) {
                         >
                             {d.label}
                         </text>
+                    </g>
+                );
+            })}
+        </svg>
+    );
+}
+
+function HabitChart({ data }: { data: { hour: number, count: number, percentage: number, label: string }[] }) {
+    const width = 800;
+    const height = 240;
+    const padding = 30;
+    const chartWidth = width - padding * 2;
+    const barWidth = chartWidth / 24;
+
+    return (
+        <svg viewBox={`0 0 ${width} ${height}`} className="w-full h-full overflow-visible">
+            {data.map((d, i) => {
+                const barHeight = Math.max((d.percentage / 100) * (height - padding * 2), 4);
+                const x = padding + i * barWidth;
+                const y = height - padding - barHeight;
+
+                return (
+                    <g key={i} className="group cursor-pointer">
+                        <rect 
+                            x={x + 2} 
+                            y={y} 
+                            width={barWidth - 4} 
+                            height={barHeight} 
+                            rx="4" 
+                            className={cn(
+                                "transition-all duration-500",
+                                d.count > 0 ? "fill-indigo-500 opacity-60 group-hover:opacity-100" : "fill-gray-100"
+                            )}
+                        />
+                        {d.count > 0 && (
+                            <text 
+                                x={x + barWidth / 2} 
+                                y={y - 8} 
+                                textAnchor="middle" 
+                                className="text-[10px] font-black fill-indigo-600 opacity-0 group-hover:opacity-100 transition-opacity"
+                            >
+                                {d.count}
+                            </text>
+                        )}
+                        {i % 4 === 0 && (
+                            <text 
+                                x={x + barWidth / 2} 
+                                y={height - 10} 
+                                textAnchor="middle" 
+                                className="text-[10px] font-bold fill-gray-400"
+                            >
+                                {d.label}
+                            </text>
+                        )}
                     </g>
                 );
             })}

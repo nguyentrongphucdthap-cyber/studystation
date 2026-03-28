@@ -135,7 +135,8 @@ JSON FORMAT:
       "example": "Contextual example", 
       "notes": "Extra info",
       "pronunciation": "/.../", 
-      "partOfSpeech": "noun/verb/theorem/..."
+      "partOfSpeech": "noun/verb/theorem/...",
+      "image": "URL hình ảnh nếu có (từ thẻ Markdown ![...](url), hãy trích xuất đúng phần url vào đây)"
     }
   ]
 }
@@ -200,6 +201,19 @@ function normalizeImportedExamData(data: any) {
             };
             delete newQ.image;
             return newQ;
+        });
+    }
+
+    if (Array.isArray(normalized.words)) {
+        normalized.words = normalized.words.map((w: any) => {
+            const newW = { ...w };
+            if (typeof newW.image === 'string') {
+                const match = newW.image.match(/!\[.*?\]\((.*?)\)/);
+                if (match) {
+                    newW.image = match[1];
+                }
+            }
+            return newW;
         });
     }
 

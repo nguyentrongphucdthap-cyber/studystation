@@ -57,6 +57,8 @@ import {
     sendMagoMessage,
     saveMagoResponse,
     subscribeToMagoMessages,
+    getMagoUsageCountToday,
+    MAGO_DAILY_LIMIT,
 } from '../services/chat.service';
 import { generateAIContent, type AIChatMessage } from '@/services/ai.service';
 import type { ChatMessage, Friend, GroupChat } from '@/types';
@@ -541,8 +543,9 @@ function ChatTab({ user, onUnreadChange }: { user: { email: string; displayName:
     const [selectedMembers, setSelectedMembers] = useState<string[]>([]);
     const [showGroupSettings, setShowGroupSettings] = useState(false);
     const [isRenamingGroup, setIsRenamingGroup] = useState(false);
-    const [newGroupName, setNewGroupName] = useState('');
     const [showInviteMembers, setShowInviteMembers] = useState(false);
+    const [magoUsageCount, setMagoUsageCount] = useState(0);
+    const [newGroupName, setNewGroupName] = useState('');
     const [pinnedChats, setPinnedChats] = useState<string[]>(() => {
         try { return JSON.parse(localStorage.getItem(CHAT_PINNED_KEY) || '[]'); } catch { return []; }
     });
@@ -641,6 +644,9 @@ function ChatTab({ user, onUnreadChange }: { user: { email: string; displayName:
                 setMessages(msgs);
                 markAsRead('mago');
                 onUnreadChange?.(0);
+                
+                // Re-fetch usage count when messages change
+                getMagoUsageCountToday(user.email).then(setMagoUsageCount);
             });
         } else {
             const myKey = user.email.toLowerCase().replace(/@/g, '_at_').replace(/\./g, ',');
@@ -689,8 +695,11 @@ function ChatTab({ user, onUnreadChange }: { user: { email: string; displayName:
         if (activeChat === 'mago') {
             setIsMagoTyping(true);
             try {
-                // 1. Save user message to Firestore
+                // 1. Save user message to Firestore (this also checks the limit)
                 await sendMagoMessage(text);
+                
+                // Update local count immediately for UI feedback
+                setMagoUsageCount(prev => prev + 1);
 
                 // 2. Clear input is already done above
 
@@ -721,10 +730,13 @@ function ChatTab({ user, onUnreadChange }: { user: { email: string; displayName:
                 await saveMagoResponse(response);
             } catch (err: any) {
                 console.error('[Chat] Mago AI error:', err);
-                console.error('[Chat] Error name:', err.name, 'Error message:', err.message);
-                const errorMsg = err.message || 'Lỗi kết nối với Mago';
-                // Optionally show a non-intrusive error message in chat
-                await saveMagoResponse(`Xin lỗi, tôi đang gặp chút sự cố kỹ thuật: ${errorMsg}. Bạn thử lại sau nhé! 🧙‍♂️`);
+                
+                if (err.message === 'MAGO_LIMIT_REACHED') {
+                    await saveMagoResponse(`Dừng lại một chút nhé phù thủy nhỏ! 🧙‍♂️✨ Bạn đã hết lượt hỏi tôi cho hôm nay rồi (${MAGO_DAILY_LIMIT}/${MAGO_DAILY_LIMIT} câu).\nHãy dành câu hỏi tiếp theo cho ngày mai nha! Giờ thì đi ôn bài thôi nào! Giỏi lắm! 🏆`);
+                } else {
+                    const errorMsg = err.message || 'Lỗi kết nối với Mago';
+                    await saveMagoResponse(`Xin lỗi, tôi đang gặp chút sự cố kỹ thuật: ${errorMsg}. Bạn thử lại sau nhé! 🧙‍♂️`);
+                }
             } finally {
                 setIsMagoTyping(false);
             }
@@ -1189,7 +1201,18 @@ function ChatTab({ user, onUnreadChange }: { user: { email: string; displayName:
                 <div ref={messagesEndRef} />
             </div>
             <div className="chat-input-bar">
-                <input type="text" placeholder={activeChat === 'mago' ? 'Hỏi Mago...' : 'Nhắn tin...'} value={input} onChange={e => setInput(e.target.value)} onKeyDown={e => e.key === 'Enter' && !e.shiftKey && handleSend()} disabled={isMagoTyping} />
+                <input 
+                    type="text" 
+                    placeholder={activeChat === 'mago' 
+                        ? (MAGO_DAILY_LIMIT - magoUsageCount > 0 
+                            ? `Hỏi Mago... (Còn ${MAGO_DAILY_LIMIT - magoUsageCount} lượt)` 
+                            : 'Ngày mai quay lại nhé! 🧙‍♂️') 
+                        : 'Nhắn tin...'} 
+                    value={input} 
+                    onChange={e => setInput(e.target.value)} 
+                    onKeyDown={e => e.key === 'Enter' && !e.shiftKey && handleSend()} 
+                    disabled={isMagoTyping || (activeChat === 'mago' && magoUsageCount >= MAGO_DAILY_LIMIT)} 
+                />
                 <button onClick={handleSend} disabled={isMagoTyping || !input.trim()}><Send size={16} /></button>
             </div>
         </>
