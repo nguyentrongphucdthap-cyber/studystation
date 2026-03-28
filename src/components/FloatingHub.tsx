@@ -30,6 +30,7 @@ import {
     Settings,
     LogOut,
     ChevronRight,
+    History,
 } from 'lucide-react';
 import { useAuth } from '@/contexts/AuthContext';
 import { useTheme } from '@/contexts/ThemeContext';
@@ -64,6 +65,7 @@ import { generateAIContent, type AIChatMessage } from '@/services/ai.service';
 import type { ChatMessage, Friend, GroupChat } from '@/types';
 import './FloatingHub.css';
 import { APP_VERSION } from '@/version';
+import { CHANGELOG } from '@/data/changelog';
 import MathText from './MathText';
 import MagoText from './MagoText';
 
@@ -1555,7 +1557,7 @@ function NotesTab({ userEmail }: { userEmail: string }) {
 // THEME TAB — uses global ThemeContext
 // ============================================================
 
-type SubTabId = 'main' | 'appearance' | 'typography' | 'background' | 'behavior';
+type SubTabId = 'main' | 'appearance' | 'typography' | 'background' | 'behavior' | 'changelog';
 
 function ThemeTab() {
     const { settings, updateSetting, resetToDefaults } = useTheme();
@@ -1566,6 +1568,7 @@ function ThemeTab() {
         { id: 'typography', label: 'Kiểu chữ', icon: Type, class: 'icon-bg-typography' },
         { id: 'background', label: 'Hình nền', icon: Image, class: 'icon-bg-background' },
         { id: 'behavior', label: 'Hành vi', icon: Settings, class: 'icon-bg-behavior' },
+        { id: 'changelog', label: 'Nhật ký cập nhật', icon: History, class: 'icon-bg-changelog' },
     ];
 
     if (activeSubTab === 'main') {
@@ -1875,6 +1878,15 @@ function ThemeTab() {
                 </>
             )}
 
+            {activeSubTab === 'changelog' && (
+                <>
+                    <div style={{ position: 'sticky', top: 0, zIndex: 10, background: 'var(--hub-surface)' }}>
+                        {renderSubHeader('Nhật ký cập nhật')}
+                    </div>
+                    <ChangelogTab hideHeader />
+                </>
+            )}
+
             {/* Designer Credit at the bottom of Theme Tab */}
             <div style={{ 
                 marginTop: '12px', 
@@ -2004,6 +2016,62 @@ function MusicTab({ currentSong, isPlaying, onTogglePlay, onPlaySong, currentTim
 
                 <div className="music-tip">
                     <Sparkles size={12} /> Nhạc sẽ tiếp tục phát khi bạn đóng Flow.
+                </div>
+            </div>
+        </>
+    );
+}
+
+function ChangelogTab({ hideHeader = false }: { hideHeader?: boolean }) {
+    const getTypeLabel = (type: string) => {
+        switch (type) {
+            case 'feat': return { label: 'Tính năng', color: '#3b82f6', bg: '#eff6ff' };
+            case 'fix': return { label: 'Sửa lỗi', color: '#ef4444', bg: '#fef2f2' };
+            case 'style': return { label: 'Giao diện', color: '#8b5cf6', bg: '#f5f3ff' };
+            case 'docs': return { label: 'Tài liệu', color: '#10b981', bg: '#ecfdf5' };
+            case 'refactor': return { label: 'Cấu trúc', color: '#f59e0b', bg: '#fffbeb' };
+            case 'perf': return { label: 'Hiệu năng', color: '#ec4899', bg: '#fdf2f8' };
+            case 'chore': return { label: 'Hệ thống', color: '#6b7280', bg: '#f9fafb' };
+            default: return { label: 'Cập nhật', color: '#6b7280', bg: '#f9fafb' };
+        }
+    };
+
+    return (
+        <>
+            {!hideHeader && (
+                <div className="hub-content-header">
+                    <h3><History size={16} style={{ verticalAlign: '-3px', marginRight: '6px' }} /> Nhật ký cập nhật</h3>
+                </div>
+            )}
+            <div className="hub-content-body changelog-container">
+                <div className="changelog-timeline">
+                    {CHANGELOG.map((entry, idx) => {
+                        const meta = getTypeLabel(entry.type);
+                        const prevEntry = idx > 0 ? CHANGELOG[idx - 1] : null;
+                        const isNewDay = !prevEntry || prevEntry.date !== entry.date;
+
+                        return (
+                            <div key={entry.hash + idx} className="changelog-item">
+                                {isNewDay && (
+                                    <div className="changelog-date">
+                                        <span>{new Date(entry.date).toLocaleDateString('vi-VN', { day: '2-digit', month: '2-digit', year: 'numeric' })}</span>
+                                    </div>
+                                )}
+                                <div className="changelog-card">
+                                    <div className="changelog-dot" style={{ backgroundColor: meta.color }} />
+                                    <div className="changelog-content">
+                                        <div className="changelog-header">
+                                            <span className="changelog-tag" style={{ color: meta.color, backgroundColor: meta.bg }}>
+                                                {meta.label}
+                                            </span>
+                                            <span className="changelog-hash">#{entry.hash}</span>
+                                        </div>
+                                        <p className="changelog-msg">{entry.message}</p>
+                                    </div>
+                                </div>
+                            </div>
+                        );
+                    })}
                 </div>
             </div>
         </>

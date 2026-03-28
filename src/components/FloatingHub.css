@@ -418,6 +418,7 @@
 .icon-bg-typography { background: linear-gradient(135deg, #8b5cf6, #a78bfa); }
 .icon-bg-background { background: linear-gradient(135deg, #10b981, #34d399); }
 .icon-bg-behavior   { background: linear-gradient(135deg, #f59e0b, #fbbf24); }
+.icon-bg-changelog  { background: linear-gradient(135deg, #64748b, #94a3b8); }
 
 /* Dark Mode Adjustments */
 .dark .theme-category-item {
@@ -2498,4 +2499,125 @@
 @keyframes fadeIn {
     from { opacity: 0; transform: translateY(10px); }
     to { opacity: 1; transform: translateY(0); }
-}
+}
+/* ============================================================
+   Changelog Tab
+   ============================================================ */
+
+.changelog-container {
+    padding: 10px 0;
+    background: var(--hub-surface-alt);
+}
+
+.changelog-timeline {
+    position: relative;
+    padding-left: 24px;
+    padding-right: 16px;
+    margin-top: 10px;
+}
+
+.changelog-timeline::before {
+    content: '';
+    position: absolute;
+    left: 10px;
+    top: 5px;
+    bottom: 5px;
+    width: 2px;
+    background: var(--hub-border);
+    border-radius: 1px;
+}
+
+.changelog-item {
+    position: relative;
+    margin-bottom: 20px;
+}
+
+.changelog-date {
+    position: sticky;
+    top: 0;
+    z-index: 5;
+    margin-bottom: 12px;
+    margin-left: -14px;
+    display: flex;
+}
+
+.changelog-date span {
+    background: var(--hub-surface);
+    color: var(--hub-text-muted);
+    font-size: 10px;
+    font-weight: 800;
+    padding: 3px 10px;
+    border-radius: 20px;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05);
+    border: 1px solid var(--hub-border);
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+}
+
+.changelog-card {
+    position: relative;
+    background: var(--hub-surface);
+    border: 1px solid var(--hub-border);
+    border-radius: 14px;
+    padding: 12px;
+    transition: all 0.3s cubic-bezier(0.25, 0.8, 0.25, 1);
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.03);
+}
+
+.changelog-card:hover {
+    transform: translateX(3px);
+    box-shadow: 0 8px 16px rgba(0, 0, 0, 0.06);
+    border-color: rgba(var(--accent-rgb), 0.2);
+}
+
+.changelog-dot {
+    position: absolute;
+    left: -18px;
+    top: 16px;
+    width: 10px;
+    height: 10px;
+    border-radius: 50%;
+    border: 3px solid var(--hub-surface);
+    box-shadow: 0 0 0 1px var(--hub-border);
+    z-index: 2;
+}
+
+.changelog-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-bottom: 6px;
+}
+
+.changelog-tag {
+    font-size: 9px;
+    font-weight: 800;
+    padding: 2px 6px;
+    border-radius: 4px;
+    text-transform: uppercase;
+    letter-spacing: 0.3px;
+}
+
+.changelog-hash {
+    font-family: 'Fira Code', 'Cascadia Code', monospace;
+    font-size: 9px;
+    color: var(--hub-text-muted);
+    opacity: 0.6;
+}
+
+.changelog-msg {
+    font-size: 12.5px;
+    line-height: 1.5;
+    color: var(--hub-text);
+    margin: 0;
+    font-weight: 500;
+}
+
+.dark .changelog-card {
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2);
+}
+
+.dark .changelog-date span {
+    background: var(--hub-surface);
+    border-color: var(--hub-border);
+}
