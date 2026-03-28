@@ -166,7 +166,7 @@ export function FloatingHub() {
             // Auto play next song
             const idx = LOFI_TRACKS.findIndex(t => t.id === currentSong.id);
             const nextIdx = (idx + 1) % LOFI_TRACKS.length;
-            playSong(LOFI_TRACKS[nextIdx]);
+            playSong(LOFI_TRACKS[nextIdx]!);
         };
 
         audio.addEventListener('timeupdate', handleTimeUpdate);
@@ -361,7 +361,7 @@ export function FloatingHub() {
     return (
         <>
             {/* ── Global Music Background Overlay ── */}
-            {isPlaying && currentSong && settings.enableMusicBackground && (
+            {isPlaying && currentSong && (
                 <div 
                     className="hub-global-music-bg"
                     style={{ backgroundImage: `url(${currentSong.cover})` }}
