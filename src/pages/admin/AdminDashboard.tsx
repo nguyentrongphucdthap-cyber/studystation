@@ -4,7 +4,7 @@ import { getAllExams } from '@/services/exam.service';
 import { getAllAllowedUsers, getActivityStats, getBlacklist } from '@/services/auth.service';
 import { getAllEtestExams } from '@/services/etest.service';
 import { getAllVocabSets } from '@/services/vocab.service';
-import { getApiKeys, checkApiKeyHealth, type ApiKeyStatus } from '@/services/ai.service';
+import { getApiKeys, checkApiKeyHealth, checkApiKeysViaProxy, type ApiKeyStatus } from '@/services/ai.service';
 import { Spinner } from '@/components/ui/Spinner';
 import { cn } from '@/lib/utils';
 import {
@@ -132,14 +132,25 @@ export function AdminOverview() {
     const handleCheckKeys = async () => {
         setCheckingKeys(true);
         setKeyStatuses([]);
-        const keys = getApiKeys();
-        const results: ApiKeyStatus[] = [];
-        for (const k of keys) {
-            const result = await checkApiKeyHealth(k.fullKey);
-            result.index = k.index;
-            results.push(result);
+
+        const isLocal = window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1';
+
+        if (isLocal) {
+            // Local dev: check keys directly
+            const keys = getApiKeys();
+            const results: ApiKeyStatus[] = [];
+            for (const k of keys) {
+                const result = await checkApiKeyHealth(k.fullKey);
+                result.index = k.index;
+                results.push(result);
+            }
+            setKeyStatuses(results);
+        } else {
+            // Production: check via server-side proxy (keys never sent to client)
+            const results = await checkApiKeysViaProxy();
+            setKeyStatuses(results);
         }
-        setKeyStatuses(results);
+
         setCheckingKeys(false);
     };
 
@@ -148,6 +159,7 @@ export function AdminOverview() {
     const statusColor: Record<string, string> = {
         ok: 'bg-emerald-100 text-emerald-700 dark:bg-emerald-900/30 dark:text-emerald-400',
         quota_exceeded: 'bg-rose-100 text-rose-700 dark:bg-rose-900/30 dark:text-rose-400',
+        leaked: 'bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-400 ring-2 ring-red-400/50 animate-pulse',
         invalid: 'bg-amber-100 text-amber-700 dark:bg-amber-900/30 dark:text-amber-400',
         error: 'bg-slate-100 text-slate-700 dark:bg-slate-800 dark:text-slate-300',
     };
@@ -195,7 +207,7 @@ export function AdminOverview() {
                                     <div className="flex justify-between items-start mb-1">
                                         <span className="font-bold text-sm dark:text-slate-300">Key #{ks.index}</span>
                                         <span className={`rounded-full px-2.5 py-1 text-[10px] font-bold uppercase tracking-wider ${statusColor[ks.status] || ''}`}>
-                                            {ks.status === 'ok' ? 'Online' : ks.status === 'quota_exceeded' ? 'Hết lượt' : 'Lỗi'}
+                                            {ks.status === 'ok' ? 'Online' : ks.status === 'quota_exceeded' ? 'Hết lượt' : ks.status === 'leaked' ? '⚠️ LEAKED' : 'Lỗi'}
                                         </span>
                                     </div>
                                     <span className="font-mono text-xs text-slate-500 bg-slate-50/50 dark:bg-slate-900/50 p-2 rounded-lg border border-slate-100 dark:border-slate-800 truncate">

@@ -451,6 +451,7 @@ export function clearHighestScoresCache() {
 
 export function getSubjects() {
     return [
+        { id: 'tieng-anh', name: 'Tiếng Anh', icon: '🇬🇧', color: '#6366F1', gradient: 'bg-gradient-to-br from-indigo-500 to-blue-600' },
         { id: 'toan', name: 'Toán', icon: '📐', color: '#3B82F6', gradient: 'bg-gradient-to-br from-blue-500 to-blue-600' },
         { id: 'ly', name: 'Vật Lý', icon: '⚡', color: '#F59E0B', gradient: 'bg-gradient-to-br from-amber-400 to-orange-500' },
         { id: 'hoa', name: 'Hóa Học', icon: '🧪', color: '#10B981', gradient: 'bg-gradient-to-br from-emerald-500 to-green-600' },

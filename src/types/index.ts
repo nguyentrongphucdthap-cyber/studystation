@@ -145,17 +145,23 @@ export interface VocabWord {
     word: string;
     meaning: string;
     example?: string;
+    notes?: string;
     pronunciation?: string;
     partOfSpeech?: string;
+    image?: string;
+    audio?: string;
 }
 
 export interface VocabSet {
     id: string;
     title: string;
-    category: 'gdpt' | 'advanced_gdpt' | 'topic';
+    description?: string;
+    category: string; // Used as Tags
+    subjectId?: string; // Links to subjects like 'toan', 'ly', etc.
     words: VocabWord[];
     createdAt?: string;
     createdBy?: string;
+    updatedAt?: string;
 }
 
 // ============================================================

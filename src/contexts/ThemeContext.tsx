@@ -14,6 +14,7 @@ export interface ThemeSettings {
     autoHideHub: boolean;          // tự động ẩn Flow khi làm bài
     autoSkipLearn: boolean;        // tự động bỏ qua Flashcard Learn
     autoSkipLearnDuration: number; // số giây chờ trước khi tự qua câu (1-10)
+    enableMusicBackground: boolean; // đổi nền theo ảnh bài hát
 }
 
 interface ThemeContextType {
@@ -37,6 +38,7 @@ const DEFAULT_SETTINGS: ThemeSettings = {
     autoHideHub: true,
     autoSkipLearn: false,
     autoSkipLearnDuration: 2,
+    enableMusicBackground: true,
 };
 
 const FONT_SIZES: Record<string, string> = {

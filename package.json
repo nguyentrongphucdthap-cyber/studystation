@@ -3,7 +3,7 @@
   "private": true,
   "version": "2.0.0",
   "type": "module",
-    "scripts": {
+  "scripts": {
     "dev": "npx wrangler pages dev --port 5173 --proxy 5174 -- npm run vite-dev -- --port 5174",
     "vite-dev": "vite --no-open",
     "build": "tsc -b --force && vite build",
@@ -16,6 +16,7 @@
     "test:ui": "vitest --ui"
   },
   "dependencies": {
+    "@types/papaparse": "^5.5.2",
     "@types/react-katex": "^3.0.4",
     "class-variance-authority": "^0.7.1",
     "clsx": "^2.1.1",
@@ -23,6 +24,7 @@
     "katex": "^0.16.28",
     "lucide-react": "^0.469.0",
     "mammoth": "^1.11.0",
+    "papaparse": "^5.5.3",
     "pdfjs-dist": "^5.4.624",
     "react": "^19.0.0",
     "react-dom": "^19.0.0",

@@ -9,85 +9,105 @@ import {
     ChevronLeft, Layers, 
     Check, X, Award, Home, RefreshCw,
     Sparkles, ArrowRight, Search, SortAsc, Filter,
-    ChevronDown
+    ChevronDown, Tags, GraduationCap, AlertTriangle, Volume2
 } from 'lucide-react';
 import { createPortal } from 'react-dom';
 import { useTheme } from '@/contexts/ThemeContext';
+import { FormattedText } from '@/components/ui/FormattedText';
+import { getSubjects } from '@/services/exam.service';
 
 type VocabView = 'home' | 'flashcard' | 'result' | 'matching' | 'learn';
 
-interface SelectOption {
-    value: string;
-    label: string;
-}
 
 interface PremiumSelectProps {
     value: string;
-    onChange: (value: any) => void;
-    options: SelectOption[];
+    onChange: (val: any) => void;
+    options: { value: string; label: string }[];
     icon: React.ReactNode;
     placeholder: string;
     className?: string;
+    hideLabel?: boolean;
 }
 
-function PremiumSelect({ value, onChange, options, icon, placeholder, className }: PremiumSelectProps) {
+function PremiumSelect({ value, onChange, options, icon, placeholder, className, hideLabel }: PremiumSelectProps) {
     const [isOpen, setIsOpen] = useState(false);
     const containerRef = useRef<HTMLDivElement>(null);
-    const selectedOption = options.find(opt => opt.value === value);
+    const selectedOption = options.find(opt => String(opt.value) === String(value));
 
-    useEffect(() => {
-        const handleClickOutside = (event: MouseEvent) => {
-            if (containerRef.current && !containerRef.current.contains(event.target as Node)) {
-                setIsOpen(false);
-            }
-        };
-        document.addEventListener('mousedown', handleClickOutside);
-        return () => document.removeEventListener('mousedown', handleClickOutside);
-    }, []);
+    // Debugging render value
+    console.log(`[Vocab DEBUG] PremiumSelect Render: ${placeholder}, Current Value:`, value);
+
+    const handleSelect = (optionValue: string) => {
+        console.log(`[Vocab DEBUG] PremiumSelect handleSelect: ${placeholder}, New Value:`, optionValue);
+        onChange(optionValue);
+        setIsOpen(false);
+    };
 
     return (
         <div className={cn("relative", className)} ref={containerRef}>
             <button
-                onClick={() => setIsOpen(!isOpen)}
+                type="button"
+                onClick={(e) => {
+                    e.preventDefault();
+                    setIsOpen(!isOpen);
+                }}
                 className={cn(
-                    "w-full flex items-center justify-between gap-2 px-4 py-2.5 bg-white dark:bg-slate-800 border-none rounded-2xl text-[11px] font-black uppercase tracking-wider shadow-sm transition-all outline-none",
-                    isOpen ? "ring-2 ring-purple-500 shadow-lg" : "hover:bg-gray-50 dark:hover:bg-slate-700"
+                    "flex items-center justify-center gap-2 bg-white dark:bg-slate-800 border-2 border-gray-100 dark:border-slate-800 rounded-2xl transition-all h-11 w-full",
+                    hideLabel ? "md:w-11 px-0" : "px-4 py-2.5",
+                    isOpen ? "border-purple-500 bg-purple-50/10 dark:bg-purple-900/10 shadow-lg" : "hover:border-purple-200 dark:hover:border-purple-900/50"
                 )}
             >
-                <div className="flex items-center gap-2 overflow-hidden">
+                <div className="flex items-center gap-2 overflow-hidden pointer-events-none">
                     <div className="text-gray-400 shrink-0">{icon}</div>
-                    <span className="truncate dark:text-white">
-                        {selectedOption && selectedOption.value !== 'default' && selectedOption.value !== 'all' 
-                            ? selectedOption.label 
-                            : placeholder}
-                    </span>
+                    {!hideLabel && (
+                        <span className="truncate dark:text-white text-[11px] font-black uppercase tracking-wider">
+                            {selectedOption && selectedOption.value !== 'all' && selectedOption.value !== 'default'
+                                ? selectedOption.label 
+                                : placeholder}
+                        </span>
+                    )}
                 </div>
-                <ChevronDown className={cn("h-3.5 w-3.5 text-gray-400 transition-transform duration-300 shrink-0", isOpen && "rotate-180")} />
+                {!hideLabel && <ChevronDown className={cn("h-3.5 w-3.5 text-gray-400 transition-transform duration-300 pointer-events-none", isOpen && "rotate-180")} />}
             </button>
 
-            {isOpen && (
-                <div className="absolute top-full left-0 right-0 mt-2 p-1.5 bg-white/90 dark:bg-slate-900/95 backdrop-blur-xl border border-white/20 dark:border-slate-800 rounded-2xl shadow-2xl z-50 animate-in fade-in slide-in-from-top-2 duration-200">
-                    <div className="flex flex-col gap-1">
-                        {options.map((option) => (
-                            <button
-                                key={option.value}
-                                onClick={() => {
-                                    onChange(option.value);
-                                    setIsOpen(false);
-                                }}
-                                className={cn(
-                                    "flex items-center justify-between px-3.5 py-2.5 rounded-xl text-[11px] font-bold uppercase transition-all",
-                                    value === option.value
-                                        ? "bg-purple-600 text-white shadow-md shadow-purple-500/20"
-                                        : "text-gray-600 dark:text-slate-300 hover:bg-gray-100 dark:hover:bg-slate-800"
-                                )}
-                            >
-                                <span>{option.label}</span>
-                                {value === option.value && <Check className="h-3 w-3" />}
-                            </button>
-                        ))}
+            {isOpen && createPortal(
+                <div 
+                    className="fixed inset-0 z-[10000] cursor-default"
+                    onClick={() => setIsOpen(false)}
+                >
+                    <div 
+                        className={cn(
+                            "absolute p-1.5 bg-white/95 dark:bg-slate-900/95 backdrop-blur-xl border border-white/10 dark:border-slate-800 rounded-2xl shadow-2xl animate-in fade-in slide-in-from-top-2 duration-200",
+                            hideLabel ? "min-w-[180px]" : "min-w-[200px]"
+                        )}
+                        style={{
+                            top: containerRef.current ? containerRef.current.getBoundingClientRect().bottom + 8 : 0,
+                            left: containerRef.current ? (hideLabel ? containerRef.current.getBoundingClientRect().right - 180 : containerRef.current.getBoundingClientRect().left) : 0,
+                            width: !hideLabel && containerRef.current ? containerRef.current.offsetWidth : 'auto'
+                        }}
+                        onClick={e => e.stopPropagation()}
+                    >
+                        <div className="flex flex-col gap-1 max-h-[400px] overflow-y-auto no-scrollbar">
+                            {options.map((option) => (
+                                <button
+                                    key={option.value}
+                                    type="button"
+                                    onClick={() => handleSelect(option.value)}
+                                    className={cn(
+                                        "w-full flex items-center justify-between px-3.5 py-2.5 rounded-xl text-[10px] font-black uppercase transition-all",
+                                        String(value) === String(option.value)
+                                            ? "bg-purple-600 text-white shadow-md shadow-purple-500/20"
+                                            : "text-gray-600 dark:text-slate-400 hover:bg-purple-50 dark:hover:bg-purple-900/20 hover:text-purple-600 dark:hover:text-purple-300"
+                                    )}
+                                >
+                                    <span className="truncate mr-2 pointer-events-none">{option.label}</span>
+                                    {String(value) === String(option.value) && <Check className="h-3 w-3 shrink-0 pointer-events-none" />}
+                                </button>
+                            ))}
+                        </div>
                     </div>
-                </div>
+                </div>,
+                document.body
             )}
         </div>
     );
@@ -101,13 +121,14 @@ export default function VocabPage() {
     const [loading, setLoading] = useState(true);
     const [activeSet, setActiveSet] = useState<VocabSet | null>(null);
     const [view, setView] = useState<VocabView>('home');
-    const [activeCategory, setActiveCategory] = useState<string>('all');
     const [error, setError] = useState<string | null>(null);
 
     // Filter & Sort state
     const [searchQuery, setSearchQuery] = useState('');
     const [sortBy, setSortBy] = useState<'default' | 'a-z' | 'z-a' | 'progress-high' | 'progress-low' | 'words-high' | 'words-low'>('default');
     const [progressFilter, setProgressFilter] = useState<'all' | 'not-started' | 'in-progress' | 'completed'>('all');
+    const [activeSubject, setActiveSubject] = useState<string>('all');
+    const [activeTag, setActiveTag] = useState<string>('all');
 
     // Flashcard core state
     const [currentIndex, setCurrentIndex] = useState(0);
@@ -159,12 +180,6 @@ export default function VocabPage() {
             });
     }, []);
 
-    const categories = [
-        { id: 'all', label: 'Tất cả' },
-        { id: 'gdpt', label: 'GDPT' },
-        { id: 'advanced_gdpt', label: 'Nâng cao' },
-        { id: 'topic', label: 'Chủ đề' },
-    ];
 
     // Helper: Get progress for a set
     const getSetProgress = useCallback((vocabSet: VocabSet) => {
@@ -173,27 +188,75 @@ export default function VocabPage() {
         return vocabSet.words.length > 0 ? Math.round((learnedIds.length / vocabSet.words.length) * 100) : 0;
     }, []);
 
+    // Dynamic categories from all sets
+    const allSubjects = useMemo(() => getSubjects(), []);
+    
+    const availableTags = useMemo(() => {
+        const tags = new Set<string>();
+        sets.forEach(set => {
+            if (set.category) {
+                set.category.split(',').forEach(tag => {
+                    const trimmed = tag.trim();
+                    if (trimmed) tags.add(trimmed);
+                });
+            }
+        });
+        return Array.from(tags).sort();
+    }, [sets]);
+
     const filteredAndSortedSets = useMemo(() => {
-        let result = activeCategory === 'all' ? [...sets] : sets.filter((s) => s.category === activeCategory);
+        console.log('[Vocab DEBUG] Starting Filter:', {
+            setsCount: sets.length,
+            activeSubject,
+            activeTag,
+            searchQuery,
+            progressFilter,
+            sortBy
+        });
 
-        // 1. Search filter
-        if (searchQuery.trim()) {
-            const query = searchQuery.toLowerCase();
-            result = result.filter(s => s.title.toLowerCase().includes(query));
-        }
+        let result = sets.filter(set => {
+            // Search filter
+            const matchesSearch = set.title.toLowerCase().includes(searchQuery.toLowerCase()) || 
+                               (set.description?.toLowerCase().includes(searchQuery.toLowerCase()));
+            if (!matchesSearch) return false;
 
-        // 2. Progress filter
-        if (progressFilter !== 'all') {
-            result = result.filter(s => {
-                const p = getSetProgress(s);
-                if (progressFilter === 'not-started') return p === 0;
-                if (progressFilter === 'completed') return p === 100;
-                if (progressFilter === 'in-progress') return p > 0 && p < 100;
-                return true;
-            });
-        }
+            // Subject filter - improved robustness
+            if (activeSubject !== 'all') {
+                if (!set.subjectId) {
+                    console.log('[Vocab DEBUG] Set rejected (missing subjectId):', set.title);
+                    return false;
+                }
+                const match = String(set.subjectId) === String(activeSubject);
+                if (!match) {
+                    console.log(`[Vocab DEBUG] Set rejected (subjectId mismatch): ${set.title} (Set:${set.subjectId} vs Active:${activeSubject})`);
+                    return false;
+                }
+            }
 
-        // 3. Sorting
+            // Tag filter - improved splitting
+            if (activeTag !== 'all') {
+                const setTags = (set.category || '').split(/[,,;]/).map(t => t.trim().toLowerCase());
+                const match = setTags.includes(activeTag.toLowerCase());
+                if (!match) {
+                    console.log(`[Vocab DEBUG] Set rejected (tag mismatch): ${set.title} (Tags:${setTags.join(',')} vs Active:${activeTag})`);
+                    return false;
+                }
+            }
+
+            // Progress filter
+            if (progressFilter !== 'all') {
+                const p = getSetProgress(set);
+                if (progressFilter === 'not-started' && p !== 0) return false;
+                if (progressFilter === 'completed' && p !== 100) return false;
+                if (progressFilter === 'in-progress' && (p === 0 || p === 100)) return false;
+            }
+
+            return true;
+        });
+
+        console.log('[Vocab DEBUG] Final result count:', result.length);
+
+        // Sorting
         result.sort((a, b) => {
             if (sortBy === 'a-z') return a.title.localeCompare(b.title);
             if (sortBy === 'z-a') return b.title.localeCompare(a.title);
@@ -205,7 +268,7 @@ export default function VocabPage() {
         });
 
         return result;
-    }, [sets, activeCategory, searchQuery, sortBy, progressFilter, getSetProgress]);
+    }, [sets, searchQuery, activeSubject, activeTag, progressFilter, sortBy, getSetProgress]);
 
     // --- HELPER: Prioritize Unlearned ---
     const getPreparedWords = (vocabSet: VocabSet, limit: number | 'all') => {
@@ -402,9 +465,9 @@ export default function VocabPage() {
             const pair = matchWords.find(
                 (w) => (w.word === selectedWord && w.meaning === item) || (w.meaning === selectedWord && w.word === item)
             );
-            if (pair) {
+            if (pair && activeSet) {
                 setMatchedPairs(new Set([...matchedPairs, pair.word, pair.meaning]));
-                markWordAsLearned(activeSet!.id, currentWords.indexOf(pair));
+                markWordAsLearned(activeSet.id, currentWords.indexOf(pair));
                 
                 // If batch completed
                 if (matchedPairs.size + 2 === matchWords.length * 2) {
@@ -478,9 +541,9 @@ export default function VocabPage() {
         const wordObj = currentWords[currentIndex] as VocabWord & { originalIndex?: number };
         const finalIndex = wordObj.originalIndex !== undefined ? wordObj.originalIndex : currentIndex;
 
-        if (isCorrect) {
+        if (isCorrect && activeSet) {
             setKnownIds(prev => [...prev, finalIndex]);
-            markWordAsLearned(activeSet!.id, finalIndex);
+            markWordAsLearned(activeSet.id, finalIndex);
         } else {
             setUnknownIds(prev => [...prev, finalIndex]);
         }
@@ -567,124 +630,187 @@ export default function VocabPage() {
                     </div>
                 </div>
 
-                <div className="flex flex-col md:flex-row gap-4 items-center justify-between bg-white/50 dark:bg-slate-900/30 p-2 rounded-3xl border border-gray-100 dark:border-slate-800">
-                    <div className="flex flex-wrap gap-1.5 w-full md:w-auto">
-                        {categories.map((cat) => (
-                            <button
-                                key={cat.id}
-                                onClick={() => setActiveCategory(cat.id)}
-                                className={cn(
-                                    'rounded-2xl px-5 py-2.5 text-[10px] font-black uppercase tracking-widest transition-all duration-300 whitespace-nowrap',
-                                    activeCategory === cat.id
-                                        ? 'bg-purple-600 text-white shadow-lg shadow-purple-200 dark:shadow-none'
-                                        : 'text-gray-500 hover:bg-gray-100 dark:hover:bg-slate-800'
-                                )}
-                            >
-                                {cat.label}
-                            </button>
-                        ))}
+                <div className="flex flex-col md:flex-row items-center gap-4 bg-white/40 dark:bg-slate-900/40 p-3 rounded-[32px] border border-gray-100/50 dark:border-slate-800/50 backdrop-blur-md shadow-sm">
+                    {/* Left: Search - Primary action */}
+                    <div className="relative w-full md:max-w-xs lg:max-w-sm">
+                        <Search className="absolute left-4 top-1/2 -translate-y-1/2 h-4 w-4 text-gray-400" />
+                        <input 
+                            type="text"
+                            placeholder="Tìm kiếm..."
+                            value={searchQuery}
+                            onChange={(e) => setSearchQuery(e.target.value)}
+                            className="w-full pl-11 pr-4 py-3 bg-white/80 dark:bg-slate-800/80 border-none rounded-[20px] text-[13px] font-bold focus:ring-2 focus:ring-purple-500 shadow-inner outline-none dark:text-white"
+                        />
                     </div>
 
-                    <div className="flex flex-col sm:flex-row gap-2 w-full md:w-auto items-center">
-                        <div className="relative w-full sm:w-64">
-                            <Search className="absolute left-4 top-1/2 -translate-y-1/2 h-4 w-4 text-gray-400" />
-                            <input 
-                                type="text"
-                                placeholder="Tìm bộ từ vựng..."
-                                value={searchQuery}
-                                onChange={(e) => setSearchQuery(e.target.value)}
-                                className="w-full pl-11 pr-4 py-2.5 bg-white dark:bg-slate-800 border-none rounded-2xl text-[13px] font-bold focus:ring-2 focus:ring-purple-500 shadow-sm outline-none dark:text-white"
-                            />
-                        </div>
+                    {/* Right: All Selectors in a row */}
+                    <div className="flex flex-wrap items-center gap-2 w-full md:w-auto">
+                        <PremiumSelect
+                            value={activeSubject}
+                            onChange={(val) => {
+                                console.log('[Vocab DEBUG] Subject Change Triggered:', val);
+                                setActiveSubject(val);
+                            }}
+                            options={[
+                                { value: 'all', label: 'Môn học' },
+                                ...allSubjects.map((s: any) => ({ value: s.id, label: `${s.icon} ${s.name}` }))
+                            ]}
+                            icon={<GraduationCap className="h-4 w-4" />}
+                            placeholder="Môn học"
+                            className="min-w-[140px]"
+                        />
 
-                        <div className="flex gap-2 w-full sm:w-auto">
-                            <PremiumSelect 
-                                value={sortBy}
-                                onChange={setSortBy}
-                                icon={<SortAsc className="h-3.5 w-3.5" />}
-                                placeholder="Sắp xếp"
-                                className="flex-1 sm:w-36"
-                                options={[
-                                    { value: 'default', label: 'Mặc định' },
-                                    { value: 'a-z', label: 'A → Z' },
-                                    { value: 'z-a', label: 'Z → A' },
-                                    { value: 'progress-high', label: 'Tiến độ ↑' },
-                                    { value: 'progress-low', label: 'Tiến độ ↓' },
-                                    { value: 'words-high', label: 'Số lượng từ ↑' },
-                                    { value: 'words-low', label: 'Số lượng từ ↓' },
-                                ]}
-                            />
+                        <PremiumSelect
+                            value={activeTag}
+                            onChange={(val) => {
+                                console.log('[Vocab DEBUG] Tag Change Triggered:', val);
+                                setActiveTag(val);
+                            }}
+                            options={[
+                                { value: 'all', label: 'Tất cả thẻ' },
+                                ...availableTags.map(tag => ({ value: tag, label: tag }))
+                            ]}
+                            icon={<Tags className="h-4 w-4" />}
+                            placeholder="Thẻ"
+                            className="min-w-[140px]"
+                        />
 
-                            <PremiumSelect 
-                                value={progressFilter}
-                                onChange={setProgressFilter}
-                                icon={<Filter className="h-3.5 w-3.5" />}
-                                placeholder="Trạng thái"
-                                className="flex-1 sm:w-36"
-                                options={[
-                                    { value: 'all', label: 'Tất cả' },
-                                    { value: 'not-started', label: 'Chưa làm' },
-                                    { value: 'in-progress', label: 'Đang làm' },
-                                    { value: 'completed', label: 'Đã xong' },
-                                ]}
-                            />
-                        </div>
+                        <div className="h-8 w-[1px] bg-gray-200 dark:bg-slate-800 mx-1 hidden sm:block" />
+
+                        <PremiumSelect 
+                            value={sortBy}
+                            onChange={(val) => {
+                                console.log('[Vocab DEBUG] Sort Change Triggered:', val);
+                                setSortBy(val);
+                            }}
+                            icon={<SortAsc className="h-5 w-5" />}
+                            placeholder="Sắp xếp"
+                            hideLabel={true}
+                            className="shrink-0"
+                            options={[
+                                { value: 'default', label: 'Mặc định' },
+                                { value: 'a-z', label: 'A → Z' },
+                                { value: 'z-a', label: 'Z → A' },
+                                { value: 'progress-high', label: 'Tiến độ ↑' },
+                                { value: 'progress-low', label: 'Tiến độ ↓' },
+                                { value: 'words-high', label: 'Số lượng từ ↑' },
+                                { value: 'words-low', label: 'Số lượng từ ↓' },
+                            ]}
+                        />
+
+                        <PremiumSelect 
+                            value={progressFilter}
+                            onChange={(val) => {
+                                console.log('[Vocab DEBUG] Progress Change Triggered:', val);
+                                setProgressFilter(val);
+                            }}
+                            icon={<Filter className="h-5 w-5" />}
+                            placeholder="Tiến độ"
+                            hideLabel={true}
+                            className="shrink-0"
+                            options={[
+                                { value: 'all', label: 'Tất cả' },
+                                { value: 'not-started', label: 'Chưa học' },
+                                { value: 'in-progress', label: 'Đang học' },
+                                { value: 'completed', label: 'Đã học' },
+                            ]}
+                        />
                     </div>
                 </div>
 
-                <div className="grid grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 2xl:grid-cols-5 gap-4">
-                    {filteredAndSortedSets.map((vocabSet) => (
-                        <div key={vocabSet.id} className="group relative cursor-pointer" onClick={() => { setActiveSet(vocabSet); setShowStudyMenu(true); }}>
-                            <div className="absolute inset-0 bg-gradient-to-br from-purple-600 to-indigo-600 rounded-[24px] translate-y-1 opacity-0 group-hover:opacity-10 transition-all duration-500 blur-lg" />
-                            <div className="relative bg-white dark:bg-slate-900 p-5 rounded-[24px] border border-gray-100 dark:border-slate-800 shadow-sm hover:shadow-xl transition-all duration-500 flex flex-col h-full overflow-hidden">
-                                <div className="absolute -top-4 -right-4 w-16 h-16 bg-purple-50 dark:bg-purple-900/10 rounded-full group-hover:scale-150 transition-transform duration-700 z-0" />
-                                
-                                <div className="flex-1 relative z-10">
-                                    <div className="flex items-center justify-between mb-4">
-                                        <span className={cn(
-                                            "px-2.5 py-1 rounded-lg text-[9px] font-black uppercase tracking-widest shrink-0",
-                                            vocabSet.category === 'gdpt' ? "bg-blue-100 text-blue-600 dark:bg-blue-900/20" :
-                                            vocabSet.category === 'advanced_gdpt' ? "bg-amber-100 text-amber-600 dark:bg-amber-900/20" :
-                                            "bg-purple-100 text-purple-600 dark:bg-purple-900/20"
-                                        )}>
-                                            {vocabSet.category}
-                                        </span>
-                                        <div className="flex items-center gap-1 bg-gray-100 dark:bg-slate-800 px-2 py-1 rounded-lg">
-                                            <Layers className="h-3 w-3 text-gray-400" />
-                                            <span className="text-[10px] font-black text-gray-600 dark:text-slate-300">
-                                                {vocabSet.words.length} 
+                {filteredAndSortedSets.length === 0 ? (
+                    <div className="text-center py-20 bg-white/30 dark:bg-slate-900/20 rounded-[40px] border-2 border-dashed border-gray-100 dark:border-slate-800/50">
+                        <div className="w-20 h-20 bg-gray-100 dark:bg-slate-800 rounded-full flex items-center justify-center mx-auto mb-6">
+                            <Search className="h-8 w-8 text-gray-300" />
+                        </div>
+                        <h3 className="text-xl font-black text-gray-900 dark:text-white mb-2">Không tìm thấy bộ thẻ nào</h3>
+                        <p className="text-gray-500 dark:text-slate-400 text-sm font-medium">Hãy thử thay đổi bộ lọc hoặc từ khóa tìm kiếm của bạn.</p>
+                        <Button 
+                            variant="ghost" 
+                            className="mt-6 text-purple-600 font-bold hover:bg-purple-50"
+                            onClick={() => {
+                                setSearchQuery('');
+                                setActiveSubject('all');
+                                setActiveTag('all');
+                                setProgressFilter('all');
+                            }}
+                        >
+                            <RefreshCw className="h-4 w-4 mr-2" />
+                            Đặt lại bộ lọc
+                        </Button>
+                    </div>
+                ) : (
+                    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                        {filteredAndSortedSets.map((set) => {
+                            const progress = getSetProgress(set);
+                            const currentSubjects: any[] = allSubjects;
+                            const subject = currentSubjects.find((s: any) => s.id === set.subjectId);
+                            
+                            return (
+                                <div 
+                                    key={set.id}
+                                    className="group relative bg-white dark:bg-slate-900 rounded-[36px] p-6 shadow-soft hover:shadow-2xl hover:-translate-y-2 transition-all duration-500 border border-gray-100 dark:border-slate-800 overflow-hidden flex flex-col cursor-pointer"
+                                    onClick={() => {
+                                        setActiveSet(set);
+                                        setShowStudyMenu(true);
+                                    }}
+                                >
+                                    <div className="flex items-center justify-between mb-5">
+                                        <div className="flex items-center gap-2 px-3 py-1.5 bg-gray-50 dark:bg-slate-800 rounded-xl">
+                                            <span className="text-sm">{subject?.icon || '📚'}</span>
+                                            <span className="text-[10px] font-black uppercase tracking-widest text-gray-500">
+                                                {subject?.name || 'Tổng hợp'}
                                             </span>
+                                        </div>
+                                        <div className="flex items-center gap-1.5 px-3 py-1.5 bg-purple-50 dark:bg-purple-900/20 rounded-xl">
+                                            <Layers className="h-3 w-3 text-purple-600" />
+                                            <span className="text-[11px] font-black text-purple-600">{set.words.length} thẻ</span>
                                         </div>
                                     </div>
 
-                                    {(() => {
-                                        const progress = getSetProgress(vocabSet);
-                                        return (
-                                            <div className="mb-3">
-                                                <div className="flex justify-between items-center mb-1.5">
-                                                    <span className="text-[9px] font-black text-gray-400 uppercase tracking-widest">Tiến độ</span>
-                                                    <span className="text-[9px] font-black text-emerald-500">{progress}%</span>
-                                                </div>
-                                                <div className="h-1 w-full bg-gray-100 dark:bg-slate-800 rounded-full overflow-hidden">
-                                                    <div className="h-full bg-emerald-500 rounded-full transition-all duration-500" style={{ width: `${progress}%` }} />
-                                                </div>
-                                            </div>
-                                        );
-                                    })()}
+                                    <div className="mb-4">
+                                        <h3 className="text-xl font-black text-gray-900 dark:text-white line-clamp-1 mb-2 group-hover:text-purple-600 transition-colors">
+                                            {set.title}
+                                        </h3>
+                                        <p className="text-gray-400 dark:text-slate-500 text-xs font-medium line-clamp-2 h-8">
+                                            {set.description || 'Học nhanh các kiến thức quan trọng thông qua bộ thẻ ghi nhớ thông minh.'}
+                                        </p>
+                                    </div>
 
-                                    <h3 className="text-[15px] font-black text-gray-900 dark:text-white group-hover:text-purple-600 transition-colors leading-snug line-clamp-2">
-                                        {vocabSet.title}
-                                    </h3>
+                                    {set.category && (
+                                        <div className="flex flex-wrap gap-1.5 mb-6 h-6 overflow-hidden">
+                                            {set.category.split(',').map((tag, i) => (
+                                                <span key={i} className="text-[9px] font-black uppercase tracking-tighter text-gray-400 bg-gray-50 dark:bg-slate-800/50 px-2 py-0.5 rounded-md border border-gray-100 dark:border-slate-800">
+                                                    #{tag.trim()}
+                                                </span>
+                                            ))}
+                                        </div>
+                                    )}
+
+                                    <div className="mt-auto space-y-4">
+                                        <div className="space-y-2">
+                                            <div className="flex items-center justify-between text-[10px] font-black uppercase tracking-widest text-gray-400">
+                                                <span>Tiến độ học</span>
+                                                <span className={cn(progress === 100 ? "text-emerald-500" : "text-purple-600")}>
+                                                    {progress}%
+                                                </span>
+                                            </div>
+                                            <div className="h-2 w-full bg-gray-100 dark:bg-slate-800 rounded-full overflow-hidden">
+                                                <div 
+                                                    className={cn(
+                                                        "h-full transition-all duration-1000",
+                                                        progress === 100 ? "bg-emerald-500" : "bg-gradient-to-r from-purple-500 to-indigo-500"
+                                                    )}
+                                                    style={{ width: `${progress}%` }}
+                                                />
+                                            </div>
+                                        </div>
+                                    </div>
                                 </div>
-                            </div>
-                        </div>
-                    ))}
-                    {filteredAndSortedSets.length === 0 && (
-                        <div className="col-span-full py-20 text-center">
-                            <p className="text-gray-400 font-bold uppercase tracking-widest text-sm">Không tìm thấy bộ từ vựng nào</p>
-                        </div>
-                    )}
-                </div>
+                            );
+                        })}
+                    </div>
+                )}
 
                 {/* Study Menu Modal */}
                 {showStudyMenu && activeSet && createPortal(
@@ -727,7 +853,7 @@ export default function VocabPage() {
                                                 onChange={(e) => {
                                                     const val = e.target.value;
                                                     setCustomWordCount(val);
-                                                    if (val && parseInt(val) > 0) {
+                                                    if (val && parseInt(val) > 0 && activeSet) {
                                                         setWordCountLimit(Math.min(parseInt(val), activeSet.words.length));
                                                     } else {
                                                         setWordCountLimit(20);
@@ -735,7 +861,7 @@ export default function VocabPage() {
                                                 }}
                                                 className="w-24 px-4 py-2.5 bg-gray-100 dark:bg-slate-800 rounded-xl text-xs font-bold text-gray-900 dark:text-white outline-none focus:ring-2 focus:ring-purple-500"
                                                 min={1}
-                                                max={activeSet.words.length}
+                                                max={activeSet?.words.length || 100}
                                             />
                                         </div>
                                     </div>
@@ -749,8 +875,8 @@ export default function VocabPage() {
                                                 <Layers className="h-6 w-6 text-purple-600 group-hover:text-white" />
                                             </div>
                                             <div className="text-left">
-                                                <div className="font-black text-lg">Flashcards</div>
-                                                <div className="text-xs opacity-60 font-medium">Vuốt để ghi nhớ từ vựng</div>
+                                                <div className="font-black text-lg">Thẻ ghi nhớ (Flashcards)</div>
+                                                <div className="text-xs opacity-60 font-medium">Vuốt để ghi nhớ nội dung mặt trước/sau</div>
                                             </div>
                                         </button>
 
@@ -762,8 +888,8 @@ export default function VocabPage() {
                                                 <CheckCircle className="h-6 w-6" />
                                             </div>
                                             <div className="text-left">
-                                                <div className="font-black text-lg text-gray-900 dark:text-white">Learn</div>
-                                                <div className="text-xs text-gray-500 font-medium">Học qua trắc nghiệm 4 đáp án</div>
+                                                <div className="font-black text-lg text-gray-900 dark:text-white">Trắc nghiệm</div>
+                                                <div className="text-xs text-gray-500 font-medium">Học qua câu hỏi 4 đáp án</div>
                                             </div>
                                         </button>
 
@@ -901,15 +1027,20 @@ export default function VocabPage() {
                         >
                             <div className="flex flex-col items-center">
                                 <span className="mb-4 text-[11px] font-black uppercase tracking-[0.2em] text-purple-600 bg-purple-50 dark:bg-purple-900/20 px-4 py-1.5 rounded-full">
-                                    {word.partOfSpeech || 'Vocabulary'}
+                                    {(activeSet.subjectId === 'tieng-anh' ? word.partOfSpeech : word.partOfSpeech || 'Nội dung') || 'Ghi nhớ'}
                                 </span>
                                 <h3 className="text-4xl font-black text-gray-900 dark:text-white mb-2 leading-tight">
-                                    {word.word}
+                                    <FormattedText text={word.word} />
                                 </h3>
                                 {word.pronunciation && (
                                     <p className="text-gray-400 font-medium tracking-wide">
-                                        {word.pronunciation}
+                                        {activeSet.subjectId === 'tieng-anh' ? `/${word.pronunciation}/` : word.pronunciation}
                                     </p>
+                                )}
+                                {word.notes && (
+                                    <div className="mt-4 text-[13px] text-gray-500 font-medium italic">
+                                        <FormattedText text={word.notes} />
+                                    </div>
                                 )}
                             </div>
                             
@@ -930,14 +1061,14 @@ export default function VocabPage() {
                                     Nghĩa của từ
                                 </span>
                                 <h3 className="text-3xl font-black text-gray-900 dark:text-white mb-6 leading-tight">
-                                    {word.meaning}
+                                    <FormattedText text={word.meaning} />
                                 </h3>
                                 {word.example && (
                                     <div className="relative">
                                         <div className="absolute -left-2 top-0 text-3xl text-indigo-100 font-serif opacity-30">“</div>
-                                        <p className="text-sm md:text-base text-gray-500 dark:text-slate-400 font-medium italic px-4 leading-relaxed">
-                                            {word.example}
-                                        </p>
+                                        <div className="text-sm md:text-base text-gray-500 dark:text-slate-400 font-medium italic px-4 leading-relaxed">
+                                            <FormattedText text={word.example} />
+                                        </div>
                                         <div className="absolute -right-2 bottom-0 text-3xl text-indigo-100 font-serif opacity-30">”</div>
                                     </div>
                                 )}
@@ -1036,7 +1167,7 @@ export default function VocabPage() {
                                 fontSize: q.word.length > 30 ? '1.25rem' : q.word.length > 20 ? '1.75rem' : q.word.length > 10 ? '2.25rem' : '3rem'
                             }}
                         >
-                            {q.word}
+                            <FormattedText text={q.word} />
                         </h3>
                     </div>
 
@@ -1061,7 +1192,7 @@ export default function VocabPage() {
                                         userAnswer && !isSelected && !isCorrect && "opacity-40 border-gray-100"
                                     )}
                                 >
-                                    {opt}
+                                    <FormattedText text={opt} />
                                 </button>
                             );
                         })}
@@ -1141,7 +1272,7 @@ export default function VocabPage() {
                                         <CheckCircle className="h-4 w-4" />
                                     </div>
                                 )}
-                                {tile.text}
+                                <FormattedText text={tile.text} />
                             </button>
                         );
                     })}
@@ -1186,6 +1317,45 @@ export default function VocabPage() {
                     <div className="w-full h-3 bg-gray-50 dark:bg-slate-800 rounded-full flex overflow-hidden">
                         <div className="h-full bg-emerald-500" style={{ width: `${(knownIds.length / total) * 100}%` }} />
                         <div className="h-full bg-red-400" style={{ width: `${(unknownIds.length / total) * 100}%` }} />
+                    </div>
+                </div>
+
+                <div className="w-full max-w-2xl bg-white dark:bg-slate-900 p-8 rounded-[40px] border border-gray-100 dark:border-slate-800 shadow-soft mb-12">
+                    <h4 className="text-sm font-black text-gray-400 uppercase tracking-widest mb-6 text-left">Chi tiết kết quả</h4>
+                    <div className="space-y-3 max-h-[400px] overflow-y-auto pr-2 custom-scrollbar">
+                        {currentWords.map((word: any, i) => {
+                            const isKnown = knownIds.includes(word.word as any) || knownIds.includes(i as any);
+                            const isEnglish = activeSet.subjectId === 'tieng-anh';
+                            return (
+                                <div key={i} className="flex items-center gap-4 p-4 bg-gray-50 dark:bg-slate-800/50 rounded-2xl border border-gray-100 dark:border-slate-800 group hover:bg-white dark:hover:bg-slate-800 transition-all">
+                                    <div className={cn(
+                                        "w-10 h-10 rounded-full flex items-center justify-center shrink-0",
+                                        isKnown ? "bg-emerald-100 text-emerald-600" : "bg-red-100 text-red-600"
+                                    )}>
+                                        {isKnown ? <CheckCircle className="h-5 w-5" /> : <AlertTriangle className="h-5 w-5" />}
+                                    </div>
+                                    <div className="flex-1 text-left">
+                                        <div className="font-black text-gray-900 dark:text-white">
+                                            <FormattedText text={word.word} />
+                                        </div>
+                                        <div className="text-sm text-gray-500 font-medium">
+                                            <FormattedText text={word.meaning} />
+                                        </div>
+                                    </div>
+                                    <button 
+                                        onClick={() => {
+                                            const msg = `${word.word}: ${word.meaning}`;
+                                            const utterance = new SpeechSynthesisUtterance(msg);
+                                            utterance.lang = isEnglish ? 'en-US' : 'vi-VN';
+                                            window.speechSynthesis.speak(utterance);
+                                        }}
+                                        className="p-2 opacity-0 group-hover:opacity-100 hover:bg-gray-100 dark:hover:bg-slate-700 rounded-lg transition-all"
+                                    >
+                                        <Volume2 className="h-4 w-4 text-gray-400" />
+                                    </button>
+                                </div>
+                            );
+                        })}
                     </div>
                 </div>
 

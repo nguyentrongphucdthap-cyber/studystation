@@ -2,7 +2,7 @@
 export const onRequestPost = async (context: any) => {
     try {
         const { request, env } = context;
-        const keys = [env.AI_API_KEY_1, env.AI_API_KEY_2, env.AI_API_KEY_3].filter(Boolean);
+        const keys = [env.GEMINI_API_KEY_1, env.GEMINI_API_KEY_2, env.GEMINI_API_KEY_3].filter(Boolean);
 
         if (keys.length === 0) {
             return new Response(JSON.stringify({ error: 'No AI keys configured' }), {

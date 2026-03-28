@@ -101,14 +101,35 @@ QUY TẮC ĐỊNH DẠNG (BẮT BUỘC):
 - Nếu câu hỏi yêu cầu "chọn từ có phần gạch chân phát âm khác", hãy đảm bảo phần gạch chân đó được bao bởi dấu __.
 Chỉ xuất JSON thuần.`,
 
-    vocab: `Trích xuất từ vựng từ văn bản và xuất JSON.
-Hãy tự gợi ý một tiêu đề (title) ngắn gọn, súc tích và chọn một danh mục (category) phù hợp nhất ('gdpt', 'advanced_gdpt', hoặc 'topic').
+    vocab: `Bạn là trợ lý học tập thông minh. Nhiệm vụ: trích xuất danh sách thẻ học (flashcards) từ văn bản và xuất JSON.
+    
+QUY TẮC CẤU TRÚC THẺ (QUAN TRỌNG):
+- "word" (Mặt trước): Là thuật ngữ, từ vựng, câu hỏi hoặc công thức cần học.
+- "meaning" (Mặt sau): Là định nghĩa, lời giải, nội dung trả lời cho mặt trước.
+- "example": Ví dụ minh họa (nếu có).
+- "notes": Ghi chú, chú thích bổ sung.
+- "pronunciation": Phiên âm (ưu tiên môn Tiếng Anh). 
+- "partOfSpeech": Loại từ (danh từ, động từ...) hoặc phân loại thẻ (định nghĩa, định lý...).
+
+QUY TẮC NỘI DUNG & CÔNG THỨC:
+- TẤT CẢ công thức toán, lý, hóa BẮT BUỘC bọc trong cặp dấu $...$ hoặc $$...$$.
+- Hỗ trợ đa môn học: Toán, Lý, Hóa, Sinh, Sử, Địa, Tiếng Anh...
+- Nếu là môn Tiếng Anh: Hãy trích xuất đầy đủ phiên âm và loại từ.
+- Nếu là các môn tự nhiên: Tập trung vào công thức và định nghĩa chính xác.
+
 JSON FORMAT:
 {
-  "title": "Tên bộ từ vựng gợi ý",
-  "category": "topic",
+  "title": "Tiêu đề bộ thẻ phù hợp",
+  "category": "Tag1, Tag2 (ngăn cách bởi dấu phẩy)",
   "words": [
-    { "word": "apple", "meaning": "quả táo", "example": "I eat an apple.", "pronunciation": "/ˈæp.əl/", "partOfSpeech": "noun" }
+    { 
+      "word": "Term/Question/Formula", 
+      "meaning": "Definition/Answer", 
+      "example": "Contextual example", 
+      "notes": "Extra info",
+      "pronunciation": "/.../", 
+      "partOfSpeech": "noun/verb/theorem/..."
+    }
   ]
 }
 Chỉ xuất JSON thuần.`

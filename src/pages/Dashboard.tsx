@@ -96,6 +96,26 @@ export default function Dashboard() {
                     <MenuCard key={item.label} item={item} onClick={() => item.path && navigate(item.path)} />
                 ))}
             </div>
+
+            {/* Designer Credit - Fixed to bottom-left corner of screen */}
+            <div className="fixed bottom-4 left-4 z-[50] flex flex-col items-start gap-1 opacity-60 hover:opacity-100 transition-opacity duration-300 select-none pointer-events-auto">
+                <p className="text-[9px] font-black uppercase tracking-[0.2em] text-gray-500 dark:text-slate-400">
+                    Design & Development
+                </p>
+                <a 
+                    href="mailto:studystation.auth@gmail.com" 
+                    className="group flex items-center gap-2 text-[11px] font-bold text-gray-700 dark:text-white hover:text-purple-600 dark:hover:text-purple-400 transition-colors"
+                >
+                    <span className="relative">
+                        Nguyễn Trọng Phúc
+                        <span className="absolute -bottom-0.5 left-0 w-0 h-[1.5px] bg-purple-500 transition-all duration-300 group-hover:w-full" />
+                    </span>
+                    <div className="w-1 h-1 rounded-full bg-gray-300 dark:bg-slate-700" />
+                    <span className="text-[10px] font-medium opacity-90 transition-all duration-300">
+                        studystation.auth@gmail.com
+                    </span>
+                </a>
+            </div>
         </div>
     );
 }

@@ -93,7 +93,14 @@ const FAB_STORAGE_KEY = 'hub_fab_position';
 const NOTES_KEY_PREFIX = 'hub_notes_';
 // Theme is managed by ThemeContext (no local key needed)
 const POMODORO_SESSIONS_KEY = 'hub_pomodoro_sessions';
-const MUSIC_LINKS_KEY = 'hub_music_links';
+const MUSIC_STATE_KEY = 'hub_music_state';
+
+const LOFI_TRACKS = [
+    { id: 'lofi1', title: 'Lazy Afternoon', artist: 'Lofi Study', url: 'https://www.soundhelix.com/examples/mp3/SoundHelix-Song-1.mp3', cover: 'https://images.unsplash.com/photo-1516280440614-37939bbacd81?auto=format&fit=crop&q=80&w=800' },
+    { id: 'lofi2', title: 'Midnight Rain', artist: 'Chill Beats', url: 'https://www.soundhelix.com/examples/mp3/SoundHelix-Song-2.mp3', cover: 'https://images.unsplash.com/photo-1541689221361-ad95003aa0d5?auto=format&fit=crop&q=80&w=800' },
+    { id: 'lofi3', title: 'Cherry Blossom', artist: 'Zen Focus', url: 'https://www.soundhelix.com/examples/mp3/SoundHelix-Song-3.mp3', cover: 'https://images.unsplash.com/photo-1493225255756-d9584f8606e9?auto=format&fit=crop&q=80&w=800' },
+    { id: 'lofi4', title: 'Night Owl', artist: 'Lofi Girl', url: 'https://www.soundhelix.com/examples/mp3/SoundHelix-Song-4.mp3', cover: 'https://images.unsplash.com/photo-1518609878373-06d740f60d8b?auto=format&fit=crop&q=80&w=800' },
+];
 
 // ============================================================
 // MAIN COMPONENT
@@ -130,6 +137,79 @@ export function FloatingHub() {
     // Cycle tracked within focus sessions (1 -> 2 -> 3 -> 4)
     const [pomodoroCycle, setPomodoroCycle] = useState(() => (pomodoroSessions % 4) || (pomodoroSessions === 0 ? 0 : 4));
     const pomodoroInterval = useRef<ReturnType<typeof setInterval> | null>(null);
+
+    // ── Global Music State (Lifting State Up) ──
+    const audioRef = useRef<HTMLAudioElement | null>(null);
+    const [isPlaying, setIsPlaying] = useState(false);
+    const [currentSong, setCurrentSong] = useState<typeof LOFI_TRACKS[0] | null>(() => {
+        try {
+            const saved = localStorage.getItem(MUSIC_STATE_KEY);
+            if (saved) {
+                const parsed = JSON.parse(saved);
+                return LOFI_TRACKS.find(t => t.id === parsed.id) || null;
+            }
+        } catch { /* ignore */ }
+        return null;
+    });
+    const [currentTime, setCurrentTime] = useState(0);
+    const [duration, setDuration] = useState(0);
+
+    // Sync audio on mount
+    useEffect(() => {
+        const audio = audioRef.current;
+        if (!audio) return;
+
+        const handleTimeUpdate = () => setCurrentTime(audio.currentTime);
+        const handleDurationChange = () => setDuration(audio.duration);
+        const handleEnded = () => {
+            if (!currentSong) return;
+            // Auto play next song
+            const idx = LOFI_TRACKS.findIndex(t => t.id === currentSong.id);
+            const nextIdx = (idx + 1) % LOFI_TRACKS.length;
+            playSong(LOFI_TRACKS[nextIdx]);
+        };
+
+        audio.addEventListener('timeupdate', handleTimeUpdate);
+        audio.addEventListener('loadedmetadata', handleDurationChange);
+        audio.addEventListener('ended', handleEnded);
+
+        return () => {
+            audio.removeEventListener('timeupdate', handleTimeUpdate);
+            audio.removeEventListener('loadedmetadata', handleDurationChange);
+            audio.removeEventListener('ended', handleEnded);
+        };
+    }, [currentSong]);
+
+    const playSong = (song: typeof LOFI_TRACKS[0]) => {
+        if (currentSong?.id === song.id) {
+            togglePlay();
+            return;
+        }
+        setCurrentSong(song);
+        setIsPlaying(true);
+        if (audioRef.current) {
+            audioRef.current.src = song.url;
+            audioRef.current.play().catch(() => setIsPlaying(false));
+            localStorage.setItem(MUSIC_STATE_KEY, JSON.stringify({ id: song.id }));
+        }
+    };
+
+    const togglePlay = () => {
+        if (!audioRef.current || !currentSong) return;
+        if (isPlaying) {
+            audioRef.current.pause();
+            setIsPlaying(false);
+        } else {
+            audioRef.current.play().catch(() => setIsPlaying(false));
+            setIsPlaying(true);
+        }
+    };
+
+    const formatTime = (secs: number) => {
+        const m = Math.floor(secs / 60);
+        const s = Math.floor(secs % 60);
+        return `${m}:${s.toString().padStart(2, '0')}`;
+    };
 
     // Pomodoro timer effect (runs in PARENT — never unmounts)
     useEffect(() => {
@@ -269,49 +349,79 @@ export function FloatingHub() {
 
     if (!user) return null;
 
-    // Format time for FAB display
-    const fabMins = Math.floor(pomodoroTimeLeft / 60);
-    const fabSecs = pomodoroTimeLeft % 60;
-    const fabTimeStr = `${String(fabMins).padStart(2, '0')}:${String(fabSecs).padStart(2, '0')}`;
-    const showTimerOnFab = pomodoroRunning && !isOpen;
-    const fabTimerProgress = pomodoroRunning
-        ? (POMODORO_MODES.find(m => m.id === pomodoroMode)!.duration - pomodoroTimeLeft) / POMODORO_MODES.find(m => m.id === pomodoroMode)!.duration
-        : 0;
-    const fabRingCircumference = 2 * Math.PI * 28; // r=28 for 52px FAB (with some padding)
+    // ── Pre-render logic for FAB ──
+    const showMusicPill = !isOpen && isPlaying && currentSong;
+    const remainingTime = duration - currentTime;
+    const pomodoroModesMap = {
+        focus: POMODORO_MODES[0],
+        shortBreak: POMODORO_MODES[1],
+        longBreak: POMODORO_MODES[2]
+    };
 
     return (
         <>
-            {/* FAB */}
+            {/* ── Global Music Background Overlay ── */}
+            {isPlaying && currentSong && settings.enableMusicBackground && (
+                <div 
+                    className="hub-global-music-bg"
+                    style={{ backgroundImage: `url(${currentSong.cover})` }}
+                />
+            )}
+
+            {/* Hidden Audio element for Option 1 */}
+            <audio ref={audioRef} style={{ display: 'none' }} />
+            {/* ── Floating Toggle Button (FAB) ── */}
             <button
                 ref={fabRef}
-                className={`hub-fab ${isDragging ? 'dragging' : ''} ${isOpen ? 'open' : ''} ${showTimerOnFab ? 'timer-active' : ''}`}
+                className={`hub-fab ${isOpen ? 'open' : ''} ${pomodoroRunning ? 'timer-active' : ''} ${isDragging ? 'dragging' : ''} ${showMusicPill ? 'music-pill' : ''}`}
                 style={fabStyle}
                 onPointerDown={onPointerDown}
                 onPointerMove={onPointerMove}
                 onPointerUp={onPointerUp}
+                aria-label="Toggle Hub"
             >
-                {/* SVG Progress Ring Overlay (Pomodoro active) */}
-                {showTimerOnFab && (
-                    <svg className="fab-timer-ring" viewBox="0 0 60 60" width="60" height="60">
-                        <circle className="fab-ring-bg" cx="30" cy="30" r="28" />
-                        <circle
-                            className="fab-ring-progress"
-                            cx="30" cy="30" r="28"
-                            strokeDasharray={fabRingCircumference}
-                            strokeDashoffset={fabRingCircumference * (1 - fabTimerProgress)}
-                        />
-                    </svg>
-                )}
-                {isOpen ? (
-                    <X className="hub-fab-icon" size={20} />
-                ) : showTimerOnFab ? (
-                    <span className="hub-fab-timer">{fabTimeStr}</span>
+                {showMusicPill ? (
+                    <div className="hub-music-pill-content">
+                        <div className="hub-music-pill-cover">
+                            <img src={currentSong.cover} alt="" />
+                            <div className="wave-bars">
+                                <span className="bar" />
+                                <span className="bar" />
+                                <span className="bar" />
+                            </div>
+                        </div>
+                        <div className="hub-music-pill-info">
+                            <span className="hub-music-pill-title">{currentSong.title}</span>
+                            <span className="hub-music-pill-time">-{formatTime(remainingTime > 0 ? remainingTime : 0)}</span>
+                        </div>
+                    </div>
                 ) : (
-                    <Sparkles className="hub-fab-icon" size={20} />
-                )}
-                {/* Unread badge on FAB */}
-                {chatUnreadCount > 0 && !isOpen && (
-                    <span className="hub-fab-badge">{chatUnreadCount > 9 ? '9+' : chatUnreadCount}</span>
+                    <>
+                        {pomodoroRunning ? (
+                            <>
+                                <svg className="fab-timer-ring">
+                                    <circle className="fab-ring-bg" cx="30" cy="30" r="28" />
+                                    <circle
+                                        className="fab-ring-progress"
+                                        cx="30" cy="30" r="28"
+                                        strokeDasharray={2 * Math.PI * 28}
+                                        strokeDashoffset={(2 * Math.PI * 28) * (1 - (pomodoroModesMap[pomodoroMode].duration - pomodoroTimeLeft) / pomodoroModesMap[pomodoroMode].duration)}
+                                    />
+                                </svg>
+                                <span className="hub-fab-timer">
+                                    {Math.floor(pomodoroTimeLeft / 60)}:{String(pomodoroTimeLeft % 60).padStart(2, '0')}
+                                </span>
+                            </>
+                        ) : (
+                            isOpen ? <X className="hub-fab-icon" size={24} /> : (
+                                isPlaying ? <div className="hub-fab-music-playing">
+                                    <Music className="hub-fab-icon" size={24} />
+                                    <div className="fab-music-dot" />
+                                </div> : <Sparkles className="hub-fab-icon" size={24} />
+                            )
+                        )}
+                        {chatUnreadCount > 0 && <span className="hub-fab-badge">{chatUnreadCount > 99 ? '99+' : chatUnreadCount}</span>}
+                    </>
                 )}
             </button>
 
@@ -366,7 +476,22 @@ export function FloatingHub() {
                                 />
                             )}
                             {activeTab === 'notes' && <NotesTab userEmail={user.email} />}
-                            {activeTab === 'music' && <MusicTab />}
+                            {activeTab === 'music' && (
+                                <MusicTab 
+                                    currentSong={currentSong} 
+                                    isPlaying={isPlaying} 
+                                    onTogglePlay={togglePlay} 
+                                    onPlaySong={playSong}
+                                    currentTime={currentTime}
+                                    duration={duration}
+                                    onSeek={(time) => {
+                                        if (audioRef.current) {
+                                            audioRef.current.currentTime = time;
+                                            setCurrentTime(time);
+                                        }
+                                    }}
+                                />
+                            )}
                             {activeTab === 'theme' && <ThemeTab />}
                         </div>
                     </div>
@@ -1691,6 +1816,15 @@ function ThemeTab() {
                                     />
                                 </div>
                             </div>
+                            <div className="theme-item">
+                                <div className="theme-item-header">
+                                    <label><Music size={16} /> Đổi nền theo nhạc</label>
+                                    <button
+                                        className={`toggle-switch ${settings.enableMusicBackground ? 'on' : ''}`}
+                                        onClick={() => updateSetting('enableMusicBackground', !settings.enableMusicBackground)}
+                                    />
+                                </div>
+                            </div>
                             {settings.autoSkipLearn && (
                                 <div className="theme-item">
                                     <div className="theme-item-header has-content">
@@ -1708,6 +1842,46 @@ function ThemeTab() {
                     </div>
                 </>
             )}
+
+            {/* Designer Credit at the bottom of Theme Tab */}
+            <div style={{ 
+                marginTop: '12px', 
+                padding: '16px', 
+                borderTop: '1px border-dashed var(--hub-border)', 
+                display: 'flex', 
+                flexDirection: 'column', 
+                alignItems: 'center', 
+                gap: '4px',
+                opacity: 0.6
+            }}>
+                <p style={{ 
+                    fontSize: '9px', 
+                    fontWeight: 800, 
+                    textTransform: 'uppercase', 
+                    letterSpacing: '1px', 
+                    color: 'var(--hub-text-muted)' 
+                }}>
+                    Design & Development
+                </p>
+                <a 
+                    href="mailto:studystation.auth@gmail.com"
+                    style={{ 
+                        fontSize: '11px', 
+                        fontWeight: 700, 
+                        color: 'var(--accent-color)', 
+                        textDecoration: 'none',
+                        display: 'flex',
+                        flexDirection: 'column',
+                        alignItems: 'center',
+                        gap: '2px'
+                    }}
+                >
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '4px' }}>
+                        Nguyễn Trọng Phúc <ExternalLink size={10} />
+                    </div>
+                    <span style={{ fontSize: '9px', fontWeight: 500, opacity: 0.8 }}>studystation.auth@gmail.com</span>
+                </a>
+            </div>
         </div>
     );
 }
@@ -1716,180 +1890,88 @@ function ThemeTab() {
 // MUSIC TAB
 // ============================================================
 
-interface MusicLink {
-    id: string;
-    url: string;
-    title: string;
-    source: 'youtube' | 'spotify' | 'soundcloud' | 'unknown';
-}
-
-const PRESET_PLAYLISTS: MusicLink[] = [
-    { id: 'yt1', url: 'https://www.youtube.com/embed/videoseries?list=PLMIbmfP_9vb8BCxRoraJpoo4q1yMFg4CE', title: '☕ Lofi Study Beats', source: 'youtube' },
-    { id: 'yt2', url: 'https://www.youtube.com/embed/jfKfPfyJRdk', title: '🎵 Lofi Girl - beats to relax/study to', source: 'youtube' },
-    { id: 'sp1', url: 'https://open.spotify.com/embed/playlist/0vvXsWCC9xrXsKd4FyS8kM', title: '🎧 Deep Focus - Spotify', source: 'spotify' },
-    { id: 'sc1', url: 'https://w.soundcloud.com/player/?url=https%3A//soundcloud.com/chaborbeats/sets/lofi-study-chill&color=%238b5cf6&auto_play=false', title: '🌙 SoundCloud Lofi Chill', source: 'soundcloud' },
-];
-
-function parseEmbedUrl(input: string): { url: string; source: MusicLink['source'] } {
-    const trimmed = input.trim();
-    // YouTube
-    const ytMatch = trimmed.match(/(?:youtu\.be\/|youtube\.com\/(?:watch\?v=|embed\/|shorts\/)?)([\w-]{11})/);
-    if (ytMatch) return { url: `https://www.youtube.com/embed/${ytMatch[1]}`, source: 'youtube' };
-    const ytPlaylist = trimmed.match(/[?&]list=([\w-]+)/);
-    if (ytPlaylist) return { url: `https://www.youtube.com/embed/videoseries?list=${ytPlaylist[1]}`, source: 'youtube' };
-    // Spotify
-    const spMatch = trimmed.match(/open\.spotify\.com\/(track|album|playlist|episode)\/([\w]+)/);
-    if (spMatch) return { url: `https://open.spotify.com/embed/${spMatch[1]}/${spMatch[2]}`, source: 'spotify' };
-    // SoundCloud
-    if (trimmed.includes('soundcloud.com')) {
-        return { url: `https://w.soundcloud.com/player/?url=${encodeURIComponent(trimmed)}&color=%238b5cf6&auto_play=false`, source: 'soundcloud' };
-    }
-    // Direct embed URL
-    if (trimmed.startsWith('http')) return { url: trimmed, source: 'unknown' };
-    return { url: '', source: 'unknown' };
-}
-
-function MusicTab() {
-    const [customLinks, setCustomLinks] = useState<MusicLink[]>(() => {
-        try {
-            const raw = localStorage.getItem(MUSIC_LINKS_KEY);
-            return raw ? JSON.parse(raw) : [];
-        } catch { return []; }
-    });
-    const [urlInput, setUrlInput] = useState('');
-    const [activePlayer, setActivePlayer] = useState<MusicLink | null>(null);
-    const [addError, setAddError] = useState('');
-
-    const saveLinks = (links: MusicLink[]) => {
-        setCustomLinks(links);
-        try { localStorage.setItem(MUSIC_LINKS_KEY, JSON.stringify(links)); } catch { /* */ }
+function MusicTab({ currentSong, isPlaying, onTogglePlay, onPlaySong, currentTime, duration, onSeek }: { 
+    currentSong: typeof LOFI_TRACKS[0] | null, 
+    isPlaying: boolean, 
+    onTogglePlay: () => void, 
+    onPlaySong: (song: typeof LOFI_TRACKS[0]) => void,
+    currentTime: number,
+    duration: number,
+    onSeek: (time: number) => void
+}) {
+    const formatTime = (secs: number) => {
+        const m = Math.floor(secs / 60);
+        const s = Math.floor(secs % 60);
+        return `${m}:${s.toString().padStart(2, '0')}`;
     };
 
-    const addCustomLink = () => {
-        setAddError('');
-        if (!urlInput.trim()) return;
-        const { url, source } = parseEmbedUrl(urlInput);
-        if (!url) { setAddError('URL không hợp lệ'); return; }
-        const newLink: MusicLink = {
-            id: Date.now().toString(),
-            url,
-            title: source === 'youtube' ? '🎬 YouTube' : source === 'spotify' ? '🎧 Spotify' : source === 'soundcloud' ? '🌙 SoundCloud' : '🔗 Nhạc',
-            source,
-        };
-        saveLinks([newLink, ...customLinks]);
-        setUrlInput('');
-    };
-
-    const removeCustomLink = (id: string) => {
-        saveLinks(customLinks.filter(l => l.id !== id));
-        if (activePlayer?.id === id) setActivePlayer(null);
-    };
-
-    const getIframeHeight = (source: MusicLink['source']) => {
-        if (source === 'spotify') return 152;
-        if (source === 'soundcloud') return 166;
-        return 200;
-    };
-
-    // Player view
-    if (activePlayer) {
-        return (
-            <>
-                <div className="hub-content-header">
-                    <h3>
-                        <button onClick={() => setActivePlayer(null)} style={{ background: 'none', border: 'none', cursor: 'pointer', color: '#6b7280', display: 'flex', alignItems: 'center' }}>
-                            <ChevronLeft size={18} />
-                        </button>
-                        <span style={{ fontSize: '14px' }}>{activePlayer.title}</span>
-                    </h3>
-                </div>
-                <div className="hub-content-body" style={{ padding: '12px', display: 'flex', flexDirection: 'column', gap: '12px' }}>
-                    <div className="music-player-frame">
-                        <iframe
-                            src={activePlayer.url}
-                            width="100%"
-                            height={getIframeHeight(activePlayer.source)}
-                            frameBorder="0"
-                            allow="autoplay; clipboard-write; encrypted-media; fullscreen; picture-in-picture"
-                            allowFullScreen
-                            loading="lazy"
-                            style={{ borderRadius: '12px', border: 'none' }}
-                        />
-                    </div>
-                    <p style={{ fontSize: '11px', color: '#9ca3af', textAlign: 'center' }}>
-                        Nhấn play trên trình phát bên trên để nghe nhạc 🎶
-                    </p>
-                </div>
-            </>
-        );
-    }
-
-    // Playlist list view
     return (
         <>
             <div className="hub-content-header">
-                <h3><Music size={16} style={{ verticalAlign: '-3px', marginRight: '6px' }} /> Âm nhạc</h3>
+                <h3><Music size={16} /> Âm nhạc</h3>
             </div>
             <div className="hub-content-body">
-                {/* Add custom URL */}
-                <div style={{ marginBottom: '14px' }}>
-                    <div style={{ display: 'flex', gap: '6px' }}>
-                        <input
-                            type="text"
-                            placeholder="Paste YouTube/Spotify/SoundCloud URL..."
-                            value={urlInput}
-                            onChange={e => { setUrlInput(e.target.value); setAddError(''); }}
-                            onKeyDown={e => e.key === 'Enter' && addCustomLink()}
-                            style={{ flex: 1, padding: '8px 12px', borderRadius: '10px', border: '1.5px solid #e5e7eb', fontSize: '12px', outline: 'none' }}
-                        />
-                        <button onClick={addCustomLink} style={{ padding: '8px 14px', borderRadius: '10px', background: 'var(--accent-color, #3b82f6)', color: 'white', border: 'none', fontSize: '12px', fontWeight: 600, cursor: 'pointer' }}>
-                            <Plus size={14} />
-                        </button>
-                    </div>
-                    {addError && <p style={{ color: '#ef4444', fontSize: '11px', marginTop: '4px' }}>{addError}</p>}
-                </div>
-
-                {/* Custom links */}
-                {customLinks.length > 0 && (
-                    <>
-                        <p style={{ fontSize: '11px', color: '#9ca3af', fontWeight: 600, textTransform: 'uppercase', letterSpacing: '0.5px', marginBottom: '6px' }}>Nhạc của bạn</p>
-                        <div className="music-playlist-list">
-                            {customLinks.map(link => (
-                                <div key={link.id} className="music-playlist-item" onClick={() => setActivePlayer(link)}>
-                                    <div className="music-playlist-icon" data-source={link.source}>
-                                        <Music size={16} />
-                                    </div>
-                                    <div style={{ flex: 1, minWidth: 0 }}>
-                                        <p className="music-playlist-title">{link.title}</p>
-                                        <p className="music-playlist-source">{link.source}</p>
-                                    </div>
-                                    <button
-                                        onClick={(e) => { e.stopPropagation(); removeCustomLink(link.id); }}
-                                        style={{ background: 'none', border: 'none', cursor: 'pointer', color: '#d1d5db', padding: '4px' }}
-                                    >
-                                        <X size={12} />
-                                    </button>
+                {/* Active Player Card */}
+                {currentSong && (
+                    <div className="music-active-card">
+                        <div className="music-active-cover">
+                            <img src={currentSong.cover} alt="" />
+                            {isPlaying && (
+                                <div className="music-playing-indicator">
+                                    <div className="bar" /><div className="bar" /><div className="bar" />
                                 </div>
-                            ))}
+                            )}
                         </div>
-                    </>
+                        <div className="music-active-info">
+                            <p className="music-active-title">{currentSong.title}</p>
+                            <p className="music-active-artist">{currentSong.artist}</p>
+                            
+                            <div className="music-active-controls">
+                                <button className="music-control-btn" onClick={onTogglePlay}>
+                                    {isPlaying ? <span style={{fontSize: '18px'}}>⏸</span> : <span style={{fontSize: '18px'}}>▶</span>}
+                                </button>
+                                <div className="music-progress-wrap">
+                                    <input 
+                                        type="range" 
+                                        min={0} 
+                                        max={duration || 100} 
+                                        value={currentTime} 
+                                        onChange={(e) => onSeek(parseFloat(e.target.value))}
+                                        className="music-progress-slider"
+                                    />
+                                    <div className="music-time-labels">
+                                        <span>{formatTime(currentTime)}</span>
+                                        <span>{formatTime(duration)}</span>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
                 )}
 
-                {/* Preset playlists */}
-                <p style={{ fontSize: '11px', color: '#9ca3af', fontWeight: 600, textTransform: 'uppercase', letterSpacing: '0.5px', margin: '14px 0 6px' }}>Playlist gợi ý</p>
+                <p className="music-section-label">Danh sách phát Lofi</p>
                 <div className="music-playlist-list">
-                    {PRESET_PLAYLISTS.map(pl => (
-                        <div key={pl.id} className="music-playlist-item" onClick={() => setActivePlayer(pl)}>
-                            <div className="music-playlist-icon" data-source={pl.source}>
-                                <Music size={16} />
+                    {LOFI_TRACKS.map(track => (
+                        <div 
+                            key={track.id} 
+                            className={`music-playlist-item ${currentSong?.id === track.id ? 'active' : ''}`}
+                            onClick={() => onPlaySong(track)}
+                        >
+                            <div className="music-item-cover">
+                                <img src={track.cover} alt="" />
+                                {currentSong?.id === track.id && isPlaying && <div className="item-playing-overlay">⏸</div>}
                             </div>
-                            <div style={{ flex: 1 }}>
-                                <p className="music-playlist-title">{pl.title}</p>
-                                <p className="music-playlist-source">{pl.source}</p>
+                            <div className="music-item-info">
+                                <p className="music-item-title">{track.title}</p>
+                                <p className="music-item-artist">{track.artist}</p>
                             </div>
-                            <ExternalLink size={14} style={{ color: '#d1d5db' }} />
+                            {currentSong?.id === track.id && <div className="music-active-dot" />}
                         </div>
                     ))}
+                </div>
+
+                <div className="music-tip">
+                    <Sparkles size={12} /> Nhạc sẽ tiếp tục phát khi bạn đóng Flow.
                 </div>
             </div>
         </>
