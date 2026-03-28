@@ -66,14 +66,21 @@ JSON FORMAT:
   "title": "...",
   "time": 50,
   "part1": [
-    { "text": "...", "options": ["A", "B", "C", "D"], "correct": 0, "groupId": "group1" }
+    { "text": "...", "options": ["A", "B", "C", "D"], "correct": 0 }
   ],
-  "part2": [],
-  "part3": [],
-  "questionGroups": [
-    { "id": "group1", "title": "...", "passage": "..." }
+  "part2": [
+    { "text": "...", "subQuestions": [
+      { "text": "a) ...", "correct": true },
+      { "text": "b) ...", "correct": false },
+      { "text": "c) ...", "correct": true },
+      { "text": "d) ...", "correct": false }
+    ]}
+  ],
+  "part3": [
+    { "text": "...", "correct": "đáp án" }
   ]
 }
+LƯU Ý: KHÔNG sử dụng "questionGroups" hay "passage". Bài thi tiếng Anh có passage được xử lý ở hệ thống E-test riêng.
 QUY TẮC ĐỊNH DẠNG (BẮT BUỘC):
 - Giữ nguyên định dạng gạch chân (__word__) và in đậm (**word**) từ văn bản gốc.
 Chỉ xuất JSON thuần.`,
