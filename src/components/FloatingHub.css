@@ -585,6 +585,21 @@
     color: inherit;
 }
 
+.mago-text .mago-math-block {
+    display: block;
+    text-align: center;
+    margin: 8px 0;
+    overflow-x: auto;
+}
+
+.mago-text .katex {
+    font-size: 1em;
+}
+
+.mago-text .mago-math-block .katex {
+    font-size: 1.1em;
+}
+
 .mago-text .mago-highlight {
     background: linear-gradient(120deg, rgba(251, 191, 36, 0.3) 0%, rgba(251, 191, 36, 0.2) 100%);
     padding: 1px 4px;
