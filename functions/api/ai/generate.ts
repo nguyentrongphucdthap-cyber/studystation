@@ -50,7 +50,10 @@ export const onRequestPost = async (context: any) => {
 
                 const response = await fetch(url, {
                     method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'Referer': 'https://studystation.site/',
+                    },
                     body: JSON.stringify(geminiBody),
                 });
 

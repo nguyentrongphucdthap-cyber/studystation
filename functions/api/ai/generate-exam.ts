@@ -42,7 +42,10 @@ Quy tắc quan trọng:
 
         const response = await fetch(GEMINI_API_URL, {
             method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
+            headers: {
+                'Content-Type': 'application/json',
+                'Referer': 'https://studystation.site/',
+            },
             body: JSON.stringify({
                 contents: [{
                     parts: [{ text: `${systemPrompt}\n\nNỘI DUNG CẦN XỬ LÝ:\n${text}` }]

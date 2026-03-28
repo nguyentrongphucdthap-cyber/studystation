@@ -30,7 +30,10 @@ export const onRequestPost = async (context: any) => {
             try {
                 const response = await fetch(url, {
                     method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'Referer': 'https://studystation.site/',
+                    },
                     body: JSON.stringify({
                         contents: [{ role: 'user', parts: [{ text: 'Hi' }] }],
                         generationConfig: { maxOutputTokens: 5 },

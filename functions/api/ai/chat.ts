@@ -26,6 +26,7 @@ export const onRequestPost = async (context: any) => {
             method: 'POST',
             headers: {
                 'Content-Type': 'application/json',
+                'Referer': 'https://studystation.site/',
             },
             body: JSON.stringify({
                 contents: body.contents,
