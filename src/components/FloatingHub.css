@@ -535,6 +535,96 @@
     color: #1e3a5f;
     border: 1px solid rgba(var(--accent-rgb), 0.15);
     border-bottom-left-radius: 4px;
+    white-space: normal;
+}
+
+/* ── MagoText Rich Formatting ── */
+.mago-text {
+    line-height: 1.6;
+}
+
+.mago-text strong {
+    font-weight: 700;
+    color: var(--accent-color, #3b82f6);
+}
+
+.mago-text em {
+    font-style: italic;
+    color: #475569;
+}
+
+.dark .mago-text em {
+    color: #94a3b8;
+}
+
+.mago-text .mago-inline-code {
+    background: rgba(var(--accent-rgb), 0.12);
+    color: #7c3aed;
+    padding: 1px 6px;
+    border-radius: 4px;
+    font-family: 'Fira Code', 'Cascadia Code', monospace;
+    font-size: 0.88em;
+}
+
+.mago-text .mago-code-block {
+    background: #1e293b;
+    color: #e2e8f0;
+    padding: 10px 14px;
+    border-radius: 10px;
+    margin: 8px 0;
+    overflow-x: auto;
+    font-family: 'Fira Code', 'Cascadia Code', monospace;
+    font-size: 12px;
+    line-height: 1.5;
+    white-space: pre-wrap;
+}
+
+.mago-text .mago-code-block code {
+    background: none;
+    padding: 0;
+    color: inherit;
+}
+
+.mago-text .mago-highlight {
+    background: linear-gradient(120deg, rgba(251, 191, 36, 0.3) 0%, rgba(251, 191, 36, 0.2) 100%);
+    padding: 1px 4px;
+    border-radius: 3px;
+    color: #92400e;
+}
+
+.dark .mago-text .mago-highlight {
+    background: linear-gradient(120deg, rgba(251, 191, 36, 0.25) 0%, rgba(251, 191, 36, 0.15) 100%);
+    color: #fbbf24;
+}
+
+.mago-text .mago-list {
+    margin: 6px 0;
+    padding-left: 20px;
+}
+
+.mago-text .mago-list li {
+    margin-bottom: 3px;
+}
+
+.mago-text ul.mago-list {
+    list-style-type: disc;
+}
+
+.mago-text ol.mago-list {
+    list-style-type: decimal;
+}
+
+.dark .mago-text strong {
+    color: var(--accent-color, #60a5fa);
+}
+
+.dark .mago-text .mago-inline-code {
+    background: rgba(124, 58, 237, 0.2);
+    color: #a78bfa;
+}
+
+.dark .chat-message.mago .chat-bubble {
+    color: #e2e8f0;
 }
 
 @keyframes chatMsgIn {

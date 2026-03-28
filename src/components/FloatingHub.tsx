@@ -63,6 +63,7 @@ import type { ChatMessage, Friend, GroupChat } from '@/types';
 import './FloatingHub.css';
 import { APP_VERSION } from '@/version';
 import MathText from './MathText';
+import MagoText from './MagoText';
 
 // ============================================================
 // CONSTANTS
@@ -694,6 +695,8 @@ function ChatTab({ user, onUnreadChange }: { user: { email: string; displayName:
                 // 2. Clear input is already done above
 
                 // 3. Prepare history for AI (using current messages + the new one)
+                // Filter out old error messages and limit history to prevent AI confusion
+                const ERROR_PATTERN = /Xin lỗi, tôi đang gặp chút sự cố kỹ thuật/;
                 const aiHistory: AIChatMessage[] = [...messages, {
                     id: 'temp',
                     text,
@@ -701,18 +704,24 @@ function ChatTab({ user, onUnreadChange }: { user: { email: string; displayName:
                     senderName: user.displayName || 'Bạn',
                     timestamp: Date.now(),
                     role: 'user'
-                }].filter(m => m.role).map(m => ({
-                    role: m.role === 'mago' ? 'model' : 'user',
+                }]
+                .filter(m => m.role && !ERROR_PATTERN.test(m.text))
+                .map(m => ({
+                    role: (m.role === 'mago' ? 'model' : 'user') as 'user' | 'model',
                     parts: [{ text: m.text }]
-                }));
+                }))
+                .slice(-20); // Keep only last 20 messages to save tokens
 
                 // 4. Generate AI response
                 const response = await generateAIContent(aiHistory, { systemInstruction: MAGO_SYSTEM_PROMPT });
+
+                console.log('[Mago DEBUG] AI response received:', response?.substring(0, 100));
 
                 // 5. Save AI response to Firestore
                 await saveMagoResponse(response);
             } catch (err: any) {
                 console.error('[Chat] Mago AI error:', err);
+                console.error('[Chat] Error name:', err.name, 'Error message:', err.message);
                 const errorMsg = err.message || 'Lỗi kết nối với Mago';
                 // Optionally show a non-intrusive error message in chat
                 await saveMagoResponse(`Xin lỗi, tôi đang gặp chút sự cố kỹ thuật: ${errorMsg}. Bạn thử lại sau nhé! 🧙‍♂️`);
@@ -1161,7 +1170,7 @@ function ChatTab({ user, onUnreadChange }: { user: { email: string; displayName:
                                 </div>
                             )}
                             <div>
-                                <div className="chat-bubble"><MathText text={msg.text} /></div>
+                                <div className="chat-bubble">{isMago ? <MagoText text={msg.text} /> : <MathText text={msg.text} />}</div>
                                 <span className={`chat-msg-time ${isSent ? 'sent' : ''}`}>{formatMsgTime(msg.timestamp)}</span>
                             </div>
                         </div>
