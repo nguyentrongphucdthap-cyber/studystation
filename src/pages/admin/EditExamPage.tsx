@@ -14,7 +14,7 @@ import {
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { downloadJSON } from '@/lib/exportUtils';
-import { getAllAllowedUsers, getUniqueClasses, getUsersByClass } from '@/services/auth.service';
+import { getAllAllowedUsers, getUniqueClasses, getUsersByClass, getBlacklist } from '@/services/auth.service';
 
 export default function EditExamPage() {
     const { examId } = useParams<{ examId: string }>();
@@ -91,11 +91,16 @@ export default function EditExamPage() {
     const loadPickerData = async () => {
         setPickerLoading(true);
         try {
-            const [users, classList] = await Promise.all([
+            const [users, classList, blacklist] = await Promise.all([
                 getAllAllowedUsers(),
-                getUniqueClasses()
+                getUniqueClasses(),
+                getBlacklist()
             ]);
-            setSystemUsers(users);
+            
+            const blacklistedEmails = (blacklist || []).map(b => b.email.toLowerCase());
+            const filteredUsers = users.filter(u => !blacklistedEmails.includes(u.email.toLowerCase()));
+            
+            setSystemUsers(filteredUsers);
             setClasses(classList);
         } catch (err) {
             console.error('Failed to load picker data', err);
@@ -118,9 +123,17 @@ export default function EditExamPage() {
     const addByClass = async (className: string) => {
         setPickerLoading(true);
         try {
-            const users = await getUsersByClass(className);
-            const emailsToAdd = users.map(u => u.email.toLowerCase());
+            const [users, blacklist] = await Promise.all([
+                getUsersByClass(className),
+                getBlacklist()
+            ]);
+            
+            const blacklistedEmails = (blacklist || []).map(b => b.email.toLowerCase());
+            const activeUsers = users.filter(u => !blacklistedEmails.includes(u.email.toLowerCase()));
+            
+            const emailsToAdd = activeUsers.map(u => u.email.toLowerCase());
             const newList = Array.from(new Set([...allowedEmails, ...emailsToAdd]));
+            
             setAllowedEmails(newList);
             toast({ title: `Đã thêm ${emailsToAdd.length} học sinh từ lớp ${className}`, type: 'success' });
         } catch (err) {
