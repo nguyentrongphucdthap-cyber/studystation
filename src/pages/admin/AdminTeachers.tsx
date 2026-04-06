@@ -11,6 +11,7 @@ import { Plus, Trash2, Search, Shield, ShieldCheck, User, Tags } from 'lucide-re
 const roleOptions = [
     { value: 'user', label: 'Học sinh', icon: User, color: 'bg-blue-100 text-blue-700' },
     { value: 'teacher', label: 'Giáo viên', icon: Shield, color: 'bg-emerald-100 text-emerald-700' },
+    { value: 'boss', label: 'Boss', icon: ShieldCheck, color: 'bg-purple-100 text-purple-700' },
     { value: 'admin', label: 'Admin', icon: ShieldCheck, color: 'bg-amber-100 text-amber-700' },
     { value: 'super-admin', label: 'Super Admin', icon: ShieldCheck, color: 'bg-red-100 text-red-700' },
 ];
@@ -183,6 +184,7 @@ export default function AdminTeachers() {
                             <label className="text-xs font-bold uppercase tracking-wider text-slate-500">Quyền hạn</label>
                             <select value={addForm.role} onChange={(e) => setAddForm({ ...addForm, role: e.target.value })} className="w-full appearance-none rounded-xl border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-900/50 px-4 py-2.5 text-sm font-medium outline-none focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500 transition-all shadow-inner cursor-pointer">
                                 <option value="teacher">Giáo viên</option>
+                                <option value="boss">Boss</option>
                                 <option value="admin">Admin</option>
                                 <option value="super-admin">Super Admin</option>
                             </select>

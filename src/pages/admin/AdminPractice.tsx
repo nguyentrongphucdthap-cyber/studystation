@@ -245,7 +245,12 @@ export default function AdminPractice() {
                                             <tr key={exam.id} className="transition-all hover:bg-slate-50/80 dark:hover:bg-slate-800/40 group relative">
                                                 <td className="px-6 py-4">
                                                     <div className="absolute left-0 top-0 bottom-0 w-1 bg-indigo-500 opacity-0 group-hover:opacity-100 transition-opacity" />
-                                                    <p className="font-bold text-slate-800 dark:text-slate-200 group-hover:text-indigo-600 dark:group-hover:text-indigo-400 transition-colors cursor-default">{exam.title}</p>
+                                                    <div className="flex items-center gap-2">
+                                                        <p className="font-bold text-slate-800 dark:text-slate-200 group-hover:text-indigo-600 dark:group-hover:text-indigo-400 transition-colors cursor-default">{exam.title}</p>
+                                                        {exam.isSpecial && (
+                                                            <span className="px-1.5 py-0.5 rounded-md bg-indigo-100 text-indigo-700 text-[9px] font-black uppercase tracking-tighter shadow-sm">Đặc biệt</span>
+                                                        )}
+                                                    </div>
                                                     <p className="text-[10px] font-mono text-slate-400 mt-1">{exam.id}</p>
                                                 </td>
                                                 <td className="px-6 py-4 text-center">

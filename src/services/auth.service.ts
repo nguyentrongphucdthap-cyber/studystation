@@ -30,7 +30,7 @@ import {
     remove,
 } from 'firebase/database';
 import { auth, db, rtdb } from '@/config/firebase';
-import type { AllowedUser, UserRole, DeviceType, BlacklistEntry } from '@/types';
+import type { AllowedUser, UserRole, DeviceType, BlacklistEntry, AccessRequest } from '@/types';
 import { getDeviceType, generateSessionId } from '@/lib/utils';
 
 // ============================================================
@@ -184,7 +184,7 @@ export async function checkWhitelist(email: string): Promise<{ isAllowed: boolea
 }
 
 export function checkIsAdmin(role: string): boolean {
-    return /admin/i.test(role);
+    return /admin|boss/i.test(role);
 }
 
 export function checkIsSuperAdmin(role: string): boolean {
@@ -347,6 +347,10 @@ async function updateFirestoreLastActive(email: string | null) {
 export async function startPresence() {
     const user = auth.currentUser;
     if (!user) return;
+
+    // Skip presence for guests
+    const { isAllowed } = await checkWhitelist(user.email || '');
+    if (!isAllowed) return;
 
     // Clean up any previous presence
     await stopPresence();
@@ -666,6 +670,95 @@ export async function removeFromBlacklist(email: string): Promise<void> {
     } catch (err) {
         console.error('[AuthService] Failed to remove from blacklist:', err);
         throw err;
+    }
+}
+
+// ============================================================
+// ACCESS REQUEST MANAGEMENT
+// ============================================================
+
+export async function submitAccessRequest(email: string, displayName: string | null, photoURL: string | null, message?: string): Promise<void> {
+    const requestId = email.replace(/[.@]/g, '_');
+    await setDoc(doc(db, 'access_requests', requestId), {
+        email,
+        displayName,
+        photoURL,
+        message: message || '',
+        status: 'pending',
+        createdAt: new Date().toISOString(),
+    });
+}
+
+export async function getAccessRequest(email: string): Promise<AccessRequest | null> {
+    const requestId = email.replace(/[.@]/g, '_');
+    const snap = await getDoc(doc(db, 'access_requests', requestId));
+    if (snap.exists()) {
+        return { id: snap.id, ...snap.data() } as AccessRequest;
+    }
+    return null;
+}
+
+export async function getAllAccessRequests(): Promise<AccessRequest[]> {
+    const snapshot = await getDocs(collection(db, 'access_requests'));
+    return snapshot.docs.map(d => ({ id: d.id, ...d.data() })) as AccessRequest[];
+}
+
+export async function approveAccessRequest(requestId: string, reviewerEmail: string, note?: string): Promise<void> {
+    const reqRef = doc(db, 'access_requests', requestId);
+    const snap = await getDoc(reqRef);
+    if (!snap.exists()) return;
+    const data = snap.data();
+
+    // 1. Add to allowed_users
+    await addAllowedUser(data.email, 'user');
+    
+    // 2. Update request status
+    await setDoc(reqRef, {
+        status: 'approved',
+        reviewedBy: reviewerEmail,
+        reviewedAt: new Date().toISOString(),
+        reviewNote: note || '',
+    }, { merge: true });
+}
+
+export async function rejectAccessRequest(requestId: string, reviewerEmail: string, note?: string): Promise<void> {
+    await setDoc(doc(db, 'access_requests', requestId), {
+        status: 'rejected',
+        reviewedBy: reviewerEmail,
+        reviewedAt: new Date().toISOString(),
+        reviewNote: note || '',
+    }, { merge: true });
+}
+
+export async function updateAccessRequestReview(requestId: string, updates: Partial<AccessRequest>): Promise<void> {
+    await setDoc(doc(db, 'access_requests', requestId), updates, { merge: true });
+}
+
+// ============================================================
+// CLASS-BASED QUERIES (Special Exams Selection)
+// ============================================================
+
+export async function getUsersByClass(classRoom: string): Promise<AllowedUser[]> {
+    const q = query(
+        collection(db, 'allowed_users'),
+        where('classRoom', '==', classRoom)
+    );
+    const snapshot = await getDocs(q);
+    return snapshot.docs.map(d => ({ email: d.id, ...d.data() })) as AllowedUser[];
+}
+
+export async function getUniqueClasses(): Promise<string[]> {
+    try {
+        const snapshot = await getDocs(collection(db, 'allowed_users'));
+        const classes = new Set<string>();
+        snapshot.docs.forEach(d => {
+            const data = d.data();
+            if (data.classRoom) classes.add(data.classRoom);
+        });
+        return Array.from(classes).sort();
+    } catch (err) {
+        console.error('[AuthService] Error fetching unique classes:', err);
+        return [];
     }
 }
 

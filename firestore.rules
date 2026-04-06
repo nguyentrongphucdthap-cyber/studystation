@@ -107,6 +107,11 @@ service cloud.firestore {
     // ============================================
     // SYSTEM & FEEDBACK
     // ============================================
+
+    match /access_requests/{requestId} {
+      allow create: if isLoggedIn();
+      allow read, update, delete: if isAdmin();
+    }
     
     match /feedbacks/{examId}/comments/{commentId} {
       allow read: if isLoggedIn();
@@ -149,16 +154,6 @@ service cloud.firestore {
     match /study_room_messages/{msgId} {
       allow read: if isLoggedIn();
       allow create: if isLoggedIn();
-    }
-
-    match /users/{email} {
-      allow read: if isLoggedIn();
-      allow write: if isLoggedIn() && request.auth.token.email == email;
-    }
-    
-    match /allowed_users/{email} {
-      allow read: if isLoggedIn();
-      allow write: if isAdmin();
     }
   }
 }

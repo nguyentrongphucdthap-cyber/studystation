@@ -13,10 +13,18 @@ export async function uploadToImgBB(file: File | Blob): Promise<UploadResult> {
         body: formData
     });
 
-    if (!response.ok) {
-        const error = await response.json();
-        throw new Error(error.error || 'Failed to upload image');
+    const text = await response.text();
+    let data;
+    try {
+        data = JSON.parse(text);
+    } catch (e) {
+        console.error('[Image Service] Server returned non-JSON response:', text);
+        throw new Error('Máy chủ trả về dữ liệu không hợp lệ. Vui lòng kiểm tra console.');
     }
 
-    return await response.json();
+    if (!response.ok) {
+        throw new Error(data.error || `Lỗi tải ảnh (${response.status})`);
+    }
+
+    return data;
 }

@@ -5,6 +5,7 @@ import { getAllExams, getSubjects, getHighestScores } from '@/services/exam.serv
 import { logUserActivity } from '@/services/auth.service';
 import { Spinner } from '@/components/ui/Spinner';
 import type { ExamMetadata, HighestScores } from '@/types';
+import { useAuth } from '@/contexts/AuthContext';
 import {
     Calculator, FlaskConical, Dna, Clock,
     Monitor, Atom, Book,
@@ -13,6 +14,7 @@ import {
 
 export default function PracticeHome() {
     const navigate = useNavigate();
+    const { user } = useAuth();
     const [searchParams, setSearchParams] = useSearchParams();
     const [exams, setExams] = useState<ExamMetadata[]>([]);
     const [scores, setScores] = useState<HighestScores>({});
@@ -49,6 +51,13 @@ export default function PracticeHome() {
         if (activeSubject) {
             filtered = filtered.filter((e) => e.subjectId === activeSubject);
         }
+        
+        // Filter Special Exams
+        filtered = filtered.filter(e => {
+            if (!e.isSpecial) return true;
+            return e.allowedEmails?.includes(user?.email || '');
+        });
+
         if (searchQuery.trim()) {
             const q = searchQuery.toLowerCase();
             filtered = filtered.filter(
@@ -286,6 +295,9 @@ export default function PracticeHome() {
                                     <div className="flex justify-between items-start gap-3">
                                         <h3 className="text-[14px] font-extrabold text-gray-800 dark:text-white line-clamp-2 leading-tight pr-2 group-hover:text-gray-950 dark:group-hover:text-white transition-colors tracking-tight">
                                             {exam.title}
+                                            {exam.isSpecial && (
+                                                <span className="ml-2 inline-block px-1.5 py-0.5 rounded-md bg-indigo-100 text-indigo-700 text-[9px] font-black uppercase tracking-tighter align-middle">Đặc biệt</span>
+                                            )}
                                         </h3>
                                         {highScore !== undefined && !isNaN(highScore) && (
                                             <div className={cn(

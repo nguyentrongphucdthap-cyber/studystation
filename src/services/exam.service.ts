@@ -59,6 +59,8 @@ export async function getAllExams(): Promise<ExamMetadata[]> {
                 createdAt: data.createdAt,
                 updatedAt: data.updatedAt,
                 examCode: data.examCode,
+                isSpecial: data.isSpecial || false,
+                allowedEmails: data.allowedEmails || [],
                 questionCount: data.questionCount || {
                     part1: (data.part1 || []).length,
                     part2: (data.part2 || []).length,
@@ -135,6 +137,8 @@ export async function getExamContent(examId: string, forceRefresh = false): Prom
             createdBy: examData.createdBy || '',
             updatedAt: examData.updatedAt, // Pass through updatedAt
             examCode: examData.examCode,
+            isSpecial: examData.isSpecial || false,
+            allowedEmails: examData.allowedEmails || [],
         };
 
         // Update caches
@@ -191,6 +195,8 @@ export async function createExam(examData: Omit<Exam, 'id'>, customId?: string):
         createdAt: now,
         updatedAt: now,
         createdBy: auth.currentUser?.email || 'unknown',
+        isSpecial: metadata.isSpecial || false,
+        allowedEmails: metadata.allowedEmails || [],
     });
 
     // Content doc: exam_contents/ID
@@ -231,6 +237,11 @@ export async function updateExam(examId: string, examData: Partial<Exam>): Promi
             if (part2) updatePayload['questionCount.part2'] = part2.length;
             if (part3) updatePayload['questionCount.part3'] = part3.length;
         }
+        
+        // Handle isSpecial and allowedEmails explicitly if provided
+        if (metadata.isSpecial !== undefined) updatePayload.isSpecial = metadata.isSpecial;
+        if (metadata.allowedEmails !== undefined) updatePayload.allowedEmails = metadata.allowedEmails;
+
         batch.update(metaRef, updatePayload);
     }
 

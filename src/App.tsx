@@ -27,6 +27,8 @@ const AdminStudents = lazy(() => import('@/pages/admin/AdminStudents'));
 const AdminTeachers = lazy(() => import('@/pages/admin/AdminTeachers'));
 const AdminSchedule = lazy(() => import('@/pages/admin/AdminSchedule'));
 const EditExamPage = lazy(() => import('@/pages/admin/EditExamPage'));
+const AdminAccessRequests = lazy(() => import('@/pages/admin/AdminAccessRequests'));
+const AccessDenied = lazy(() => import('@/pages/AccessDenied'));
 const StatisticsPage = lazy(() => import('@/pages/Statistics'));
 
 // Lazy-load AdminOverview from same file
@@ -45,6 +47,7 @@ function App() {
                                 <Routes>
                                     {/* Public route */}
                                     <Route path="/login" element={<LoginPage />} />
+                                    <Route path="/access-denied" element={<AccessDenied />} />
 
                                     {/* Protected app shell */}
                                     <Route
@@ -99,6 +102,10 @@ function App() {
                                                         <AdminTeachers />
                                                     </ProtectedRoute>
                                                 }
+                                            />
+                                            <Route
+                                                path="/admin/access-requests"
+                                                element={<AdminAccessRequests />}
                                             />
                                         </Route>
                                     </Route>

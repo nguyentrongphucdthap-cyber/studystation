@@ -33,7 +33,7 @@ export function ProtectedRoute({
 
     // Guest not allowed on this route
     if (isGuest && !allowGuest) {
-        return <Navigate to="/practice" replace />;
+        return <Navigate to="/access-denied" replace />;
     }
 
     // Admin required but user is not admin

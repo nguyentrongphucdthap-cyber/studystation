@@ -31,7 +31,17 @@ export const onRequestPost = async (context: any) => {
             body: imgbbFormData,
         });
 
-        const data = await response.json();
+        const text = await response.text();
+        let data;
+        try {
+            data = JSON.parse(text);
+        } catch (e) {
+            console.error('[ImgBB Function] Non-JSON response from ImgBB:', text);
+            return new Response(JSON.stringify({ error: `ImgBB returned invalid response: ${text.slice(0, 100)}` }), {
+                status: 500,
+                headers: { 'Content-Type': 'application/json' }
+            });
+        }
 
         if (data.status !== 200) {
             return new Response(JSON.stringify({ error: data.error?.message || 'ImgBB upload failed' }), {
@@ -51,7 +61,8 @@ export const onRequestPost = async (context: any) => {
         });
 
     } catch (error: any) {
-        return new Response(JSON.stringify({ error: error.message }), {
+        console.error('[ImgBB Function] Worker Error:', error);
+        return new Response(JSON.stringify({ error: error.message || 'Worker Internal Error' }), {
             status: 500,
             headers: { 'Content-Type': 'application/json' }
         });

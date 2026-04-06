@@ -9,10 +9,12 @@ import { LatexContent } from '@/components/ui/LatexContent';
 import type { Exam, Part1Question, Part2Question, Part3Question, QuestionGroup } from '@/types';
 import {
     ArrowLeft, Save, Plus, Trash2, Edit3, Check,
-    ChevronDown, ChevronUp, Download, Copy, Search as SearchIcon
+    ChevronDown, ChevronUp, Download, Copy, Search as SearchIcon,
+    X, UserPlus, Users as UsersIcon, GraduationCap as ClassIcon
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { downloadJSON } from '@/lib/exportUtils';
+import { getAllAllowedUsers, getUniqueClasses, getUsersByClass } from '@/services/auth.service';
 
 export default function EditExamPage() {
     const { examId } = useParams<{ examId: string }>();
@@ -31,6 +33,15 @@ export default function EditExamPage() {
     const [part2, setPart2] = useState<Part2Question[]>([]);
     const [part3, setPart3] = useState<Part3Question[]>([]);
     const [questionGroups, setQuestionGroups] = useState<QuestionGroup[]>([]);
+    
+    // Special Exam state
+    const [isSpecial, setIsSpecial] = useState(false);
+    const [allowedEmails, setAllowedEmails] = useState<string[]>([]);
+    const [emailInput, setEmailInput] = useState('');
+    const [systemUsers, setSystemUsers] = useState<any[]>([]);
+    const [classes, setClasses] = useState<string[]>([]);
+    const [activePickerTab, setActivePickerTab] = useState<'manual' | 'system' | 'class'>('manual');
+    const [pickerLoading, setPickerLoading] = useState(false);
 
     // Track which question is being edited
     const [editingQ, setEditingQ] = useState<{ part: number; id: number } | null>(null);
@@ -63,16 +74,71 @@ export default function EditExamPage() {
             setPart2(data.part2 || []);
             setPart3(data.part3 || []);
             setQuestionGroups(data.questionGroups || []);
+            setIsSpecial(data.isSpecial || false);
+            setAllowedEmails(data.allowedEmails || []);
             setLoading(false);
         }
         load();
     }, [examId]);
 
+    // Load picker data
+    useEffect(() => {
+        if (isSpecial) {
+            loadPickerData();
+        }
+    }, [isSpecial]);
+
+    const loadPickerData = async () => {
+        setPickerLoading(true);
+        try {
+            const [users, classList] = await Promise.all([
+                getAllAllowedUsers(),
+                getUniqueClasses()
+            ]);
+            setSystemUsers(users);
+            setClasses(classList);
+        } catch (err) {
+            console.error('Failed to load picker data', err);
+        } finally {
+            setPickerLoading(false);
+        }
+    };
+
+    const addEmail = (email: string) => {
+        const trimmed = email.trim().toLowerCase();
+        if (!trimmed || allowedEmails.includes(trimmed)) return;
+        setAllowedEmails([...allowedEmails, trimmed]);
+        setEmailInput('');
+    };
+
+    const removeEmail = (email: string) => {
+        setAllowedEmails(allowedEmails.filter(e => e !== email));
+    };
+
+    const addByClass = async (className: string) => {
+        setPickerLoading(true);
+        try {
+            const users = await getUsersByClass(className);
+            const emailsToAdd = users.map(u => u.email.toLowerCase());
+            const newList = Array.from(new Set([...allowedEmails, ...emailsToAdd]));
+            setAllowedEmails(newList);
+            toast({ title: `Đã thêm ${emailsToAdd.length} học sinh từ lớp ${className}`, type: 'success' });
+        } catch (err) {
+            console.error('Failed to add by class', err);
+            toast({ title: 'Lỗi khi thêm theo lớp', type: 'error' });
+        } finally {
+            setPickerLoading(false);
+        }
+    };
+
     const handleSave = async () => {
         if (!examId) return;
         setSaving(true);
         try {
-            await updateExam(examId, { title, time, subjectId, part1, part2, part3, questionGroups });
+            await updateExam(examId, { 
+                title, time, subjectId, part1, part2, part3, questionGroups,
+                isSpecial, allowedEmails 
+            });
             toast({ title: 'Đã lưu thành công!', type: 'success' });
         } catch (err) {
             toast({ title: 'Lỗi khi lưu', message: String(err), type: 'error' });
@@ -284,6 +350,120 @@ export default function EditExamPage() {
                         <Save className="h-4 w-4" /> Lưu tất cả
                     </Button>
                 </div>
+            </div>
+
+            {/* SPECIAL EXAM SECTION */}
+            <div className="admin-card overflow-hidden">
+                <div className="p-4 flex items-center justify-between bg-slate-50/50 dark:bg-slate-800/20">
+                    <div className="flex items-center gap-3">
+                        <div className={cn("p-2 rounded-lg transition-colors", isSpecial ? "bg-indigo-500 text-white" : "bg-slate-200 text-slate-500 dark:bg-slate-800")}>
+                            <UserPlus className="h-5 w-5" />
+                        </div>
+                        <div>
+                            <h3 className="font-bold text-slate-800 dark:text-slate-100">Đề thi đặc biệt</h3>
+                            <p className="text-xs text-slate-500">Giới hạn người truy cập (chỉ những người được chọn mới thấy đề)</p>
+                        </div>
+                    </div>
+                    <button 
+                        onClick={() => setIsSpecial(!isSpecial)}
+                        className={cn(
+                            "relative inline-flex h-6 w-11 shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors duration-200 ease-in-out focus:outline-none",
+                            isSpecial ? "bg-indigo-600" : "bg-slate-200 dark:bg-slate-700"
+                        )}
+                    >
+                        <span className={cn(
+                            "pointer-events-none inline-block h-5 w-5 transform rounded-full bg-white shadow ring-0 transition duration-200 ease-in-out",
+                            isSpecial ? "translate-x-5" : "translate-x-0"
+                        )} />
+                    </button>
+                </div>
+
+                {isSpecial && (
+                    <div className="p-4 border-t border-slate-100 dark:border-slate-800 animate-in slide-in-from-top-2 duration-300">
+                        <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
+                            {/* Email Picker */}
+                            <div className="space-y-4">
+                                <div className="flex bg-slate-100 dark:bg-slate-800 p-1 rounded-xl w-fit">
+                                    <PickerTab active={activePickerTab === 'manual'} onClick={() => setActivePickerTab('manual')} icon={Edit3} label="Nhập mail" />
+                                    <PickerTab active={activePickerTab === 'system'} onClick={() => setActivePickerTab('system')} icon={UsersIcon} label="Hệ thống" />
+                                    <PickerTab active={activePickerTab === 'class'} onClick={() => setActivePickerTab('class')} icon={ClassIcon} label="Theo lớp" />
+                                </div>
+
+                                {activePickerTab === 'manual' && (
+                                    <div className="flex gap-2">
+                                        <input 
+                                            value={emailInput}
+                                            onChange={e => setEmailInput(e.target.value)}
+                                            onKeyDown={e => e.key === 'Enter' && addEmail(emailInput)}
+                                            placeholder="Nhập email người dùng..."
+                                            className="flex-1 rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 px-3 py-2 text-sm outline-none focus:border-indigo-500"
+                                        />
+                                        <Button onClick={() => addEmail(emailInput)} size="sm" className="rounded-xl">Thêm</Button>
+                                    </div>
+                                )}
+
+                                {activePickerTab === 'system' && (
+                                    <div className="max-h-48 overflow-y-auto border border-slate-100 dark:border-slate-800 rounded-xl divide-y divide-slate-100 dark:divide-slate-800">
+                                        {pickerLoading ? <div className="p-4 text-center"><Spinner size="sm" /></div> : 
+                                            systemUsers.length === 0 ? <p className="p-4 text-center text-xs text-slate-500">Không có người dùng</p> :
+                                            systemUsers.map(u => (
+                                                <button 
+                                                    key={u.email}
+                                                    onClick={() => addEmail(u.email)}
+                                                    disabled={allowedEmails.includes(u.email)}
+                                                    className="w-full flex items-center justify-between p-2 hover:bg-slate-50 dark:hover:bg-slate-800/40 text-left disabled:opacity-50"
+                                                >
+                                                    <span className="text-xs font-medium">{u.name || u.email} <span className="text-slate-400 font-normal">({u.email})</span></span>
+                                                    {!allowedEmails.includes(u.email) && <Plus className="h-3 w-3 text-indigo-500" />}
+                                                </button>
+                                            ))
+                                        }
+                                    </div>
+                                )}
+
+                                {activePickerTab === 'class' && (
+                                    <div className="grid grid-cols-2 gap-2 max-h-48 overflow-y-auto">
+                                        {pickerLoading ? <div className="col-span-2 p-4 text-center"><Spinner size="sm" /></div> :
+                                            classes.length === 0 ? <p className="col-span-2 p-4 text-center text-xs text-slate-500">Chưa có dữ liệu lớp</p> :
+                                            classes.map(c => (
+                                                <button 
+                                                    key={c}
+                                                    onClick={() => addByClass(c)}
+                                                    className="flex items-center justify-between p-2 rounded-lg border border-slate-100 dark:border-slate-800 hover:border-indigo-200 hover:bg-indigo-50/30 text-left transition-colors"
+                                                >
+                                                    <span className="text-xs font-bold uppercase">{c}</span>
+                                                    <UsersIcon className="h-3 w-3 text-slate-400" />
+                                                </button>
+                                            ))
+                                        }
+                                    </div>
+                                )}
+                            </div>
+
+                            {/* Allowed List */}
+                            <div className="space-y-3">
+                                <div className="flex items-center justify-between">
+                                    <h4 className="text-xs font-black uppercase text-slate-500 tracking-wider">Người được phép truy cập ({allowedEmails.length})</h4>
+                                    {allowedEmails.length > 0 && <button onClick={() => setAllowedEmails([])} className="text-[10px] font-bold text-rose-500 hover:underline">Xóa tất cả</button>}
+                                </div>
+                                <div className="flex flex-wrap gap-2 max-h-48 overflow-y-auto p-1">
+                                    {allowedEmails.length === 0 ? (
+                                        <p className="text-sm text-slate-400 italic">Chưa chọn người dùng nào. Đề thi này sẽ hiện với KHÔNG MỘT AI (ngoại trừ Admin).</p>
+                                    ) : (
+                                        allowedEmails.map(email => (
+                                            <div key={email} className="flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-indigo-50 dark:bg-indigo-900/30 border border-indigo-100 dark:border-indigo-800 text-indigo-700 dark:text-indigo-300 text-xs font-bold shadow-sm group">
+                                                {email}
+                                                <button onClick={() => removeEmail(email)} className="hover:text-rose-500 transition-colors">
+                                                    <X className="h-3 w-3" />
+                                                </button>
+                                            </div>
+                                        ))
+                                    )}
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                )}
             </div>
 
             {/* QUESTION GROUPS (English Only) */}
@@ -779,5 +959,19 @@ export default function EditExamPage() {
                 </div>
             </div>
         </div>
+    );
+}
+
+function PickerTab({ active, onClick, icon: Icon, label }: { active: boolean, onClick: () => void, icon: any, label: string }) {
+    return (
+        <button 
+            onClick={onClick}
+            className={cn(
+                "flex items-center gap-2 px-3 py-1.5 rounded-lg text-[11px] font-bold transition-all",
+                active ? "bg-white dark:bg-slate-700 shadow-sm text-slate-900 dark:text-white" : "text-slate-400 hover:text-slate-600 dark:hover:text-slate-300"
+            )}
+        >
+            <Icon className="h-3 w-3" /> {label}
+        </button>
     );
 }

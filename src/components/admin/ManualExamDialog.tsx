@@ -2,8 +2,9 @@ import { useState } from 'react';
 import { Button } from '@/components/ui/Button';
 import { Dialog } from '@/components/ui/Dialog';
 import { getSubjects } from '@/services/exam.service';
-import { PlusCircle, X } from 'lucide-react';
+import { PlusCircle, X, UserPlus } from 'lucide-react';
 import { cn } from '@/lib/utils';
+import { getAllAllowedUsers, getUniqueClasses, getUsersByClass } from '@/services/auth.service';
 
 // Manual dialog only renders PlusCircle and X icons so keep the import list minimal.
 
@@ -29,6 +30,12 @@ export function ManualExamDialog({ open, onClose, onSave, initialSubject }: Manu
     const [part2, setPart2] = useState<any[]>([]);
     const [part3, setPart3] = useState<any[]>([]);
     const [questionGroups, setQuestionGroups] = useState<any[]>([]);
+
+    // Special Exam state
+    const [isSpecial, setIsSpecial] = useState(false);
+    const [allowedEmails, setAllowedEmails] = useState<string[]>([]);
+    const [emailInput, setEmailInput] = useState('');
+    const [activePickerTab, setActivePickerTab] = useState<'manual' | 'system' | 'class'>('manual');
 
     const addGroup = () => {
         setQuestionGroups([...questionGroups, {
@@ -103,6 +110,8 @@ export function ManualExamDialog({ open, onClose, onSave, initialSubject }: Manu
                 part1,
                 part2,
                 part3,
+                isSpecial,
+                allowedEmails,
                 questionGroups: meta.subjectId === 'anh' ? questionGroups : [],
             });
             onClose();
@@ -149,6 +158,64 @@ export function ManualExamDialog({ open, onClose, onSave, initialSubject }: Manu
                                 <label className="text-xs font-bold uppercase text-muted-foreground mb-1 block">Thời gian</label>
                                 <input type="number" value={meta.time} onChange={e => setMeta({...meta, time: parseInt(e.target.value) || 0})} className="w-full border rounded-lg px-3 py-2 text-sm outline-none focus:border-primary" />
                             </div>
+                        </div>
+
+                        {/* Special Exam Section */}
+                        <div className="p-4 rounded-xl border border-indigo-100 bg-indigo-50/20 dark:bg-indigo-900/10">
+                            <div className="flex items-center justify-between mb-4">
+                                <div className="flex items-center gap-2">
+                                    <UserPlus className="h-4 w-4 text-indigo-500" />
+                                    <span className="text-sm font-bold text-slate-700 dark:text-slate-200">Đề thi đặc biệt</span>
+                                </div>
+                                <button 
+                                    type="button"
+                                    onClick={() => setIsSpecial(!isSpecial)}
+                                    className={cn(
+                                        "relative inline-flex h-5 w-10 shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors duration-200 ease-in-out focus:outline-none",
+                                        isSpecial ? "bg-indigo-600" : "bg-slate-200 dark:bg-slate-700"
+                                    )}
+                                >
+                                    <span className={cn(
+                                        "pointer-events-none inline-block h-4 w-4 transform rounded-full bg-white shadow ring-0 transition duration-200 ease-in-out",
+                                        isSpecial ? "translate-x-5" : "translate-x-0"
+                                    )} />
+                                </button>
+                            </div>
+
+                            {isSpecial && (
+                                <div className="space-y-4 animate-in slide-in-from-top-1 duration-200">
+                                    <div className="flex bg-slate-100 dark:bg-slate-800 p-1 rounded-lg w-fit">
+                                        <button type="button" onClick={() => setActivePickerTab('manual')} className={cn("px-3 py-1 rounded-md text-[10px] font-bold transition-all", activePickerTab === 'manual' ? "bg-white dark:bg-slate-700 shadow-sm text-slate-900" : "text-slate-400")}>Manual</button>
+                                        <button type="button" onClick={() => setActivePickerTab('system')} className={cn("px-3 py-1 rounded-md text-[10px] font-bold transition-all", activePickerTab === 'system' ? "bg-white dark:bg-slate-700 shadow-sm text-slate-900" : "text-slate-400")}>Hệ thống</button>
+                                        <button type="button" onClick={() => setActivePickerTab('class')} className={cn("px-3 py-1 rounded-md text-[10px] font-bold transition-all", activePickerTab === 'class' ? "bg-white dark:bg-slate-700 shadow-sm text-slate-900" : "text-slate-400")}>Lớp học</button>
+                                    </div>
+
+                                    <div className="flex flex-wrap gap-2 min-h-[40px] p-2 rounded-lg bg-white dark:bg-slate-900 border border-slate-100 dark:border-slate-800">
+                                        {allowedEmails.length === 0 ? <p className="text-[10px] text-slate-400 italic">Chưa chọn ai...</p> :
+                                            allowedEmails.map(email => (
+                                                <span key={email} className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-indigo-50 text-indigo-600 text-[10px] font-bold">
+                                                    {email}
+                                                    <X onClick={() => setAllowedEmails(allowedEmails.filter(e => e !== email))} className="h-2.5 w-2.5 cursor-pointer hover:text-rose-500" />
+                                                </span>
+                                            ))
+                                        }
+                                    </div>
+                                    
+                                    {activePickerTab === 'manual' && (
+                                        <div className="flex gap-2">
+                                            <input value={emailInput} onChange={e => setEmailInput(e.target.value)} placeholder="Email..." className="flex-1 text-xs border rounded-lg px-2 py-1.5 outline-none" />
+                                            <Button type="button" onClick={() => {
+                                                if (emailInput && !allowedEmails.includes(emailInput.toLowerCase())) {
+                                                    setAllowedEmails([...allowedEmails, emailInput.toLowerCase()]);
+                                                    setEmailInput('');
+                                                }
+                                            }} size="sm">Add</Button>
+                                        </div>
+                                    )}
+                                    {/* Simplified System/Class pickers for the dialog to keep it compact */}
+                                    <p className="text-[10px] text-slate-400">Gợi ý: Dùng trang Chỉnh sửa đề sau khi lưu để có công cụ chọn nâng cao hơn.</p>
+                                </div>
+                            )}
                         </div>
 
                         {meta.subjectId === 'anh' && (

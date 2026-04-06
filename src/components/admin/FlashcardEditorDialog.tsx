@@ -6,10 +6,12 @@ import {
     Plus, Trash2, Type, 
     ChevronDown, Eye, EyeOff,
     Pencil, Save, 
-    AlertCircle, Layers
+    AlertCircle, Layers,
+    Upload, Loader2
 } from 'lucide-react';
 import { FormattedText } from '@/components/ui/FormattedText';
 import { getSubjects } from '@/services/exam.service';
+import { uploadToImgBB } from '@/services/image.service';
 import type { VocabSet, VocabWord } from '@/types';
 
 interface FlashcardEditorDialogProps {
@@ -31,6 +33,9 @@ export function FlashcardEditorDialog({ open, onClose, onSave, initialData, mode
     const [activeField, setActiveField] = useState<{ index: number, field: keyof VocabWord } | null>(null);
 
     const textAreaRefs = useRef<Record<string, HTMLTextAreaElement | null>>({});
+    const fileInputRef = useRef<HTMLInputElement | null>(null);
+    const [uploadingIndex, setUploadingIndex] = useState<number | null>(null);
+    const [uploadError, setUploadError] = useState<string | null>(null);
 
     useEffect(() => {
         if (open) {
@@ -79,6 +84,23 @@ export function FlashcardEditorDialog({ open, onClose, onSave, initialData, mode
             const newCursorPos = start + syntax.length;
             textarea.setSelectionRange(newCursorPos, newCursorPos);
         }, 0);
+    };
+
+    const handleImageUpload = async (index: number, file: File) => {
+        try {
+            setUploadingIndex(index);
+            setUploadError(null);
+            
+            const result = await uploadToImgBB(file);
+            updateWord(index, 'image', result.url);
+        } catch (error: any) {
+            console.error('[Flashcard Editor] Upload failed:', error);
+            setUploadError(error.message || 'Lỗi tải ảnh. Vui lòng thử lại.');
+            setTimeout(() => setUploadError(null), 3000); // Clear error after 3s
+        } finally {
+            setUploadingIndex(null);
+            if (fileInputRef.current) fileInputRef.current.value = '';
+        }
     };
 
     const handleSave = () => {
@@ -343,15 +365,45 @@ export function FlashcardEditorDialog({ open, onClose, onSave, initialData, mode
                                             <div className="space-y-2">
                                                 <label className="text-[10px] font-black text-gray-400 uppercase tracking-widest ml-1">Hình ảnh (Tuỳ chọn)</label>
                                                 <div className="flex flex-col gap-2 relative">
-                                                    <input 
-                                                        placeholder="Nhập URL hình ảnh (vd: https://...)"
-                                                        value={word.image || ''}
-                                                        onChange={(e) => updateWord(index, 'image', e.target.value)}
-                                                        className="w-full flex h-[46px] rounded-2xl border border-gray-100 dark:border-slate-800 bg-gray-50/30 dark:bg-slate-800/30 px-4 py-2 text-sm font-medium outline-none focus:ring-2 focus:ring-purple-500 transition-all"
-                                                    />
+                                                    <div className="flex gap-2">
+                                                        <input 
+                                                            placeholder="Nhập URL hình ảnh (vd: https://...)"
+                                                            value={word.image || ''}
+                                                            onChange={(e) => updateWord(index, 'image', e.target.value)}
+                                                            className="flex-1 flex h-[46px] rounded-2xl border border-gray-100 dark:border-slate-800 bg-gray-50/30 dark:bg-slate-800/30 px-4 py-2 text-sm font-medium outline-none focus:ring-2 focus:ring-purple-500 transition-all"
+                                                        />
+                                                        <Button
+                                                            type="button"
+                                                            variant="outline"
+                                                            onClick={() => {
+                                                                setActiveField({ index, field: 'image' });
+                                                                fileInputRef.current?.click();
+                                                            }}
+                                                            disabled={uploadingIndex === index}
+                                                            className="h-[46px] rounded-2xl border-gray-100 dark:border-slate-800 font-bold px-4"
+                                                        >
+                                                            {uploadingIndex === index ? (
+                                                                <Loader2 className="h-4 w-4 animate-spin" />
+                                                            ) : (
+                                                                <Upload className="h-4 w-4 mr-2" />
+                                                            )}
+                                                            {uploadingIndex === index ? 'Đang tải...' : 'Tải lên'}
+                                                        </Button>
+                                                    </div>
+                                                    
+                                                    {uploadError && activeField?.index === index && activeField?.field === 'image' && (
+                                                        <p className="text-[10px] text-red-500 font-bold ml-1">{uploadError}</p>
+                                                    )}
+
                                                     {word.image && (
-                                                        <div className="h-16 w-16 p-1 bg-white dark:bg-slate-800 border border-gray-100 dark:border-slate-700 rounded-xl overflow-hidden shadow-sm">
+                                                        <div className="h-16 w-16 p-1 bg-white dark:bg-slate-800 border border-gray-100 dark:border-slate-700 rounded-xl overflow-hidden shadow-sm group/img relative">
                                                             <img src={word.image} alt="Preview" className="w-full h-full object-cover rounded-lg" />
+                                                            <button 
+                                                                onClick={() => updateWord(index, 'image', '')}
+                                                                className="absolute top-1 right-1 p-0.5 bg-red-500 text-white rounded-full opacity-0 group-hover/img:opacity-100 transition-opacity"
+                                                            >
+                                                                <Trash2 className="h-2 w-2" />
+                                                            </button>
                                                         </div>
                                                     )}
                                                 </div>
@@ -378,6 +430,20 @@ export function FlashcardEditorDialog({ open, onClose, onSave, initialData, mode
                     </p>
                 </div>
             </div>
+
+            {/* Hidden File Input */}
+            <input 
+                type="file"
+                ref={fileInputRef}
+                className="hidden"
+                accept="image/*"
+                onChange={(e) => {
+                    const file = e.target.files?.[0];
+                    if (file && activeField?.index !== undefined) {
+                        handleImageUpload(activeField.index, file);
+                    }
+                }}
+            />
         </Dialog>
     );
 }

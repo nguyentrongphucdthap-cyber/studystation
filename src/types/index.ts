@@ -9,7 +9,7 @@ export interface UserProfile {
     photoURL: string | null;
 }
 
-export type UserRole = 'user' | 'teacher' | 'admin' | 'super-admin' | 'admin/user' | 'super-admin/admin/user' | 'guest';
+export type UserRole = 'user' | 'teacher' | 'admin' | 'boss' | 'super-admin' | 'admin/user' | 'super-admin/admin/user' | 'guest';
 
 export interface AllowedUser {
     email: string;
@@ -92,6 +92,8 @@ export interface Exam {
     updatedAt?: string;
     createdBy?: string;
     examCode?: string;
+    isSpecial?: boolean;
+    allowedEmails?: string[];
 }
 
 export interface ExamMetadata {
@@ -103,6 +105,8 @@ export interface ExamMetadata {
     createdAt?: string;
     updatedAt?: string;
     examCode?: string;
+    isSpecial?: boolean;
+    allowedEmails?: string[];
     questionCount?: {
         part1: number;
         part2: number;
@@ -331,5 +335,20 @@ export interface BlacklistEntry {
     reason?: string;
     addedAt: string;
     addedBy: string;
+}
+
+export type AccessRequestStatus = 'pending' | 'approved' | 'rejected';
+
+export interface AccessRequest {
+    id: string;
+    email: string;
+    displayName: string | null;
+    photoURL: string | null;
+    message?: string;
+    status: AccessRequestStatus;
+    createdAt: string;
+    reviewedBy?: string;
+    reviewedAt?: string;
+    reviewNote?: string;
 }
 

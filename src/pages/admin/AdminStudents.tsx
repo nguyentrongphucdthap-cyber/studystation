@@ -17,6 +17,7 @@ import { downloadCSV } from '@/lib/exportUtils';
 
 const roleOptions = [
     { value: 'user', label: 'Học sinh', icon: User, color: 'bg-blue-100 text-blue-700' },
+    { value: 'boss', label: 'Boss', icon: ShieldCheck, color: 'bg-purple-100 text-purple-700' },
     { value: 'admin', label: 'Admin', icon: Shield, color: 'bg-amber-100 text-amber-700' },
     { value: 'super-admin', label: 'Super Admin', icon: ShieldCheck, color: 'bg-red-100 text-red-700' },
 ];
@@ -143,13 +144,14 @@ export default function AdminStudents() {
 
         // 3. Role Hierarchy
         const roleOrder: Record<string, number> = {
-            'admin': 1,
-            'super-admin': 2,
-            'teacher': 3,
-            'user': 4
+            'boss': 1,
+            'admin': 2,
+            'super-admin': 3,
+            'teacher': 4,
+            'user': 5
         };
-        const priorityA = roleOrder[a.role] || 5;
-        const priorityB = roleOrder[b.role] || 5;
+        const priorityA = roleOrder[a.role] || 6;
+        const priorityB = roleOrder[b.role] || 6;
         
         if (priorityA !== priorityB) {
             return priorityA - priorityB;

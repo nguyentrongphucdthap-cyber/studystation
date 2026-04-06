@@ -31,6 +31,8 @@ import {
     LogOut,
     ChevronRight,
     History,
+    Link,
+    Play,
 } from 'lucide-react';
 import { useAuth } from '@/contexts/AuthContext';
 import { useTheme } from '@/contexts/ThemeContext';
@@ -99,13 +101,84 @@ const NOTES_KEY_PREFIX = 'hub_notes_';
 // Theme is managed by ThemeContext (no local key needed)
 const POMODORO_SESSIONS_KEY = 'hub_pomodoro_sessions';
 const MUSIC_STATE_KEY = 'hub_music_state';
+const MUSIC_HISTORY_KEY = 'hub_music_history';
 
-const LOFI_TRACKS = [
-    { id: 'lofi1', title: 'Lazy Afternoon', artist: 'Lofi Study', url: 'https://www.soundhelix.com/examples/mp3/SoundHelix-Song-1.mp3', cover: 'https://images.unsplash.com/photo-1516280440614-37939bbacd81?auto=format&fit=crop&q=80&w=800' },
-    { id: 'lofi2', title: 'Midnight Rain', artist: 'Chill Beats', url: 'https://www.soundhelix.com/examples/mp3/SoundHelix-Song-2.mp3', cover: 'https://images.unsplash.com/photo-1541689221361-ad95003aa0d5?auto=format&fit=crop&q=80&w=800' },
-    { id: 'lofi3', title: 'Cherry Blossom', artist: 'Zen Focus', url: 'https://www.soundhelix.com/examples/mp3/SoundHelix-Song-3.mp3', cover: 'https://images.unsplash.com/photo-1493225255756-d9584f8606e9?auto=format&fit=crop&q=80&w=800' },
-    { id: 'lofi4', title: 'Night Owl', artist: 'Lofi Girl', url: 'https://www.soundhelix.com/examples/mp3/SoundHelix-Song-4.mp3', cover: 'https://images.unsplash.com/photo-1518609878373-06d740f60d8b?auto=format&fit=crop&q=80&w=800' },
-];
+// ── Music Link Utilities ──
+type MusicPlatform = 'youtube' | 'spotify' | 'soundcloud' | null;
+
+interface MusicLink {
+    id: string;
+    url: string;
+    embedUrl: string;
+    platform: MusicPlatform;
+    title: string;
+}
+
+function detectPlatform(url: string): MusicPlatform {
+    if (/youtu\.?be/i.test(url)) return 'youtube';
+    if (/spotify\.com/i.test(url)) return 'spotify';
+    if (/soundcloud\.com/i.test(url)) return 'soundcloud';
+    return null;
+}
+
+function getEmbedUrl(url: string, platform: MusicPlatform): string | null {
+    if (platform === 'youtube') {
+        let videoId: string | null = null;
+        const longMatch = url.match(/[?&]v=([^&]+)/);
+        const shortMatch = url.match(/youtu\.be\/([^?&]+)/);
+        const embedMatch = url.match(/youtube\.com\/embed\/([^?&]+)/);
+        videoId = longMatch?.[1] || shortMatch?.[1] || embedMatch?.[1] || null;
+        if (!videoId) return null;
+        return `https://www.youtube.com/embed/${videoId}?autoplay=1&rel=0`;
+    }
+    if (platform === 'spotify') {
+        // convert open.spotify.com/track/ID → open.spotify.com/embed/track/ID
+        const match = url.match(/spotify\.com\/(track|album|playlist|episode)\/([^?]+)/);
+        if (!match) return null;
+        return `https://open.spotify.com/embed/${match[1]}/${match[2]}?utm_source=generator&theme=0`;
+    }
+    if (platform === 'soundcloud') {
+        return `https://w.soundcloud.com/player/?url=${encodeURIComponent(url)}&auto_play=true&color=%23ff5500&hide_related=true&show_comments=false&show_user=true&show_reposts=false&show_teaser=false`;
+    }
+    return null;
+}
+
+function extractTitle(url: string, platform: MusicPlatform): string {
+    try {
+        const u = new URL(url);
+        if (platform === 'youtube') {
+            return 'YouTube Music';
+        }
+        if (platform === 'spotify') {
+            const parts = u.pathname.split('/');
+            const type = parts[1];
+            return type === 'track' ? 'Spotify Track' : type === 'album' ? 'Spotify Album' : type === 'playlist' ? 'Spotify Playlist' : 'Spotify';
+        }
+        if (platform === 'soundcloud') {
+            const parts = u.pathname.split('/').filter(Boolean);
+            return parts.length >= 2 ? decodeURIComponent(parts[1] as string).replace(/-/g, ' ') : 'SoundCloud';
+        }
+    } catch { /* ignore */ }
+    return 'Nhạc';
+}
+
+function getPlatformIcon(platform: MusicPlatform): string {
+    switch (platform) {
+        case 'youtube': return '🎬';
+        case 'spotify': return '🎵';
+        case 'soundcloud': return '🎧';
+        default: return '🎶';
+    }
+}
+
+function getPlatformColor(platform: MusicPlatform): string {
+    switch (platform) {
+        case 'youtube': return '#ff0000';
+        case 'spotify': return '#1db954';
+        case 'soundcloud': return '#ff5500';
+        default: return 'var(--accent-color)';
+    }
+}
 
 // ============================================================
 // MAIN COMPONENT
@@ -143,78 +216,51 @@ export function FloatingHub() {
     const [pomodoroCycle, setPomodoroCycle] = useState(() => (pomodoroSessions % 4) || (pomodoroSessions === 0 ? 0 : 4));
     const pomodoroInterval = useRef<ReturnType<typeof setInterval> | null>(null);
 
-    // ── Global Music State (Lifting State Up) ──
-    const audioRef = useRef<HTMLAudioElement | null>(null);
+    // ── Global Music State (Link-based) ──
     const [isPlaying, setIsPlaying] = useState(false);
-    const [currentSong, setCurrentSong] = useState<typeof LOFI_TRACKS[0] | null>(() => {
+    const [currentMusic, setCurrentMusic] = useState<MusicLink | null>(() => {
         try {
             const saved = localStorage.getItem(MUSIC_STATE_KEY);
-            if (saved) {
-                const parsed = JSON.parse(saved);
-                return LOFI_TRACKS.find(t => t.id === parsed.id) || null;
-            }
+            if (saved) return JSON.parse(saved);
         } catch { /* ignore */ }
         return null;
     });
-    const [currentTime, setCurrentTime] = useState(0);
-    const [duration, setDuration] = useState(0);
+    const [musicHistory, setMusicHistory] = useState<MusicLink[]>(() => {
+        try {
+            const saved = localStorage.getItem(MUSIC_HISTORY_KEY);
+            if (saved) return JSON.parse(saved);
+        } catch { /* ignore */ }
+        return [];
+    });
 
-    // Sync audio on mount
-    useEffect(() => {
-        const audio = audioRef.current;
-        if (!audio) return;
-
-        const handleTimeUpdate = () => setCurrentTime(audio.currentTime);
-        const handleDurationChange = () => setDuration(audio.duration);
-        const handleEnded = () => {
-            if (!currentSong) return;
-            // Auto play next song
-            const idx = LOFI_TRACKS.findIndex(t => t.id === currentSong.id);
-            const nextIdx = (idx + 1) % LOFI_TRACKS.length;
-            playSong(LOFI_TRACKS[nextIdx]!);
-        };
-
-        audio.addEventListener('timeupdate', handleTimeUpdate);
-        audio.addEventListener('loadedmetadata', handleDurationChange);
-        audio.addEventListener('ended', handleEnded);
-
-        return () => {
-            audio.removeEventListener('timeupdate', handleTimeUpdate);
-            audio.removeEventListener('loadedmetadata', handleDurationChange);
-            audio.removeEventListener('ended', handleEnded);
-        };
-    }, [currentSong]);
-
-    const playSong = (song: typeof LOFI_TRACKS[0]) => {
-        if (currentSong?.id === song.id) {
-            togglePlay();
-            return;
-        }
-        setCurrentSong(song);
+    const playMusicLink = useCallback((link: MusicLink) => {
+        setCurrentMusic(link);
         setIsPlaying(true);
-        if (audioRef.current) {
-            audioRef.current.src = song.url;
-            audioRef.current.play().catch(() => setIsPlaying(false));
-            localStorage.setItem(MUSIC_STATE_KEY, JSON.stringify({ id: song.id }));
-        }
-    };
+        localStorage.setItem(MUSIC_STATE_KEY, JSON.stringify(link));
+        // Add to history (deduplicate, max 10)
+        setMusicHistory(prev => {
+            const filtered = prev.filter(l => l.id !== link.id);
+            const updated = [link, ...filtered].slice(0, 10);
+            localStorage.setItem(MUSIC_HISTORY_KEY, JSON.stringify(updated));
+            return updated;
+        });
+    }, []);
 
-    const togglePlay = () => {
-        if (!audioRef.current || !currentSong) return;
-        if (isPlaying) {
-            audioRef.current.pause();
-            setIsPlaying(false);
-        } else {
-            audioRef.current.play().catch(() => setIsPlaying(false));
-            setIsPlaying(true);
-        }
-    };
+    const stopMusic = useCallback(() => {
+        setCurrentMusic(null);
+        setIsPlaying(false);
+        localStorage.removeItem(MUSIC_STATE_KEY);
+    }, []);
 
-    const formatTime = (secs: number) => {
-        const m = Math.floor(secs / 60);
-        const s = Math.floor(secs % 60);
-        return `${m}:${s.toString().padStart(2, '0')}`;
-    };
+    const removeMusicFromHistory = useCallback((id: string) => {
+        setMusicHistory(prev => {
+            const updated = prev.filter(l => l.id !== id);
+            localStorage.setItem(MUSIC_HISTORY_KEY, JSON.stringify(updated));
+            return updated;
+        });
+    }, []);
+
+
 
     // Pomodoro timer effect (runs in PARENT — never unmounts)
     useEffect(() => {
@@ -355,8 +401,7 @@ export function FloatingHub() {
     if (!user) return null;
 
     // ── Pre-render logic for FAB ──
-    const showMusicPill = !isOpen && isPlaying && currentSong;
-    const remainingTime = duration - currentTime;
+    const showMusicPill = !isOpen && isPlaying && currentMusic;
     const pomodoroModesMap = {
         focus: POMODORO_MODES[0],
         shortBreak: POMODORO_MODES[1],
@@ -365,16 +410,6 @@ export function FloatingHub() {
 
     return (
         <>
-            {/* ── Global Music Background Overlay ── */}
-            {isPlaying && currentSong && (
-                <div 
-                    className="hub-global-music-bg"
-                    style={{ backgroundImage: `url(${currentSong.cover})` }}
-                />
-            )}
-
-            {/* Hidden Audio element for Option 1 */}
-            <audio ref={audioRef} style={{ display: 'none' }} />
             {/* ── Floating Toggle Button (FAB) ── */}
             <button
                 ref={fabRef}
@@ -387,8 +422,8 @@ export function FloatingHub() {
             >
                 {showMusicPill ? (
                     <div className="hub-music-pill-content">
-                        <div className="hub-music-pill-cover">
-                            <img src={currentSong.cover} alt="" />
+                        <div className="hub-music-pill-cover" style={{ background: getPlatformColor(currentMusic.platform), display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                            <span style={{ fontSize: '18px' }}>{getPlatformIcon(currentMusic.platform)}</span>
                             <div className="wave-bars">
                                 <span className="bar" />
                                 <span className="bar" />
@@ -396,8 +431,8 @@ export function FloatingHub() {
                             </div>
                         </div>
                         <div className="hub-music-pill-info">
-                            <span className="hub-music-pill-title">{currentSong.title}</span>
-                            <span className="hub-music-pill-time">-{formatTime(remainingTime > 0 ? remainingTime : 0)}</span>
+                            <span className="hub-music-pill-title">{currentMusic.title}</span>
+                            <span className="hub-music-pill-time" style={{ color: getPlatformColor(currentMusic.platform) }}>Đang phát</span>
                         </div>
                     </div>
                 ) : (
@@ -483,18 +518,12 @@ export function FloatingHub() {
                             {activeTab === 'notes' && <NotesTab userEmail={user.email} />}
                             {activeTab === 'music' && (
                                 <MusicTab 
-                                    currentSong={currentSong} 
-                                    isPlaying={isPlaying} 
-                                    onTogglePlay={togglePlay} 
-                                    onPlaySong={playSong}
-                                    currentTime={currentTime}
-                                    duration={duration}
-                                    onSeek={(time) => {
-                                        if (audioRef.current) {
-                                            audioRef.current.currentTime = time;
-                                            setCurrentTime(time);
-                                        }
-                                    }}
+                                    currentMusic={currentMusic}
+                                    isPlaying={isPlaying}
+                                    onPlayLink={playMusicLink}
+                                    onStop={stopMusic}
+                                    musicHistory={musicHistory}
+                                    onRemoveFromHistory={removeMusicFromHistory}
                                 />
                             )}
                             {activeTab === 'theme' && <ThemeTab />}
@@ -1934,19 +1963,40 @@ function ThemeTab() {
 // MUSIC TAB
 // ============================================================
 
-function MusicTab({ currentSong, isPlaying, onTogglePlay, onPlaySong, currentTime, duration, onSeek }: { 
-    currentSong: typeof LOFI_TRACKS[0] | null, 
+function MusicTab({ currentMusic, isPlaying, onPlayLink, onStop, musicHistory, onRemoveFromHistory }: { 
+    currentMusic: MusicLink | null, 
     isPlaying: boolean, 
-    onTogglePlay: () => void, 
-    onPlaySong: (song: typeof LOFI_TRACKS[0]) => void,
-    currentTime: number,
-    duration: number,
-    onSeek: (time: number) => void
+    onPlayLink: (link: MusicLink) => void,
+    onStop: () => void,
+    musicHistory: MusicLink[],
+    onRemoveFromHistory: (id: string) => void
 }) {
-    const formatTime = (secs: number) => {
-        const m = Math.floor(secs / 60);
-        const s = Math.floor(secs % 60);
-        return `${m}:${s.toString().padStart(2, '0')}`;
+    const [inputUrl, setInputUrl] = useState('');
+    const [error, setError] = useState('');
+
+    const handlePlay = () => {
+        if (!inputUrl.trim()) return;
+        const platform = detectPlatform(inputUrl);
+        if (!platform) {
+            setError('Link không hỗ trợ! (YouTube, Spotify, SoundCloud)');
+            return;
+        }
+        const embedUrl = getEmbedUrl(inputUrl, platform);
+        if (!embedUrl) {
+            setError('Không thể tạo link nhúng!');
+            return;
+        }
+
+        const newLink: MusicLink = {
+            id: Date.now().toString(),
+            url: inputUrl,
+            embedUrl: embedUrl,
+            platform: platform as MusicPlatform,
+            title: extractTitle(inputUrl, platform as MusicPlatform)
+        };
+        onPlayLink(newLink);
+        setInputUrl('');
+        setError('');
     };
 
     return (
@@ -1955,64 +2005,77 @@ function MusicTab({ currentSong, isPlaying, onTogglePlay, onPlaySong, currentTim
                 <h3><Music size={16} /> Âm nhạc</h3>
             </div>
             <div className="hub-content-body">
-                {/* Active Player Card */}
-                {currentSong && (
-                    <div className="music-active-card">
-                        <div className="music-active-cover">
-                            <img src={currentSong.cover} alt="" />
-                            {isPlaying && (
-                                <div className="music-playing-indicator">
-                                    <div className="bar" /><div className="bar" /><div className="bar" />
-                                </div>
-                            )}
-                        </div>
-                        <div className="music-active-info">
-                            <p className="music-active-title">{currentSong.title}</p>
-                            <p className="music-active-artist">{currentSong.artist}</p>
-                            
-                            <div className="music-active-controls">
-                                <button className="music-control-btn" onClick={onTogglePlay}>
-                                    {isPlaying ? <span style={{fontSize: '18px'}}>⏸</span> : <span style={{fontSize: '18px'}}>▶</span>}
-                                </button>
-                                <div className="music-progress-wrap">
-                                    <input 
-                                        type="range" 
-                                        min={0} 
-                                        max={duration || 100} 
-                                        value={currentTime} 
-                                        onChange={(e) => onSeek(parseFloat(e.target.value))}
-                                        className="music-progress-slider"
-                                    />
-                                    <div className="music-time-labels">
-                                        <span>{formatTime(currentTime)}</span>
-                                        <span>{formatTime(duration)}</span>
-                                    </div>
-                                </div>
+                {/* Input Area */}
+                <div className="music-input-container">
+                    <div className="music-input-wrapper">
+                        <Link size={16} className="music-input-tag" />
+                        <input 
+                            type="text" 
+                            placeholder="Dán link YouTube, Spotify, SoundCloud..." 
+                            value={inputUrl}
+                            onChange={(e) => setInputUrl(e.target.value)}
+                            onKeyDown={(e) => e.key === 'Enter' && handlePlay()}
+                        />
+                        <button onClick={handlePlay} className="music-play-btn" title="Phát ngay">
+                            <Play size={16} />
+                        </button>
+                    </div>
+                    {error && <p className="music-error">{error}</p>}
+                </div>
+
+                {/* Player Area */}
+                {currentMusic && (
+                    <div className="music-player-container">
+                        <div className="music-player-header">
+                            <div className="music-player-info">
+                                <span className="music-platform-tag" style={{ color: getPlatformColor(currentMusic.platform) }}>
+                                    {getPlatformIcon(currentMusic.platform)}
+                                </span>
+                                <span className="music-player-name">{currentMusic.title}</span>
                             </div>
+                            <button onClick={onStop} className="music-stop-btn" title="Gỡ bỏ">
+                                <Trash2 size={14} />
+                            </button>
+                        </div>
+                        <div className="music-iframe-wrapper" style={{ height: currentMusic.platform === 'youtube' ? '180px' : '80px' }}>
+                            <iframe 
+                                src={currentMusic.embedUrl} 
+                                frameBorder="0" 
+                                allow="autoplay; clipboard-write; encrypted-media; fullscreen; picture-in-picture" 
+                                loading="lazy"
+                            />
                         </div>
                     </div>
                 )}
 
-                <p className="music-section-label">Danh sách phát Lofi</p>
-                <div className="music-playlist-list">
-                    {LOFI_TRACKS.map(track => (
-                        <div 
-                            key={track.id} 
-                            className={`music-playlist-item ${currentSong?.id === track.id ? 'active' : ''}`}
-                            onClick={() => onPlaySong(track)}
-                        >
-                            <div className="music-item-cover">
-                                <img src={track.cover} alt="" />
-                                {currentSong?.id === track.id && isPlaying && <div className="item-playing-overlay">⏸</div>}
-                            </div>
-                            <div className="music-item-info">
-                                <p className="music-item-title">{track.title}</p>
-                                <p className="music-item-artist">{track.artist}</p>
-                            </div>
-                            {currentSong?.id === track.id && <div className="music-active-dot" />}
+                {/* History Area */}
+                {musicHistory.length > 0 && (
+                    <div className="music-history-section">
+                        <p className="music-section-label">Đã nghe gần đây</p>
+                        <div className="music-history-list">
+                            {musicHistory.map(link => (
+                                <div key={link.id} className={`music-history-item ${currentMusic?.url === link.url ? 'active' : ''}`}>
+                                    <div className="music-history-main" onClick={() => onPlayLink(link)}>
+                                        <span className="music-history-icon">{getPlatformIcon(link.platform)}</span>
+                                        <span className="music-history-name">{link.title}</span>
+                                        {isPlaying && currentMusic?.url === link.url && (
+                                            <div className="music-playing-dot" style={{ backgroundColor: getPlatformColor(link.platform) }} />
+                                        )}
+                                    </div>
+                                    <button 
+                                        className="music-history-del" 
+                                        onClick={(e) => {
+                                            e.stopPropagation();
+                                            onRemoveFromHistory(link.id);
+                                        }}
+                                    >
+                                        <X size={14} />
+                                    </button>
+                                </div>
+                            ))}
                         </div>
-                    ))}
-                </div>
+                    </div>
+                )}
 
                 <div className="music-tip">
                     <Sparkles size={12} /> Nhạc sẽ tiếp tục phát khi bạn đóng Flow.
