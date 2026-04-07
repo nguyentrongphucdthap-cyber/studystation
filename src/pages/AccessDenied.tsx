@@ -65,15 +65,15 @@ export default function AccessDenied() {
 
             <div className="max-w-4xl w-full grid grid-cols-1 lg:grid-cols-2 gap-8 relative z-10 animate-in fade-in zoom-in duration-700">
                 {/* Left Side: Info & Marketing */}
-                <div className="flex flex-col justify-center space-y-8">
-                    <div className="space-y-4">
-                        <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-rose-100 text-rose-600 dark:bg-rose-900/30 dark:text-rose-400 text-xs font-black uppercase tracking-wider shadow-sm">
+                <div className="flex flex-col justify-center space-y-6 md:space-y-8 order-2 lg:order-1 mb-8 lg:mb-0">
+                    <div className="space-y-3 md:space-y-4">
+                        <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-rose-100 text-rose-600 dark:bg-rose-900/30 dark:text-rose-400 text-[11px] md:text-xs font-black uppercase tracking-wider shadow-sm w-fit">
                             <ShieldAlert className="h-3.5 w-3.5" /> Truy cập bị từ chối
                         </div>
-                        <h1 className="text-4xl md:text-5xl font-black text-slate-800 dark:text-white leading-tight tracking-tight">
-                            Chào mừng bạn đến với <span className="text-indigo-600 dark:text-indigo-400">StudyStation</span>
+                        <h1 className="text-3xl md:text-5xl font-black text-slate-800 dark:text-white leading-[1.15] md:leading-tight tracking-tight">
+                            Chào mừng bạn đến với <span className="text-indigo-600 dark:text-indigo-400 block sm:inline">StudyStation</span>
                         </h1>
-                        <p className="text-lg text-slate-600 dark:text-slate-400 font-medium leading-relaxed max-w-md">
+                        <p className="text-base md:text-lg text-slate-600 dark:text-slate-400 font-medium leading-relaxed max-w-md">
                             Nền tảng học tập thông minh, lưu trữ và ôn luyện kiến thức tối ưu dành riêng cho cộng đồng học sinh tài năng.
                         </p>
                     </div>
@@ -104,7 +104,7 @@ export default function AccessDenied() {
                 </div>
 
                 {/* Right Side: Request Card */}
-                <div className="admin-card p-8 bg-white/70 dark:bg-slate-900/60 backdrop-blur-xl border-white/60 dark:border-slate-800 flex flex-col shadow-2xl relative overflow-hidden group">
+                <div className="admin-card p-6 md:p-8 bg-white/80 dark:bg-slate-900/80 backdrop-blur-xl border-white/60 dark:border-slate-800 flex flex-col shadow-2xl relative overflow-hidden group order-1 lg:order-2 rounded-[28px]">
                     <div className="absolute top-0 right-0 p-4 opacity-5 pointer-events-none group-hover:scale-110 transition-transform duration-700">
                         <Shield className="h-40 w-40 text-slate-900 dark:text-white" />
                     </div>
@@ -139,9 +139,9 @@ export default function AccessDenied() {
                                     <Button 
                                         onClick={handleSubmit} 
                                         isLoading={submitting} 
-                                        className="w-full admin-btn-primary py-6 rounded-2xl font-bold flex items-center justify-center gap-2 shadow-xl shadow-indigo-100 dark:shadow-none"
+                                        className="w-full admin-btn-primary py-4 md:py-6 rounded-2xl font-bold flex items-center justify-center gap-2 shadow-xl shadow-indigo-100 dark:shadow-none text-sm md:text-base"
                                     >
-                                        <Send className="h-5 w-5" /> Gửi yêu cầu truy cập
+                                        <Send className="h-4 w-4 md:h-5 md:w-5" /> Gửi yêu cầu truy cập
                                     </Button>
                                     <p className="text-[11px] text-center text-slate-400 font-medium italic">Vui lòng chờ Boss duyệt danh sách. Điều này thường mất vài giờ.</p>
                                 </div>
