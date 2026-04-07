@@ -69,7 +69,19 @@ Quy tắc quan trọng:
             });
         }
 
-        const aiText = data.candidates?.[0]?.content?.parts?.[0]?.text;
+        // Handle Gemma 4 thinking model: extract non-thinking text
+        const parts = data.candidates?.[0]?.content?.parts;
+        let aiText = '';
+        if (parts && parts.length > 0) {
+            // Find the last non-thinking part
+            for (let i = parts.length - 1; i >= 0; i--) {
+                if (!parts[i].thought && parts[i].text) {
+                    aiText = parts[i].text;
+                    break;
+                }
+            }
+            if (!aiText) aiText = parts[parts.length - 1]?.text || '';
+        }
         if (!aiText) {
             throw new Error('AI failed to generate response content');
         }

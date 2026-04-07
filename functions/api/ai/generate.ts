@@ -78,7 +78,17 @@ export const onRequestPost = async (context: any) => {
                     });
                 }
 
-                const data = await response.json();
+                const data = await response.json() as any;
+
+                // Handle Gemma 4 thinking model: skip 'thought' parts, return actual response
+                const parts = data?.candidates?.[0]?.content?.parts;
+                if (parts && parts.length > 1) {
+                    const nonThinkingParts = parts.filter((p: any) => !p.thought && p.text);
+                    if (nonThinkingParts.length > 0) {
+                        data.candidates[0].content.parts = nonThinkingParts;
+                    }
+                }
+
                 return new Response(JSON.stringify(data), {
                     status: 200,
                     headers: corsHeaders(),

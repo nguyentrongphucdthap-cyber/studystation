@@ -20,6 +20,21 @@ export interface AIChatOptions {
 
 const GEMINI_MODEL = 'gemini-2.5-flash-lite';
 
+/** Extract actual response text from Gemma/Gemini candidates, skipping 'thinking' parts */
+function extractResponseText(data: any): string {
+    const parts = data?.candidates?.[0]?.content?.parts;
+    if (!parts || parts.length === 0) throw new Error('Unexpected AI response format');
+    // Gemma 4 thinking models return [{thought: true, text: '...'}, {text: '...actual answer'}]
+    // Find the last part that is NOT a thinking part
+    for (let i = parts.length - 1; i >= 0; i--) {
+        if (!parts[i].thought && parts[i].text) {
+            return parts[i].text as string;
+        }
+    }
+    // Fallback: return last part text anyway
+    return parts[parts.length - 1].text as string;
+}
+
 /** Check if running in local dev environment */
 function isLocalDev(): boolean {
     return window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1';
@@ -47,7 +62,7 @@ async function generateViaProxy(messages: AIChatMessage[], options?: AIChatOptio
         generationConfig: {
             temperature: options?.temperature ?? 0.7,
             maxOutputTokens: options?.maxOutputTokens ?? 8192,
-            ...(options?.responseMimeType ? { responseMimeType: options.responseMimeType } : {})
+            ...(options?.responseMimeType ? { responseMimeType: options.responseMimeType } : {}),
         },
     };
     if (options?.systemInstruction) {
@@ -70,10 +85,7 @@ async function generateViaProxy(messages: AIChatMessage[], options?: AIChatOptio
     }
 
     const data = await response.json() as any;
-    if (data.candidates && data.candidates[0]?.content?.parts?.[0]?.text) {
-        return data.candidates[0].content.parts[0].text as string;
-    }
-    throw new Error('Unexpected AI response format');
+    return extractResponseText(data);
 }
 
 // ============================================================
@@ -121,7 +133,7 @@ async function generateDirectly(messages: AIChatMessage[], options?: AIChatOptio
         generationConfig: {
             temperature: options?.temperature ?? 0.7,
             maxOutputTokens: options?.maxOutputTokens ?? 8192,
-            ...(options?.responseMimeType ? { responseMimeType: options.responseMimeType } : {})
+            ...(options?.responseMimeType ? { responseMimeType: options.responseMimeType } : {}),
         },
     };
     if (options?.systemInstruction) {
@@ -166,10 +178,7 @@ async function generateDirectly(messages: AIChatMessage[], options?: AIChatOptio
             }
 
             const data = await response.json() as any;
-            if (data.candidates && data.candidates[0]?.content?.parts?.[0]?.text) {
-                return data.candidates[0].content.parts[0].text as string;
-            }
-            throw new Error('Unexpected AI response format');
+            return extractResponseText(data);
         } catch (error: any) {
             lastError = error;
             // If it's a quota/rate/leaked error we already continued above; for network errors, also try next key

@@ -10,7 +10,7 @@ import { cn } from '@/lib/utils';
 import { formatRelativeActiveTime } from '@/lib/utils';
 
 export default function AdminAccessRequests() {
-    const { isSuperAdmin, user: currentUser } = useAuth();
+    const { isSuperAdmin, isAdmin, user: currentUser } = useAuth();
     const { toast } = useToast();
     const [requests, setRequests] = useState<AccessRequest[]>([]);
     const [loading, setLoading] = useState(true);
@@ -65,7 +65,7 @@ export default function AdminAccessRequests() {
     };
 
     const handleUndo = async (req: AccessRequest) => {
-        if (!isSuperAdmin) return;
+        if (!isSuperAdmin && !isAdmin) return;
         setProcessingId(req.id);
         try {
             // Revert back to pending
@@ -124,7 +124,7 @@ export default function AdminAccessRequests() {
                         <input type="text" value={search} onChange={(e) => setSearch(e.target.value)} placeholder="Tìm email / tên người gửi..." className="w-full rounded-xl border-none bg-white dark:bg-slate-800 shadow-sm py-2.5 pl-10 pr-4 text-sm font-medium focus:ring-2 focus:ring-indigo-500/50" />
                     </div>
 
-                    <div className="flex bg-white dark:bg-slate-800 p-1 rounded-xl shadow-sm">
+                    <div className="flex flex-wrap bg-white dark:bg-slate-800 p-1 rounded-xl shadow-sm">
                         <FilterButton active={statusFilter === 'pending'} onClick={() => setStatusFilter('pending')} label="Đang chờ" count={pendingCount} icon={Clock} color="text-amber-500" />
                         <FilterButton active={statusFilter === 'approved'} onClick={() => setStatusFilter('approved')} label="Đã duyệt" icon={ShieldCheck} color="text-emerald-500" />
                         <FilterButton active={statusFilter === 'rejected'} onClick={() => setStatusFilter('rejected')} label="Từ chối" icon={ShieldAlert} color="text-rose-500" />
@@ -237,7 +237,7 @@ export default function AdminAccessRequests() {
                                                 </Button>
                                             </div>
                                         ) : (
-                                            isSuperAdmin && (
+                                            (isSuperAdmin || isAdmin) && (
                                                 <Button 
                                                     variant="ghost" 
                                                     size="sm" 

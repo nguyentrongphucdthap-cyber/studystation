@@ -17,9 +17,21 @@ export const onRequestPost = async (context: any) => {
         // Parse the incoming request body
         const body = await request.json() as any;
 
-        // Default to Gemini 1.5 Flash if not specified
-        const model = body.model || 'gemini-1.5-flash';
-        const GEMINI_API_URL = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash-lite:generateContent?key=${selectedKey}`;
+        // Default to gemini-2.5-flash-lite if not specified
+        const model = body.model || 'gemini-2.5-flash-lite';
+        const GEMINI_API_URL = `https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent?key=${selectedKey}`;
+
+        // Build request body, forwarding system_instruction if present
+        const geminiBody: Record<string, unknown> = {
+            contents: body.contents,
+            generationConfig: body.generationConfig,
+        };
+        if (body.system_instruction) {
+            geminiBody.system_instruction = body.system_instruction;
+        }
+        if (body.safetySettings) {
+            geminiBody.safetySettings = body.safetySettings;
+        }
 
         // Forward request to Gemini
         const response = await fetch(GEMINI_API_URL, {
@@ -28,14 +40,19 @@ export const onRequestPost = async (context: any) => {
                 'Content-Type': 'application/json',
                 'Referer': 'https://studystation.site/',
             },
-            body: JSON.stringify({
-                contents: body.contents,
-                generationConfig: body.generationConfig,
-                safetySettings: body.safetySettings,
-            }),
+            body: JSON.stringify(geminiBody),
         });
 
-        const data = await response.json();
+        const data = await response.json() as any;
+
+        // Handle Gemma 4 thinking model: strip 'thought' parts from response
+        const parts = data?.candidates?.[0]?.content?.parts;
+        if (parts && parts.length > 1) {
+            const nonThinkingParts = parts.filter((p: any) => !p.thought && p.text);
+            if (nonThinkingParts.length > 0) {
+                data.candidates[0].content.parts = nonThinkingParts;
+            }
+        }
 
         return new Response(JSON.stringify(data), {
             status: response.status,

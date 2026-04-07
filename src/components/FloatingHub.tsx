@@ -726,15 +726,13 @@ function ChatTab({ user, onUnreadChange }: { user: { email: string; displayName:
         if (activeChat === 'mago') {
             setIsMagoTyping(true);
             try {
-                // 1. Save user message to Firestore (this also checks the limit)
-                await sendMagoMessage(text);
+                // 1. Save user message to Firestore (don't await — fire in parallel with AI)
+                const savePromise = sendMagoMessage(text);
                 
                 // Update local count immediately for UI feedback
                 setMagoUsageCount(prev => prev + 1);
 
-                // 2. Clear input is already done above
-
-                // 3. Prepare history for AI (using current messages + the new one)
+                // 2. Prepare history for AI (using current messages + the new one)
                 // Filter out old error messages and limit history to prevent AI confusion
                 const ERROR_PATTERN = /Xin lỗi, tôi đang gặp chút sự cố kỹ thuật/;
                 const aiHistory: AIChatMessage[] = [...messages, {
@@ -750,10 +748,18 @@ function ChatTab({ user, onUnreadChange }: { user: { email: string; displayName:
                     role: (m.role === 'mago' ? 'model' : 'user') as 'user' | 'model',
                     parts: [{ text: m.text }]
                 }))
-                .slice(-20); // Keep only last 20 messages to save tokens
+                .slice(-10); // Keep only last 10 messages for speed
 
-                // 4. Generate AI response
-                const response = await generateAIContent(aiHistory, { systemInstruction: MAGO_SYSTEM_PROMPT });
+                // 3. Wait for save to finish (checks usage limit)
+                await savePromise;
+
+                // 4. Generate AI response with optimized settings for fast chat
+                const response = await generateAIContent(aiHistory, { 
+                    model: 'gemma-4-31b-it',
+                    systemInstruction: MAGO_SYSTEM_PROMPT,
+                    maxOutputTokens: 1024,
+                    temperature: 0.8,
+                });
 
                 console.log('[Mago DEBUG] AI response received:', response?.substring(0, 100));
 
