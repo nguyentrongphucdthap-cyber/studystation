@@ -63,7 +63,7 @@ import {
     subscribeToMagoMessages,
     getMagoUsageCountToday,
     getMagoTeachingSystemPrompt,
-    relayMagoMessageToOwnersIfRequested,
+    relayMagoMessageToOwnersIfRequestedWithSource,
     MAGO_DAILY_LIMIT,
 } from '../services/chat.service';
 import { generateAIContent, type AIChatMessage } from '@/services/ai.service';
@@ -875,9 +875,13 @@ Yêu cầu phân tích (trình bày đẹp mắt theo phong cách Mago 🧙‍�
                 // 3. Wait for save to finish
                 await savePromise;
 
-                const relayResult = await relayMagoMessageToOwnersIfRequested(text);
+                const relayResult = await relayMagoMessageToOwnersIfRequestedWithSource(text, text);
                 if (relayResult.relayed) {
-                    await saveMagoResponse(`Tôi đã chuyển lời giúp bạn tới ${relayResult.deliveredTo.join(' và ')} rồi nhé! ✉️`);
+                    if (relayResult.failedTo.length > 0) {
+                        await saveMagoResponse(`Tôi đã chuyển lời tới ${relayResult.deliveredTo.join(' và ')}. Tuy nhiên chưa gửi được cho ${relayResult.failedTo.join(' và ')}, bạn gửi lại giúp tôi nhé!`);
+                    } else {
+                        await saveMagoResponse(`Tôi đã chuyển lời giúp bạn tới ${relayResult.deliveredTo.join(' và ')} rồi nhé! ✉️`);
+                    }
                     return;
                 }
 

@@ -10,6 +10,7 @@ import {
     get,
 } from 'firebase/database';
 import { doc, getDoc, setDoc, updateDoc, onSnapshot, collection, query, addDoc, where, deleteDoc, arrayUnion, arrayRemove, getDocs, orderBy, limit as firestoreLimit } from 'firebase/firestore';
+import { runTransaction } from 'firebase/firestore';
 import { auth, rtdb, db } from '@/config/firebase';
 import type { ChatMessage, Friend, GroupChat } from '@/types';
 import { getUserRole, hasUnlimitedMagoAccess } from './auth.service';
@@ -669,19 +670,53 @@ function isRelayToOwnersRequest(raw: string): boolean {
 }
 
 export async function relayMagoMessageToOwnersIfRequested(rawUserText: string): Promise<{ relayed: boolean; deliveredTo: string[] }> {
+    return relayMagoMessageToOwnersIfRequestedWithSource(rawUserText, rawUserText);
+}
+
+async function appendMagoRelayForOwner(ownerEmail: string, relayLine: string): Promise<void> {
+    const docRef = getConvoDocRef(ownerEmail, 'mago');
+    const participants = [ownerEmail.toLowerCase(), 'mago@studystation.site'];
+
+    await runTransaction(db, async (tx) => {
+        const snap = await tx.get(docRef);
+        const currentLog = snap.exists() ? (snap.data()?.log || '') : '';
+        const payload = {
+            log: currentLog + relayLine,
+            updatedAt: Date.now(),
+            participants,
+            ownerEmail: ownerEmail.toLowerCase(),
+            partnerEmail: 'mago@studystation.site',
+        };
+
+        if (snap.exists()) {
+            tx.update(docRef, payload);
+        } else {
+            tx.set(docRef, payload);
+        }
+    });
+}
+
+export async function relayMagoMessageToOwnersIfRequestedWithSource(
+    rawUserText: string,
+    relaySourceText: string
+): Promise<{ relayed: boolean; deliveredTo: string[]; failedTo: string[] }> {
     const currentEmail = getCurrentEmail();
-    if (!currentEmail) return { relayed: false, deliveredTo: [] };
+    if (!currentEmail) return { relayed: false, deliveredTo: [], failedTo: [] };
 
     if (!isRelayToOwnersRequest(rawUserText)) {
-        return { relayed: false, deliveredTo: [] };
+        return { relayed: false, deliveredTo: [], failedTo: [] };
     }
 
-    const relayContent = extractRelayContent(rawUserText);
+    const relayContent =
+        extractRelayContent(relaySourceText) ||
+        extractRelayContent(rawUserText) ||
+        String(relaySourceText || '').trim();
     if (!relayContent) {
-        return { relayed: false, deliveredTo: [] };
+        return { relayed: false, deliveredTo: [], failedTo: [] };
     }
 
     const deliveredTo: string[] = [];
+    const failedTo: string[] = [];
     const relayLine = encodeMsg(
         Date.now(),
         'mago@studystation.site',
@@ -690,27 +725,16 @@ export async function relayMagoMessageToOwnersIfRequested(rawUserText: string): 
     ) + MSG_LINE_BREAK;
 
     for (const ownerEmail of MAGO_PRIVATE_OWNER_EMAILS) {
-        const docRef = getConvoDocRef(ownerEmail, 'mago');
-        const snap = await getDoc(docRef);
-        const participants = [ownerEmail.toLowerCase(), 'mago@studystation.site'];
-        const payload = {
-            log: (snap.exists() ? snap.data()?.log || '' : '') + relayLine,
-            updatedAt: Date.now(),
-            participants,
-            ownerEmail: ownerEmail.toLowerCase(),
-            partnerEmail: 'mago@studystation.site',
-        };
-
-        if (snap.exists()) {
-            await updateDoc(docRef, payload);
-        } else {
-            await setDoc(docRef, payload);
+        try {
+            await appendMagoRelayForOwner(ownerEmail, relayLine);
+            deliveredTo.push(ownerEmail);
+        } catch (error) {
+            console.error('[Chat] Relay to owner failed:', ownerEmail, error);
+            failedTo.push(ownerEmail);
         }
-
-        deliveredTo.push(ownerEmail);
     }
 
-    return { relayed: deliveredTo.length > 0, deliveredTo };
+    return { relayed: deliveredTo.length > 0, deliveredTo, failedTo };
 }
 
 /** Count how many messages the user has sent to Mago today */

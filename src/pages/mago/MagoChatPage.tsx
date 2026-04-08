@@ -28,7 +28,7 @@ import {
     getMagoUsageCountToday,
     addMagoTeachingKnowledge,
     getMagoTeachingSystemPrompt,
-    relayMagoMessageToOwnersIfRequested,
+    relayMagoMessageToOwnersIfRequestedWithSource,
     MAGO_DAILY_LIMIT,
     MAGO_SYSTEM_PROMPT
 } from '@/services/chat.service';
@@ -346,6 +346,24 @@ const MagoChatPage: React.FC = () => {
         if (fileInputRef.current) fileInputRef.current.value = '';
     };
 
+    const handlePasteAttachments = async (e: React.ClipboardEvent<HTMLTextAreaElement>) => {
+        const items = Array.from(e.clipboardData?.items || []);
+        const pastedFiles: File[] = [];
+
+        for (const item of items) {
+            if (item.kind !== 'file') continue;
+            const file = item.getAsFile();
+            if (!file) continue;
+            pastedFiles.push(file);
+        }
+
+        if (pastedFiles.length === 0) return;
+
+        e.preventDefault();
+        await prepareAttachments(pastedFiles);
+        setActionMessage(`Đã dán ${pastedFiles.length} tệp đính kèm`);
+    };
+
     const removeAttachment = (id: string) => {
         setAttachments((prev) => {
             const item = prev.find((a) => a.id === id);
@@ -522,9 +540,14 @@ const MagoChatPage: React.FC = () => {
 
             await sendMagoMessage(richTextForHistory);
 
-            const relayResult = await relayMagoMessageToOwnersIfRequested(userText);
+            const relaySourceText = buildTeachContent(richTextForHistory);
+            const relayResult = await relayMagoMessageToOwnersIfRequestedWithSource(userText, relaySourceText);
             if (relayResult.relayed) {
-                await saveMagoResponse(`Tôi đã chuyển lời giúp bạn tới ${relayResult.deliveredTo.join(' và ')} rồi nhé! ✉️`);
+                if (relayResult.failedTo.length > 0) {
+                    await saveMagoResponse(`Tôi đã chuyển lời tới ${relayResult.deliveredTo.join(' và ')}. Tuy nhiên chưa gửi được cho ${relayResult.failedTo.join(' và ')}, tôi sẽ thử lại khi bạn gửi lại nhé!`);
+                } else {
+                    await saveMagoResponse(`Tôi đã chuyển lời giúp bạn tới ${relayResult.deliveredTo.join(' và ')} rồi nhé! ✉️`);
+                }
                 const newCount = await getMagoUsageCountToday(user.email);
                 setUsageCount(newCount);
                 return;
@@ -908,6 +931,7 @@ const MagoChatPage: React.FC = () => {
                             rows={1}
                             value={input}
                             onChange={(e) => setInput(e.target.value)}
+                            onPaste={handlePasteAttachments}
                             onKeyDown={(e) => {
                                 if (e.key === 'Enter' && !e.shiftKey) {
                                     e.preventDefault();
