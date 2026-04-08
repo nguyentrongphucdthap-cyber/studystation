@@ -54,6 +54,7 @@ export default function AccessDenied() {
     };
 
     if (loading) return null;
+    const canSubmitNewRequest = !request || request.status !== 'pending';
 
     return (
         <div className="min-h-screen bg-slate-50 dark:bg-slate-950 flex flex-col items-center justify-center p-6 relative overflow-hidden">
@@ -124,8 +125,19 @@ export default function AccessDenied() {
                             </div>
                         </div>
 
-                        {!request ? (
+                        {canSubmitNewRequest ? (
                             <div className="space-y-6 flex-1">
+                                {request?.status === 'rejected' && (
+                                    <div className="p-3 bg-rose-50 dark:bg-rose-950/30 rounded-xl border border-rose-100 dark:border-rose-900 text-rose-700 dark:text-rose-400 text-xs font-bold italic">
+                                        Yêu cầu trước đã bị từ chối. Bạn có thể gửi lại yêu cầu mới.
+                                        {request.reviewNote ? ` Ghi chú: "${request.reviewNote}"` : ''}
+                                    </div>
+                                )}
+                                {request?.status === 'approved' && (
+                                    <div className="p-3 bg-amber-50 dark:bg-amber-950/30 rounded-xl border border-amber-100 dark:border-amber-900 text-amber-700 dark:text-amber-400 text-xs font-bold italic">
+                                        Tài khoản từng được duyệt trước đó nhưng hiện chưa có trong danh sách truy cập. Bạn có thể gửi yêu cầu lại ngay.
+                                    </div>
+                                )}
                                 <div className="space-y-2">
                                     <label className="text-xs font-black uppercase tracking-widest text-slate-500 ml-1">Lời nhắn (không bắt buộc)</label>
                                     <textarea 
@@ -141,7 +153,7 @@ export default function AccessDenied() {
                                         isLoading={submitting} 
                                         className="w-full admin-btn-primary py-4 md:py-6 rounded-2xl font-bold flex items-center justify-center gap-2 shadow-xl shadow-indigo-100 dark:shadow-none text-sm md:text-base"
                                     >
-                                        <Send className="h-4 w-4 md:h-5 md:w-5" /> Gửi yêu cầu truy cập
+                                        <Send className="h-4 w-4 md:h-5 md:w-5" /> {request ? 'Gửi lại yêu cầu truy cập' : 'Gửi yêu cầu truy cập'}
                                     </Button>
                                     <p className="text-[11px] text-center text-slate-400 font-medium italic">Vui lòng chờ Boss duyệt danh sách. Điều này thường mất vài giờ.</p>
                                 </div>
@@ -157,33 +169,6 @@ export default function AccessDenied() {
                                         <div className="space-y-2">
                                             <h4 className="text-xl font-black text-slate-800 dark:text-white">Yêu cầu đang chờ duyệt</h4>
                                             <p className="text-sm text-slate-500 max-w-[240px] font-medium mx-auto italic">Boss đang kiểm tra thông tin của bạn. Vui lòng quay lại sau!</p>
-                                        </div>
-                                    </>
-                                )}
-                                {request.status === 'rejected' && (
-                                    <>
-                                        <div className="h-20 w-20 rounded-full bg-rose-50 dark:bg-rose-900/20 flex items-center justify-center text-rose-500 mb-2">
-                                            <XCircle className="h-10 w-10" />
-                                        </div>
-                                        <div className="space-y-2">
-                                            <h4 className="text-xl font-black text-rose-600">Yêu cầu bị từ chối</h4>
-                                            {request.reviewNote && (
-                                                <div className="p-3 bg-rose-50 dark:bg-rose-950/30 rounded-xl border border-rose-100 dark:border-rose-900 text-rose-700 dark:text-rose-400 text-xs font-bold italic">
-                                                    "{request.reviewNote}"
-                                                </div>
-                                            )}
-                                        </div>
-                                    </>
-                                )}
-                                {request.status === 'approved' && (
-                                    <>
-                                        <div className="h-20 w-20 rounded-full bg-emerald-50 dark:bg-emerald-900/20 flex items-center justify-center text-emerald-500 mb-2">
-                                            <ShieldCheck className="h-10 w-10" />
-                                        </div>
-                                        <div className="space-y-2">
-                                            <h4 className="text-xl font-black text-emerald-600">Chúc mừng! Bạn đã được duyệt</h4>
-                                            <p className="text-sm text-slate-500 font-medium">Làm mới trang để bắt đầu hành trình học tập.</p>
-                                            <Button onClick={() => window.location.href = '/'} className="mt-4 bg-emerald-600 hover:bg-emerald-700 rounded-xl px-8">Vào Trang Chủ</Button>
                                         </div>
                                     </>
                                 )}
