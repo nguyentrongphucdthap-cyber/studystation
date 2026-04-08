@@ -6,7 +6,7 @@
 export const onRequestPost = async (context: any) => {
     try {
         const { env } = context;
-        const model = 'gemini-2.5-flash-lite';
+        const model = 'gemini-3.1-flash-lite-preview';
 
         const keys = [
             { key: env.GEMINI_API_KEY_1, index: 1 },

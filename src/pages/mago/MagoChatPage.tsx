@@ -1,0 +1,588 @@
+﻿import React, { useEffect, useMemo, useRef, useState } from 'react';
+import {
+    Send,
+    FileText,
+    X,
+    Sparkles,
+    User,
+    History,
+    ChevronLeft,
+    Image as ImageIcon,
+    Brain,
+    ListChecks,
+    MessageCircle,
+    ChevronDown,
+    Check
+} from 'lucide-react';
+import { useNavigate } from 'react-router-dom';
+import { useAuth } from '@/contexts/AuthContext';
+import {
+    subscribeToMagoMessages,
+    sendMagoMessage,
+    saveMagoResponse,
+    getMagoUsageCountToday,
+    MAGO_DAILY_LIMIT,
+    MAGO_SYSTEM_PROMPT
+} from '@/services/chat.service';
+import { generateAIContent, AIChatMessage } from '@/services/ai.service';
+import { uploadToImgBB } from '@/services/image.service';
+import { getUserRole } from '@/services/auth.service';
+import MagoText from '@/components/MagoText';
+import './MagoChatPage.css';
+
+interface Attachment {
+    id: string;
+    file: File;
+    preview: string;
+    type: 'image' | 'file';
+    base64?: string;
+}
+
+type ResponseMode = 'normal' | 'hint' | 'detailed';
+
+const MODE_META_REGEX = /^\[mago_mode:(normal|hint|detailed)\]\s*/;
+
+const RESPONSE_MODE_CONFIG: Record<
+    ResponseMode,
+    {
+        label: string;
+        shortLabel: string;
+        description: string;
+        instruction: string;
+        icon: React.ComponentType<{ size?: number; className?: string }>;
+    }
+> = {
+    normal: {
+        label: 'Chat thông thường',
+        shortLabel: 'Chat',
+        description: 'Trò chuyện tự nhiên, linh hoạt theo ngữ cảnh.',
+        instruction: 'Trả lời tự nhiên như một cuộc chat thông thường, rõ ràng, thân thiện và đi thẳng vào nhu cầu người học.',
+        icon: MessageCircle
+    },
+    hint: {
+        label: 'Hiểu cách làm',
+        shortLabel: 'Hướng giải',
+        description: 'Định hướng tư duy và các bước làm chính.',
+        instruction:
+            'Ưu tiên hướng dẫn cách làm và tư duy cốt lõi. Không cần triển khai toàn bộ lời giải chi tiết trừ khi thật sự cần.',
+        icon: Brain
+    },
+    detailed: {
+        label: 'Bài giải chi tiết',
+        shortLabel: 'Giải chi tiết',
+        description: 'Trình bày đầy đủ từng bước và giải thích rõ.',
+        instruction:
+            'Trả lời bằng lời giải chi tiết từng bước, giải thích logic rõ ràng, có kết luận cuối cùng và nhắc các lỗi thường gặp nếu phù hợp.',
+        icon: ListChecks
+    }
+};
+
+const parseMessageMode = (text: string): { mode: ResponseMode; cleanText: string } => {
+    const raw = text || '';
+    const match = raw.match(MODE_META_REGEX);
+    if (!match) {
+        return { mode: 'normal', cleanText: raw };
+    }
+
+    const mode = (match[1] as ResponseMode) || 'normal';
+    const cleanText = raw.replace(MODE_META_REGEX, '').trimStart();
+    return { mode, cleanText };
+};
+
+const buildModeMeta = (mode: ResponseMode, text: string): string => {
+    return `[mago_mode:${mode}] ${text}`.trim();
+};
+
+const MagoChatPage: React.FC = () => {
+    const navigate = useNavigate();
+    const { user } = useAuth();
+
+    const [messages, setMessages] = useState<any[]>([]);
+    const [input, setInput] = useState('');
+    const [attachments, setAttachments] = useState<Attachment[]>([]);
+    const [isTyping, setIsTyping] = useState(false);
+    const [usageCount, setUsageCount] = useState(0);
+    const [responseMode, setResponseMode] = useState<ResponseMode>('normal');
+    const [isModeMenuOpen, setIsModeMenuOpen] = useState(false);
+
+    const messagesEndRef = useRef<HTMLDivElement>(null);
+    const imageInputRef = useRef<HTMLInputElement>(null);
+    const fileInputRef = useRef<HTMLInputElement>(null);
+    const textareaRef = useRef<HTMLTextAreaElement>(null);
+    const modeMenuRef = useRef<HTMLDivElement>(null);
+
+    const role = getUserRole();
+    const isBoss = /boss/i.test(role);
+
+    const imageAttachments = attachments.filter((a) => a.type === 'image');
+    const fileAttachments = attachments.filter((a) => a.type === 'file');
+
+    const parsedMessages = useMemo(() => {
+        return messages.map((msg) => {
+            const isUser = msg.role === 'user' || !msg.role;
+            if (!isUser) {
+                return {
+                    ...msg,
+                    isUser,
+                    parsedMode: 'normal' as ResponseMode,
+                    parsedText: msg.text
+                };
+            }
+
+            const { mode, cleanText } = parseMessageMode(msg.text || '');
+            return {
+                ...msg,
+                isUser,
+                parsedMode: mode,
+                parsedText: cleanText
+            };
+        });
+    }, [messages]);
+
+    useEffect(() => {
+        messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
+    }, [messages, isTyping]);
+
+    useEffect(() => {
+        if (!user?.email) return;
+
+        const unsub = subscribeToMagoMessages((msgs) => {
+            setMessages(msgs);
+        });
+
+        const updateUsage = async () => {
+            const count = await getMagoUsageCountToday(user.email!);
+            setUsageCount(count);
+        };
+
+        updateUsage();
+        return () => unsub();
+    }, [user?.email]);
+
+    useEffect(() => {
+        const textarea = textareaRef.current;
+        if (!textarea) return;
+
+        const rafId = window.requestAnimationFrame(() => {
+            textarea.style.height = '0px';
+            textarea.style.height = `${Math.min(textarea.scrollHeight, 120)}px`;
+        });
+
+        return () => window.cancelAnimationFrame(rafId);
+    }, [input]);
+
+    useEffect(() => {
+        const handleClickOutside = (event: MouseEvent) => {
+            if (!modeMenuRef.current) return;
+            if (!modeMenuRef.current.contains(event.target as Node)) {
+                setIsModeMenuOpen(false);
+            }
+        };
+
+        document.addEventListener('mousedown', handleClickOutside);
+        return () => document.removeEventListener('mousedown', handleClickOutside);
+    }, []);
+
+    const fileToBase64 = (file: File): Promise<string> => {
+        return new Promise((resolve, reject) => {
+            const reader = new FileReader();
+            reader.readAsDataURL(file);
+            reader.onload = () => {
+                const base64 = (reader.result as string).split(',')[1];
+                resolve(base64 || '');
+            };
+            reader.onerror = (error) => reject(error);
+        });
+    };
+
+    const prepareAttachments = async (files: File[], forcedType?: 'image' | 'file') => {
+        if (files.length === 0) return;
+
+        const newAttachments: Attachment[] = await Promise.all(
+            files.map(async (file) => {
+                const isImage = forcedType ? forcedType === 'image' : file.type.startsWith('image/');
+                const preview = isImage ? URL.createObjectURL(file) : '';
+                const base64 = await fileToBase64(file);
+
+                return {
+                    id: Math.random().toString(36).slice(2, 11),
+                    file,
+                    preview,
+                    type: isImage ? 'image' : 'file',
+                    base64
+                };
+            })
+        );
+
+        setAttachments((prev) => [...prev, ...newAttachments].slice(0, 5));
+    };
+
+    const handleImageSelect = async (e: React.ChangeEvent<HTMLInputElement>) => {
+        const files = Array.from(e.target.files || []);
+        await prepareAttachments(files, 'image');
+        if (imageInputRef.current) imageInputRef.current.value = '';
+    };
+
+    const handleFileSelect = async (e: React.ChangeEvent<HTMLInputElement>) => {
+        const files = Array.from(e.target.files || []);
+        await prepareAttachments(files, 'file');
+        if (fileInputRef.current) fileInputRef.current.value = '';
+    };
+
+    const removeAttachment = (id: string) => {
+        setAttachments((prev) => {
+            const item = prev.find((a) => a.id === id);
+            if (item?.preview) URL.revokeObjectURL(item.preview);
+            return prev.filter((a) => a.id !== id);
+        });
+    };
+
+    const handleSend = async () => {
+        if ((!input.trim() && attachments.length === 0) || isTyping) return;
+        if (!user?.email) return;
+
+        if (!isBoss && usageCount >= MAGO_DAILY_LIMIT) {
+            alert('Bạn đã hết lượt sử dụng Mago hôm nay. Hãy quay lại vào ngày mai nhé!');
+            return;
+        }
+
+        const userText = input.trim();
+        const currentAttachments = [...attachments];
+
+        setInput('');
+        setAttachments([]);
+        setIsTyping(true);
+
+        try {
+            let richTextForHistory = buildModeMeta(responseMode, userText);
+            const aiParts: any[] = [];
+
+            const modeInstruction = RESPONSE_MODE_CONFIG[responseMode].instruction;
+            if (userText) {
+                aiParts.push({
+                    text: `Yêu cầu phản hồi (${RESPONSE_MODE_CONFIG[responseMode].label}): ${modeInstruction}\n\nNội dung người học: ${userText}`
+                });
+            } else {
+                aiParts.push({
+                    text: `Yêu cầu phản hồi (${RESPONSE_MODE_CONFIG[responseMode].label}): ${modeInstruction}\n\nNgười học chỉ gửi tệp đính kèm, hãy phân tích nội dung tệp để trả lời.`
+                });
+            }
+
+            for (const att of currentAttachments) {
+                if (att.type === 'image') {
+                    try {
+                        const uploadRes = await uploadToImgBB(att.file);
+                        richTextForHistory += `\n![image](${uploadRes.url})`;
+                        aiParts.push({
+                            inlineData: {
+                                mimeType: att.file.type,
+                                data: att.base64
+                            }
+                        });
+                    } catch (err) {
+                        console.error('Image upload failed:', err);
+                        richTextForHistory += `\n[Lỗi tải ảnh: ${att.file.name}]`;
+                    }
+                } else {
+                    richTextForHistory += `\n[Đã đính kèm file: ${att.file.name}]`;
+
+                    if (att.file.type === 'application/pdf') {
+                        aiParts.push({
+                            inlineData: {
+                                mimeType: 'application/pdf',
+                                data: att.base64
+                            }
+                        });
+                    } else if (att.file.type.startsWith('text/') || att.file.type === '') {
+                        const textContent = await att.file.text();
+                        aiParts.push({ text: `\nNội dung từ file ${att.file.name}:\n${textContent}` });
+                    }
+                }
+            }
+
+            await sendMagoMessage(richTextForHistory);
+
+            const historyForAI: AIChatMessage[] = parsedMessages.slice(-10).map((m) => ({
+                role: m.role === 'user' ? 'user' : 'model',
+                parts: [{ text: m.parsedText || m.text || '' }]
+            }));
+
+            historyForAI.push({
+                role: 'user',
+                parts: aiParts
+            });
+
+            const finalSystemPrompt = `${MAGO_SYSTEM_PROMPT}\n\nNgữ cảnh hiện tại: ${RESPONSE_MODE_CONFIG[responseMode].label}. ${modeInstruction}`;
+
+            const response = await generateAIContent(historyForAI, {
+                systemInstruction: finalSystemPrompt
+            });
+
+            await saveMagoResponse(response);
+
+            const newCount = await getMagoUsageCountToday(user.email);
+            setUsageCount(newCount);
+        } catch (err) {
+            console.error('Mago Chat Error:', err);
+            await saveMagoResponse('Mago đang hơi quá tải, bạn gửi lại giúp mình nhé.');
+        } finally {
+            setIsTyping(false);
+        }
+    };
+
+    const currentModeConfig = RESPONSE_MODE_CONFIG[responseMode];
+    const CurrentModeIcon = currentModeConfig.icon;
+
+    return (
+        <div className="mago-fullscreen-container">
+            <div className="mago-header">
+                <div style={{ display: 'flex', alignItems: 'center', gap: '16px' }}>
+                    <button className="mago-back-btn" onClick={() => navigate('/')}>
+                        <ChevronLeft size={24} />
+                    </button>
+                    <div className="mago-limit-badge">
+                        <Sparkles size={16} />
+                        <span>Mago A.I</span>
+                        <div className="mago-vertical-divider" />
+                        <span className="limit-text">{isBoss ? '∞ Lượt' : `${MAGO_DAILY_LIMIT - usageCount} lượt còn lại`}</span>
+                    </div>
+                </div>
+
+                <div className="mago-header-actions">
+                    <button className="mago-icon-btn" title="Xóa lịch sử">
+                        <History size={18} />
+                    </button>
+                </div>
+            </div>
+
+            <div className="mago-chat-area">
+                {parsedMessages.length === 0 && !isTyping && (
+                    <div className="mago-welcome-state">
+                        <div className="mago-welcome-avatar">
+                            <img src="/mago.png" alt="Mago" />
+                        </div>
+                        <h3>Xin chào, tôi là Mago ✨</h3>
+                        <p>Trợ lý học tập cá nhân của bạn. Gửi ảnh bài tập, tài liệu hoặc hỏi bất kỳ điều gì.</p>
+                    </div>
+                )}
+
+                {parsedMessages.map((msg, idx) => {
+                    const isUser = msg.isUser;
+                    const modeKey: ResponseMode =
+                        msg.parsedMode && msg.parsedMode in RESPONSE_MODE_CONFIG
+                            ? (msg.parsedMode as ResponseMode)
+                            : 'normal';
+                    const modeConfig = RESPONSE_MODE_CONFIG[modeKey];
+                    const ModeIcon = modeConfig.icon;
+
+                    return (
+                        <div key={msg.id || idx} className={`mago-message-row ${isUser ? 'user' : 'mago'}`}>
+                            {!isUser && (
+                                <div className="mago-bubble-avatar">
+                                    <Sparkles size={16} />
+                                </div>
+                            )}
+                            <div className="mago-message-bubble">
+                                {isUser && (
+                                    <span className="mago-message-mode-icon" title={modeConfig.label}>
+                                        <ModeIcon size={12} />
+                                    </span>
+                                )}
+
+                                <MagoText text={msg.parsedText || msg.text} />
+                                <span className="mago-time-stamp">
+                                    {new Date(msg.timestamp).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+                                </span>
+                            </div>
+                            {isUser && (
+                                <div className="mago-bubble-avatar user-avatar">
+                                    <User size={16} />
+                                </div>
+                            )}
+                        </div>
+                    );
+                })}
+
+                {isTyping && (
+                    <div className="mago-message-row mago">
+                        <div className="mago-bubble-avatar thinking-avatar">
+                            <Sparkles size={16} />
+                        </div>
+                        <div className="mago-message-bubble typing">
+                            <div className="mago-thinking-orb" />
+                            <div className="mago-thinking-dots" aria-hidden>
+                                <span />
+                                <span />
+                                <span />
+                            </div>
+                            <span>Mago đang suy nghĩ...</span>
+                        </div>
+                    </div>
+                )}
+                <div ref={messagesEndRef} style={{ height: '20px' }} />
+            </div>
+
+            <div className="mago-bottom-zone">
+                <div className="mago-input-glass">
+                    {(imageAttachments.length > 0 || fileAttachments.length > 0) && (
+                        <div className="mago-attachments-area">
+                            {imageAttachments.length > 0 && (
+                                <div className="mago-attachment-category">
+                                    <div className="mago-attachment-header">
+                                        <ImageIcon size={14} /> Hình ảnh
+                                    </div>
+                                    <div className="mago-attachment-list">
+                                        {imageAttachments.map((att) => (
+                                            <div key={att.id} className="mago-att-item image-att">
+                                                <img src={att.preview} alt="preview" />
+                                                <button onClick={() => removeAttachment(att.id)}>
+                                                    <X size={12} />
+                                                </button>
+                                            </div>
+                                        ))}
+                                    </div>
+                                </div>
+                            )}
+
+                            {fileAttachments.length > 0 && (
+                                <div className="mago-attachment-category border-left">
+                                    <div className="mago-attachment-header">
+                                        <FileText size={14} /> Tài liệu
+                                    </div>
+                                    <div className="mago-attachment-list">
+                                        {fileAttachments.map((att) => (
+                                            <div key={att.id} className="mago-att-item file-att">
+                                                <div className="file-icon-wrap">
+                                                    <FileText size={16} />
+                                                </div>
+                                                <span className="file-name">{att.file.name}</span>
+                                                <button onClick={() => removeAttachment(att.id)}>
+                                                    <X size={12} />
+                                                </button>
+                                            </div>
+                                        ))}
+                                    </div>
+                                </div>
+                            )}
+                        </div>
+                    )}
+
+                    <div className="mago-input-toolbar">
+                        <div className="mago-import-actions">
+                            <button
+                                className="mago-import-btn"
+                                onClick={() => imageInputRef.current?.click()}
+                                disabled={isTyping}
+                                type="button"
+                                aria-label="Import ảnh"
+                            >
+                                <ImageIcon size={16} />
+                                <span className="mago-hover-label">Import ảnh</span>
+                            </button>
+                            <button
+                                className="mago-import-btn"
+                                onClick={() => fileInputRef.current?.click()}
+                                disabled={isTyping}
+                                type="button"
+                                aria-label="Import file"
+                            >
+                                <FileText size={16} />
+                                <span className="mago-hover-label">Import file</span>
+                            </button>
+                        </div>
+
+                        <div className="mago-mode-picker" ref={modeMenuRef}>
+                            <button
+                                type="button"
+                                className="mago-mode-trigger"
+                                onClick={() => setIsModeMenuOpen((prev) => !prev)}
+                                disabled={isTyping}
+                                aria-haspopup="listbox"
+                                aria-expanded={isModeMenuOpen}
+                            >
+                                <CurrentModeIcon size={15} />
+                                <span>{currentModeConfig.shortLabel}</span>
+                                <ChevronDown size={14} className={isModeMenuOpen ? 'open' : ''} />
+                            </button>
+
+                            {isModeMenuOpen && (
+                                <div className="mago-mode-dropdown" role="listbox" aria-label="Chọn chế độ chat">
+                                    <div className="mago-mode-dropdown-title">Chế độ phản hồi</div>
+                                    {(Object.keys(RESPONSE_MODE_CONFIG) as ResponseMode[]).map((modeKey) => {
+                                        const option = RESPONSE_MODE_CONFIG[modeKey];
+                                        const OptionIcon = option.icon;
+                                        const isActive = responseMode === modeKey;
+
+                                        return (
+                                            <button
+                                                type="button"
+                                                key={modeKey}
+                                                className={`mago-mode-option ${isActive ? 'active' : ''}`}
+                                                onClick={() => {
+                                                    setResponseMode(modeKey);
+                                                    setIsModeMenuOpen(false);
+                                                }}
+                                            >
+                                                <div className="mago-mode-option-icon">
+                                                    <OptionIcon size={16} />
+                                                </div>
+                                                <div className="mago-mode-option-text">
+                                                    <div className="mago-mode-option-label">{option.label}</div>
+                                                    <div className="mago-mode-option-desc">{option.description}</div>
+                                                </div>
+                                                {isActive && <Check size={16} className="mago-mode-option-check" />}
+                                            </button>
+                                        );
+                                    })}
+                                </div>
+                            )}
+                        </div>
+                    </div>
+
+                    <div className={`mago-input-box ${isTyping ? 'disabled' : ''}`}>
+                        <input
+                            type="file"
+                            ref={imageInputRef}
+                            style={{ display: 'none' }}
+                            multiple
+                            accept="image/*"
+                            onChange={handleImageSelect}
+                        />
+                        <input
+                            type="file"
+                            ref={fileInputRef}
+                            style={{ display: 'none' }}
+                            multiple
+                            accept=".pdf,.txt,.doc,.docx,.ppt,.pptx,.xls,.xlsx"
+                            onChange={handleFileSelect}
+                        />
+                        <textarea
+                            ref={textareaRef}
+                            className="mago-textarea"
+                            placeholder={isTyping ? 'Vui lòng đợi Mago trả lời...' : 'Nhập tin nhắn cho Mago...'}
+                            rows={1}
+                            value={input}
+                            onChange={(e) => setInput(e.target.value)}
+                            onKeyDown={(e) => {
+                                if (e.key === 'Enter' && !e.shiftKey) {
+                                    e.preventDefault();
+                                    handleSend();
+                                }
+                            }}
+                            disabled={isTyping}
+                        />
+                        <button
+                            className={`mago-send-button ${input.trim() || attachments.length > 0 ? 'active' : ''}`}
+                            disabled={(!input.trim() && attachments.length === 0) || isTyping}
+                            onClick={handleSend}
+                        >
+                            <Send size={18} />
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    );
+};
+
+export default MagoChatPage;

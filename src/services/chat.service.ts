@@ -12,6 +12,7 @@ import {
 import { doc, getDoc, setDoc, updateDoc, onSnapshot, collection, query, addDoc, where, deleteDoc, arrayUnion, arrayRemove } from 'firebase/firestore';
 import { auth, rtdb, db } from '@/config/firebase';
 import type { ChatMessage, Friend, GroupChat } from '@/types';
+import { getUserRole } from './auth.service';
 
 // ============================================================
 // HELPERS
@@ -521,7 +522,7 @@ export function subscribeToGroupChats(callback: (groups: GroupChat[]) => void) {
 // MAGO AI CHAT — stored in Firestore at chats/{email}/convos/mago
 // ============================================================
 
-export const MAGO_DAILY_LIMIT = 10;
+export const MAGO_DAILY_LIMIT = 20;
 
 /** Count how many messages the user has sent to Mago today */
 export async function getMagoUsageCountToday(email: string): Promise<number> {
@@ -549,10 +550,15 @@ export async function sendMagoMessage(text: string): Promise<void> {
     const currentEmail = getCurrentEmail();
     if (!currentEmail || !text.trim()) return;
 
-    // Check usage limit
-    const count = await getMagoUsageCountToday(currentEmail);
-    if (count >= MAGO_DAILY_LIMIT) {
-        throw new Error('MAGO_LIMIT_REACHED');
+    // Check usage limit (Boss role has no limit)
+    const role = getUserRole();
+    const isBoss = /boss/i.test(role);
+    
+    if (!isBoss) {
+        const count = await getMagoUsageCountToday(currentEmail);
+        if (count >= MAGO_DAILY_LIMIT) {
+            throw new Error('MAGO_LIMIT_REACHED');
+        }
     }
 
     const line = encodeMsg(Date.now(), currentEmail, text.trim(), 'user') + MSG_LINE_BREAK;

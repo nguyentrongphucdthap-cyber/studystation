@@ -1,0 +1,811 @@
+﻿/* =========================================
+   MAGO CHAT - MODERN MOTION UI
+   ========================================= */
+
+:root {
+    --mago-bg-1: #f5f7ff;
+    --mago-bg-2: #eef7ff;
+    --mago-ink: #152238;
+    --mago-muted: #5b6b86;
+    --mago-card: rgba(255, 255, 255, 0.78);
+    --mago-line: rgba(20, 31, 56, 0.1);
+    --mago-brand-1: #0ea5e9;
+    --mago-brand-2: #2563eb;
+    --mago-brand-3: #14b8a6;
+    --mago-soft-shadow: 0 14px 40px rgba(25, 42, 70, 0.12);
+    --mago-ease: cubic-bezier(0.2, 0.8, 0.2, 1);
+}
+
+.mago-fullscreen-container {
+    display: flex;
+    flex-direction: column;
+    height: 100vh;
+    width: 100vw;
+    position: fixed;
+    inset: 0;
+    color: var(--mago-ink);
+    z-index: 100;
+    overflow: hidden;
+    background:
+        radial-gradient(1300px 550px at -8% -15%, rgba(14, 165, 233, 0.18), transparent 50%),
+        radial-gradient(1000px 500px at 110% -20%, rgba(20, 184, 166, 0.14), transparent 45%),
+        linear-gradient(170deg, var(--mago-bg-1), var(--mago-bg-2));
+    animation: fadeInContainer 420ms var(--mago-ease);
+}
+
+.dark .mago-fullscreen-container {
+    --mago-ink: #e2e8f0;
+    --mago-muted: #a2b1cb;
+    --mago-card: rgba(15, 23, 42, 0.72);
+    --mago-line: rgba(200, 222, 255, 0.12);
+    --mago-soft-shadow: 0 16px 40px rgba(2, 6, 23, 0.42);
+    background:
+        radial-gradient(1200px 550px at -8% -15%, rgba(14, 165, 233, 0.2), transparent 50%),
+        radial-gradient(920px 520px at 110% -20%, rgba(20, 184, 166, 0.16), transparent 45%),
+        linear-gradient(165deg, #020817, #0b1328 55%, #10203e);
+}
+
+.mago-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 14px 24px;
+    backdrop-filter: blur(18px) saturate(180%);
+    background: color-mix(in oklab, var(--mago-card) 90%, transparent);
+    border-bottom: 1px solid var(--mago-line);
+    box-shadow: 0 8px 26px rgba(25, 42, 70, 0.06);
+}
+
+.mago-back-btn,
+.mago-icon-btn {
+    background: transparent;
+    border: 1px solid transparent;
+    color: var(--mago-muted);
+    cursor: pointer;
+    padding: 8px;
+    border-radius: 12px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: all 220ms var(--mago-ease);
+}
+
+.mago-back-btn:hover,
+.mago-icon-btn:hover {
+    border-color: var(--mago-line);
+    background: rgba(255, 255, 255, 0.55);
+    color: var(--mago-ink);
+    transform: translateY(-1px);
+}
+
+.dark .mago-back-btn:hover,
+.dark .mago-icon-btn:hover {
+    background: rgba(148, 163, 184, 0.12);
+}
+
+.mago-limit-badge {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    font-size: 13px;
+    font-weight: 700;
+    color: #0f172a;
+    padding: 7px 14px;
+    border-radius: 999px;
+    border: 1px solid rgba(37, 99, 235, 0.18);
+    background: linear-gradient(135deg, rgba(14, 165, 233, 0.18), rgba(37, 99, 235, 0.08));
+}
+
+.dark .mago-limit-badge {
+    color: #e2e8f0;
+    border-color: rgba(125, 211, 252, 0.22);
+    background: linear-gradient(135deg, rgba(14, 165, 233, 0.2), rgba(30, 64, 175, 0.16));
+}
+
+.mago-vertical-divider {
+    width: 1px;
+    height: 13px;
+    background: rgba(37, 99, 235, 0.25);
+}
+
+.mago-limit-badge .limit-text {
+    font-weight: 600;
+    color: var(--mago-muted);
+}
+
+.mago-chat-area {
+    flex: 1;
+    overflow-y: auto;
+    padding: 34px 24px;
+    display: flex;
+    flex-direction: column;
+    gap: 20px;
+    width: 100%;
+    max-width: 940px;
+    margin: 0 auto;
+    scroll-behavior: smooth;
+}
+
+.mago-chat-area::-webkit-scrollbar {
+    width: 10px;
+}
+
+.mago-chat-area::-webkit-scrollbar-thumb {
+    background: rgba(77, 104, 143, 0.3);
+    border-radius: 999px;
+    border: 2px solid transparent;
+    background-clip: content-box;
+}
+
+.mago-welcome-state {
+    margin: auto;
+    text-align: center;
+    max-width: 460px;
+    animation: fadeSlideUp 600ms var(--mago-ease) both;
+}
+
+.mago-welcome-avatar {
+    width: 82px;
+    height: 82px;
+    border-radius: 24px;
+    margin: 0 auto 22px;
+    overflow: hidden;
+    background: linear-gradient(135deg, var(--mago-brand-1), var(--mago-brand-2));
+    padding: 3px;
+    box-shadow: 0 14px 35px rgba(14, 165, 233, 0.32);
+}
+
+.mago-welcome-avatar img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    border-radius: 20px;
+    background: white;
+}
+
+.mago-welcome-state h3 {
+    font-size: 27px;
+    line-height: 1.2;
+    margin: 0 0 10px;
+    font-weight: 850;
+    letter-spacing: -0.02em;
+    background: linear-gradient(140deg, #0284c7, #1d4ed8, #0f766e);
+    -webkit-background-clip: text;
+    background-clip: text;
+    color: transparent;
+}
+
+.mago-welcome-state p {
+    margin: 0;
+    font-size: 15px;
+    line-height: 1.62;
+    color: var(--mago-muted);
+}
+
+.mago-message-row {
+    display: flex;
+    gap: 12px;
+    max-width: 87%;
+    animation: messageAppear 420ms var(--mago-ease) both;
+}
+
+.mago-message-row.user {
+    align-self: flex-end;
+}
+
+.mago-message-row.mago {
+    align-self: flex-start;
+}
+
+.mago-bubble-avatar {
+    width: 36px;
+    height: 36px;
+    border-radius: 12px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex-shrink: 0;
+    color: white;
+    box-shadow: 0 8px 20px rgba(24, 57, 105, 0.2);
+}
+
+.mago-bubble-avatar:not(.user-avatar) {
+    background: linear-gradient(138deg, #0ea5e9, #2563eb, #14b8a6);
+}
+
+.mago-bubble-avatar.user-avatar {
+    background: linear-gradient(145deg, #334155, #1e293b);
+}
+
+.mago-bubble-avatar.thinking-avatar {
+    animation: pulseHalo 1600ms ease-in-out infinite;
+}
+
+.mago-message-bubble {
+    padding: 14px 18px;
+    border-radius: 20px;
+    font-size: 15px;
+    line-height: 1.6;
+    position: relative;
+    box-shadow: var(--mago-soft-shadow);
+    border: 1px solid transparent;
+    backdrop-filter: blur(8px);
+}
+
+.mago-message-row.user .mago-message-bubble {
+    color: white;
+    border-top-right-radius: 8px;
+    background: linear-gradient(135deg, #1d4ed8, #0ea5e9);
+    padding-top: 24px;
+}
+
+.mago-message-row.mago .mago-message-bubble {
+    color: var(--mago-ink);
+    border-top-left-radius: 8px;
+    border-color: var(--mago-line);
+    background: color-mix(in oklab, var(--mago-card) 90%, white 10%);
+}
+
+.mago-message-mode-icon {
+    position: absolute;
+    top: 8px;
+    right: 8px;
+    width: 20px;
+    height: 20px;
+    border-radius: 999px;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    color: white;
+    background: rgba(15, 23, 42, 0.35);
+    border: 1px solid rgba(255, 255, 255, 0.28);
+}
+
+.mago-time-stamp {
+    display: block;
+    font-size: 11px;
+    margin-top: 8px;
+    text-align: right;
+    opacity: 0.58;
+}
+
+.mago-message-bubble.typing {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    color: #0369a1;
+    font-weight: 600;
+}
+
+.dark .mago-message-bubble.typing {
+    color: #7dd3fc;
+}
+
+.mago-thinking-orb {
+    width: 14px;
+    height: 14px;
+    border-radius: 999px;
+    background: radial-gradient(circle at 30% 25%, #7dd3fc, #0284c7 70%);
+    box-shadow: 0 0 0 0 rgba(14, 165, 233, 0.42);
+    animation: thinkingOrb 1800ms ease-in-out infinite;
+}
+
+.mago-thinking-dots {
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+}
+
+.mago-thinking-dots span {
+    width: 5px;
+    height: 5px;
+    border-radius: 999px;
+    background: currentColor;
+    opacity: 0.3;
+    animation: dotWave 900ms ease-in-out infinite;
+}
+
+.mago-thinking-dots span:nth-child(2) {
+    animation-delay: 120ms;
+}
+
+.mago-thinking-dots span:nth-child(3) {
+    animation-delay: 240ms;
+}
+
+.mago-bottom-zone {
+    padding: 0 24px 24px;
+    display: flex;
+    justify-content: center;
+}
+
+.mago-input-glass {
+    width: 100%;
+    max-width: 940px;
+    background: color-mix(in oklab, var(--mago-card) 90%, white 10%);
+    border: 1px solid var(--mago-line);
+    border-radius: 22px;
+    box-shadow: var(--mago-soft-shadow);
+    backdrop-filter: blur(22px) saturate(160%);
+    display: flex;
+    flex-direction: column;
+    padding: 8px;
+    gap: 8px;
+    transition: transform 220ms var(--mago-ease), box-shadow 220ms var(--mago-ease);
+}
+
+.mago-input-glass:focus-within {
+    transform: translateY(-1px);
+    box-shadow: 0 18px 44px rgba(29, 78, 216, 0.18);
+}
+
+.mago-attachments-area {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 14px;
+    padding: 12px;
+    border-radius: 16px;
+    background: rgba(148, 163, 184, 0.12);
+    border: 1px solid rgba(148, 163, 184, 0.2);
+}
+
+.dark .mago-attachments-area {
+    background: rgba(15, 23, 42, 0.5);
+    border-color: rgba(148, 163, 184, 0.22);
+}
+
+.mago-attachment-category {
+    flex: 1;
+    min-width: 220px;
+}
+
+.mago-attachment-category.border-left {
+    border-left: 1px dashed rgba(71, 85, 105, 0.34);
+    padding-left: 14px;
+}
+
+.dark .mago-attachment-category.border-left {
+    border-left-color: rgba(148, 163, 184, 0.28);
+}
+
+.mago-attachment-header {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    margin-bottom: 8px;
+    text-transform: uppercase;
+    font-size: 11px;
+    letter-spacing: 0.06em;
+    font-weight: 750;
+    color: var(--mago-muted);
+}
+
+.mago-attachment-list {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+}
+
+.mago-att-item {
+    position: relative;
+    border-radius: 12px;
+    border: 1px solid var(--mago-line);
+    animation: scaleIn 260ms var(--mago-ease);
+}
+
+.mago-att-item.image-att {
+    width: 62px;
+    height: 62px;
+    overflow: hidden;
+}
+
+.mago-att-item.image-att img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+}
+
+.mago-att-item.file-att {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    background: rgba(255, 255, 255, 0.75);
+    padding: 8px 10px;
+    max-width: 220px;
+}
+
+.dark .mago-att-item.file-att {
+    background: rgba(30, 41, 59, 0.8);
+}
+
+.file-icon-wrap {
+    color: #ef4444;
+    display: flex;
+}
+
+.file-name {
+    font-size: 12px;
+    font-weight: 600;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+.mago-att-item button {
+    position: absolute;
+    top: -6px;
+    right: -6px;
+    width: 20px;
+    height: 20px;
+    border: none;
+    border-radius: 50%;
+    cursor: pointer;
+    color: white;
+    background: rgba(15, 23, 42, 0.88);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: background 180ms ease;
+}
+
+.mago-att-item button:hover {
+    background: #dc2626;
+}
+
+.mago-input-toolbar {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 10px;
+    padding: 2px 4px;
+    flex-wrap: wrap;
+}
+
+.mago-import-actions {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+
+.mago-import-btn {
+    width: 34px;
+    height: 34px;
+    border: 1px solid var(--mago-line);
+    border-radius: 10px;
+    background: rgba(255, 255, 255, 0.72);
+    color: var(--mago-ink);
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    position: relative;
+    transition: all 180ms var(--mago-ease);
+}
+
+.dark .mago-import-btn {
+    background: rgba(15, 23, 42, 0.72);
+}
+
+.mago-import-btn:hover:not(:disabled) {
+    transform: translateY(-1px);
+    border-color: rgba(14, 165, 233, 0.35);
+    box-shadow: 0 8px 20px rgba(14, 165, 233, 0.15);
+}
+
+.mago-import-btn:disabled {
+    opacity: 0.55;
+    cursor: not-allowed;
+}
+
+.mago-hover-label {
+    position: absolute;
+    bottom: calc(100% + 8px);
+    left: 50%;
+    transform: translateX(-50%) translateY(4px);
+    background: rgba(15, 23, 42, 0.94);
+    color: #f8fafc;
+    font-size: 11px;
+    font-weight: 600;
+    line-height: 1;
+    padding: 7px 9px;
+    border-radius: 8px;
+    white-space: nowrap;
+    pointer-events: none;
+    opacity: 0;
+    visibility: hidden;
+    transition: all 160ms ease;
+}
+
+.mago-import-btn:hover .mago-hover-label {
+    opacity: 1;
+    visibility: visible;
+    transform: translateX(-50%) translateY(0);
+}
+
+.mago-mode-picker {
+    position: relative;
+}
+
+.mago-mode-trigger {
+    border: 1px solid var(--mago-line);
+    background: rgba(255, 255, 255, 0.72);
+    color: var(--mago-ink);
+    height: 34px;
+    border-radius: 999px;
+    padding: 0 10px;
+    display: inline-flex;
+    align-items: center;
+    gap: 7px;
+    font-size: 12px;
+    font-weight: 680;
+    cursor: pointer;
+    transition: all 180ms var(--mago-ease);
+}
+
+.dark .mago-mode-trigger {
+    background: rgba(15, 23, 42, 0.72);
+}
+
+.mago-mode-trigger:hover:not(:disabled) {
+    border-color: rgba(14, 165, 233, 0.35);
+}
+
+.mago-mode-trigger:disabled {
+    opacity: 0.6;
+    cursor: not-allowed;
+}
+
+.mago-mode-trigger .open {
+    transform: rotate(180deg);
+}
+
+.mago-mode-dropdown {
+    position: absolute;
+    right: 0;
+    bottom: calc(100% + 10px);
+    width: 320px;
+    background: rgba(9, 15, 28, 0.94);
+    color: #e2e8f0;
+    border: 1px solid rgba(148, 163, 184, 0.22);
+    border-radius: 18px;
+    box-shadow: 0 24px 44px rgba(2, 6, 23, 0.45);
+    padding: 10px;
+    z-index: 25;
+    animation: fadeSlideUp 180ms var(--mago-ease);
+}
+
+.mago-mode-dropdown-title {
+    font-size: 13px;
+    font-weight: 700;
+    color: #cbd5e1;
+    padding: 6px 8px 10px;
+}
+
+.mago-mode-option {
+    width: 100%;
+    border: 1px solid transparent;
+    background: transparent;
+    color: inherit;
+    border-radius: 14px;
+    padding: 10px;
+    display: grid;
+    grid-template-columns: 24px 1fr 20px;
+    gap: 10px;
+    align-items: center;
+    text-align: left;
+    cursor: pointer;
+    transition: all 170ms ease;
+}
+
+.mago-mode-option:hover {
+    background: rgba(30, 41, 59, 0.8);
+}
+
+.mago-mode-option.active {
+    background: rgba(30, 41, 59, 0.9);
+    border-color: rgba(125, 211, 252, 0.28);
+}
+
+.mago-mode-option-icon {
+    color: #93c5fd;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.mago-mode-option-label {
+    font-size: 15px;
+    font-weight: 700;
+    color: #f8fafc;
+}
+
+.mago-mode-option-desc {
+    margin-top: 2px;
+    font-size: 13px;
+    color: #94a3b8;
+    line-height: 1.35;
+}
+
+.mago-mode-option-check {
+    color: #7dd3fc;
+}
+
+.mago-input-box {
+    display: flex;
+    align-items: flex-end;
+    gap: 10px;
+    padding: 2px 6px 6px;
+}
+
+.mago-input-box.disabled {
+    opacity: 0.64;
+}
+
+.mago-textarea {
+    flex: 1;
+    resize: none;
+    border: none;
+    outline: none;
+    background: transparent;
+    font-size: 15px;
+    line-height: 1.55;
+    color: var(--mago-ink);
+    min-height: 44px;
+    max-height: 120px;
+    padding: 10px 2px;
+    overflow-y: auto;
+    contain: layout paint;
+}
+
+.mago-textarea::placeholder {
+    color: color-mix(in oklab, var(--mago-muted) 78%, white 22%);
+}
+
+.mago-send-button {
+    width: 44px;
+    height: 44px;
+    border: none;
+    border-radius: 14px;
+    cursor: not-allowed;
+    color: #94a3b8;
+    background: rgba(203, 213, 225, 0.7);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: all 220ms var(--mago-ease);
+    flex-shrink: 0;
+}
+
+.mago-send-button.active {
+    cursor: pointer;
+    color: white;
+    background: linear-gradient(135deg, var(--mago-brand-1), var(--mago-brand-2));
+    box-shadow: 0 10px 24px rgba(37, 99, 235, 0.34);
+}
+
+.mago-send-button.active:hover {
+    transform: translateY(-1px) scale(1.03);
+}
+
+.mago-content-image {
+    max-width: 100%;
+    border-radius: 10px;
+    margin: 8px 0;
+    border: 1px solid var(--mago-line);
+    transition: transform 220ms var(--mago-ease);
+}
+
+.mago-content-image:hover {
+    transform: scale(1.015);
+}
+
+@keyframes fadeInContainer {
+    from {
+        opacity: 0;
+        transform: scale(0.992);
+    }
+    to {
+        opacity: 1;
+        transform: scale(1);
+    }
+}
+
+@keyframes fadeSlideUp {
+    from {
+        opacity: 0;
+        transform: translateY(10px);
+    }
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+@keyframes messageAppear {
+    from {
+        opacity: 0;
+        transform: translateY(8px) scale(0.99);
+    }
+    to {
+        opacity: 1;
+        transform: translateY(0) scale(1);
+    }
+}
+
+@keyframes scaleIn {
+    from {
+        opacity: 0;
+        transform: scale(0.86);
+    }
+    to {
+        opacity: 1;
+        transform: scale(1);
+    }
+}
+
+@keyframes pulseHalo {
+    0%,
+    100% {
+        box-shadow: 0 8px 20px rgba(24, 57, 105, 0.2), 0 0 0 0 rgba(14, 165, 233, 0.24);
+    }
+    50% {
+        box-shadow: 0 8px 20px rgba(24, 57, 105, 0.2), 0 0 0 8px rgba(14, 165, 233, 0);
+    }
+}
+
+@keyframes dotWave {
+    0%,
+    100% {
+        transform: translateY(0);
+        opacity: 0.3;
+    }
+    50% {
+        transform: translateY(-3px);
+        opacity: 0.9;
+    }
+}
+
+@keyframes thinkingOrb {
+    0%,
+    100% {
+        transform: scale(1);
+        box-shadow: 0 0 0 0 rgba(14, 165, 233, 0.42);
+    }
+    50% {
+        transform: scale(1.15);
+        box-shadow: 0 0 0 7px rgba(14, 165, 233, 0);
+    }
+}
+
+@media (max-width: 768px) {
+    .mago-header {
+        padding: 12px 14px;
+    }
+
+    .mago-chat-area {
+        padding: 20px 14px;
+        gap: 16px;
+    }
+
+    .mago-message-row {
+        max-width: 96%;
+        gap: 10px;
+    }
+
+    .mago-bottom-zone {
+        padding: 0 10px 14px;
+    }
+
+    .mago-input-toolbar {
+        gap: 10px;
+    }
+
+    .mago-mode-dropdown {
+        width: min(86vw, 320px);
+    }
+
+    .mago-attachment-category.border-left {
+        border-left: none;
+        padding-left: 0;
+    }
+}

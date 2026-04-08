@@ -24,7 +24,7 @@ export const onRequestPost = async (context: any) => {
 
         // Parse the incoming request body
         const body = await request.json() as any;
-        const model = body.model || 'gemini-2.5-flash-lite';
+        const model = body.model || 'gemini-3.1-flash-lite-preview';
 
         // Shuffle keys for load balancing
         const shuffled = [...keys].sort(() => Math.random() - 0.5);

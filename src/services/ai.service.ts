@@ -7,7 +7,13 @@
 
 export interface AIChatMessage {
     role: 'user' | 'model';
-    parts: { text: string }[];
+    parts: { 
+        text?: string;
+        inlineData?: {
+            mimeType: string;
+            data: string; // Base64
+        };
+    }[];
 }
 
 export interface AIChatOptions {
@@ -18,7 +24,7 @@ export interface AIChatOptions {
     responseMimeType?: string;
 }
 
-const GEMINI_MODEL = 'gemini-2.5-flash-lite';
+const GEMINI_MODEL = 'gemini-3.1-flash-lite-preview';
 
 /** Extract actual response text from Gemma/Gemini candidates, skipping 'thinking' parts */
 function extractResponseText(data: any): string {

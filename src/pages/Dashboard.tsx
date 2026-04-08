@@ -5,7 +5,8 @@ import {
     Calendar,
     Clock,
     CheckCircle2,
-    Timer
+    Timer,
+    Sparkles
 } from 'lucide-react';
 import { Dialog } from '../components/ui/Dialog';
 
@@ -61,6 +62,12 @@ const menuItems = [
         iconBg: 'bg-blue-100 text-blue-500',
         badge: 'EN',
         path: '/etest',
+    },
+    {
+        label: 'Mago A.I',
+        icon: <Sparkles className="w-6 h-6" />,
+        iconBg: 'bg-purple-100 text-purple-500',
+        path: '/mago',
     },
 ];
 

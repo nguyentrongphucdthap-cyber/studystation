@@ -17,8 +17,8 @@ export const onRequestPost = async (context: any) => {
         // Parse the incoming request body
         const body = await request.json() as any;
 
-        // Default to gemini-2.5-flash-lite if not specified
-        const model = body.model || 'gemini-2.5-flash-lite';
+        // Default to gemini-3.1-flash-lite-preview if not specified
+        const model = body.model || 'gemini-3.1-flash-lite-preview';
         const GEMINI_API_URL = `https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent?key=${selectedKey}`;
 
         // Build request body, forwarding system_instruction if present

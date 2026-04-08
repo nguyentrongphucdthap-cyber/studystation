@@ -5,6 +5,8 @@ interface UIContextType {
     setTakingExam: (val: boolean) => void;
     isHubForcedVisible: boolean;
     setHubForcedVisible: (val: boolean) => void;
+    magoCommand: string | null;
+    triggerMago: (command: string | null) => void;
 }
 
 const UIContext = createContext<UIContextType | undefined>(undefined);
@@ -12,9 +14,14 @@ const UIContext = createContext<UIContextType | undefined>(undefined);
 export function UIProvider({ children }: { children: ReactNode }) {
     const [isTakingExam, setTakingExam] = useState(false);
     const [isHubForcedVisible, setHubForcedVisible] = useState(false);
+    const [magoCommand, triggerMago] = useState<string | null>(null);
 
     return (
-        <UIContext.Provider value={{ isTakingExam, setTakingExam, isHubForcedVisible, setHubForcedVisible }}>
+        <UIContext.Provider value={{ 
+            isTakingExam, setTakingExam, 
+            isHubForcedVisible, setHubForcedVisible,
+            magoCommand, triggerMago 
+        }}>
             {children}
         </UIContext.Provider>
     );

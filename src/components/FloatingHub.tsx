@@ -36,6 +36,7 @@ import {
 } from 'lucide-react';
 import { useAuth } from '@/contexts/AuthContext';
 import { useTheme } from '@/contexts/ThemeContext';
+import { useUI } from '@/contexts/UIContext';
 import {
     subscribeFriends,
     sendFriendRequest,
@@ -68,6 +69,8 @@ import type { ChatMessage, Friend, GroupChat } from '@/types';
 import './FloatingHub.css';
 import { APP_VERSION } from '@/version';
 import { CHANGELOG } from '@/data/changelog';
+import { getEtestExam } from '@/services/etest.service';
+import { getExamContent } from '@/services/exam.service';
 import MathText from './MathText';
 import MagoText from './MagoText';
 
@@ -186,6 +189,8 @@ function getPlatformColor(platform: MusicPlatform): string {
 
 export function FloatingHub() {
     const { user } = useAuth();
+    const { magoCommand } = useUI();
+    // triggerMago is used below in ChatTab if needed or to reset state
     const [isOpen, setIsOpen] = useState(false);
     const [activeTab, setActiveTab] = useState<TabId>('chat');
     const [fabPos, setFabPos] = useState(() => {
@@ -204,6 +209,7 @@ export function FloatingHub() {
     });
     const [isDragging, setIsDragging] = useState(false);
     const [chatUnreadCount, setChatUnreadCount] = useState(0);
+    const [activeChat, setActiveChat] = useState<string | null>(null);
 
     // ── Fully lifted Pomodoro state (persists across tab switches) ──
     const [pomodoroMode, setPomodoroMode] = useState<'focus' | 'shortBreak' | 'longBreak'>('focus');
@@ -363,6 +369,16 @@ export function FloatingHub() {
         }
     }, [isDragging, clampToViewport]);
 
+    // Handle incoming Mago commands from other UI parts
+    useEffect(() => {
+        if (magoCommand) {
+            setIsOpen(true);
+            setActiveTab('chat');
+            setActiveChat('mago');
+            // We'll let ChatTab handle the actual command processing
+        }
+    }, [magoCommand]);
+
     // ── Smart panel positioning based on FAB quadrant ──
     const fabSize = window.innerWidth < 480 ? 48 : 56;
     const fabCenterX = fabPos.x + fabSize / 2;
@@ -495,7 +511,14 @@ export function FloatingHub() {
 
                         {/* Content */}
                         <div className="hub-content">
-                            {activeTab === 'chat' && <ChatTab user={user} onUnreadChange={setChatUnreadCount} />}
+                            {activeTab === 'chat' && (
+                                <ChatTab 
+                                    user={user} 
+                                    onUnreadChange={setChatUnreadCount} 
+                                    activeChat={activeChat}
+                                    setActiveChat={setActiveChat}
+                                />
+                            )}
                             {activeTab === 'pomodoro' && (
                                 <PomodoroTab
                                     mode={pomodoroMode}
@@ -556,9 +579,22 @@ function formatMsgTime(ts: number): string {
 }
 
 
-function ChatTab({ user, onUnreadChange }: { user: { email: string; displayName: string | null; photoURL?: string | null }; onUnreadChange?: (count: number) => void }) {
+function ChatTab({ 
+    user, 
+    onUnreadChange,
+    activeChat,
+    setActiveChat
+}: { 
+    user: { email: string; displayName: string | null; photoURL?: string | null }; 
+    onUnreadChange?: (count: number) => void;
+    activeChat: string | null;
+    setActiveChat: (val: string | null) => void;
+}) {
+    const { role } = useAuth();
+    const { magoCommand, triggerMago } = useUI();
+    const isBoss = /boss/i.test(role);
     const [friends, setFriends] = useState<Friend[]>([]);
-    const [activeChat, setActiveChat] = useState<string | null>(null);
+    // activeChat lifted to parent
     const [messages, setMessages] = useState<ChatMessage[]>([]);
     const [input, setInput] = useState('');
     const [showAddFriend, setShowAddFriend] = useState(false);
@@ -718,53 +754,136 @@ function ChatTab({ user, onUnreadChange }: { user: { email: string; displayName:
         messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
     }, [messages]);
 
-    const handleSend = async () => {
-        if (!input.trim() || !activeChat) return;
-        const text = input.trim();
-        setInput('');
+    const lastProcessedCommand = useRef<string | null>(null);
+    // Handle external commands
+    useEffect(() => {
+        if (magoCommand && activeChat === 'mago' && magoCommand !== lastProcessedCommand.current) {
+            const cmd = magoCommand;
+            lastProcessedCommand.current = cmd;
+            triggerMago(null); // Clear immediately
+            handleSend(cmd);
+        } else if (!magoCommand) {
+            lastProcessedCommand.current = null;
+        }
+    }, [magoCommand, activeChat]);
+
+    const handleSend = async (textOrEvent?: string | React.MouseEvent | React.KeyboardEvent) => {
+        let text = '';
+        if (typeof textOrEvent === 'string') {
+            text = textOrEvent.trim();
+        } else {
+            text = input.trim();
+            setInput('');
+        }
+        
+        if (!text || !activeChat) return;
 
         if (activeChat === 'mago') {
             setIsMagoTyping(true);
             try {
-                // 1. Save user message to Firestore (don't await — fire in parallel with AI)
-                const savePromise = sendMagoMessage(text);
+                let promptText = text;
+                let isAnalysis = false;
+
+                // SPECIAL COMMANDS PROCESSING
+                if (text.startsWith('/explain-etest')) {
+                    isAnalysis = true;
+                    const parts = text.split(' ');
+                    const examId = parts.find(p => p.startsWith('examId:'))?.split(':')[1];
+                    const sIdx = parseInt(parts.find(p => p.startsWith('s:'))?.split(':')[1] || '0');
+                    const qIdx = parseInt(parts.find(p => p.startsWith('q:'))?.split(':')[1] || '0');
+
+                    if (examId) {
+                        const exam = await getEtestExam(examId);
+                        const question = exam?.sections[sIdx]?.questions[qIdx];
+                        if (question) {
+                            promptText = `Tôi muốn bạn hãy giải thích chi tiết câu hỏi này trong đề thi "${exam?.title}":
+Câu hỏi: ${question.text}
+Các lựa chọn:
+${question.options.map((o, i) => `- ${String.fromCharCode(65 + i)}. ${o}`).join('\n')}
+Đáp án đúng là: ${String.fromCharCode(65 + question.correct)}. ${question.options[question.correct]}
+
+Yêu cầu phân tích:
+1. LUÔN LUÔN bắt đầu bằng cách trả lời trực tiếp điểm mấu chốt/hướng giải chính của câu hỏi này.
+2. Dùng định dạng highlight (in đậm/in nghiêng) cho những từ khóa hoặc "key" quan trọng làm nên tính đúng/sai của các đáp án.
+3. Đối với bài tập tính toán: Hướng dẫn giải chi tiết từng bước. Giới thiệu rõ ràng BẤT KỲ công thức nào được sử dụng và giải thích ý nghĩa các đại lượng trong công thức đó một cách dễ hiểu nhất.
+4. Phân tích rõ tại sao đáp án kia lại đúng và các đáp án còn lại chưa chính xác.`;
+                        }
+                    }
+                } else if (text.startsWith('/explain-practice')) {
+                    isAnalysis = true;
+                    const parts = text.split(' ');
+                    const examId = parts.find(p => p.startsWith('examId:'))?.split(':')[1];
+                    const part = parts.find(p => p.startsWith('part:'))?.split(':')[1]; // p1, p2, p3
+                    const qid = parts.find(p => p.startsWith('qid:'))?.split(':')[1];
+
+                    if (examId && part && qid) {
+                        const exam = await getExamContent(examId);
+                        let question: any = null;
+                        if (part === 'p1') question = exam?.part1?.find(q => String(q.id) === qid);
+                        if (part === 'p2') question = exam?.part2?.find(q => String(q.id) === qid);
+                        if (part === 'p3') question = exam?.part3?.find(q => String(q.id) === qid);
+
+                        if (question) {
+                            let qDetails = `Câu hỏi: ${question.text}`;
+                            if (question.image) qDetails += `\n(Có hình ảnh minh họa tại: ${question.image})`;
+                            
+                            if (part === 'p1') {
+                                qDetails += `\nCác lựa chọn:\n${question.options.map((o: string, i: number) => `- ${String.fromCharCode(65 + i)}. ${o}`).join('\n')}`;
+                                qDetails += `\nĐáp án đúng là: ${String.fromCharCode(65 + question.correct)}. ${question.options[question.correct]}`;
+                            } else if (part === 'p2') {
+                                qDetails += `\nĐây là câu hỏi Đúng/Sai với các ý phụ:\n${question.subQuestions.map((sq: any) => `- ${sq.id}. ${sq.text} (Đáp án: ${sq.correct ? 'Đúng' : 'Sai'})`).join('\n')}`;
+                            } else if (part === 'p3') {
+                                qDetails += `\nĐáp án đúng là: ${question.correct}`;
+                            }
+
+                            if (question.explanation) {
+                                qDetails += `\nLưu ý giải thích hiện tại: ${question.explanation}`;
+                            }
+
+                            promptText = `Tôi muốn bạn hãy giải thích chi tiết câu hỏi này trong đề thi "${exam?.title}":
+${qDetails}
+
+Yêu cầu phân tích (trình bày đẹp mắt theo phong cách Mago 🧙‍♂️):
+1. LUÔN LUÔN bắt đầu bằng cách trả lời trực tiếp điểm mấu chốt hoặc hướng giải chính của câu hỏi này.
+2. Dùng định dạng highlight (in đậm/in nghiêng) cho những từ khóa hoặc "key" quan trọng làm nên tính đúng/sai của đáp án.
+3. Đối với bài tập tính toán: Hướng dẫn giải chi tiết từng bước. Giới thiệu rõ ràng BẤT KỲ công thức nào được sử dụng và giải thích ý nghĩa các đại lượng trong công thức đó.
+4. Phân tích chi tiết tại sao đáp án này là đúng. Nếu có nhắc đến hình ảnh, hãy kết hợp thông tin trên hình vào lời giải.`;
+                        }
+                    }
+                }
+
+                // 1. Save user message to Firestore
+                const displayMsg = isAnalysis ? "🧙‍♂️ Đang phân tích câu hỏi giúp bạn... Chờ tôi một xíu nhé!" : text;
+                const savePromise = sendMagoMessage(displayMsg);
                 
                 // Update local count immediately for UI feedback
                 setMagoUsageCount(prev => prev + 1);
 
                 // 2. Prepare history for AI (using current messages + the new one)
-                // Filter out old error messages and limit history to prevent AI confusion
                 const ERROR_PATTERN = /Xin lỗi, tôi đang gặp chút sự cố kỹ thuật/;
-                const aiHistory: AIChatMessage[] = [...messages, {
-                    id: 'temp',
-                    text,
-                    senderEmail: user.email,
-                    senderName: user.displayName || 'Bạn',
-                    timestamp: Date.now(),
-                    role: 'user'
-                }]
-                .filter(m => m.role && !ERROR_PATTERN.test(m.text))
-                .map(m => ({
+                const aiHistory: AIChatMessage[] = [...messages.filter(m => m.role && !ERROR_PATTERN.test(m.text)).map(m => ({
                     role: (m.role === 'mago' ? 'model' : 'user') as 'user' | 'model',
                     parts: [{ text: m.text }]
-                }))
-                .slice(-10); // Keep only last 10 messages for speed
+                })).slice(-10), {
+                    role: 'user',
+                    parts: [{ text: promptText }]
+                }];
 
-                // 3. Wait for save to finish (checks usage limit)
+                // 3. Wait for save to finish
                 await savePromise;
 
-                // 4. Generate AI response with optimized settings for fast chat
-                const response = await generateAIContent(aiHistory, { 
-                    model: 'gemma-4-31b-it',
+                // 4. Generate AI response
+                const aiResponse = await generateAIContent(aiHistory, { 
+                    model: 'gemini-3.1-flash-lite-preview',
                     systemInstruction: MAGO_SYSTEM_PROMPT,
                     maxOutputTokens: 1024,
                     temperature: 0.8,
                 });
 
-                console.log('[Mago DEBUG] AI response received:', response?.substring(0, 100));
+                console.log('[Mago DEBUG] AI response received:', aiResponse?.substring(0, 100));
 
                 // 5. Save AI response to Firestore
-                await saveMagoResponse(response);
+                await saveMagoResponse(aiResponse);
             } catch (err: any) {
                 console.error('[Chat] Mago AI error:', err);
                 
@@ -1241,14 +1360,16 @@ function ChatTab({ user, onUnreadChange }: { user: { email: string; displayName:
                 <input 
                     type="text" 
                     placeholder={activeChat === 'mago' 
-                        ? (MAGO_DAILY_LIMIT - magoUsageCount > 0 
-                            ? `Hỏi Mago... (Còn ${MAGO_DAILY_LIMIT - magoUsageCount} lượt)` 
-                            : 'Ngày mai quay lại nhé! 🧙‍♂️') 
+                        ? (isBoss 
+                            ? 'Hỏi Mago... (Vô hạn lượt ✨)'
+                            : (MAGO_DAILY_LIMIT - magoUsageCount > 0 
+                                ? `Hỏi Mago... (Còn ${MAGO_DAILY_LIMIT - magoUsageCount} lượt)` 
+                                : 'Ngày mai quay lại nhé! 🧙‍♂️'))
                         : 'Nhắn tin...'} 
                     value={input} 
                     onChange={e => setInput(e.target.value)} 
                     onKeyDown={e => e.key === 'Enter' && !e.shiftKey && handleSend()} 
-                    disabled={isMagoTyping || (activeChat === 'mago' && magoUsageCount >= MAGO_DAILY_LIMIT)} 
+                    disabled={isMagoTyping || (activeChat === 'mago' && !isBoss && magoUsageCount >= MAGO_DAILY_LIMIT)} 
                 />
                 <button onClick={handleSend} disabled={isMagoTyping || !input.trim()}><Send size={16} /></button>
             </div>

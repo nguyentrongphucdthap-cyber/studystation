@@ -38,7 +38,7 @@ Quy tắc quan trọng:
 3. Giữ nguyên các đường link hình ảnh (Markdown) được cung cấp trong văn bản gốc.
 4. Đảm bảo hỗ trợ tốt các ký hiệu khoa học.`;
 
-        const GEMINI_API_URL = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash-lite:generateContent?key=${selectedKey}`;
+        const GEMINI_API_URL = `https://generativelanguage.googleapis.com/v1beta/models/gemini-3.1-flash-lite-preview:generateContent?key=${selectedKey}`;
 
         const response = await fetch(GEMINI_API_URL, {
             method: 'POST',

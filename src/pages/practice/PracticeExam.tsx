@@ -39,6 +39,7 @@ import {
     Settings,
     X,
     Check,
+    Sparkles,
 } from 'lucide-react';
 
 type ExamMode = 'ready' | 'taking' | 'result';
@@ -48,7 +49,7 @@ export default function PracticeExam() {
     const navigate = useNavigate();
     const { user, isGuest } = useAuth();
     const { settings } = useTheme();
-    const { setTakingExam, setHubForcedVisible } = useUI();
+    const { setTakingExam, setHubForcedVisible, triggerMago } = useUI();
 
     const [exam, setExam] = useState<Exam | null>(null);
     const [loading, setLoading] = useState(true);
@@ -2021,8 +2022,20 @@ export default function PracticeExam() {
                                                 </div>
                                             ))}
                                         </div>
+                                        <div className="mt-4 flex items-center gap-2">
+                                            <Button 
+                                                variant="ghost" 
+                                                size="sm" 
+                                                className="h-8 text-indigo-600 dark:text-indigo-400 font-bold hover:text-indigo-700 dark:hover:text-indigo-300 hover:bg-indigo-50 dark:hover:bg-indigo-900/30 border border-indigo-100 dark:border-indigo-900/50 rounded-xl transition-all duration-300 hover:scale-[1.02] active:scale-95 group relative overflow-hidden"
+                                                onClick={() => triggerMago(`/explain-practice examId:${examId} part:p1 qid:${q.id}`)}
+                                            >
+                                                <Sparkles className="h-4 w-4 mr-2 group-hover:rotate-12 transition-transform" /> 
+                                                <span className="relative z-10">Giải thích bằng Mago A.I 🧙‍♂️</span>
+                                                <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white/20 dark:via-white/5 to-transparent -translate-x-full group-hover:animate-shimmer" />
+                                            </Button>
+                                        </div>
                                         {q.explanation && (
-                                            <div className="mt-4 p-4 rounded-xl bg-blue-50 border border-blue-100 text-[11px] leading-relaxed">
+                                            <div className="mt-4 p-4 rounded-xl bg-blue-50 border border-blue-100 dark:bg-blue-900/10 dark:border-blue-900/30 text-[11px] leading-relaxed">
                                                 <div className="font-bold text-blue-600 uppercase tracking-wider mb-1 flex items-center gap-1">
                                                     💡 Giải thích
                                                 </div>
@@ -2099,8 +2112,20 @@ export default function PracticeExam() {
                                                 );
                                             })}
                                         </div>
+                                        <div className="mt-4 flex items-center gap-2">
+                                            <Button 
+                                                variant="ghost" 
+                                                size="sm" 
+                                                className="h-8 text-indigo-600 dark:text-indigo-400 font-bold hover:text-indigo-700 dark:hover:text-indigo-300 hover:bg-indigo-50 dark:hover:bg-indigo-900/30 border border-indigo-100 dark:border-indigo-900/50 rounded-xl transition-all duration-300 hover:scale-[1.02] active:scale-95 group relative overflow-hidden"
+                                                onClick={() => triggerMago(`/explain-practice examId:${examId} part:p2 qid:${q.id}`)}
+                                            >
+                                                <Sparkles className="h-4 w-4 mr-2 group-hover:rotate-12 transition-transform" /> 
+                                                <span className="relative z-10">Giải thích bằng Mago A.I 🧙‍♂️</span>
+                                                <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white/20 dark:via-white/5 to-transparent -translate-x-full group-hover:animate-shimmer" />
+                                            </Button>
+                                        </div>
                                         {q.explanation && (
-                                            <div className="mt-4 p-4 rounded-xl bg-blue-50 border border-blue-100 text-[11px] leading-relaxed">
+                                            <div className="mt-4 p-4 rounded-xl bg-blue-50 border border-blue-100 dark:bg-blue-900/10 dark:border-blue-900/30 text-[11px] leading-relaxed">
                                                 <div className="font-bold text-blue-600 uppercase tracking-wider mb-1 flex items-center gap-1">
                                                     💡 Giải thích
                                                 </div>
@@ -2166,8 +2191,20 @@ export default function PracticeExam() {
                                                 </p>
                                             </div>
                                         </div>
+                                        <div className="mt-4 flex items-center gap-2">
+                                            <Button 
+                                                variant="ghost" 
+                                                size="sm" 
+                                                className="h-8 text-indigo-600 dark:text-indigo-400 font-bold hover:text-indigo-700 dark:hover:text-indigo-300 hover:bg-indigo-50 dark:hover:bg-indigo-900/30 border border-indigo-100 dark:border-indigo-900/50 rounded-xl transition-all duration-300 hover:scale-[1.02] active:scale-95 group relative overflow-hidden"
+                                                onClick={() => triggerMago(`/explain-practice examId:${examId} part:p3 qid:${q.id}`)}
+                                            >
+                                                <Sparkles className="h-4 w-4 mr-2 group-hover:rotate-12 transition-transform" /> 
+                                                <span className="relative z-10">Giải thích bằng Mago A.I 🧙‍♂️</span>
+                                                <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white/20 dark:via-white/5 to-transparent -translate-x-full group-hover:animate-shimmer" />
+                                            </Button>
+                                        </div>
                                         {q.explanation && (
-                                            <div className="mt-4 p-4 rounded-xl bg-blue-50 border border-blue-100 text-[11px] leading-relaxed">
+                                            <div className="mt-4 p-4 rounded-xl bg-blue-50 border border-blue-100 dark:bg-blue-900/10 dark:border-blue-900/30 text-[11px] leading-relaxed">
                                                 <div className="font-bold text-blue-600 uppercase tracking-wider mb-1 flex items-center gap-1">
                                                     💡 Giải thích
                                                 </div>
