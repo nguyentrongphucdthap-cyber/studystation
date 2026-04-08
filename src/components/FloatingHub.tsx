@@ -71,6 +71,7 @@ import { APP_VERSION } from '@/version';
 import { CHANGELOG } from '@/data/changelog';
 import { getEtestExam } from '@/services/etest.service';
 import { getExamContent } from '@/services/exam.service';
+import { hasUnlimitedMagoAccess } from '@/services/auth.service';
 import MathText from './MathText';
 import MagoText from './MagoText';
 
@@ -592,7 +593,7 @@ function ChatTab({
 }) {
     const { role } = useAuth();
     const { magoCommand, triggerMago } = useUI();
-    const isBoss = /boss/i.test(role);
+    const hasUnlimitedMago = hasUnlimitedMagoAccess(role || '');
     const [friends, setFriends] = useState<Friend[]>([]);
     // activeChat lifted to parent
     const [messages, setMessages] = useState<ChatMessage[]>([]);
@@ -1360,7 +1361,7 @@ Yêu cầu phân tích (trình bày đẹp mắt theo phong cách Mago 🧙‍�
                 <input 
                     type="text" 
                     placeholder={activeChat === 'mago' 
-                        ? (isBoss 
+                        ? (hasUnlimitedMago 
                             ? 'Hỏi Mago... (Vô hạn lượt ✨)'
                             : (MAGO_DAILY_LIMIT - magoUsageCount > 0 
                                 ? `Hỏi Mago... (Còn ${MAGO_DAILY_LIMIT - magoUsageCount} lượt)` 
@@ -1369,7 +1370,7 @@ Yêu cầu phân tích (trình bày đẹp mắt theo phong cách Mago 🧙‍�
                     value={input} 
                     onChange={e => setInput(e.target.value)} 
                     onKeyDown={e => e.key === 'Enter' && !e.shiftKey && handleSend()} 
-                    disabled={isMagoTyping || (activeChat === 'mago' && !isBoss && magoUsageCount >= MAGO_DAILY_LIMIT)} 
+                    disabled={isMagoTyping || (activeChat === 'mago' && !hasUnlimitedMago && magoUsageCount >= MAGO_DAILY_LIMIT)} 
                 />
                 <button onClick={handleSend} disabled={isMagoTyping || !input.trim()}><Send size={16} /></button>
             </div>

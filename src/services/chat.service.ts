@@ -12,7 +12,7 @@ import {
 import { doc, getDoc, setDoc, updateDoc, onSnapshot, collection, query, addDoc, where, deleteDoc, arrayUnion, arrayRemove } from 'firebase/firestore';
 import { auth, rtdb, db } from '@/config/firebase';
 import type { ChatMessage, Friend, GroupChat } from '@/types';
-import { getUserRole } from './auth.service';
+import { getUserRole, hasUnlimitedMagoAccess } from './auth.service';
 
 // ============================================================
 // HELPERS
@@ -550,11 +550,11 @@ export async function sendMagoMessage(text: string): Promise<void> {
     const currentEmail = getCurrentEmail();
     if (!currentEmail || !text.trim()) return;
 
-    // Check usage limit (Boss role has no limit)
+    // Check usage limit (boss/super admin has no limit)
     const role = getUserRole();
-    const isBoss = /boss/i.test(role);
+    const hasUnlimitedAccess = hasUnlimitedMagoAccess(role);
     
-    if (!isBoss) {
+    if (!hasUnlimitedAccess) {
         const count = await getMagoUsageCountToday(currentEmail);
         if (count >= MAGO_DAILY_LIMIT) {
             throw new Error('MAGO_LIMIT_REACHED');

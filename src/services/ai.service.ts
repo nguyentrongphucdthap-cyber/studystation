@@ -1,7 +1,7 @@
 /**
  * AI Service
  * - Production: Routes through Cloudflare Workers proxy (/api/ai/generate)
- *   → API keys stay server-side, never exposed in client JS bundle
+ *   -> API keys stay server-side, never exposed in client JS bundle
  * - Local dev: Calls Gemini API directly using .env.local keys
  */
 
@@ -45,15 +45,35 @@ function extractResponseText(data: any): string {
 function isLocalDev(): boolean {
     return window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1';
 }
+function isLocationNotSupportedError(error: unknown): boolean {
+    const message = typeof error === 'string'
+        ? error
+        : (error as { message?: string })?.message || '';
+    return /user location is not supported/i.test(message);
+}
 
 export async function generateAIContent(messages: AIChatMessage[], options?: AIChatOptions) {
-    // In production → use server-side proxy (keys hidden)
+    // In production -> use server-side proxy (keys hidden)
     if (!isLocalDev()) {
         return generateViaProxy(messages, options);
     }
 
-    // In local dev → call Gemini directly using .env.local keys
-    return generateDirectly(messages, options);
+    // In local dev -> call Gemini directly using .env.local keys
+    try {
+        return await generateDirectly(messages, options);
+    } catch (error) {
+        if (isLocationNotSupportedError(error)) {
+            console.warn('[AI Service] Direct Gemini blocked by location, retrying via proxy...');
+            try {
+                return await generateViaProxy(messages, options);
+            } catch (proxyError: any) {
+                throw new Error(
+                    `${(error as Error).message}. Proxy fallback failed: ${proxyError?.message || 'Unknown error'}`
+                );
+            }
+        }
+        throw error;
+    }
 }
 
 // ============================================================
@@ -86,8 +106,14 @@ async function generateViaProxy(messages: AIChatMessage[], options?: AIChatOptio
     });
 
     if (!response.ok) {
-        const errData = await response.json() as any;
-        throw new Error(errData.error || 'AI proxy request failed');
+        const raw = await response.text();
+        let errData: any = null;
+        try {
+            errData = raw ? JSON.parse(raw) : null;
+        } catch {
+            errData = null;
+        }
+        throw new Error(errData?.error || `AI proxy request failed (${response.status})`);
     }
 
     const data = await response.json() as any;
@@ -165,16 +191,22 @@ async function generateDirectly(messages: AIChatMessage[], options?: AIChatOptio
             });
 
             if (!response.ok) {
-                const errData = await response.json() as any;
-                const msg = errData.error?.message || 'Failed to generate AI content';
+                const raw = await response.text();
+                let errData: any = null;
+                try {
+                    errData = raw ? JSON.parse(raw) : null;
+                } catch {
+                    errData = null;
+                }
+                const msg = errData?.error?.message || `Failed to generate AI content (${response.status})`;
 
-                // Leaked key → skip immediately
+                // Leaked key -> skip immediately
                 if (msg.toLowerCase().includes('leaked')) {
                     console.warn(`[AI Service] Key ${maskedKey} is LEAKED, skipping...`);
                     lastError = new Error(msg);
                     continue;
                 }
-                // Quota / rate-limit → try next key
+                // Quota / rate-limit -> try next key
                 if (response.status === 429 || (response.status === 403 && msg.toLowerCase().includes('quota'))) {
                     console.warn(`[AI Service] Key exhausted (${response.status}), trying next key...`);
                     lastError = new Error(msg);
@@ -202,7 +234,7 @@ async function generateDirectly(messages: AIChatMessage[], options?: AIChatOptio
 }
 
 // ============================================================
-// API KEY HEALTH CHECK — for admin panel
+// API KEY HEALTH CHECK - for admin panel
 // ============================================================
 
 export interface ApiKeyStatus {
@@ -213,9 +245,9 @@ export interface ApiKeyStatus {
     model: string;
 }
 
-/** Get all configured API keys (masked for display) — LOCAL DEV ONLY */
+/** Get all configured API keys (masked for display) - LOCAL DEV ONLY */
 export function getApiKeys(): { maskedKey: string; fullKey: string; index: number }[] {
-    // In production, keys are on the server — use checkApiKeysViaProxy instead
+    // In production, keys are on the server - use checkApiKeysViaProxy instead
     if (!isLocalDev()) return [];
 
     const keys: { maskedKey: string; fullKey: string; index: number }[] = [];
@@ -234,7 +266,7 @@ export function getApiKeys(): { maskedKey: string; fullKey: string; index: numbe
     return keys;
 }
 
-/** Check a single API key's health by sending a minimal request — LOCAL DEV ONLY */
+/** Check a single API key's health by sending a minimal request - LOCAL DEV ONLY */
 export async function checkApiKeyHealth(apiKey: string): Promise<ApiKeyStatus> {
     const model = GEMINI_MODEL;
     const masked = apiKey.slice(0, 8) + '...' + apiKey.slice(-4);
@@ -274,7 +306,7 @@ export async function checkApiKeyHealth(apiKey: string): Promise<ApiKeyStatus> {
     }
 }
 
-/** Check all API keys via server-side proxy — PRODUCTION */
+/** Check all API keys via server-side proxy - PRODUCTION */
 export async function checkApiKeysViaProxy(): Promise<ApiKeyStatus[]> {
     try {
         const response = await fetch('/api/ai/health-check', {
@@ -293,3 +325,4 @@ export async function checkApiKeysViaProxy(): Promise<ApiKeyStatus[]> {
         return [{ key: 'N/A', index: 0, status: 'error', message: err.message || 'Proxy error', model: GEMINI_MODEL }];
     }
 }
+

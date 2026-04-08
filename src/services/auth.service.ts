@@ -188,7 +188,11 @@ export function checkIsAdmin(role: string): boolean {
 }
 
 export function checkIsSuperAdmin(role: string): boolean {
-    return /super-admin/i.test(role);
+    return /super[-_\s]?admin/i.test(role);
+}
+
+export function hasUnlimitedMagoAccess(role: string): boolean {
+    return /boss|super[-_\s]?admin/i.test(role);
 }
 
 export function checkIsTeacher(role: string): boolean {

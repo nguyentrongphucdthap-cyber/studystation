@@ -31,7 +31,7 @@ import {
 } from '@/services/chat.service';
 import { generateAIContent, AIChatMessage } from '@/services/ai.service';
 import { uploadToImgBB } from '@/services/image.service';
-import { getUserRole } from '@/services/auth.service';
+import { getUserRole, hasUnlimitedMagoAccess } from '@/services/auth.service';
 import MagoText from '@/components/MagoText';
 import './MagoChatPage.css';
 
@@ -174,7 +174,7 @@ const MagoChatPage: React.FC = () => {
     const selectionMenuRef = useRef<HTMLDivElement>(null);
 
     const role = getUserRole();
-    const isBoss = /boss/i.test(role);
+    const hasUnlimitedMago = hasUnlimitedMagoAccess(role);
 
     const imageAttachments = attachments.filter((a) => a.type === 'image');
     const fileAttachments = attachments.filter((a) => a.type === 'file');
@@ -420,7 +420,7 @@ const MagoChatPage: React.FC = () => {
         if ((!input.trim() && attachments.length === 0) || isTyping) return;
         if (!user?.email) return;
 
-        if (!isBoss && usageCount >= MAGO_DAILY_LIMIT) {
+        if (!hasUnlimitedMago && usageCount >= MAGO_DAILY_LIMIT) {
             alert('Bạn đã hết lượt sử dụng Mago hôm nay. Hãy quay lại vào ngày mai nhé!');
             return;
         }
@@ -529,7 +529,7 @@ const MagoChatPage: React.FC = () => {
                         <Sparkles size={16} />
                         <span>Mago A.I</span>
                         <div className="mago-vertical-divider" />
-                        <span className="limit-text">{isBoss ? '∞ Lượt' : `${MAGO_DAILY_LIMIT - usageCount} lượt còn lại`}</span>
+                        <span className="limit-text">{hasUnlimitedMago ? '∞ Lượt' : `${MAGO_DAILY_LIMIT - usageCount} lượt còn lại`}</span>
                     </div>
                 </div>
 
