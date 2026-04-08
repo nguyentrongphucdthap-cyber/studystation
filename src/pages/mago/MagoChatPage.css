@@ -564,11 +564,11 @@
     right: 0;
     bottom: calc(100% + 10px);
     width: 320px;
-    background: rgba(9, 15, 28, 0.94);
-    color: #e2e8f0;
-    border: 1px solid rgba(148, 163, 184, 0.22);
+    background: linear-gradient(170deg, #ffffff, #f5f9ff);
+    color: #0f172a;
+    border: 1px solid #dbe8fb;
     border-radius: 18px;
-    box-shadow: 0 24px 44px rgba(2, 6, 23, 0.45);
+    box-shadow: 0 24px 42px rgba(15, 23, 42, 0.16);
     padding: 10px;
     z-index: 25;
     animation: fadeSlideUp 180ms var(--mago-ease);
@@ -577,7 +577,7 @@
 .mago-mode-dropdown-title {
     font-size: 13px;
     font-weight: 700;
-    color: #cbd5e1;
+    color: #334155;
     padding: 6px 8px 10px;
 }
 
@@ -598,16 +598,16 @@
 }
 
 .mago-mode-option:hover {
-    background: rgba(30, 41, 59, 0.8);
+    background: #eff6ff;
 }
 
 .mago-mode-option.active {
-    background: rgba(30, 41, 59, 0.9);
-    border-color: rgba(125, 211, 252, 0.28);
+    background: linear-gradient(165deg, #e7f1ff, #edf6ff);
+    border-color: #93c5fd;
 }
 
 .mago-mode-option-icon {
-    color: #93c5fd;
+    color: #3b82f6;
     display: inline-flex;
     align-items: center;
     justify-content: center;
@@ -616,18 +616,108 @@
 .mago-mode-option-label {
     font-size: 15px;
     font-weight: 700;
-    color: #f8fafc;
+    color: #0f172a;
 }
 
 .mago-mode-option-desc {
     margin-top: 2px;
     font-size: 13px;
-    color: #94a3b8;
+    color: #64748b;
     line-height: 1.35;
 }
 
 .mago-mode-option-check {
-    color: #7dd3fc;
+    color: #0ea5e9;
+}
+
+.dark .mago-mode-dropdown {
+    background: linear-gradient(170deg, #ffffff, #f4f7ff);
+    color: #0f172a;
+    border-color: #dbe8fb;
+}
+
+.mago-mode-tip {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 8px;
+    border: 1px solid #cfe2ff;
+    background: linear-gradient(175deg, #f3f9ff, #eaf4ff);
+    border-radius: 12px;
+    padding: 8px 10px;
+    color: #1e3a8a;
+}
+
+.mago-mode-tip-left {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    font-size: 12px;
+    font-weight: 600;
+    line-height: 1.35;
+}
+
+.mago-mode-tip button {
+    border: none;
+    background: rgba(37, 99, 235, 0.12);
+    color: #1d4ed8;
+    width: 22px;
+    height: 22px;
+    border-radius: 999px;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+}
+
+.mago-selection-menu {
+    position: fixed;
+    transform: translate(-50%, -100%);
+    z-index: 120;
+    display: flex;
+    align-items: center;
+    gap: 4px;
+    padding: 6px;
+    border-radius: 12px;
+    border: 1px solid rgba(148, 163, 184, 0.35);
+    background: rgba(255, 255, 255, 0.98);
+    backdrop-filter: blur(10px);
+    box-shadow: 0 14px 32px rgba(15, 23, 42, 0.2);
+}
+
+.mago-selection-menu button {
+    border: none;
+    background: transparent;
+    color: #1e293b;
+    height: 30px;
+    padding: 0 9px;
+    border-radius: 8px;
+    font-size: 12px;
+    font-weight: 650;
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    cursor: pointer;
+}
+
+.mago-selection-menu button:hover {
+    background: #eff6ff;
+    color: #1d4ed8;
+}
+
+.mago-action-toast {
+    position: fixed;
+    left: 50%;
+    bottom: 20px;
+    transform: translateX(-50%);
+    background: rgba(15, 23, 42, 0.92);
+    color: #f8fafc;
+    font-size: 12px;
+    font-weight: 600;
+    padding: 9px 12px;
+    border-radius: 10px;
+    z-index: 140;
+    animation: fadeSlideUp 200ms ease;
 }
 
 .mago-input-box {
@@ -802,6 +892,15 @@
 
     .mago-mode-dropdown {
         width: min(86vw, 320px);
+    }
+
+    .mago-selection-menu {
+        max-width: calc(100vw - 20px);
+        overflow-x: auto;
+    }
+
+    .mago-mode-tip-left {
+        font-size: 11px;
     }
 
     .mago-attachment-category.border-left {

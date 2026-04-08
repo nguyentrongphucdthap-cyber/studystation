@@ -12,7 +12,12 @@ import {
     ListChecks,
     MessageCircle,
     ChevronDown,
-    Check
+    Check,
+    Copy,
+    Highlighter,
+    MessageSquarePlus,
+    StickyNote,
+    Info
 } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '@/contexts/AuthContext';
@@ -41,6 +46,18 @@ interface Attachment {
 type ResponseMode = 'normal' | 'hint' | 'detailed';
 
 const MODE_META_REGEX = /^\[mago_mode:(normal|hint|detailed)\]\s*/;
+const MODE_TIP_REMAINING_KEY = 'mago_feature_intro_remaining_v2';
+const MODE_TIP_DEFAULT_REMAINING = 3;
+const NOTES_KEY_PREFIX = 'hub_notes_';
+
+interface NoteItem {
+    id: string;
+    title: string;
+    content: string;
+    color: string;
+    createdAt: number;
+    updatedAt: number;
+}
 
 const RESPONSE_MODE_CONFIG: Record<
     ResponseMode,
@@ -93,6 +110,27 @@ const buildModeMeta = (mode: ResponseMode, text: string): string => {
     return `[mago_mode:${mode}] ${text}`.trim();
 };
 
+const escapeRegExp = (value: string) => value.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+
+const escapeHtml = (value: string) =>
+    value
+        .replace(/&/g, '&amp;')
+        .replace(/</g, '&lt;')
+        .replace(/>/g, '&gt;')
+        .replace(/"/g, '&quot;')
+        .replace(/'/g, '&#39;');
+
+const applyHighlights = (text: string, highlights: string[]) => {
+    return highlights.reduce((acc, selectedText) => {
+        const target = selectedText.trim();
+        if (!target) return acc;
+
+        const regex = new RegExp(escapeRegExp(target), 'i');
+        if (!regex.test(acc)) return acc;
+        return acc.replace(regex, '==$&==');
+    }, text);
+};
+
 const MagoChatPage: React.FC = () => {
     const navigate = useNavigate();
     const { user } = useAuth();
@@ -104,12 +142,36 @@ const MagoChatPage: React.FC = () => {
     const [usageCount, setUsageCount] = useState(0);
     const [responseMode, setResponseMode] = useState<ResponseMode>('normal');
     const [isModeMenuOpen, setIsModeMenuOpen] = useState(false);
+    const [modeTipRemaining, setModeTipRemaining] = useState(() => {
+        const raw = localStorage.getItem(MODE_TIP_REMAINING_KEY);
+        const parsed = Number(raw);
+        if (Number.isFinite(parsed) && parsed >= 0) return parsed;
+        localStorage.setItem(MODE_TIP_REMAINING_KEY, String(MODE_TIP_DEFAULT_REMAINING));
+        return MODE_TIP_DEFAULT_REMAINING;
+    });
+    const [actionMessage, setActionMessage] = useState('');
+    const [highlightMap, setHighlightMap] = useState<Record<string, string[]>>({});
+    const [selectionMenu, setSelectionMenu] = useState<{
+        visible: boolean;
+        x: number;
+        y: number;
+        text: string;
+        messageKey: string;
+    }>({
+        visible: false,
+        x: 0,
+        y: 0,
+        text: '',
+        messageKey: ''
+    });
 
     const messagesEndRef = useRef<HTMLDivElement>(null);
     const imageInputRef = useRef<HTMLInputElement>(null);
     const fileInputRef = useRef<HTMLInputElement>(null);
     const textareaRef = useRef<HTMLTextAreaElement>(null);
     const modeMenuRef = useRef<HTMLDivElement>(null);
+    const chatAreaRef = useRef<HTMLDivElement>(null);
+    const selectionMenuRef = useRef<HTMLDivElement>(null);
 
     const role = getUserRole();
     const isBoss = /boss/i.test(role);
@@ -118,26 +180,31 @@ const MagoChatPage: React.FC = () => {
     const fileAttachments = attachments.filter((a) => a.type === 'file');
 
     const parsedMessages = useMemo(() => {
-        return messages.map((msg) => {
+        return messages.map((msg, idx) => {
             const isUser = msg.role === 'user' || !msg.role;
+            const messageKey = String(msg.id ?? `idx-${idx}`);
             if (!isUser) {
+                const highlightedText = applyHighlights(msg.text || '', highlightMap[messageKey] || []);
                 return {
                     ...msg,
+                    messageKey,
                     isUser,
                     parsedMode: 'normal' as ResponseMode,
-                    parsedText: msg.text
+                    parsedText: highlightedText
                 };
             }
 
             const { mode, cleanText } = parseMessageMode(msg.text || '');
+            const highlightedText = applyHighlights(cleanText, highlightMap[messageKey] || []);
             return {
                 ...msg,
+                messageKey,
                 isUser,
                 parsedMode: mode,
-                parsedText: cleanText
+                parsedText: highlightedText
             };
         });
-    }, [messages]);
+    }, [messages, highlightMap]);
 
     useEffect(() => {
         messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
@@ -173,15 +240,24 @@ const MagoChatPage: React.FC = () => {
 
     useEffect(() => {
         const handleClickOutside = (event: MouseEvent) => {
-            if (!modeMenuRef.current) return;
-            if (!modeMenuRef.current.contains(event.target as Node)) {
+            if (modeMenuRef.current && !modeMenuRef.current.contains(event.target as Node)) {
                 setIsModeMenuOpen(false);
+            }
+
+            if (selectionMenuRef.current && !selectionMenuRef.current.contains(event.target as Node)) {
+                setSelectionMenu((prev) => ({ ...prev, visible: false }));
             }
         };
 
         document.addEventListener('mousedown', handleClickOutside);
         return () => document.removeEventListener('mousedown', handleClickOutside);
     }, []);
+
+    useEffect(() => {
+        if (!actionMessage) return;
+        const timer = window.setTimeout(() => setActionMessage(''), 1800);
+        return () => window.clearTimeout(timer);
+    }, [actionMessage]);
 
     const fileToBase64 = (file: File): Promise<string> => {
         return new Promise((resolve, reject) => {
@@ -234,6 +310,109 @@ const MagoChatPage: React.FC = () => {
             const item = prev.find((a) => a.id === id);
             if (item?.preview) URL.revokeObjectURL(item.preview);
             return prev.filter((a) => a.id !== id);
+        });
+    };
+
+    const addToFloatingHubNotes = (selectedText: string) => {
+        if (!user?.email) return;
+
+        const storageKey = `${NOTES_KEY_PREFIX}${user.email}`;
+        const now = Date.now();
+        const note: NoteItem = {
+            id: now.toString(),
+            title: selectedText.trim().slice(0, 42) + (selectedText.trim().length > 42 ? '...' : ''),
+            content: `<p>${escapeHtml(selectedText).replace(/\n/g, '<br/>')}</p>`,
+            color: '#3b82f6',
+            createdAt: now,
+            updatedAt: now
+        };
+
+        try {
+            const raw = localStorage.getItem(storageKey);
+            const notes: NoteItem[] = raw && raw.startsWith('[') ? JSON.parse(raw) : [];
+            localStorage.setItem(storageKey, JSON.stringify([note, ...notes]));
+            setActionMessage('Đã thêm vào Notes của FloatingHub');
+        } catch {
+            setActionMessage('Không thể lưu vào Notes');
+        }
+    };
+
+    const hideSelectionAndClear = () => {
+        setSelectionMenu((prev) => ({ ...prev, visible: false }));
+        window.getSelection()?.removeAllRanges();
+    };
+
+    const handleCopySelected = async () => {
+        if (!selectionMenu.text) return;
+        try {
+            await navigator.clipboard.writeText(selectionMenu.text);
+            setActionMessage('Đã sao chép đoạn đã chọn');
+        } catch {
+            setActionMessage('Không thể sao chép tự động');
+        }
+        hideSelectionAndClear();
+    };
+
+    const handleHighlightSelected = () => {
+        if (!selectionMenu.text || !selectionMenu.messageKey) return;
+        setHighlightMap((prev) => {
+            const current = prev[selectionMenu.messageKey] || [];
+            if (current.includes(selectionMenu.text)) return prev;
+            return { ...prev, [selectionMenu.messageKey]: [...current, selectionMenu.text] };
+        });
+        setActionMessage('Đã highlight đoạn đã chọn');
+        hideSelectionAndClear();
+    };
+
+    const handleAddToChatInput = () => {
+        if (!selectionMenu.text) return;
+        setInput((prev) => (prev.trim() ? `${prev}\n\n"${selectionMenu.text}"` : `"${selectionMenu.text}"`));
+        requestAnimationFrame(() => textareaRef.current?.focus());
+        setActionMessage('Đã thêm vào khung chat');
+        hideSelectionAndClear();
+    };
+
+    const handleAddToNotes = () => {
+        if (!selectionMenu.text) return;
+        addToFloatingHubNotes(selectionMenu.text);
+        hideSelectionAndClear();
+    };
+
+    const updateSelectionMenu = () => {
+        const selection = window.getSelection();
+        if (!selection || selection.rangeCount === 0) {
+            setSelectionMenu((prev) => ({ ...prev, visible: false }));
+            return;
+        }
+
+        const selectedText = selection.toString().trim();
+        if (!selectedText) {
+            setSelectionMenu((prev) => ({ ...prev, visible: false }));
+            return;
+        }
+
+        const range = selection.getRangeAt(0);
+        const anchorNode = selection.anchorNode;
+        if (!anchorNode || !chatAreaRef.current || !chatAreaRef.current.contains(anchorNode)) {
+            setSelectionMenu((prev) => ({ ...prev, visible: false }));
+            return;
+        }
+
+        const container = anchorNode instanceof Element ? anchorNode : anchorNode.parentElement;
+        const messageEl = container?.closest('[data-message-key]');
+        const messageKey = messageEl?.getAttribute('data-message-key') || '';
+        if (!messageKey) {
+            setSelectionMenu((prev) => ({ ...prev, visible: false }));
+            return;
+        }
+
+        const rect = range.getBoundingClientRect();
+        setSelectionMenu({
+            visible: true,
+            x: rect.left + rect.width / 2,
+            y: rect.top - 12,
+            text: selectedText,
+            messageKey
         });
     };
 
@@ -322,6 +501,12 @@ const MagoChatPage: React.FC = () => {
 
             const newCount = await getMagoUsageCountToday(user.email);
             setUsageCount(newCount);
+
+            setModeTipRemaining((prev) => {
+                const next = Math.max(prev - 1, 0);
+                localStorage.setItem(MODE_TIP_REMAINING_KEY, String(next));
+                return next;
+            });
         } catch (err) {
             console.error('Mago Chat Error:', err);
             await saveMagoResponse('Mago đang hơi quá tải, bạn gửi lại giúp mình nhé.');
@@ -355,7 +540,12 @@ const MagoChatPage: React.FC = () => {
                 </div>
             </div>
 
-            <div className="mago-chat-area">
+            <div
+                className="mago-chat-area"
+                ref={chatAreaRef}
+                onMouseUp={updateSelectionMenu}
+                onKeyUp={updateSelectionMenu}
+            >
                 {parsedMessages.length === 0 && !isTyping && (
                     <div className="mago-welcome-state">
                         <div className="mago-welcome-avatar">
@@ -382,7 +572,7 @@ const MagoChatPage: React.FC = () => {
                                     <Sparkles size={16} />
                                 </div>
                             )}
-                            <div className="mago-message-bubble">
+                            <div className="mago-message-bubble" data-message-key={msg.messageKey}>
                                 {isUser && (
                                     <span className="mago-message-mode-icon" title={modeConfig.label}>
                                         <ModeIcon size={12} />
@@ -422,8 +612,51 @@ const MagoChatPage: React.FC = () => {
                 <div ref={messagesEndRef} style={{ height: '20px' }} />
             </div>
 
+            {selectionMenu.visible && (
+                <div
+                    className="mago-selection-menu"
+                    ref={selectionMenuRef}
+                    style={{ left: selectionMenu.x, top: selectionMenu.y }}
+                >
+                    <button type="button" onClick={handleCopySelected}>
+                        <Copy size={13} /> Sao chép
+                    </button>
+                    <button type="button" onClick={handleHighlightSelected}>
+                        <Highlighter size={13} /> Highlight
+                    </button>
+                    <button type="button" onClick={handleAddToChatInput}>
+                        <MessageSquarePlus size={13} /> Thêm vào chat
+                    </button>
+                    <button type="button" onClick={handleAddToNotes}>
+                        <StickyNote size={13} /> Thêm vào notes
+                    </button>
+                </div>
+            )}
+
             <div className="mago-bottom-zone">
                 <div className="mago-input-glass">
+                    {modeTipRemaining > 0 && (
+                        <div className="mago-mode-tip" role="status">
+                            <div className="mago-mode-tip-left">
+                                <Info size={14} />
+                                <span>
+                                    Tính năng mới: chọn chế độ chat, bôi đen để thao tác nhanh, import ảnh/file riêng.
+                                    Còn {modeTipRemaining} lượt giới thiệu.
+                                </span>
+                            </div>
+                            <button
+                                type="button"
+                                onClick={() => {
+                                    setModeTipRemaining(0);
+                                    localStorage.setItem(MODE_TIP_REMAINING_KEY, '0');
+                                }}
+                                aria-label="Đóng gợi ý"
+                            >
+                                <X size={13} />
+                            </button>
+                        </div>
+                    )}
+
                     {(imageAttachments.length > 0 || fileAttachments.length > 0) && (
                         <div className="mago-attachments-area">
                             {imageAttachments.length > 0 && (
@@ -581,6 +814,8 @@ const MagoChatPage: React.FC = () => {
                     </div>
                 </div>
             </div>
+
+            {actionMessage && <div className="mago-action-toast">{actionMessage}</div>}
         </div>
     );
 };
