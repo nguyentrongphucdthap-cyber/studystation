@@ -95,12 +95,35 @@ export const onRequestPost = async (context: any) => {
             }
         }
 
-        return new Response(JSON.stringify({
-            error: lastError || 'All API keys are currently unavailable'
-        }), {
-            status: 503,
-            headers: corsHeaders(),
-        });
+        // Last-resort fallback: if Gemini is geo-blocked at this edge, use Workers AI so users can still chat.
+        if (isLocationNotSupported(lastError) && env.AI) {
+            try {
+                const fallbackText = await generateViaWorkersAI(body, env);
+                const fallbackGeminiShape = {
+                    candidates: [
+                        {
+                            content: {
+                                parts: [{ text: fallbackText }],
+                            },
+                        },
+                    ],
+                };
+                return new Response(JSON.stringify(fallbackGeminiShape), {
+                    status: 200,
+                    headers: corsHeaders(),
+                });
+            } catch (fallbackErr: any) {
+                lastError = `${lastError}. Workers AI fallback failed: ${fallbackErr?.message || 'Unknown error'}`;
+            }
+        }
+
+        return new Response(
+            JSON.stringify({ error: lastError || 'All API keys are currently unavailable' }),
+            {
+                status: 503,
+                headers: corsHeaders(),
+            }
+        );
     } catch (error: any) {
         return new Response(JSON.stringify({ error: error.message }), {
             status: 500,
@@ -159,4 +182,64 @@ async function readApiError(response: Response): Promise<{ message: string }> {
     } catch {
         return { message: `Gemini API error (${response.status})` };
     }
+}
+
+async function generateViaWorkersAI(body: any, env: any): Promise<string> {
+    const fallbackModel = env.WORKERS_AI_FALLBACK_MODEL || '@cf/meta/llama-3.1-8b-instruct-fast';
+    const messages = toWorkersAIMessages(body);
+
+    const result = await env.AI.run(fallbackModel, {
+        messages,
+        temperature: body?.generationConfig?.temperature ?? 0.7,
+        max_tokens: body?.generationConfig?.maxOutputTokens ?? 1024,
+    });
+
+    const text =
+        result?.response ||
+        result?.result?.response ||
+        result?.output_text ||
+        result?.text ||
+        '';
+
+    if (!text || typeof text !== 'string') {
+        throw new Error('Workers AI returned empty response');
+    }
+    return text;
+}
+
+function toWorkersAIMessages(body: any): Array<{ role: string; content: string }> {
+    const out: Array<{ role: string; content: string }> = [];
+
+    const systemText = body?.system_instruction?.parts
+        ?.map((p: any) => p?.text || '')
+        .filter(Boolean)
+        .join('\n')
+        .trim();
+    if (systemText) {
+        out.push({ role: 'system', content: systemText });
+    }
+
+    const contents = Array.isArray(body?.contents) ? body.contents : [];
+    for (const msg of contents) {
+        const role = msg?.role === 'model' ? 'assistant' : 'user';
+        const parts = Array.isArray(msg?.parts) ? msg.parts : [];
+        const text = parts
+            .map((p: any) => {
+                if (typeof p?.text === 'string' && p.text.trim()) return p.text.trim();
+                if (p?.inlineData) return '[Attachment omitted in fallback mode]';
+                return '';
+            })
+            .filter(Boolean)
+            .join('\n')
+            .trim();
+        if (text) {
+            out.push({ role, content: text });
+        }
+    }
+
+    if (out.length === 0) {
+        out.push({ role: 'user', content: 'Xin hãy hỗ trợ người dùng với ngữ cảnh hiện tại.' });
+    }
+
+    return out.slice(-20);
 }

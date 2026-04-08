@@ -615,7 +615,11 @@ const MagoChatPage: React.FC = () => {
                         <div key={msg.id || idx} className={`mago-message-row ${isUser ? 'user' : 'mago'}`}>
                             {!isUser && (
                                 <div className="mago-bubble-avatar">
-                                    <Sparkles size={16} />
+                                    <img
+                                        src="/mago.png?v=20260408"
+                                        alt="Mago"
+                                        style={{ width: '100%', height: '100%', objectFit: 'cover' }}
+                                    />
                                 </div>
                             )}
                             <div className="mago-message-bubble" data-message-key={msg.messageKey}>
@@ -642,7 +646,11 @@ const MagoChatPage: React.FC = () => {
                 {isTyping && (
                     <div className="mago-message-row mago">
                         <div className="mago-bubble-avatar thinking-avatar">
-                            <Sparkles size={16} />
+                            <img
+                                src="/mago.png?v=20260408"
+                                alt="Mago"
+                                style={{ width: '100%', height: '100%', objectFit: 'cover' }}
+                            />
                         </div>
                         <div className="mago-message-bubble typing">
                             <div className="mago-thinking-orb" />

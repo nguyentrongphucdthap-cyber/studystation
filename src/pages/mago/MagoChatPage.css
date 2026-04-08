@@ -198,23 +198,47 @@
 }
 
 .mago-bubble-avatar {
-    width: 36px;
-    height: 36px;
-    border-radius: 12px;
+    width: 38px;
+    height: 38px;
+    border-radius: 14px;
     display: flex;
     align-items: center;
     justify-content: center;
     flex-shrink: 0;
     color: white;
     box-shadow: 0 8px 20px rgba(24, 57, 105, 0.2);
+    overflow: hidden;
+    position: relative;
 }
 
 .mago-bubble-avatar:not(.user-avatar) {
-    background: linear-gradient(138deg, #0ea5e9, #2563eb, #14b8a6);
+    background:
+        radial-gradient(circle at 20% 20%, rgba(255, 255, 255, 0.38), transparent 55%),
+        linear-gradient(138deg, #0ea5e9, #2563eb, #14b8a6);
+    border: 1px solid rgba(255, 255, 255, 0.72);
+    box-shadow:
+        0 8px 22px rgba(37, 99, 235, 0.34),
+        inset 0 1px 0 rgba(255, 255, 255, 0.55);
+}
+
+.mago-bubble-avatar:not(.user-avatar)::after {
+    content: '';
+    position: absolute;
+    inset: 0;
+    border-radius: inherit;
+    border: 1px solid rgba(255, 255, 255, 0.26);
+    pointer-events: none;
 }
 
 .mago-bubble-avatar.user-avatar {
     background: linear-gradient(145deg, #334155, #1e293b);
+}
+
+.mago-bubble-avatar img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    border-radius: inherit;
 }
 
 .mago-bubble-avatar.thinking-avatar {
