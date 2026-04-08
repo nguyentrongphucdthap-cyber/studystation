@@ -530,7 +530,9 @@ const MAGO_PRIVATE_OWNER_EMAILS = [
     'nguyentrongphucdthap@gmail.com',
 ];
 const MAGO_PRIVATE_OWNER_ALIASES = ['phopuc', 'pho phuc', 'phophuc'];
-const MAGO_PRIVATE_OWNER_LOCALS = MAGO_PRIVATE_OWNER_EMAILS.map((email) => email.split('@')[0]);
+const MAGO_PRIVATE_OWNER_LOCALS = MAGO_PRIVATE_OWNER_EMAILS
+    .map((email) => email.split('@')[0] || '')
+    .filter(Boolean);
 
 let magoTrainingPromptCache: {
     value: Record<string, string>;
