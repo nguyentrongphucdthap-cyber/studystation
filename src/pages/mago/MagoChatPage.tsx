@@ -595,7 +595,7 @@ const MagoChatPage: React.FC = () => {
                 {parsedMessages.length === 0 && !isTyping && (
                     <div className="mago-welcome-state">
                         <div className="mago-welcome-avatar">
-                            <img src="/mago.png" alt="Mago" />
+                            <img src="/mago.png?v=20260408" alt="Mago" />
                         </div>
                         <h3>Xin chào, tôi là Mago ✨</h3>
                         <p>Trợ lý học tập cá nhân của bạn. Gửi ảnh bài tập, tài liệu hoặc hỏi bất kỳ điều gì.</p>
