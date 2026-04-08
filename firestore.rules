@@ -19,11 +19,19 @@ service cloud.firestore {
     }
     
     function isAdmin() {
-      return isInWhitelist() && (getUserRole().matches('.*admin.*') || getUserRole().matches('.*super-admin.*'));
+      return isInWhitelist() && (
+        getUserRole().matches('.*admin.*') ||
+        getUserRole().matches('.*super[-_ ]?admin.*') ||
+        getUserRole().matches('.*superadmin.*')
+      );
     }
 
     function isBossOrSuperAdmin() {
-      return isInWhitelist() && (getUserRole().matches('.*boss.*') || getUserRole().matches('.*super-admin.*'));
+      return isInWhitelist() && (
+        getUserRole().matches('.*boss.*') ||
+        getUserRole().matches('.*super[-_ ]?admin.*') ||
+        getUserRole().matches('.*superadmin.*')
+      );
     }
 
     function isTeacher() {

@@ -594,6 +594,8 @@ const MagoChatPage: React.FC = () => {
                 await saveMagoResponse(`Bạn đã hết lượt sử dụng Mago hôm nay (${MAGO_DAILY_LIMIT}/${MAGO_DAILY_LIMIT}). Hẹn bạn ngày mai nhé! 🧙‍♂️`);
             } else if (err?.message === 'MAGO_TEACH_FORBIDDEN') {
                 await saveMagoResponse('Chế độ Dạy chỉ dành cho Boss hoặc Super Admin.');
+            } else if (/missing or insufficient permissions/i.test(errorMsg)) {
+                await saveMagoResponse('Tài khoản hiện chưa có quyền dùng chế độ Dạy. Nếu bạn là Super Admin/Boss, hãy đăng xuất rồi đăng nhập lại để cập nhật quyền mới.');
             } else if (isLocationUnsupportedError(errorMsg)) {
                 await saveMagoResponse('Khu vực mạng hiện tại chưa được API AI hỗ trợ. Bạn thử đổi mạng (Wi-Fi/4G khác) rồi nhắn lại giúp tôi nhé! 🧙‍♂️');
             } else if (isModelUnsupportedError(errorMsg)) {
