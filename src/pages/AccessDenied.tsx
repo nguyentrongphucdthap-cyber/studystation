@@ -3,7 +3,7 @@ import { useAuth } from '@/contexts/AuthContext';
 import { submitAccessRequest, getAccessRequest } from '@/services/auth.service';
 import { Button } from '@/components/ui/Button';
 import { useToast } from '@/components/ui/Toast';
-import { ShieldAlert, ShieldCheck, CheckCircle2, XCircle, LogOut, Send, Zap, Heart, Shield } from 'lucide-react';
+import { ShieldAlert, CheckCircle2, LogOut, Send, Zap, Heart, Shield } from 'lucide-react';
 import type { AccessRequest } from '@/types';
 
 export default function AccessDenied() {
