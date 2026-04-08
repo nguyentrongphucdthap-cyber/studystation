@@ -131,6 +131,20 @@ const applyHighlights = (text: string, highlights: string[]) => {
     }, text);
 };
 
+const sleep = (ms: number) => new Promise((resolve) => window.setTimeout(resolve, ms));
+
+const isTransientAIError = (message: string) => {
+    return /(429|503|rate|timeout|network|temporar|unavailable|overloaded|deadline|socket)/i.test(message);
+};
+
+const isModelUnsupportedError = (message: string) => {
+    return /(is not found for api version|not supported for generatecontent|model.*not found)/i.test(message);
+};
+
+const isLocationUnsupportedError = (message: string) => {
+    return /user location is not supported/i.test(message);
+};
+
 const MagoChatPage: React.FC = () => {
     const navigate = useNavigate();
     const { user } = useAuth();
@@ -493,9 +507,29 @@ const MagoChatPage: React.FC = () => {
 
             const finalSystemPrompt = `${MAGO_SYSTEM_PROMPT}\n\nNgữ cảnh hiện tại: ${RESPONSE_MODE_CONFIG[responseMode].label}. ${modeInstruction}`;
 
-            const response = await generateAIContent(historyForAI, {
-                systemInstruction: finalSystemPrompt
-            });
+            let response = '';
+            let lastAIError: unknown = null;
+
+            for (let attempt = 1; attempt <= 2; attempt++) {
+                try {
+                    response = await generateAIContent(historyForAI, {
+                        systemInstruction: finalSystemPrompt
+                    });
+                    break;
+                } catch (aiErr: any) {
+                    lastAIError = aiErr;
+                    const msg = String(aiErr?.message || '');
+                    if (attempt < 2 && isTransientAIError(msg)) {
+                        await sleep(500);
+                        continue;
+                    }
+                    throw aiErr;
+                }
+            }
+
+            if (!response) {
+                throw lastAIError || new Error('AI response is empty');
+            }
 
             await saveMagoResponse(response);
 
@@ -507,9 +541,21 @@ const MagoChatPage: React.FC = () => {
                 localStorage.setItem(MODE_TIP_REMAINING_KEY, String(next));
                 return next;
             });
-        } catch (err) {
+        } catch (err: any) {
             console.error('Mago Chat Error:', err);
-            await saveMagoResponse('Mago đang hơi quá tải, bạn gửi lại giúp mình nhé.');
+            const errorMsg = String(err?.message || 'Lỗi kết nối với Mago');
+
+            if (err?.message === 'MAGO_LIMIT_REACHED') {
+                await saveMagoResponse(`Bạn đã hết lượt sử dụng Mago hôm nay (${MAGO_DAILY_LIMIT}/${MAGO_DAILY_LIMIT}). Hẹn bạn ngày mai nhé! 🧙‍♂️`);
+            } else if (isLocationUnsupportedError(errorMsg)) {
+                await saveMagoResponse('Khu vực mạng hiện tại chưa được API AI hỗ trợ. Bạn thử đổi mạng (Wi-Fi/4G khác) rồi nhắn lại giúp tôi nhé! 🧙‍♂️');
+            } else if (isModelUnsupportedError(errorMsg)) {
+                await saveMagoResponse('Mô hình AI đang bảo trì hoặc chưa hỗ trợ tạm thời. Bạn gửi lại sau ít phút giúp tôi nhé! 🧙‍♂️');
+            } else if (isTransientAIError(errorMsg)) {
+                await saveMagoResponse('Mago đang hơi quá tải, bạn gửi lại giúp mình nhé.');
+            } else {
+                await saveMagoResponse(`Xin lỗi, tôi đang gặp chút sự cố kỹ thuật: ${errorMsg}. Bạn thử lại sau nhé! 🧙‍♂️`);
+            }
         } finally {
             setIsTyping(false);
         }

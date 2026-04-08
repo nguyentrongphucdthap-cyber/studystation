@@ -1,4 +1,4 @@
-// @ts-ignore
+﻿// @ts-ignore
 export const onRequestPost = async (context: any) => {
     try {
         const { request, env } = context;
@@ -11,17 +11,9 @@ export const onRequestPost = async (context: any) => {
             });
         }
 
-        // Simple random rotation
-        const selectedKey = keys[Math.floor(Math.random() * keys.length)];
-
-        // Parse the incoming request body
         const body = await request.json() as any;
+        const model = 'gemini-3.1-flash-preview';
 
-        // Default to gemini-3.1-flash-lite-preview if not specified
-        const model = body.model || 'gemini-3.1-flash-lite-preview';
-        const GEMINI_API_URL = `https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent?key=${selectedKey}`;
-
-        // Build request body, forwarding system_instruction if present
         const geminiBody: Record<string, unknown> = {
             contents: body.contents,
             generationConfig: body.generationConfig,
@@ -33,32 +25,62 @@ export const onRequestPost = async (context: any) => {
             geminiBody.safetySettings = body.safetySettings;
         }
 
-        // Forward request to Gemini
-        const response = await fetch(GEMINI_API_URL, {
-            method: 'POST',
-            headers: {
-                'Content-Type': 'application/json',
-                'Referer': 'https://studystation.site/',
-            },
-            body: JSON.stringify(geminiBody),
-        });
+        let lastError = 'Gemini API error';
+        const shuffled = [...keys].sort(() => Math.random() - 0.5);
 
-        const data = await response.json() as any;
+        for (const selectedKey of shuffled) {
+            const GEMINI_API_URL = `https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent?key=${selectedKey}`;
+            try {
+                const response = await fetch(GEMINI_API_URL, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'Referer': 'https://studystation.site/',
+                    },
+                    body: JSON.stringify(geminiBody),
+                });
 
-        // Handle Gemma 4 thinking model: strip 'thought' parts from response
-        const parts = data?.candidates?.[0]?.content?.parts;
-        if (parts && parts.length > 1) {
-            const nonThinkingParts = parts.filter((p: any) => !p.thought && p.text);
-            if (nonThinkingParts.length > 0) {
-                data.candidates[0].content.parts = nonThinkingParts;
+                const data = await response.json() as any;
+
+                if (!response.ok) {
+                    const msg = data?.error?.message || `Gemini API error (${response.status})`;
+                    lastError = msg;
+
+                    if (shouldRetry(response.status, msg)) {
+                        continue;
+                    }
+
+                    return new Response(JSON.stringify({ error: msg }), {
+                        status: response.status,
+                        headers: { 'Content-Type': 'application/json' },
+                    });
+                }
+
+                const parts = data?.candidates?.[0]?.content?.parts;
+                if (parts && parts.length > 1) {
+                    const nonThinkingParts = parts.filter((p: any) => !p.thought && p.text);
+                    if (nonThinkingParts.length > 0) {
+                        data.candidates[0].content.parts = nonThinkingParts;
+                    }
+                }
+
+                return new Response(JSON.stringify(data), {
+                    status: 200,
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                });
+            } catch (error: any) {
+                const msg = error?.message || 'Network error';
+                lastError = msg;
+                if (shouldRetry(0, msg)) continue;
+                throw error;
             }
         }
 
-        return new Response(JSON.stringify(data), {
-            status: response.status,
-            headers: {
-                'Content-Type': 'application/json',
-            },
+        return new Response(JSON.stringify({ error: lastError }), {
+            status: 503,
+            headers: { 'Content-Type': 'application/json' },
         });
     } catch (error: any) {
         return new Response(JSON.stringify({ error: error.message }), {
@@ -67,3 +89,20 @@ export const onRequestPost = async (context: any) => {
         });
     }
 };
+
+function shouldRetry(status: number, message: string): boolean {
+    const msg = String(message || '').toLowerCase();
+    if (!msg) return status === 429;
+    return (
+        status === 429 ||
+        status === 503 ||
+        msg.includes('quota') ||
+        msg.includes('rate') ||
+        msg.includes('leaked') ||
+        msg.includes('temporar') ||
+        msg.includes('unavailable') ||
+        msg.includes('timeout') ||
+        /user location is not supported/i.test(msg) ||
+        /(is not found for api version|not supported for generatecontent|model.*not found)/i.test(msg)
+    );
+}

@@ -1,7 +1,7 @@
 ﻿/**
  * Generic AI Proxy - Cloudflare Pages Function
  * Routes all AI requests through server-side to keep API keys hidden.
- * Reads keys from env.GEMINI_API_KEY_1/2/3 (Cloudflare secrets, NOT VITE_ prefixed).
+ * Uses Gemini 3.1 Flash Preview for all requests.
  */
 // @ts-ignore
 export const onRequestPost = async (context: any) => {
@@ -22,85 +22,76 @@ export const onRequestPost = async (context: any) => {
         }
 
         const body = await request.json() as any;
-        const requestedModel = body.model || 'gemini-3.1-flash-lite-preview';
-        const modelCandidates = uniqueModels([
-            requestedModel,
-            env.GEMINI_FALLBACK_MODEL_1,
-            env.GEMINI_FALLBACK_MODEL_2,
-            'gemini-2.0-flash',
-            'gemini-1.5-flash',
-        ]);
+        // Force a single model across the whole system.
+        const model = 'gemini-3.1-flash-preview';
 
         let lastError = 'Gemini API error';
+        const shuffled = [...keys].sort(() => Math.random() - 0.5);
 
-        for (const model of modelCandidates) {
-            const shuffled = [...keys].sort(() => Math.random() - 0.5);
+        for (const key of shuffled) {
+            const maskedKey = key.slice(0, 8) + '...' + key.slice(-4);
+            const url = `https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent?key=${key}`;
 
-            for (const key of shuffled) {
-                const maskedKey = key.slice(0, 8) + '...' + key.slice(-4);
-                const url = `https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent?key=${key}`;
+            try {
+                const geminiBody: Record<string, unknown> = {
+                    contents: body.contents,
+                    generationConfig: body.generationConfig,
+                };
+                if (body.system_instruction) {
+                    geminiBody.system_instruction = body.system_instruction;
+                }
+                if (body.safetySettings) {
+                    geminiBody.safetySettings = body.safetySettings;
+                }
 
-                try {
-                    const geminiBody: Record<string, unknown> = {
-                        contents: body.contents,
-                        generationConfig: body.generationConfig,
-                    };
-                    if (body.system_instruction) {
-                        geminiBody.system_instruction = body.system_instruction;
-                    }
-                    if (body.safetySettings) {
-                        geminiBody.safetySettings = body.safetySettings;
-                    }
+                const response = await fetch(url, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'Referer': 'https://studystation.site/',
+                    },
+                    body: JSON.stringify(geminiBody),
+                });
 
-                    const response = await fetch(url, {
-                        method: 'POST',
-                        headers: {
-                            'Content-Type': 'application/json',
-                            'Referer': 'https://studystation.site/',
-                        },
-                        body: JSON.stringify(geminiBody),
-                    });
-
-                    if (!response.ok) {
-                        const { message } = await readApiError(response);
-                        lastError = message;
-
-                        if (shouldRetryWithAnotherKeyOrModel(response.status, message)) {
-                            console.warn(
-                                `[AI Proxy] Retry next candidate (model=${model}, key=${maskedKey}, status=${response.status})`
-                            );
-                            continue;
-                        }
-
-                        return new Response(JSON.stringify({ error: message }), {
-                            status: response.status,
-                            headers: corsHeaders(),
-                        });
-                    }
-
-                    const data = await response.json() as any;
-
-                    const parts = data?.candidates?.[0]?.content?.parts;
-                    if (parts && parts.length > 1) {
-                        const nonThinkingParts = parts.filter((p: any) => !p.thought && p.text);
-                        if (nonThinkingParts.length > 0) {
-                            data.candidates[0].content.parts = nonThinkingParts;
-                        }
-                    }
-
-                    return new Response(JSON.stringify(data), {
-                        status: 200,
-                        headers: corsHeaders(),
-                    });
-                } catch (fetchErr: any) {
-                    const message = fetchErr?.message || 'Network error';
+                if (!response.ok) {
+                    const { message } = await readApiError(response);
                     lastError = message;
 
-                    if (shouldRetryWithAnotherKeyOrModel(0, message)) {
+                    if (shouldRetryWithAnotherKey(response.status, message)) {
+                        console.warn(
+                            `[AI Proxy] Retry next key (model=${model}, key=${maskedKey}, status=${response.status})`
+                        );
                         continue;
                     }
-                    throw fetchErr;
+
+                    return new Response(JSON.stringify({ error: message }), {
+                        status: response.status,
+                        headers: corsHeaders(),
+                    });
                 }
+
+                const data = await response.json() as any;
+
+                const parts = data?.candidates?.[0]?.content?.parts;
+                if (parts && parts.length > 1) {
+                    const nonThinkingParts = parts.filter((p: any) => !p.thought && p.text);
+                    if (nonThinkingParts.length > 0) {
+                        data.candidates[0].content.parts = nonThinkingParts;
+                    }
+                }
+
+                return new Response(JSON.stringify(data), {
+                    status: 200,
+                    headers: corsHeaders(),
+                });
+            } catch (fetchErr: any) {
+                const message = fetchErr?.message || 'Network error';
+                lastError = message;
+
+                if (shouldRetryWithAnotherKey(0, message)) {
+                    continue;
+                }
+                throw fetchErr;
             }
         }
 
@@ -136,23 +127,15 @@ export const onRequestOptions = async () => {
     });
 };
 
-function uniqueModels(models: unknown[]): string[] {
-    const seen = new Set<string>();
-    const out: string[] = [];
-    for (const item of models) {
-        const value = String(item || '').trim();
-        if (!value || seen.has(value)) continue;
-        seen.add(value);
-        out.push(value);
-    }
-    return out;
-}
-
 function isLocationNotSupported(message: string): boolean {
     return /user location is not supported/i.test(message);
 }
 
-function shouldRetryWithAnotherKeyOrModel(status: number, message: string): boolean {
+function isModelUnsupported(message: string): boolean {
+    return /(is not found for api version|not supported for generatecontent|model.*not found)/i.test(message);
+}
+
+function shouldRetryWithAnotherKey(status: number, message: string): boolean {
     const msg = String(message || '').toLowerCase();
 
     if (!msg) return status === 429;
@@ -160,7 +143,9 @@ function shouldRetryWithAnotherKeyOrModel(status: number, message: string): bool
     if (msg.includes('quota')) return true;
     if (msg.includes('rate')) return true;
     if (isLocationNotSupported(msg)) return true;
+    if (isModelUnsupported(msg)) return true;
     if (status === 429) return true;
+    if (status === 503) return true;
     if (status === 403 && (msg.includes('permission') || msg.includes('forbidden'))) return true;
 
     return false;
