@@ -9,7 +9,7 @@ import {
     remove,
     get,
 } from 'firebase/database';
-import { doc, getDoc, setDoc, updateDoc, onSnapshot, collection, query, addDoc, where, deleteDoc, arrayUnion, arrayRemove } from 'firebase/firestore';
+import { doc, getDoc, setDoc, updateDoc, onSnapshot, collection, query, addDoc, where, deleteDoc, arrayUnion, arrayRemove, getDocs, orderBy, limit as firestoreLimit } from 'firebase/firestore';
 import { auth, rtdb, db } from '@/config/firebase';
 import type { ChatMessage, Friend, GroupChat } from '@/types';
 import { getUserRole, hasUnlimitedMagoAccess } from './auth.service';
@@ -523,6 +523,16 @@ export function subscribeToGroupChats(callback: (groups: GroupChat[]) => void) {
 // ============================================================
 
 export const MAGO_DAILY_LIMIT = 20;
+const MAGO_TRAINING_COLLECTION = 'mago_training';
+const MAGO_TRAINING_CACHE_TTL_MS = 60_000;
+
+let magoTrainingPromptCache: {
+    value: string;
+    expiresAt: number;
+} = {
+    value: '',
+    expiresAt: 0,
+};
 
 /** Count how many messages the user has sent to Mago today */
 export async function getMagoUsageCountToday(email: string): Promise<number> {
@@ -602,6 +612,81 @@ export async function saveMagoResponse(text: string): Promise<void> {
         await updateDoc(docRef, payload);
     } else {
         await setDoc(docRef, payload);
+    }
+}
+
+export async function addMagoTeachingKnowledge(content: string): Promise<void> {
+    const currentEmail = getCurrentEmail();
+    if (!currentEmail) return;
+
+    const role = getUserRole();
+    if (!hasUnlimitedMagoAccess(role)) {
+        throw new Error('MAGO_TEACH_FORBIDDEN');
+    }
+
+    const cleaned = String(content || '').trim();
+    if (!cleaned) return;
+
+    await addDoc(collection(db, MAGO_TRAINING_COLLECTION), {
+        content: cleaned.slice(0, 8000),
+        createdBy: currentEmail,
+        createdAt: Date.now(),
+        roleSnapshot: role,
+    });
+
+    // Invalidate prompt cache so newest teaching appears immediately.
+    magoTrainingPromptCache.expiresAt = 0;
+}
+
+export async function getMagoTeachingSystemPrompt(): Promise<string> {
+    const now = Date.now();
+    if (now < magoTrainingPromptCache.expiresAt) {
+        return magoTrainingPromptCache.value;
+    }
+
+    try {
+        const q = query(
+            collection(db, MAGO_TRAINING_COLLECTION),
+            orderBy('createdAt', 'desc'),
+            firestoreLimit(30)
+        );
+        const snap = await getDocs(q);
+
+        if (snap.empty) {
+            magoTrainingPromptCache = {
+                value: '',
+                expiresAt: now + MAGO_TRAINING_CACHE_TTL_MS,
+            };
+            return '';
+        }
+
+        const entries = snap.docs
+            .map((d) => d.data() as { content?: string; createdAt?: number })
+            .filter((d) => typeof d.content === 'string' && d.content.trim())
+            .reverse();
+
+        const lines = entries.map((entry, idx) => {
+            const compact = entry.content!.replace(/\s+/g, ' ').trim().slice(0, 420);
+            return `${idx + 1}. ${compact}`;
+        });
+
+        const promptAddon = [
+            '',
+            '[TRI THUC BO SUNG TU CHE DO DAY CUA BOSS/SUPER ADMIN]',
+            'Duoi day la cac thong tin da duoc day bo sung. Uu tien ap dung neu phu hop va khong mau thuan:',
+            ...lines,
+            '',
+        ].join('\n');
+
+        magoTrainingPromptCache = {
+            value: promptAddon,
+            expiresAt: now + MAGO_TRAINING_CACHE_TTL_MS,
+        };
+
+        return promptAddon;
+    } catch (err) {
+        console.warn('[Chat] Failed to load Mago teaching knowledge:', err);
+        return '';
     }
 }
 

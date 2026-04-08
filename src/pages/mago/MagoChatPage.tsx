@@ -26,6 +26,8 @@ import {
     sendMagoMessage,
     saveMagoResponse,
     getMagoUsageCountToday,
+    addMagoTeachingKnowledge,
+    getMagoTeachingSystemPrompt,
     MAGO_DAILY_LIMIT,
     MAGO_SYSTEM_PROMPT
 } from '@/services/chat.service';
@@ -43,9 +45,9 @@ interface Attachment {
     base64?: string;
 }
 
-type ResponseMode = 'normal' | 'hint' | 'detailed';
+type ResponseMode = 'normal' | 'hint' | 'detailed' | 'teach';
 
-const MODE_META_REGEX = /^\[mago_mode:(normal|hint|detailed)\]\s*/;
+const MODE_META_REGEX = /^\[mago_mode:(normal|hint|detailed|teach)\]\s*/;
 const MODE_TIP_REMAINING_KEY = 'mago_feature_intro_remaining_v2';
 const MODE_TIP_DEFAULT_REMAINING = 3;
 const NOTES_KEY_PREFIX = 'hub_notes_';
@@ -91,6 +93,14 @@ const RESPONSE_MODE_CONFIG: Record<
         instruction:
             'Trả lời bằng lời giải chi tiết từng bước, giải thích logic rõ ràng, có kết luận cuối cùng và nhắc các lỗi thường gặp nếu phù hợp.',
         icon: ListChecks
+    },
+    teach: {
+        label: 'Dạy Mago',
+        shortLabel: 'Dạy',
+        description: 'Lưu kiến thức mới để Mago dùng cho người khác.',
+        instruction:
+            'Đây là chế độ học thêm kiến thức. Hãy xác nhận đã hiểu, tóm tắt gọn thông tin vừa học và cam kết ưu tiên áp dụng khi phù hợp.',
+        icon: MessageSquarePlus
     }
 };
 
@@ -145,6 +155,10 @@ const isLocationUnsupportedError = (message: string) => {
     return /user location is not supported/i.test(message);
 };
 
+const buildTeachContent = (raw: string): string => {
+    return raw.replace(MODE_META_REGEX, '').trim();
+};
+
 const MagoChatPage: React.FC = () => {
     const navigate = useNavigate();
     const { user } = useAuth();
@@ -189,6 +203,7 @@ const MagoChatPage: React.FC = () => {
 
     const role = getUserRole();
     const hasUnlimitedMago = hasUnlimitedMagoAccess(role);
+    const canTeachMago = hasUnlimitedMago;
 
     const imageAttachments = attachments.filter((a) => a.type === 'image');
     const fileAttachments = attachments.filter((a) => a.type === 'file');
@@ -219,6 +234,17 @@ const MagoChatPage: React.FC = () => {
             };
         });
     }, [messages, highlightMap]);
+
+    const availableModes = useMemo(() => {
+        const allModes = Object.keys(RESPONSE_MODE_CONFIG) as ResponseMode[];
+        return canTeachMago ? allModes : allModes.filter((mode) => mode !== 'teach');
+    }, [canTeachMago]);
+
+    useEffect(() => {
+        if (!canTeachMago && responseMode === 'teach') {
+            setResponseMode('normal');
+        }
+    }, [canTeachMago, responseMode]);
 
     useEffect(() => {
         messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
@@ -495,6 +521,24 @@ const MagoChatPage: React.FC = () => {
 
             await sendMagoMessage(richTextForHistory);
 
+            if (responseMode === 'teach') {
+                if (!canTeachMago) {
+                    throw new Error('MAGO_TEACH_FORBIDDEN');
+                }
+
+                const teachContent = buildTeachContent(richTextForHistory);
+                if (!teachContent) {
+                    await saveMagoResponse('Nội dung dạy đang trống, bạn gửi lại giúp tôi nhé.');
+                } else {
+                    await addMagoTeachingKnowledge(teachContent);
+                    await saveMagoResponse('Đã ghi nhớ kiến thức mới. Từ giờ tôi sẽ ưu tiên áp dụng nội dung này khi hỗ trợ mọi người nhé! 📚');
+                }
+
+                const newCount = await getMagoUsageCountToday(user.email);
+                setUsageCount(newCount);
+                return;
+            }
+
             const historyForAI: AIChatMessage[] = parsedMessages.slice(-10).map((m) => ({
                 role: m.role === 'user' ? 'user' : 'model',
                 parts: [{ text: m.parsedText || m.text || '' }]
@@ -505,7 +549,8 @@ const MagoChatPage: React.FC = () => {
                 parts: aiParts
             });
 
-            const finalSystemPrompt = `${MAGO_SYSTEM_PROMPT}\n\nNgữ cảnh hiện tại: ${RESPONSE_MODE_CONFIG[responseMode].label}. ${modeInstruction}`;
+            const teachingPromptAddon = await getMagoTeachingSystemPrompt();
+            const finalSystemPrompt = `${MAGO_SYSTEM_PROMPT}${teachingPromptAddon}\n\nNgữ cảnh hiện tại: ${RESPONSE_MODE_CONFIG[responseMode].label}. ${modeInstruction}`;
 
             let response = '';
             let lastAIError: unknown = null;
@@ -547,6 +592,8 @@ const MagoChatPage: React.FC = () => {
 
             if (err?.message === 'MAGO_LIMIT_REACHED') {
                 await saveMagoResponse(`Bạn đã hết lượt sử dụng Mago hôm nay (${MAGO_DAILY_LIMIT}/${MAGO_DAILY_LIMIT}). Hẹn bạn ngày mai nhé! 🧙‍♂️`);
+            } else if (err?.message === 'MAGO_TEACH_FORBIDDEN') {
+                await saveMagoResponse('Chế độ Dạy chỉ dành cho Boss hoặc Super Admin.');
             } else if (isLocationUnsupportedError(errorMsg)) {
                 await saveMagoResponse('Khu vực mạng hiện tại chưa được API AI hỗ trợ. Bạn thử đổi mạng (Wi-Fi/4G khác) rồi nhắn lại giúp tôi nhé! 🧙‍♂️');
             } else if (isModelUnsupportedError(errorMsg)) {
@@ -694,7 +741,7 @@ const MagoChatPage: React.FC = () => {
                             <div className="mago-mode-tip-left">
                                 <Info size={14} />
                                 <span>
-                                    Tính năng mới: chọn chế độ chat, bôi đen để thao tác nhanh, import ảnh/file riêng.
+                                    Tính năng mới: chọn chế độ chat (Boss/Super Admin có thêm chế độ Dạy), bôi đen để thao tác nhanh, import ảnh/file riêng.
                                     Còn {modeTipRemaining} lượt giới thiệu.
                                 </span>
                             </div>
@@ -795,7 +842,7 @@ const MagoChatPage: React.FC = () => {
                             {isModeMenuOpen && (
                                 <div className="mago-mode-dropdown" role="listbox" aria-label="Chọn chế độ chat">
                                     <div className="mago-mode-dropdown-title">Chế độ phản hồi</div>
-                                    {(Object.keys(RESPONSE_MODE_CONFIG) as ResponseMode[]).map((modeKey) => {
+                                    {availableModes.map((modeKey) => {
                                         const option = RESPONSE_MODE_CONFIG[modeKey];
                                         const OptionIcon = option.icon;
                                         const isActive = responseMode === modeKey;

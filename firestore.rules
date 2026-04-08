@@ -22,6 +22,10 @@ service cloud.firestore {
       return isInWhitelist() && (getUserRole().matches('.*admin.*') || getUserRole().matches('.*super-admin.*'));
     }
 
+    function isBossOrSuperAdmin() {
+      return isInWhitelist() && (getUserRole().matches('.*boss.*') || getUserRole().matches('.*super-admin.*'));
+    }
+
     function isTeacher() {
       return isInWhitelist() && getUserRole().matches('.*teacher.*');
     }
@@ -122,6 +126,11 @@ service cloud.firestore {
     match /notifications/{notifId} {
       allow read: if isLoggedIn();
       allow write: if isAdmin();
+    }
+
+    match /mago_training/{docId} {
+      allow read: if isLoggedIn();
+      allow write: if isBossOrSuperAdmin();
     }
 
     // ============================================

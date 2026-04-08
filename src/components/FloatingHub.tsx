@@ -62,6 +62,7 @@ import {
     saveMagoResponse,
     subscribeToMagoMessages,
     getMagoUsageCountToday,
+    getMagoTeachingSystemPrompt,
     MAGO_DAILY_LIMIT,
 } from '../services/chat.service';
 import { generateAIContent, type AIChatMessage } from '@/services/ai.service';
@@ -874,9 +875,12 @@ Yêu cầu phân tích (trình bày đẹp mắt theo phong cách Mago 🧙‍�
                 await savePromise;
 
                 // 4. Generate AI response
+                const teachingPromptAddon = await getMagoTeachingSystemPrompt();
+                const combinedSystemPrompt = `${MAGO_SYSTEM_PROMPT}${teachingPromptAddon}`;
+
                 const aiResponse = await generateAIContent(aiHistory, { 
                     model: 'gemini-3.1-flash-lite-preview',
-                    systemInstruction: MAGO_SYSTEM_PROMPT,
+                    systemInstruction: combinedSystemPrompt,
                     maxOutputTokens: 1024,
                     temperature: 0.8,
                 });
