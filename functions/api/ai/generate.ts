@@ -23,7 +23,7 @@ export const onRequestPost = async (context: any) => {
 
         const body = await request.json() as any;
         // Force a single model across the whole system.
-        const model = 'gemini-3.1-flash-preview';
+        const model = 'gemini-3.1-flash-lite-preview';
 
         let lastError = 'Gemini API error';
         const shuffled = [...keys].sort(() => Math.random() - 0.5);

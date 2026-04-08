@@ -24,7 +24,7 @@ export interface AIChatOptions {
     responseMimeType?: string;
 }
 
-const GEMINI_MODEL = 'gemini-3.1-flash-preview';
+const GEMINI_MODEL = 'gemini-3.1-flash-lite-preview';
 
 /** Extract actual response text from Gemma/Gemini candidates, skipping 'thinking' parts */
 function extractResponseText(data: any): string {

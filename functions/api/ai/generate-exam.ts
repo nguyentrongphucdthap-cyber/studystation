@@ -37,7 +37,7 @@ Quy tắc quan trọng:
 3. Giữ nguyên các đường link hình ảnh (Markdown) được cung cấp trong văn bản gốc.
 4. Đảm bảo hỗ trợ tốt các ký hiệu khoa học.`;
 
-        const model = 'gemini-3.1-flash-preview';
+        const model = 'gemini-3.1-flash-lite-preview';
         let lastError = 'Gemini API error';
         const shuffled = [...keys].sort(() => Math.random() - 0.5);
 

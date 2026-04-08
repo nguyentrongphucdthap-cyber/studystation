@@ -12,7 +12,7 @@ export const onRequestPost = async (context: any) => {
         }
 
         const body = await request.json() as any;
-        const model = 'gemini-3.1-flash-preview';
+        const model = 'gemini-3.1-flash-lite-preview';
 
         const geminiBody: Record<string, unknown> = {
             contents: body.contents,
