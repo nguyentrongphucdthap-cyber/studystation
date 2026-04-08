@@ -630,6 +630,19 @@
     list-style-type: decimal;
 }
 
+.mago-text .mago-content-image {
+    display: block;
+    max-width: min(100%, 360px);
+    max-height: 280px;
+    width: auto;
+    height: auto;
+    border-radius: 10px;
+    margin: 8px 0;
+    object-fit: contain;
+    border: 1px solid rgba(148, 163, 184, 0.35);
+    background: #fff;
+}
+
 .dark .mago-text strong {
     color: var(--accent-color, #60a5fa);
 }

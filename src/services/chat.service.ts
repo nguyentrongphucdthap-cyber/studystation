@@ -669,6 +669,16 @@ function isRelayToOwnersRequest(raw: string): boolean {
     return hasAction && hasTarget;
 }
 
+function extractMarkdownImageUrls(text: string): string[] {
+    const urls: string[] = [];
+    const regex = /!\[[^\]]*\]\((https?:\/\/[^)\s]+)\)/gi;
+    let match: RegExpExecArray | null = null;
+    while ((match = regex.exec(text)) !== null) {
+        if (match[1]) urls.push(match[1]);
+    }
+    return Array.from(new Set(urls));
+}
+
 export async function relayMagoMessageToOwnersIfRequested(rawUserText: string): Promise<{ relayed: boolean; deliveredTo: string[] }> {
     return relayMagoMessageToOwnersIfRequestedWithSource(rawUserText, rawUserText);
 }
@@ -717,10 +727,14 @@ export async function relayMagoMessageToOwnersIfRequestedWithSource(
 
     const deliveredTo: string[] = [];
     const failedTo: string[] = [];
+    const imageUrls = extractMarkdownImageUrls(relayContent);
+    const imageLinks = imageUrls.length > 0
+        ? `\n\nLink ảnh trực tiếp:\n${imageUrls.map((url, idx) => `${idx + 1}. ${url}`).join('\n')}`
+        : '';
     const relayLine = encodeMsg(
         Date.now(),
         'mago@studystation.site',
-        `📨 Có người dùng nhờ tôi nhắn: ${relayContent}\n\n(Người gửi: ${currentEmail})`,
+        `📨 Có người dùng nhờ tôi nhắn: ${relayContent}${imageLinks}\n\n(Người gửi: ${currentEmail})`,
         'mago'
     ) + MSG_LINE_BREAK;
 
