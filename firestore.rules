@@ -20,17 +20,17 @@ service cloud.firestore {
     
     function isAdmin() {
       return isInWhitelist() && (
-        getUserRole().matches('.*admin.*') ||
-        getUserRole().matches('.*super[-_ ]?admin.*') ||
-        getUserRole().matches('.*superadmin.*')
+        getUserRole().matches('.*[aA][dD][mM][iI][nN].*') ||
+        getUserRole().matches('.*[sS][uU][pP][eE][rR][-_ ]?[aA][dD][mM][iI][nN].*') ||
+        getUserRole().matches('.*[sS][uU][pP][eE][rR][aA][dD][mM][iI][nN].*')
       );
     }
 
     function isBossOrSuperAdmin() {
       return isInWhitelist() && (
-        getUserRole().matches('.*boss.*') ||
-        getUserRole().matches('.*super[-_ ]?admin.*') ||
-        getUserRole().matches('.*superadmin.*')
+        getUserRole().matches('.*[bB][oO][sS][sS].*') ||
+        getUserRole().matches('.*[sS][uU][pP][eE][rR][-_ ]?[aA][dD][mM][iI][nN].*') ||
+        getUserRole().matches('.*[sS][uU][pP][eE][rR][aA][dD][mM][iI][nN].*')
       );
     }
 

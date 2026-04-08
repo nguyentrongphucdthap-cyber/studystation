@@ -28,6 +28,7 @@ import {
     getMagoUsageCountToday,
     addMagoTeachingKnowledge,
     getMagoTeachingSystemPrompt,
+    relayMagoMessageToOwnersIfRequested,
     MAGO_DAILY_LIMIT,
     MAGO_SYSTEM_PROMPT
 } from '@/services/chat.service';
@@ -521,6 +522,14 @@ const MagoChatPage: React.FC = () => {
 
             await sendMagoMessage(richTextForHistory);
 
+            const relayResult = await relayMagoMessageToOwnersIfRequested(userText);
+            if (relayResult.relayed) {
+                await saveMagoResponse(`Tôi đã chuyển lời giúp bạn tới ${relayResult.deliveredTo.join(' và ')} rồi nhé! ✉️`);
+                const newCount = await getMagoUsageCountToday(user.email);
+                setUsageCount(newCount);
+                return;
+            }
+
             if (responseMode === 'teach') {
                 if (!canTeachMago) {
                     throw new Error('MAGO_TEACH_FORBIDDEN');
@@ -531,7 +540,7 @@ const MagoChatPage: React.FC = () => {
                     await saveMagoResponse('Nội dung dạy đang trống, bạn gửi lại giúp tôi nhé.');
                 } else {
                     await addMagoTeachingKnowledge(teachContent);
-                    await saveMagoResponse('Đã ghi nhớ kiến thức mới. Từ giờ tôi sẽ ưu tiên áp dụng nội dung này khi hỗ trợ mọi người nhé! 📚');
+                    await saveMagoResponse('Đã ghi nhớ kiến thức mới. Tôi sẽ ưu tiên áp dụng đúng theo phạm vi chia sẻ của nội dung này nhé! 📚');
                 }
 
                 const newCount = await getMagoUsageCountToday(user.email);
@@ -549,7 +558,7 @@ const MagoChatPage: React.FC = () => {
                 parts: aiParts
             });
 
-            const teachingPromptAddon = await getMagoTeachingSystemPrompt();
+            const teachingPromptAddon = await getMagoTeachingSystemPrompt(user?.email || '');
             const finalSystemPrompt = `${MAGO_SYSTEM_PROMPT}${teachingPromptAddon}\n\nNgữ cảnh hiện tại: ${RESPONSE_MODE_CONFIG[responseMode].label}. ${modeInstruction}`;
 
             let response = '';

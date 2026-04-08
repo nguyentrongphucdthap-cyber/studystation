@@ -63,6 +63,7 @@ import {
     subscribeToMagoMessages,
     getMagoUsageCountToday,
     getMagoTeachingSystemPrompt,
+    relayMagoMessageToOwnersIfRequested,
     MAGO_DAILY_LIMIT,
 } from '../services/chat.service';
 import { generateAIContent, type AIChatMessage } from '@/services/ai.service';
@@ -874,8 +875,14 @@ Yêu cầu phân tích (trình bày đẹp mắt theo phong cách Mago 🧙‍�
                 // 3. Wait for save to finish
                 await savePromise;
 
+                const relayResult = await relayMagoMessageToOwnersIfRequested(text);
+                if (relayResult.relayed) {
+                    await saveMagoResponse(`Tôi đã chuyển lời giúp bạn tới ${relayResult.deliveredTo.join(' và ')} rồi nhé! ✉️`);
+                    return;
+                }
+
                 // 4. Generate AI response
-                const teachingPromptAddon = await getMagoTeachingSystemPrompt();
+                const teachingPromptAddon = await getMagoTeachingSystemPrompt(user?.email || '');
                 const combinedSystemPrompt = `${MAGO_SYSTEM_PROMPT}${teachingPromptAddon}`;
 
                 const aiResponse = await generateAIContent(aiHistory, { 

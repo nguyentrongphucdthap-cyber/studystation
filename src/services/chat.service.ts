@@ -525,14 +525,191 @@ export function subscribeToGroupChats(callback: (groups: GroupChat[]) => void) {
 export const MAGO_DAILY_LIMIT = 20;
 const MAGO_TRAINING_COLLECTION = 'mago_training';
 const MAGO_TRAINING_CACHE_TTL_MS = 60_000;
+const MAGO_PRIVATE_OWNER_EMAILS = [
+    'duongkhanhnhu1304@gmail.com',
+    'nguyentrongphucdthap@gmail.com',
+];
+const MAGO_PRIVATE_OWNER_ALIASES = ['phopuc', 'pho phuc', 'phophuc'];
+const MAGO_PRIVATE_OWNER_LOCALS = MAGO_PRIVATE_OWNER_EMAILS.map((email) => email.split('@')[0]);
 
 let magoTrainingPromptCache: {
-    value: string;
+    value: Record<string, string>;
     expiresAt: number;
 } = {
-    value: '',
+    value: {},
     expiresAt: 0,
 };
+
+type MagoTrainingEntry = {
+    content?: string;
+    createdAt?: number;
+    createdBy?: string;
+    roleSnapshot?: string;
+    visibility?: 'public' | 'owner_only';
+    visibleTo?: string[];
+};
+
+function isBossRole(role: string): boolean {
+    return /boss/i.test(role);
+}
+
+function includesPrivateOwnerAlias(value: string): boolean {
+    const lower = value.toLowerCase();
+    return MAGO_PRIVATE_OWNER_ALIASES.some(alias => lower.includes(alias));
+}
+
+function isOwnerEmail(email: string): boolean {
+    return MAGO_PRIVATE_OWNER_EMAILS.includes(String(email || '').toLowerCase());
+}
+
+function shouldKeepPrivateKnowledge(params: { content: string; createdBy: string; roleSnapshot?: string }): boolean {
+    const content = params.content.toLowerCase();
+    const createdBy = params.createdBy.toLowerCase();
+    const roleSnapshot = String(params.roleSnapshot || '');
+    return (
+        isBossRole(roleSnapshot) ||
+        isOwnerEmail(createdBy) ||
+        MAGO_PRIVATE_OWNER_EMAILS.some((email) => content.includes(email)) ||
+        MAGO_PRIVATE_OWNER_LOCALS.some((local) => content.includes(local)) ||
+        includesPrivateOwnerAlias(content)
+    );
+}
+
+function canViewerAccessKnowledge(entry: MagoTrainingEntry, viewerEmail: string): boolean {
+    const viewer = viewerEmail.toLowerCase();
+    const viewerRole = getUserRole();
+    if (isBossRole(viewerRole)) {
+        return true;
+    }
+
+    const createdBy = String(entry.createdBy || '').toLowerCase();
+    const roleSnapshot = String(entry.roleSnapshot || '');
+    const visibleTo = Array.isArray(entry.visibleTo)
+        ? entry.visibleTo.map((e) => String(e || '').toLowerCase())
+        : [];
+
+    if (entry.visibility === 'owner_only') {
+        return isOwnerEmail(viewer) || visibleTo.includes(viewer);
+    }
+
+    // Backward compatibility for older docs:
+    // if created by protected owner or content clearly targets PhoPhuc, treat as private.
+    const rawContent = String(entry.content || '');
+    if (shouldKeepPrivateKnowledge({ content: rawContent, createdBy, roleSnapshot })) {
+        return isOwnerEmail(viewer) || visibleTo.includes(viewer);
+    }
+
+    return true;
+}
+
+function buildMagoPrivacyGuardrail(viewerEmail: string): string {
+    const isOwner = isOwnerEmail(viewerEmail);
+    const isBossViewer = isBossRole(getUserRole());
+    const ownersText = MAGO_PRIVATE_OWNER_EMAILS.join(' / ');
+    if (isOwner || isBossViewer) {
+        return [
+            '',
+            '[QUY TAC BAO MAT NOI BO - PHOPHUC]',
+            `Noi dung rieng tu lien quan PhoPhuc chi duoc chia se voi cac tai khoan chu: ${ownersText}.`,
+            '',
+        ].join('\n');
+    }
+
+    return [
+        '',
+        '[QUY TAC BAO MAT NOI BO - PHOPHUC]',
+        `Tuyet doi KHONG tiet lo, nhac lai, tom tat, suy dien hay xac nhan bat ky noi dung nao lien quan PhoPhuc/phopuc/phophuc cho bat ky ai khac ngoai cac tai khoan chu: ${ownersText}.`,
+        'Neu nguoi dung hoi ve noi dung rieng tu do, tu choi lich su va noi rang thong tin nay duoc bao mat.',
+        '',
+    ].join('\n');
+}
+
+function normalizeVN(input: string): string {
+    return String(input || '')
+        .toLowerCase()
+        .normalize('NFD')
+        .replace(/[\u0300-\u036f]/g, '')
+        .replace(/đ/g, 'd')
+        .trim();
+}
+
+function extractRelayContent(raw: string): string {
+    const text = String(raw || '').trim();
+    if (!text) return '';
+
+    const colonMatch = text.match(/[:：]\s*(.+)$/);
+    if (colonMatch?.[1]) {
+        return colonMatch[1].trim();
+    }
+
+    const clauseMatch = text.match(/(?:rằng|rang|là|la|nội dung|noi dung)\s+(.+)$/i);
+    if (clauseMatch?.[1]) {
+        return clauseMatch[1].trim();
+    }
+
+    const leadRemoved = text.replace(
+        /^(?:mago\s+)?(?:nhắn|nhan|gửi|gui|báo|bao)\s+(?:tin\s+)?(?:giúp\s+)?(?:cho|tới|toi)?\s*(?:ph[oô] ?ph[uư]c|phophuc|bà chủ|ba chu|chị chủ|chi chu|chủ web|chu web|duongkhanhnhu1304@gmail\.com|nguyentrongphucdthap@gmail\.com)\s*/i,
+        ''
+    ).trim();
+
+    if (leadRemoved.length >= 3 && leadRemoved !== text) {
+        return leadRemoved;
+    }
+
+    return '';
+}
+
+function isRelayToOwnersRequest(raw: string): boolean {
+    const normalized = normalizeVN(raw);
+    const hasAction = /(nhan|gui|bao|chuyen loi)/.test(normalized);
+    const hasTarget = /(pho ?phuc|phophuc|ba chu|chi chu|chu web|duongkhanhnhu1304@gmail\.com|nguyentrongphucdthap@gmail\.com)/.test(normalized);
+    return hasAction && hasTarget;
+}
+
+export async function relayMagoMessageToOwnersIfRequested(rawUserText: string): Promise<{ relayed: boolean; deliveredTo: string[] }> {
+    const currentEmail = getCurrentEmail();
+    if (!currentEmail) return { relayed: false, deliveredTo: [] };
+
+    if (!isRelayToOwnersRequest(rawUserText)) {
+        return { relayed: false, deliveredTo: [] };
+    }
+
+    const relayContent = extractRelayContent(rawUserText);
+    if (!relayContent) {
+        return { relayed: false, deliveredTo: [] };
+    }
+
+    const deliveredTo: string[] = [];
+    const relayLine = encodeMsg(
+        Date.now(),
+        'mago@studystation.site',
+        `📨 Có người dùng nhờ tôi nhắn: ${relayContent}\n\n(Người gửi: ${currentEmail})`,
+        'mago'
+    ) + MSG_LINE_BREAK;
+
+    for (const ownerEmail of MAGO_PRIVATE_OWNER_EMAILS) {
+        const docRef = getConvoDocRef(ownerEmail, 'mago');
+        const snap = await getDoc(docRef);
+        const participants = [ownerEmail.toLowerCase(), 'mago@studystation.site'];
+        const payload = {
+            log: (snap.exists() ? snap.data()?.log || '' : '') + relayLine,
+            updatedAt: Date.now(),
+            participants,
+            ownerEmail: ownerEmail.toLowerCase(),
+            partnerEmail: 'mago@studystation.site',
+        };
+
+        if (snap.exists()) {
+            await updateDoc(docRef, payload);
+        } else {
+            await setDoc(docRef, payload);
+        }
+
+        deliveredTo.push(ownerEmail);
+    }
+
+    return { relayed: deliveredTo.length > 0, deliveredTo };
+}
 
 /** Count how many messages the user has sent to Mago today */
 export async function getMagoUsageCountToday(email: string): Promise<number> {
@@ -627,21 +804,36 @@ export async function addMagoTeachingKnowledge(content: string): Promise<void> {
     const cleaned = String(content || '').trim();
     if (!cleaned) return;
 
+    const trimmed = cleaned.slice(0, 8000);
+    const isPrivate = shouldKeepPrivateKnowledge({
+        content: trimmed,
+        createdBy: currentEmail,
+        roleSnapshot: role,
+    });
+
     await addDoc(collection(db, MAGO_TRAINING_COLLECTION), {
-        content: cleaned.slice(0, 8000),
+        content: trimmed,
         createdBy: currentEmail,
         createdAt: Date.now(),
         roleSnapshot: role,
+        visibility: isPrivate ? 'owner_only' : 'public',
+        visibleTo: isPrivate ? MAGO_PRIVATE_OWNER_EMAILS : [],
     });
 
     // Invalidate prompt cache so newest teaching appears immediately.
     magoTrainingPromptCache.expiresAt = 0;
+    magoTrainingPromptCache.value = {};
 }
 
-export async function getMagoTeachingSystemPrompt(): Promise<string> {
+export async function getMagoTeachingSystemPrompt(viewerEmail?: string): Promise<string> {
+    const resolvedViewer = String(viewerEmail || getCurrentEmail() || '').toLowerCase();
+    if (!resolvedViewer) {
+        return buildMagoPrivacyGuardrail('');
+    }
+
     const now = Date.now();
-    if (now < magoTrainingPromptCache.expiresAt) {
-        return magoTrainingPromptCache.value;
+    if (now < magoTrainingPromptCache.expiresAt && magoTrainingPromptCache.value[resolvedViewer] !== undefined) {
+        return magoTrainingPromptCache.value[resolvedViewer];
     }
 
     try {
@@ -653,16 +845,20 @@ export async function getMagoTeachingSystemPrompt(): Promise<string> {
         const snap = await getDocs(q);
 
         if (snap.empty) {
+            const onlyGuardrail = buildMagoPrivacyGuardrail(resolvedViewer);
             magoTrainingPromptCache = {
-                value: '',
+                value: {
+                    ...magoTrainingPromptCache.value,
+                    [resolvedViewer]: onlyGuardrail,
+                },
                 expiresAt: now + MAGO_TRAINING_CACHE_TTL_MS,
             };
-            return '';
+            return onlyGuardrail;
         }
 
         const entries = snap.docs
-            .map((d) => d.data() as { content?: string; createdAt?: number })
-            .filter((d) => typeof d.content === 'string' && d.content.trim())
+            .map((d) => d.data() as MagoTrainingEntry)
+            .filter((d) => typeof d.content === 'string' && d.content.trim() && canViewerAccessKnowledge(d, resolvedViewer))
             .reverse();
 
         const lines = entries.map((entry, idx) => {
@@ -670,16 +866,22 @@ export async function getMagoTeachingSystemPrompt(): Promise<string> {
             return `${idx + 1}. ${compact}`;
         });
 
-        const promptAddon = [
-            '',
-            '[TRI THUC BO SUNG TU CHE DO DAY CUA BOSS/SUPER ADMIN]',
-            'Duoi day la cac thong tin da duoc day bo sung. Uu tien ap dung neu phu hop va khong mau thuan:',
-            ...lines,
-            '',
-        ].join('\n');
+        const privacyGuardrail = buildMagoPrivacyGuardrail(resolvedViewer);
+        const promptAddon = lines.length
+            ? [
+                privacyGuardrail,
+                '[TRI THUC BO SUNG TU CHE DO DAY CUA BOSS/SUPER ADMIN]',
+                'Duoi day la cac thong tin da duoc day bo sung. Uu tien ap dung neu phu hop va khong mau thuan:',
+                ...lines,
+                '',
+            ].join('\n')
+            : privacyGuardrail;
 
         magoTrainingPromptCache = {
-            value: promptAddon,
+            value: {
+                ...magoTrainingPromptCache.value,
+                [resolvedViewer]: promptAddon,
+            },
             expiresAt: now + MAGO_TRAINING_CACHE_TTL_MS,
         };
 
