@@ -817,7 +817,7 @@ const MagoChatPage: React.FC = () => {
         setIsTyping(true);
 
         try {
-            let richTextForHistory = buildModeMeta(responseMode, userText);
+            let richTextForHistory = '';
             const aiParts: any[] = [];
 
             const refsFromChips = currentInsertedRefs.map((item) => ({
@@ -864,6 +864,10 @@ const MagoChatPage: React.FC = () => {
             const modeInstruction = RESPONSE_MODE_CONFIG[responseMode].instruction;
             const refsAsText = currentInsertedRefs.map((item) => `[[EXAM_QUESTION:${item.examId}:${item.questionId}]]`).join('\n');
             const userTextForHistory = [userText, refsAsText].filter(Boolean).join('\n');
+
+            // Start building the history text with mode meta and primary text
+            richTextForHistory = buildModeMeta(responseMode, userTextForHistory);
+
             if (userText) {
                 aiParts.push({
                     text:
@@ -888,6 +892,7 @@ const MagoChatPage: React.FC = () => {
                 });
             }
 
+            // Process attachments and append to richTextForHistory
             for (const att of currentAttachments) {
                 if (att.type === 'image') {
                     try {
@@ -920,9 +925,6 @@ const MagoChatPage: React.FC = () => {
                 }
             }
 
-            if (userTextForHistory) {
-                richTextForHistory = buildModeMeta(responseMode, userTextForHistory);
-            }
             await sendMagoMessage(richTextForHistory);
 
             const relaySourceText = buildTeachContent(richTextForHistory);

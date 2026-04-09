@@ -93,7 +93,7 @@ function formatMarkdown(text: string): string {
     html = html.replace(/==(.+?)==/g, '<mark class="mago-highlight">$1</mark>');
 
     // Images: ![alt](url)
-    html = html.replace(/!\[(.*?)\]\((.+?)\)/g, '<img src="$2" alt="$1" class="mago-content-image" />');
+    html = html.replace(/!\[([^\]]*)\]\(([^\s)]+)\)/g, '<img src="$2" alt="$1" class="mago-content-image" />');
 
     // Process line by line for lists
     const lines = html.split('\n');

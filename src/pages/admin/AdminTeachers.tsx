@@ -29,8 +29,8 @@ export default function AdminTeachers() {
     async function loadUsers() { 
         setLoading(true); 
         const allUsers = await getAllAllowedUsers();
-        // Filter only teachers for this view (handle cases where u or u.role might be undefined)
-        setUsers(allUsers.filter(u => u && u.role?.includes('teacher')));
+        // Show all staff members (anyone who is NOT a standard 'user' or 'guest')
+        setUsers(allUsers.filter(u => u && u.role && u.role !== 'user' && u.role !== 'guest'));
         setLoading(false); 
     }
 
@@ -101,7 +101,10 @@ export default function AdminTeachers() {
                         </thead>
                         <tbody className="divide-y divide-slate-100 dark:divide-slate-800/60 bg-white dark:bg-slate-900/20">
                             {filtered.map((u) => {
-                                const role = roleOptions.find((r) => u.role === r.value);
+                                // Improved role matching to handle composite roles (e.g., 'super-admin/admin/user' -> 'super-admin')
+                                const role = roleOptions.find((r) => u.role === r.value) || 
+                                             roleOptions.find((r) => u.role?.startsWith(r.value + '/')) ||
+                                             roleOptions[0]!; // Assert existence since roleOptions is non-empty
                                 const roleColor = role?.color || 'bg-slate-100 text-slate-700';
 
                                 return (
@@ -141,7 +144,7 @@ export default function AdminTeachers() {
                                         <td className="px-6 py-4 text-center">
                                             <div className="inline-block relative">
                                                 <select
-                                                    value={u.role}
+                                                    value={role.value}
                                                     onChange={(e) => handleRoleChange(u.email, e.target.value)}
                                                     className={cn("appearance-none bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-lg py-1.5 pl-3 pr-8 text-xs font-semibold shadow-sm focus:ring-2 focus:ring-indigo-500 outline-none cursor-pointer hover:border-indigo-300 transition-colors", roleColor)}
                                                 >
