@@ -1,13 +1,13 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { getAllExams, createExam, deleteExam, getSubjects, getExamContent } from '@/services/exam.service';
+import { getAllExams, createExam, deleteExam, getSubjects, getExamContent, updateExam } from '@/services/exam.service';
 import { useToast } from '@/components/ui/Toast';
 import { Spinner } from '@/components/ui/Spinner';
 import { Button } from '@/components/ui/Button';
 import { Dialog, ConfirmDialog } from '@/components/ui/Dialog';
 import type { ExamMetadata } from '@/types';
 import {
-    Trash2, Search, Upload, Download, Wand2, ArrowLeft, ChevronRight, LayoutGrid, Plus, Pencil
+    Trash2, Search, Upload, Download, Wand2, ArrowLeft, ChevronRight, LayoutGrid, Plus, Pencil, Folder, FolderPlus
 } from 'lucide-react';
 import { SmartImportDialog } from '@/components/admin/SmartImportDialog';
 import { ManualExamDialog } from '@/components/admin/ManualExamDialog';
@@ -27,6 +27,14 @@ export default function AdminPractice() {
     const [jsonInput, setJsonInput] = useState('');
     const [importLoading, setImportLoading] = useState(false);
     const [deleteTarget, setDeleteTarget] = useState<string | null>(null);
+    const [selectedFolder, setSelectedFolder] = useState<'ALL' | 'UNFILED' | string>('ALL');
+    const [newFolderName, setNewFolderName] = useState('');
+    const [folderActionLoading, setFolderActionLoading] = useState(false);
+    const [contextMenu, setContextMenu] = useState<
+        | { type: 'exam'; exam: ExamMetadata; x: number; y: number }
+        | { type: 'folder'; folderName: string; x: number; y: number }
+        | null
+    >(null);
 
     const subjects = getSubjects();
 
@@ -43,11 +51,50 @@ export default function AdminPractice() {
         return exams.filter(e => e.subjectId === subjectId).length;
     };
 
-    const filtered = exams.filter((e) => {
-        if (selectedSubject && e.subjectId !== selectedSubject) return false;
+    const subjectExams = useMemo(() => {
+        if (!selectedSubject) return [];
+        return exams.filter((e) => e.subjectId === selectedSubject);
+    }, [exams, selectedSubject]);
+
+    const folderList = useMemo(() => {
+        const unique = Array.from(
+            new Set(
+                subjectExams
+                    .map((e) => (e.customFolder || '').trim())
+                    .filter(Boolean)
+            )
+        );
+        return unique.sort((a, b) => a.localeCompare(b, 'vi'));
+    }, [subjectExams]);
+
+    const filtered = subjectExams.filter((e) => {
         if (search.trim() && !e.title.toLowerCase().includes(search.toLowerCase())) return false;
+        if (selectedFolder === 'UNFILED') return !(e.customFolder || '').trim();
+        if (selectedFolder !== 'ALL') return (e.customFolder || '').trim() === selectedFolder;
         return true;
     });
+
+    useEffect(() => {
+        setSelectedFolder('ALL');
+        setContextMenu(null);
+    }, [selectedSubject]);
+
+    useEffect(() => {
+        const closeContextMenu = () => setContextMenu(null);
+        window.addEventListener('click', closeContextMenu);
+        window.addEventListener('scroll', closeContextMenu, true);
+        return () => {
+            window.removeEventListener('click', closeContextMenu);
+            window.removeEventListener('scroll', closeContextMenu, true);
+        };
+    }, []);
+
+    const ensureUniqueFolderName = (name: string) => {
+        const trimmed = name.trim();
+        if (!trimmed) return null;
+        if (folderList.some((f) => f.toLowerCase() === trimmed.toLowerCase())) return null;
+        return trimmed;
+    };
 
     const handleImportJSON = async () => {
         try {
@@ -60,6 +107,7 @@ export default function AdminPractice() {
             await createExam({
                 title: data.title,
                 subjectId: data.subjectId,
+                customFolder: data.customFolder || '',
                 time: data.time,
                 part1: data.part1 || [],
                 part2: data.part2 || [],
@@ -81,6 +129,7 @@ export default function AdminPractice() {
             await createExam({
                 title: data.title,
                 subjectId: data.subjectId || selectedSubject,
+                customFolder: data.customFolder || '',
                 time: data.time || 50,
                 part1: data.part1 || [],
                 part2: data.part2 || [],
@@ -116,6 +165,67 @@ export default function AdminPractice() {
             toast({ title: 'Export hoàn tất', message: `Đã tải xuống file JSON cho đề "${exam.title}"`, type: 'success' });
         } catch (err) {
             toast({ title: 'Lỗi Export', message: String(err), type: 'error' });
+        }
+    };
+
+    const moveExamToFolder = async (exam: ExamMetadata, folderName: string) => {
+        await updateExam(exam.id, { customFolder: folderName.trim() });
+        toast({ title: 'Đã di chuyển đề thi', type: 'success' });
+        await loadExams();
+    };
+
+    const removeExamFromFolder = async (exam: ExamMetadata) => {
+        await updateExam(exam.id, { customFolder: '' });
+        toast({ title: 'Đã bỏ đề khỏi thư mục', type: 'success' });
+        await loadExams();
+    };
+
+    const createFolderQuick = () => {
+        const valid = ensureUniqueFolderName(newFolderName);
+        if (!valid) {
+            toast({ title: 'Tên thư mục không hợp lệ hoặc đã tồn tại', type: 'warning' });
+            return;
+        }
+        setSelectedFolder(valid);
+        setNewFolderName('');
+        toast({ title: `Đã tạo thư mục "${valid}" (sẵn sàng để di chuyển đề)`, type: 'success' });
+    };
+
+    const renameFolder = async (oldName: string) => {
+        const nextNameInput = window.prompt('Nhập tên thư mục mới', oldName);
+        if (!nextNameInput) return;
+        const nextName = nextNameInput.trim();
+        if (!nextName || nextName.toLowerCase() === oldName.toLowerCase()) return;
+        if (folderList.some((f) => f.toLowerCase() === nextName.toLowerCase())) {
+            toast({ title: 'Thư mục mới đã tồn tại', type: 'warning' });
+            return;
+        }
+        const targets = subjectExams.filter((e) => (e.customFolder || '').trim() === oldName);
+        if (!targets.length) return;
+        setFolderActionLoading(true);
+        try {
+            await Promise.all(targets.map((exam) => updateExam(exam.id, { customFolder: nextName })));
+            toast({ title: `Đã đổi tên thư mục "${oldName}"`, type: 'success' });
+            if (selectedFolder === oldName) setSelectedFolder(nextName);
+            await loadExams();
+        } finally {
+            setFolderActionLoading(false);
+        }
+    };
+
+    const clearFolder = async (folderName: string) => {
+        const ok = window.confirm(`Bỏ toàn bộ đề khỏi thư mục "${folderName}"?`);
+        if (!ok) return;
+        const targets = subjectExams.filter((e) => (e.customFolder || '').trim() === folderName);
+        if (!targets.length) return;
+        setFolderActionLoading(true);
+        try {
+            await Promise.all(targets.map((exam) => updateExam(exam.id, { customFolder: '' })));
+            toast({ title: `Đã làm trống thư mục "${folderName}"`, type: 'success' });
+            if (selectedFolder === folderName) setSelectedFolder('ALL');
+            await loadExams();
+        } finally {
+            setFolderActionLoading(false);
         }
     };
 
@@ -227,11 +337,83 @@ export default function AdminPractice() {
                     </div>
 
                     <div className="admin-card overflow-hidden border-none p-1">
+                        <div className="px-4 pt-4 pb-2 border-b border-slate-100 dark:border-slate-800/60 space-y-3">
+                            <div className="flex items-center gap-2 text-xs font-bold uppercase tracking-wider text-slate-500">
+                                <Folder className="h-4 w-4 text-amber-500" />
+                                Quản lý thư mục (kiểu Explorer)
+                                <span className="text-[10px] font-medium normal-case text-slate-400">Chuột phải vào thư mục hoặc đề để thao tác nhanh</span>
+                            </div>
+                            <div className="flex flex-wrap gap-2 items-center">
+                                <button
+                                    onClick={() => setSelectedFolder('ALL')}
+                                    className={cn(
+                                        'px-3 py-1.5 rounded-lg text-xs font-bold border transition-colors',
+                                        selectedFolder === 'ALL'
+                                            ? 'bg-indigo-50 text-indigo-700 border-indigo-200 dark:bg-indigo-900/30 dark:text-indigo-300 dark:border-indigo-800'
+                                            : 'bg-white text-slate-500 border-slate-200 hover:bg-slate-50 dark:bg-slate-900/30 dark:text-slate-300 dark:border-slate-700'
+                                    )}
+                                >
+                                    Tất cả ({subjectExams.length})
+                                </button>
+                                <button
+                                    onClick={() => setSelectedFolder('UNFILED')}
+                                    className={cn(
+                                        'px-3 py-1.5 rounded-lg text-xs font-bold border transition-colors',
+                                        selectedFolder === 'UNFILED'
+                                            ? 'bg-indigo-50 text-indigo-700 border-indigo-200 dark:bg-indigo-900/30 dark:text-indigo-300 dark:border-indigo-800'
+                                            : 'bg-white text-slate-500 border-slate-200 hover:bg-slate-50 dark:bg-slate-900/30 dark:text-slate-300 dark:border-slate-700'
+                                    )}
+                                >
+                                    Chưa phân thư mục ({subjectExams.filter((e) => !(e.customFolder || '').trim()).length})
+                                </button>
+
+                                {folderList.map((folder) => (
+                                    <button
+                                        key={folder}
+                                        onClick={() => setSelectedFolder(folder)}
+                                        onContextMenu={(e) => {
+                                            e.preventDefault();
+                                            setContextMenu({ type: 'folder', folderName: folder, x: e.clientX, y: e.clientY });
+                                        }}
+                                        className={cn(
+                                            'px-3 py-1.5 rounded-lg text-xs font-bold border transition-colors inline-flex items-center gap-1.5',
+                                            selectedFolder === folder
+                                                ? 'bg-amber-50 text-amber-700 border-amber-200 dark:bg-amber-900/30 dark:text-amber-300 dark:border-amber-800'
+                                                : 'bg-white text-slate-500 border-slate-200 hover:bg-slate-50 dark:bg-slate-900/30 dark:text-slate-300 dark:border-slate-700'
+                                        )}
+                                    >
+                                        <Folder className="h-3.5 w-3.5" />
+                                        {folder}
+                                    </button>
+                                ))}
+                            </div>
+                            <div className="flex flex-wrap gap-2">
+                                <div className="relative w-full max-w-sm">
+                                    <FolderPlus className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400" />
+                                    <input
+                                        type="text"
+                                        value={newFolderName}
+                                        onChange={(e) => setNewFolderName(e.target.value)}
+                                        onKeyDown={(e) => e.key === 'Enter' && createFolderQuick()}
+                                        placeholder="Tạo thư mục mới..."
+                                        className="w-full rounded-xl border border-slate-200 bg-white shadow-sm py-2.5 pl-10 pr-4 text-sm outline-none focus:ring-2 focus:ring-indigo-500/50 dark:bg-slate-800 dark:border-slate-700"
+                                    />
+                                </div>
+                                <Button
+                                    variant="outline"
+                                    onClick={createFolderQuick}
+                                    className="rounded-xl border-slate-200 dark:border-slate-700"
+                                >
+                                    Tạo thư mục
+                                </Button>
+                            </div>
+                        </div>
                         <div className="overflow-x-auto rounded-[1.2rem]">
                             <table className="w-full text-sm">
                                 <thead className="bg-slate-50 border-b border-slate-100 dark:bg-slate-800/50 dark:border-slate-800">
                                     <tr>
                                         <th className="px-6 py-4 text-left font-bold text-xs uppercase tracking-wider text-slate-500">Đề thi</th>
+                                        <th className="px-6 py-4 text-center font-bold text-xs uppercase tracking-wider text-slate-500">Thư mục</th>
                                         <th className="px-6 py-4 text-center font-bold text-xs uppercase tracking-wider text-slate-500">Thời gian</th>
                                         <th className="px-6 py-4 text-center font-bold text-xs uppercase tracking-wider text-slate-500">Câu hỏi</th>
                                         <th className="px-6 py-4 text-center font-bold text-xs uppercase tracking-wider text-slate-500">Lượt thi</th>
@@ -242,7 +424,14 @@ export default function AdminPractice() {
                                     {filtered.map((exam) => {
                                         const totalQ = (exam.questionCount?.part1 || 0) + (exam.questionCount?.part2 || 0) + (exam.questionCount?.part3 || 0);
                                         return (
-                                            <tr key={exam.id} className="transition-all hover:bg-slate-50/80 dark:hover:bg-slate-800/40 group relative">
+                                            <tr
+                                                key={exam.id}
+                                                className="transition-all hover:bg-slate-50/80 dark:hover:bg-slate-800/40 group relative"
+                                                onContextMenu={(e) => {
+                                                    e.preventDefault();
+                                                    setContextMenu({ type: 'exam', exam, x: e.clientX, y: e.clientY });
+                                                }}
+                                            >
                                                 <td className="px-6 py-4">
                                                     <div className="absolute left-0 top-0 bottom-0 w-1 bg-indigo-500 opacity-0 group-hover:opacity-100 transition-opacity" />
                                                     <div className="flex items-center gap-2">
@@ -252,6 +441,15 @@ export default function AdminPractice() {
                                                         )}
                                                     </div>
                                                     <p className="text-[10px] font-mono text-slate-400 mt-1">{exam.id}</p>
+                                                </td>
+                                                <td className="px-6 py-4 text-center">
+                                                    {exam.customFolder?.trim() ? (
+                                                        <span className="inline-flex items-center rounded-full bg-slate-100 dark:bg-slate-800 px-3 py-1 text-xs font-bold text-slate-600 dark:text-slate-300">
+                                                            {exam.customFolder}
+                                                        </span>
+                                                    ) : (
+                                                        <span className="text-xs text-slate-400">-</span>
+                                                    )}
                                                 </td>
                                                 <td className="px-6 py-4 text-center">
                                                     <span className="inline-flex items-center rounded-full bg-indigo-50 px-3 py-1 text-xs font-bold text-indigo-600 dark:bg-indigo-900/30 dark:text-indigo-400 shadow-sm border border-indigo-100 dark:border-indigo-800/50">
@@ -293,13 +491,118 @@ export default function AdminPractice() {
                 </div>
             )}
 
+            {contextMenu && (
+                <div
+                    className="fixed z-[100] min-w-[240px] rounded-xl border border-slate-200 bg-white shadow-2xl p-2 dark:bg-slate-900 dark:border-slate-700"
+                    style={{ top: contextMenu.y + 4, left: contextMenu.x + 4 }}
+                    onClick={(e) => e.stopPropagation()}
+                >
+                    {contextMenu.type === 'exam' ? (
+                        <div className="space-y-1">
+                            <p className="px-2 py-1 text-[11px] font-bold text-slate-500 truncate">
+                                {contextMenu.exam.title}
+                            </p>
+                            <button
+                                className="w-full text-left px-2 py-1.5 rounded-lg text-sm hover:bg-slate-100 dark:hover:bg-slate-800"
+                                onClick={async () => {
+                                    setContextMenu(null);
+                                    setFolderActionLoading(true);
+                                    try {
+                                        await removeExamFromFolder(contextMenu.exam);
+                                    } finally {
+                                        setFolderActionLoading(false);
+                                    }
+                                }}
+                            >
+                                Bỏ khỏi thư mục
+                            </button>
+                            <div className="h-px bg-slate-100 dark:bg-slate-800 my-1" />
+                            {folderList.length === 0 ? (
+                                <p className="px-2 py-1 text-xs text-slate-400">Chưa có thư mục nào</p>
+                            ) : (
+                                folderList.map((folder) => (
+                                    <button
+                                        key={folder}
+                                        className="w-full text-left px-2 py-1.5 rounded-lg text-sm hover:bg-slate-100 dark:hover:bg-slate-800 inline-flex items-center gap-2"
+                                        onClick={async () => {
+                                            setContextMenu(null);
+                                            setFolderActionLoading(true);
+                                            try {
+                                                await moveExamToFolder(contextMenu.exam, folder);
+                                            } finally {
+                                                setFolderActionLoading(false);
+                                            }
+                                        }}
+                                    >
+                                        <Folder className="h-3.5 w-3.5 text-amber-500" />
+                                        Chuyển tới: {folder}
+                                    </button>
+                                ))
+                            )}
+                            <div className="h-px bg-slate-100 dark:bg-slate-800 my-1" />
+                            <button
+                                className="w-full text-left px-2 py-1.5 rounded-lg text-sm hover:bg-slate-100 dark:hover:bg-slate-800"
+                                onClick={async () => {
+                                    const folder = window.prompt('Tên thư mục mới');
+                                    if (!folder || !folder.trim()) return;
+                                    setContextMenu(null);
+                                    setFolderActionLoading(true);
+                                    try {
+                                        await moveExamToFolder(contextMenu.exam, folder.trim());
+                                        setSelectedFolder(folder.trim());
+                                    } finally {
+                                        setFolderActionLoading(false);
+                                    }
+                                }}
+                            >
+                                Tạo thư mục mới và chuyển vào
+                            </button>
+                        </div>
+                    ) : (
+                        <div className="space-y-1">
+                            <p className="px-2 py-1 text-[11px] font-bold text-slate-500 truncate">
+                                Thư mục: {contextMenu.folderName}
+                            </p>
+                            <button
+                                className="w-full text-left px-2 py-1.5 rounded-lg text-sm hover:bg-slate-100 dark:hover:bg-slate-800"
+                                onClick={async () => {
+                                    const name = contextMenu.folderName;
+                                    setContextMenu(null);
+                                    await renameFolder(name);
+                                }}
+                            >
+                                Đổi tên thư mục
+                            </button>
+                            <button
+                                className="w-full text-left px-2 py-1.5 rounded-lg text-sm text-rose-600 hover:bg-rose-50 dark:hover:bg-rose-900/20"
+                                onClick={async () => {
+                                    const name = contextMenu.folderName;
+                                    setContextMenu(null);
+                                    await clearFolder(name);
+                                }}
+                            >
+                                Làm trống thư mục (bỏ tất cả đề ra ngoài)
+                            </button>
+                        </div>
+                    )}
+                </div>
+            )}
+
+            {folderActionLoading && (
+                <div className="fixed inset-0 z-[90] bg-black/10 backdrop-blur-[1px] flex items-center justify-center">
+                    <div className="admin-card px-5 py-3 text-sm font-semibold text-slate-600 dark:text-slate-200">
+                        Đang cập nhật thư mục...
+                    </div>
+                </div>
+            )}
+
             {/* Import JSON Dialog */}
             <Dialog open={showImport} onClose={() => setShowImport(false)} className="max-w-2xl">
                 <h3 className="text-lg font-bold mb-4">Import đề thi từ JSON</h3>
                 <textarea
                     value={jsonInput}
                     onChange={(e) => setJsonInput(e.target.value)}
-                    placeholder={selectedSubject ? `{"subjectId": "${selectedSubject}", "title": "...", "time": 50, ...}` : '{"subjectId": "toan", "title": "Đề thi...", "time": 50, "part1": [...], ...}'}
+                    placeholder={selectedSubject ? `{"subjectId": "${selectedSubject}", "customFolder": "Ôn tập", "title": "...", "time": 50, ...}` : '{"subjectId": "toan", "customFolder": "Ôn tập", "title": "Đề thi...", "time": 50, "part1": [...], ...}'}
                     rows={12}
                     className="w-full rounded-lg border border-input bg-background p-3 text-sm font-mono outline-none focus:border-primary"
                 />

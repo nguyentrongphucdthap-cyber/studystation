@@ -27,6 +27,7 @@ const AdminStudents = lazy(() => import('@/pages/admin/AdminStudents'));
 const AdminTeachers = lazy(() => import('@/pages/admin/AdminTeachers'));
 const AdminSchedule = lazy(() => import('@/pages/admin/AdminSchedule'));
 const EditExamPage = lazy(() => import('@/pages/admin/EditExamPage'));
+const AdminMago = lazy(() => import('@/pages/admin/AdminMago'));
 const AdminAccessRequests = lazy(() => import('@/pages/admin/AdminAccessRequests'));
 const AccessDenied = lazy(() => import('@/pages/AccessDenied'));
 const StatisticsPage = lazy(() => import('@/pages/Statistics'));
@@ -117,6 +118,10 @@ function App() {
                                             <Route
                                                 path="/admin/access-requests"
                                                 element={<AdminAccessRequests />}
+                                            />
+                                            <Route
+                                                path="/admin/mago"
+                                                element={<AdminMago />}
                                             />
                                         </Route>
                                     </Route>

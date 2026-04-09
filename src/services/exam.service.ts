@@ -54,6 +54,7 @@ export async function getAllExams(): Promise<ExamMetadata[]> {
                 id: d.id,
                 title: data.title,
                 subjectId: data.subjectId,
+                customFolder: data.customFolder || '',
                 time: data.time,
                 attemptCount: data.attemptCount || 0,
                 createdAt: data.createdAt,
@@ -127,6 +128,7 @@ export async function getExamContent(examId: string, forceRefresh = false): Prom
             id: examId,
             title: examData.title || '',
             subjectId: examData.subjectId || '',
+            customFolder: examData.customFolder || '',
             time: examData.time || 50,
             part1: examData.part1 || [],
             part2: examData.part2 || [],
@@ -337,7 +339,7 @@ export async function savePracticeResult(result: {
     totalQuestions: number;
     durationSeconds: number;
     answers: Record<string, unknown>;
-}): Promise<string> {
+}): Promise<{ id: string; coinsEarned: number }> {
     const user = auth.currentUser;
     if (!user) throw new Error('Not authenticated');
 
@@ -350,8 +352,21 @@ export async function savePracticeResult(result: {
         timestamp: new Date().toISOString(),
     });
 
+    let coinsEarned = 0;
+    if (result.score > 0 && user.email) {
+        try {
+            coinsEarned = result.score * 0.05;
+            if (coinsEarned > 0) {
+                const { updateMagocoins } = await import('@/services/magocoin.service');
+                await updateMagocoins(user.email, coinsEarned);
+            }
+        } catch (err) {
+            console.error('[ExamService] Failed to award magocoins:', err);
+        }
+    }
+
     clearHighestScoresCache();
-    return historyRef.id;
+    return { id: historyRef.id, coinsEarned };
 }
 
 export async function getPracticeHistory(examId: string): Promise<PracticeHistory[]> {

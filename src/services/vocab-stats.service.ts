@@ -28,10 +28,11 @@ export interface VocabSession {
 
 // ── Save a completed flashcard session ──
 
-export async function saveVocabSession(data: Omit<VocabSession, 'id' | 'userId' | 'userEmail'>): Promise<void> {
+export async function saveVocabSession(data: Omit<VocabSession, 'id' | 'userId' | 'userEmail'>): Promise<{ coinsEarned: number }> {
     const user = auth.currentUser;
-    if (!user) return;
+    if (!user) return { coinsEarned: 0 };
 
+    let coinsEarned = 0;
     try {
         const docRef = doc(collection(db, 'vocab_sessions'));
         await setDoc(docRef, {
@@ -40,9 +41,17 @@ export async function saveVocabSession(data: Omit<VocabSession, 'id' | 'userId' 
             userEmail: user.email || '',
             timestamp: data.timestamp || new Date().toISOString(),
         });
+        
+        if (data.wordsStudied > 0 && user.email) {
+            coinsEarned = data.wordsStudied * 0.01;
+            const { updateMagocoins } = await import('@/services/magocoin.service');
+            await updateMagocoins(user.email, coinsEarned);
+        }
     } catch (err) {
         console.warn('[VocabStats] Failed to save session:', err);
     }
+    
+    return { coinsEarned };
 }
 
 // ── Get all vocab sessions for the current user ──

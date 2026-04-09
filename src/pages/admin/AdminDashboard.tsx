@@ -10,7 +10,7 @@ import { cn } from '@/lib/utils';
 import {
     LayoutDashboard, GraduationCap, FileText, Languages,
     Bell, Calendar, Users, BarChart3, Key, RefreshCw,
-    Shield, UserPlus
+    Shield, UserPlus, Coins
 } from 'lucide-react';
 import { useEffect, useState } from 'react';
 
@@ -27,6 +27,7 @@ export default function AdminDashboard() {
         ...(isSuperAdmin || isAdmin || role === 'teacher' ? [{ to: '/admin/students', label: 'Học sinh', icon: Users }] : []),
         ...(isSuperAdmin || isAdmin ? [{ to: '/admin/access-requests', label: 'Yêu cầu truy cập', icon: UserPlus }] : []),
         ...(isSuperAdmin ? [{ to: '/admin/teachers', label: 'Giáo viên', icon: Shield }] : []),
+        ...(isSuperAdmin || (role as string).includes('boss') ? [{ to: '/admin/mago', label: 'Mago A.I', icon: Coins }] : []),
     ];
 
     return (

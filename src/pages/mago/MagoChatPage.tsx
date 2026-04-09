@@ -1,4 +1,4 @@
-﻿import React, { useEffect, useMemo, useRef, useState } from 'react';
+import React, { useEffect, useMemo, useRef, useState } from 'react';
 import {
     Send,
     FileText,
@@ -17,7 +17,11 @@ import {
     Highlighter,
     MessageSquarePlus,
     StickyNote,
-    Info
+    Info,
+    CircleHelp,
+    Database,
+    Pencil,
+    Trash2
 } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '@/contexts/AuthContext';
@@ -25,17 +29,23 @@ import {
     subscribeToMagoMessages,
     sendMagoMessage,
     saveMagoResponse,
-    getMagoUsageCountToday,
     addMagoTeachingKnowledge,
+    getMagoTeachingKnowledgeList,
+    updateMagoTeachingKnowledge,
+    deleteMagoTeachingKnowledge,
+    type MagoTrainingKnowledgeItem,
     getMagoTeachingSystemPrompt,
     relayMagoMessageToOwnersIfRequestedWithSource,
-    MAGO_DAILY_LIMIT,
     MAGO_SYSTEM_PROMPT
 } from '@/services/chat.service';
+import { subscribeToMagocoins, redeemGiftcodeTransaction } from '@/services/magocoin.service';
 import { generateAIContent, AIChatMessage } from '@/services/ai.service';
 import { uploadToImgBB } from '@/services/image.service';
-import { getUserRole, hasUnlimitedMagoAccess } from '@/services/auth.service';
+import { getUserRole } from '@/services/auth.service';
+import { getAllExams, getExamContent, getSubjects } from '@/services/exam.service';
+import type { Exam, ExamMetadata } from '@/types';
 import MagoText from '@/components/MagoText';
+import { LatexContent } from '@/components/ui/LatexContent';
 import './MagoChatPage.css';
 
 interface Attachment {
@@ -60,6 +70,21 @@ interface NoteItem {
     color: string;
     createdAt: number;
     updatedAt: number;
+}
+
+interface PickerQuestionOption {
+    id: string;
+    label: string;
+    text: string;
+}
+
+interface InsertedQuestionRef {
+    key: string;
+    examId: string;
+    questionId: string;
+    subjectName: string;
+    examTitle: string;
+    questionLabel: string;
 }
 
 const RESPONSE_MODE_CONFIG: Record<
@@ -156,8 +181,57 @@ const isLocationUnsupportedError = (message: string) => {
     return /user location is not supported/i.test(message);
 };
 
+const EXAM_QUESTION_REF_REGEX = /\[\[EXAM_QUESTION:([^:\]]+):([^\]]+)\]\]/g;
+
 const buildTeachContent = (raw: string): string => {
     return raw.replace(MODE_META_REGEX, '').trim();
+};
+
+const appendImageMarkdown = (text: string, image?: string) => {
+    if (!image) return text || '';
+    const normalized = (text || '').trim();
+    const markdown = image.startsWith('![') ? image : `![image](${image})`;
+    if (normalized.includes(markdown)) return normalized;
+    return normalized ? `${normalized}\n\n${markdown}` : markdown;
+};
+
+const resolveQuestionPayload = (exam: Exam, questionRefId: string) => {
+    if (questionRefId.startsWith('p1-')) {
+        const qId = Number(questionRefId.replace('p1-', ''));
+        const q = (exam.part1 || []).find((item) => item.id === qId);
+        if (!q) return null;
+        const optionsText = (q.options || []).map((opt, idx) => `${String.fromCharCode(65 + idx)}. ${opt}`).join('\n');
+        return {
+            label: `Phần I - Câu ${q.id}`,
+            text: `${appendImageMarkdown(q.text || '', q.image)}\n${optionsText}`.trim()
+        };
+    }
+
+    if (questionRefId.startsWith('p2-')) {
+        const [, qIdRaw, subIdRaw] = questionRefId.split('-');
+        const qId = Number(qIdRaw);
+        const subId = (subIdRaw || '').toLowerCase();
+        const q = (exam.part2 || []).find((item) => item.id === qId);
+        if (!q) return null;
+        const sub = (q.subQuestions || []).find((item) => String(item.id).toLowerCase() === subId);
+        if (!sub) return null;
+        return {
+            label: `Phần II - Câu ${q.id}${sub.id.toString().toUpperCase()}`,
+            text: `${appendImageMarkdown(q.text || '', q.image)}\n${sub.id.toString().toUpperCase()}) ${sub.text || ''}`.trim()
+        };
+    }
+
+    if (questionRefId.startsWith('p3-')) {
+        const qId = Number(questionRefId.replace('p3-', ''));
+        const q = (exam.part3 || []).find((item) => item.id === qId);
+        if (!q) return null;
+        return {
+            label: `Phần III - Câu ${q.id}`,
+            text: appendImageMarkdown(q.text || '', q.image)
+        };
+    }
+
+    return null;
 };
 
 const MagoChatPage: React.FC = () => {
@@ -168,7 +242,7 @@ const MagoChatPage: React.FC = () => {
     const [input, setInput] = useState('');
     const [attachments, setAttachments] = useState<Attachment[]>([]);
     const [isTyping, setIsTyping] = useState(false);
-    const [usageCount, setUsageCount] = useState(0);
+    const [magocoinBalance, setMagocoinBalance] = useState(0);
     const [responseMode, setResponseMode] = useState<ResponseMode>('normal');
     const [isModeMenuOpen, setIsModeMenuOpen] = useState(false);
     const [modeTipRemaining, setModeTipRemaining] = useState(() => {
@@ -193,6 +267,22 @@ const MagoChatPage: React.FC = () => {
         text: '',
         messageKey: ''
     });
+    const [showExamQuestionPicker, setShowExamQuestionPicker] = useState(false);
+    const [examPickerLoading, setExamPickerLoading] = useState(false);
+    const [examPickerExams, setExamPickerExams] = useState<ExamMetadata[]>([]);
+    const [examPickerSubjectId, setExamPickerSubjectId] = useState('');
+    const [examPickerExamId, setExamPickerExamId] = useState('');
+    const [examPickerExamContent, setExamPickerExamContent] = useState<Exam | null>(null);
+    const [examPickerQuestionId, setExamPickerQuestionId] = useState('');
+    const [examPickerFolderFilter, setExamPickerFolderFilter] = useState<'ALL' | 'UNFILED' | string>('ALL');
+    const [examPickerExamSearch, setExamPickerExamSearch] = useState('');
+    const [examPickerQuestionSearch, setExamPickerQuestionSearch] = useState('');
+    const [insertedQuestionRefs, setInsertedQuestionRefs] = useState<InsertedQuestionRef[]>([]);
+    const [showKnowledgeManager, setShowKnowledgeManager] = useState(false);
+    const [knowledgeItems, setKnowledgeItems] = useState<MagoTrainingKnowledgeItem[]>([]);
+    const [knowledgeLoading, setKnowledgeLoading] = useState(false);
+    const [editingKnowledgeId, setEditingKnowledgeId] = useState<string | null>(null);
+    const [editingKnowledgeContent, setEditingKnowledgeContent] = useState('');
 
     const messagesEndRef = useRef<HTMLDivElement>(null);
     const imageInputRef = useRef<HTMLInputElement>(null);
@@ -203,8 +293,7 @@ const MagoChatPage: React.FC = () => {
     const selectionMenuRef = useRef<HTMLDivElement>(null);
 
     const role = getUserRole();
-    const hasUnlimitedMago = hasUnlimitedMagoAccess(role);
-    const canTeachMago = hasUnlimitedMago;
+    const canTeachMago = /boss|super[-_\s]?admin/i.test(role);
 
     const imageAttachments = attachments.filter((a) => a.type === 'image');
     const fileAttachments = attachments.filter((a) => a.type === 'file');
@@ -236,6 +325,80 @@ const MagoChatPage: React.FC = () => {
         });
     }, [messages, highlightMap]);
 
+    const subjectOptions = useMemo(() => getSubjects(), []);
+
+    const examPickerSubjectExams = useMemo(() => {
+        if (!examPickerSubjectId) return [];
+        return examPickerExams
+            .filter((exam) => exam.subjectId === examPickerSubjectId)
+            .sort((a, b) => a.title.localeCompare(b.title, 'vi'));
+    }, [examPickerExams, examPickerSubjectId]);
+
+    const examPickerFolderOptions = useMemo(() => {
+        const folders = Array.from(
+            new Set(
+                examPickerSubjectExams
+                    .map((exam) => (exam.customFolder || '').trim())
+                    .filter(Boolean)
+            )
+        ).sort((a, b) => a.localeCompare(b, 'vi'));
+        return folders;
+    }, [examPickerSubjectExams]);
+
+    const examPickerFilteredExams = useMemo(() => {
+        const search = examPickerExamSearch.trim().toLowerCase();
+        return examPickerSubjectExams.filter((exam) => {
+            const folder = (exam.customFolder || '').trim();
+            if (examPickerFolderFilter === 'UNFILED' && folder) return false;
+            if (examPickerFolderFilter !== 'ALL' && examPickerFolderFilter !== 'UNFILED' && folder !== examPickerFolderFilter) return false;
+            if (search && !exam.title.toLowerCase().includes(search)) return false;
+            return true;
+        });
+    }, [examPickerSubjectExams, examPickerFolderFilter, examPickerExamSearch]);
+
+    const examPickerQuestions = useMemo<PickerQuestionOption[]>(() => {
+        if (!examPickerExamContent) return [];
+        const options: PickerQuestionOption[] = [];
+
+        (examPickerExamContent.part1 || []).forEach((q, idx) => {
+            options.push({
+                id: `p1-${q.id}`,
+                label: `Phần I - Câu ${idx + 1}`,
+                text: q.text || ''
+            });
+        });
+
+        (examPickerExamContent.part2 || []).forEach((q, idx) => {
+            const questionPrefix = q.text?.trim() ? `${q.text.trim()}\n` : '';
+            (q.subQuestions || []).forEach((sub) => {
+                options.push({
+                    id: `p2-${q.id}-${sub.id}`,
+                    label: `Phần II - Câu ${idx + 1}${String(sub.id).toUpperCase()}`,
+                    text: `${questionPrefix}${sub.text || ''}`.trim()
+                });
+            });
+        });
+
+        (examPickerExamContent.part3 || []).forEach((q, idx) => {
+            options.push({
+                id: `p3-${q.id}`,
+                label: `Phần III - Câu ${idx + 1}`,
+                text: q.text || ''
+            });
+        });
+
+        return options;
+    }, [examPickerExamContent]);
+
+    const examPickerFilteredQuestions = useMemo(() => {
+        const search = examPickerQuestionSearch.trim().toLowerCase();
+        if (!search) return examPickerQuestions;
+        return examPickerQuestions.filter((question) =>
+            question.label.toLowerCase().includes(search) ||
+            question.text.toLowerCase().includes(search)
+        );
+    }, [examPickerQuestions, examPickerQuestionSearch]);
+
     const availableModes = useMemo(() => {
         const allModes = Object.keys(RESPONSE_MODE_CONFIG) as ResponseMode[];
         return canTeachMago ? allModes : allModes.filter((mode) => mode !== 'teach');
@@ -248,6 +411,90 @@ const MagoChatPage: React.FC = () => {
     }, [canTeachMago, responseMode]);
 
     useEffect(() => {
+        if (!showExamQuestionPicker || examPickerExams.length > 0) return;
+        let isCancelled = false;
+        const loadExams = async () => {
+            setExamPickerLoading(true);
+            try {
+                const exams = await getAllExams();
+                if (isCancelled) return;
+                setExamPickerExams(exams);
+                if (!examPickerSubjectId && subjectOptions.length > 0) {
+                    setExamPickerSubjectId(subjectOptions[0]?.id || '');
+                }
+            } finally {
+                if (!isCancelled) setExamPickerLoading(false);
+            }
+        };
+        loadExams();
+        return () => {
+            isCancelled = true;
+        };
+    }, [showExamQuestionPicker, examPickerExams.length, examPickerSubjectId, subjectOptions]);
+
+    useEffect(() => {
+        if (!showKnowledgeManager || !canTeachMago) return;
+        let isCancelled = false;
+        const loadKnowledge = async () => {
+            setKnowledgeLoading(true);
+            try {
+                const list = await getMagoTeachingKnowledgeList();
+                if (isCancelled) return;
+                setKnowledgeItems(list);
+            } catch {
+                if (!isCancelled) setActionMessage('Không thể tải kiến thức đã dạy');
+            } finally {
+                if (!isCancelled) setKnowledgeLoading(false);
+            }
+        };
+        loadKnowledge();
+        return () => {
+            isCancelled = true;
+        };
+    }, [showKnowledgeManager, canTeachMago]);
+
+    useEffect(() => {
+        setExamPickerExamId('');
+        setExamPickerExamContent(null);
+        setExamPickerQuestionId('');
+        setExamPickerFolderFilter('ALL');
+        setExamPickerExamSearch('');
+        setExamPickerQuestionSearch('');
+    }, [examPickerSubjectId]);
+
+    useEffect(() => {
+        if (!examPickerExamId) {
+            setExamPickerExamContent(null);
+            setExamPickerQuestionId('');
+            return;
+        }
+        let isCancelled = false;
+        const loadExam = async () => {
+            setExamPickerLoading(true);
+            try {
+                const exam = await getExamContent(examPickerExamId, true);
+                if (isCancelled) return;
+                setExamPickerExamContent(exam);
+                setExamPickerQuestionId('');
+            } finally {
+                if (!isCancelled) setExamPickerLoading(false);
+            }
+        };
+        loadExam();
+        return () => {
+            isCancelled = true;
+        };
+    }, [examPickerExamId]);
+
+    useEffect(() => {
+        if (examPickerExamId && !examPickerFilteredExams.some((exam) => exam.id === examPickerExamId)) {
+            setExamPickerExamId('');
+            setExamPickerExamContent(null);
+            setExamPickerQuestionId('');
+        }
+    }, [examPickerFilteredExams, examPickerExamId]);
+
+    useEffect(() => {
         messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
     }, [messages, isTyping]);
 
@@ -258,13 +505,14 @@ const MagoChatPage: React.FC = () => {
             setMessages(msgs);
         });
 
-        const updateUsage = async () => {
-            const count = await getMagoUsageCountToday(user.email!);
-            setUsageCount(count);
-        };
+        const unsubCoins = subscribeToMagocoins(user.email, (balance) => {
+            setMagocoinBalance(balance);
+        });
 
-        updateUsage();
-        return () => unsub();
+        return () => {
+            unsub();
+            unsubCoins();
+        };
     }, [user?.email]);
 
     useEffect(() => {
@@ -437,6 +685,81 @@ const MagoChatPage: React.FC = () => {
         hideSelectionAndClear();
     };
 
+    const handleInsertExamQuestion = () => {
+        const selectedQuestion = examPickerQuestions.find((q) => q.id === examPickerQuestionId);
+        const selectedExam = examPickerFilteredExams.find((e) => e.id === examPickerExamId) || examPickerSubjectExams.find((e) => e.id === examPickerExamId);
+        const selectedSubject = subjectOptions.find((s) => s.id === examPickerSubjectId);
+
+        if (!selectedQuestion || !selectedExam || !selectedSubject) return;
+
+        const key = `${selectedExam.id}:${selectedQuestion.id}`;
+        setInsertedQuestionRefs((prev) => {
+            if (prev.some((item) => item.key === key)) return prev;
+            return [
+                ...prev,
+                {
+                    key,
+                    examId: selectedExam.id,
+                    questionId: selectedQuestion.id,
+                    subjectName: selectedSubject.name,
+                    examTitle: selectedExam.title,
+                    questionLabel: selectedQuestion.label
+                }
+            ];
+        });
+        setShowExamQuestionPicker(false);
+        setActionMessage(`Đã chèn câu hỏi (${selectedQuestion.label})`);
+        requestAnimationFrame(() => textareaRef.current?.focus());
+    };
+
+    const handleOpenKnowledgeManager = () => {
+        setShowKnowledgeManager(true);
+        setEditingKnowledgeId(null);
+        setEditingKnowledgeContent('');
+    };
+
+    const handleStartEditKnowledge = (item: MagoTrainingKnowledgeItem) => {
+        setEditingKnowledgeId(item.id);
+        setEditingKnowledgeContent(item.content);
+    };
+
+    const handleCancelEditKnowledge = () => {
+        setEditingKnowledgeId(null);
+        setEditingKnowledgeContent('');
+    };
+
+    const handleSaveKnowledge = async () => {
+        if (!editingKnowledgeId) return;
+        const trimmed = editingKnowledgeContent.trim();
+        if (!trimmed) {
+            setActionMessage('Nội dung không được để trống');
+            return;
+        }
+        try {
+            await updateMagoTeachingKnowledge(editingKnowledgeId, trimmed);
+            setKnowledgeItems((prev) =>
+                prev.map((item) => (item.id === editingKnowledgeId ? { ...item, content: trimmed } : item))
+            );
+            handleCancelEditKnowledge();
+            setActionMessage('Đã cập nhật kiến thức');
+        } catch {
+            setActionMessage('Không thể cập nhật kiến thức');
+        }
+    };
+
+    const handleDeleteKnowledge = async (item: MagoTrainingKnowledgeItem) => {
+        const ok = window.confirm('Xóa mục kiến thức này khỏi mago_training?');
+        if (!ok) return;
+        try {
+            await deleteMagoTeachingKnowledge(item.id);
+            setKnowledgeItems((prev) => prev.filter((it) => it.id !== item.id));
+            if (editingKnowledgeId === item.id) handleCancelEditKnowledge();
+            setActionMessage('Đã xóa kiến thức');
+        } catch {
+            setActionMessage('Không thể xóa kiến thức');
+        }
+    };
+
     const updateSelectionMenu = () => {
         const selection = window.getSelection();
         if (!selection || selection.rangeCount === 0) {
@@ -476,29 +799,88 @@ const MagoChatPage: React.FC = () => {
     };
 
     const handleSend = async () => {
-        if ((!input.trim() && attachments.length === 0) || isTyping) return;
+        if ((!input.trim() && attachments.length === 0 && insertedQuestionRefs.length === 0) || isTyping) return;
         if (!user?.email) return;
 
-        if (!hasUnlimitedMago && usageCount >= MAGO_DAILY_LIMIT) {
-            alert('Bạn đã hết lượt sử dụng Mago hôm nay. Hãy quay lại vào ngày mai nhé!');
+        if (magocoinBalance < 1) {
+            alert('Bạn đã hết Magocoin. Hãy làm bài tập để nhận thêm nhé!');
             return;
         }
 
         const userText = input.trim();
         const currentAttachments = [...attachments];
+        const currentInsertedRefs = [...insertedQuestionRefs];
 
         setInput('');
         setAttachments([]);
+        setInsertedQuestionRefs([]);
         setIsTyping(true);
 
         try {
             let richTextForHistory = buildModeMeta(responseMode, userText);
             const aiParts: any[] = [];
 
+            const refsFromChips = currentInsertedRefs.map((item) => ({
+                token: `[[EXAM_QUESTION:${item.examId}:${item.questionId}]]`,
+                examId: item.examId,
+                questionRefId: item.questionId
+            }));
+            const refsFromText = Array.from(userText.matchAll(EXAM_QUESTION_REF_REGEX)).map((match) => ({
+                token: match[0],
+                examId: (match[1] || '').trim(),
+                questionRefId: (match[2] || '').trim()
+            }));
+            const combinedRefs = [...refsFromChips, ...refsFromText].filter((ref) => ref.examId && ref.questionRefId);
+            const dedupRefs = Array.from(new Map(combinedRefs.map((item) => [`${item.examId}:${item.questionRefId}`, item])).values());
+            const refContextBlocks: string[] = [];
+            if (dedupRefs.length > 0) {
+                const examCache = new Map<string, Exam | null>();
+                for (const ref of dedupRefs) {
+                    const examId = ref.examId;
+                    const questionRefId = ref.questionRefId;
+                    if (!examId || !questionRefId) continue;
+
+                    if (!examCache.has(examId)) {
+                        examCache.set(examId, await getExamContent(examId, true));
+                    }
+                    const exam = examCache.get(examId);
+                    if (!exam) {
+                        refContextBlocks.push(`- ${ref.token}: Không tìm thấy đề thi tương ứng.`);
+                        continue;
+                    }
+
+                    const resolved = resolveQuestionPayload(exam, questionRefId);
+                    if (!resolved) {
+                        refContextBlocks.push(`- ${ref.token}: Không tìm thấy câu hỏi tương ứng trong đề "${exam.title}".`);
+                        continue;
+                    }
+
+                    refContextBlocks.push(
+                        `- ${ref.token}\n  Môn: ${exam.subjectId}\n  Đề: ${exam.title}\n  Câu: ${resolved.label}\n  Nội dung:\n${resolved.text}`
+                    );
+                }
+            }
+
             const modeInstruction = RESPONSE_MODE_CONFIG[responseMode].instruction;
+            const refsAsText = currentInsertedRefs.map((item) => `[[EXAM_QUESTION:${item.examId}:${item.questionId}]]`).join('\n');
+            const userTextForHistory = [userText, refsAsText].filter(Boolean).join('\n');
             if (userText) {
                 aiParts.push({
-                    text: `Yêu cầu phản hồi (${RESPONSE_MODE_CONFIG[responseMode].label}): ${modeInstruction}\n\nNội dung người học: ${userText}`
+                    text:
+                        `Yêu cầu phản hồi (${RESPONSE_MODE_CONFIG[responseMode].label}): ${modeInstruction}\n\n` +
+                        `Nội dung người học: ${userTextForHistory || userText}\n\n` +
+                        (refContextBlocks.length > 0
+                            ? `Dữ liệu truy xuất tự động từ ID câu hỏi trong hệ thống:\n${refContextBlocks.join('\n\n')}`
+                            : '')
+                });
+            } else if (refsAsText) {
+                aiParts.push({
+                    text:
+                        `Yêu cầu phản hồi (${RESPONSE_MODE_CONFIG[responseMode].label}): ${modeInstruction}\n\n` +
+                        `Người học đã chèn ID câu hỏi:\n${refsAsText}\n\n` +
+                        (refContextBlocks.length > 0
+                            ? `Dữ liệu truy xuất tự động từ ID câu hỏi trong hệ thống:\n${refContextBlocks.join('\n\n')}`
+                            : '')
                 });
             } else {
                 aiParts.push({
@@ -538,6 +920,9 @@ const MagoChatPage: React.FC = () => {
                 }
             }
 
+            if (userTextForHistory) {
+                richTextForHistory = buildModeMeta(responseMode, userTextForHistory);
+            }
             await sendMagoMessage(richTextForHistory);
 
             const relaySourceText = buildTeachContent(richTextForHistory);
@@ -548,8 +933,6 @@ const MagoChatPage: React.FC = () => {
                 } else {
                     await saveMagoResponse(`Tôi đã chuyển lời giúp bạn tới ${relayResult.deliveredTo.join(' và ')} rồi nhé! ✉️`);
                 }
-                const newCount = await getMagoUsageCountToday(user.email);
-                setUsageCount(newCount);
                 return;
             }
 
@@ -566,8 +949,6 @@ const MagoChatPage: React.FC = () => {
                     await saveMagoResponse('Đã ghi nhớ kiến thức mới. Tôi sẽ ưu tiên áp dụng đúng theo phạm vi chia sẻ của nội dung này nhé! 📚');
                 }
 
-                const newCount = await getMagoUsageCountToday(user.email);
-                setUsageCount(newCount);
                 return;
             }
 
@@ -610,9 +991,6 @@ const MagoChatPage: React.FC = () => {
 
             await saveMagoResponse(response);
 
-            const newCount = await getMagoUsageCountToday(user.email);
-            setUsageCount(newCount);
-
             setModeTipRemaining((prev) => {
                 const next = Math.max(prev - 1, 0);
                 localStorage.setItem(MODE_TIP_REMAINING_KEY, String(next));
@@ -623,7 +1001,7 @@ const MagoChatPage: React.FC = () => {
             const errorMsg = String(err?.message || 'Lỗi kết nối với Mago');
 
             if (err?.message === 'MAGO_LIMIT_REACHED') {
-                await saveMagoResponse(`Bạn đã hết lượt sử dụng Mago hôm nay (${MAGO_DAILY_LIMIT}/${MAGO_DAILY_LIMIT}). Hẹn bạn ngày mai nhé! 🧙‍♂️`);
+                await saveMagoResponse(`Bạn đã hết Magocoin mất rồi! Mong bạn học thêm bài vở hoặc thẻ bài để tôi sớm được hỗ trợ lại bạn nhé 🧙‍♂️!`);
             } else if (err?.message === 'MAGO_TEACH_FORBIDDEN') {
                 await saveMagoResponse('Chế độ Dạy chỉ dành cho Boss hoặc Super Admin.');
             } else if (/missing or insufficient permissions/i.test(errorMsg)) {
@@ -656,7 +1034,27 @@ const MagoChatPage: React.FC = () => {
                         <Sparkles size={16} />
                         <span>Mago A.I</span>
                         <div className="mago-vertical-divider" />
-                        <span className="limit-text">{hasUnlimitedMago ? '∞ Lượt' : `${MAGO_DAILY_LIMIT - usageCount} lượt còn lại`}</span>
+                        <span className="limit-text">
+                            <span style={{ display: 'flex', alignItems: 'center', gap: '4px' }}>
+                                {magocoinBalance}
+                                <img src="https://i.ibb.co/XkN95yrC/Gemini-Generated-Image-vpnvrgvpnvrgvpnv-removebg-preview.png" alt="Magocoin" style={{ width: '16px', height: '16px', objectFit: 'contain' }} />
+                            </span>
+                        </span>
+                        <button
+                            onClick={() => {
+                                const code = window.prompt('Nhập Giftcode Mago của bạn:');
+                                if (code && user?.email) {
+                                    redeemGiftcodeTransaction(user.email, code).then(res => {
+                                        if (res.success) window.alert(`🎉 Chúc mừng! Bạn nhận được ${res.amount} Magocoin.`);
+                                        else window.alert(`❌ ${res.error}`);
+                                    });
+                                }
+                            }}
+                            className="mago-redeem-button-main"
+                        >
+                            <img src="https://i.ibb.co/XkN95yrC/Gemini-Generated-Image-vpnvrgvpnvrgvpnv-removebg-preview.png" alt="" />
+                            Nhập mã
+                        </button>
                     </div>
                 </div>
 
@@ -835,6 +1233,26 @@ const MagoChatPage: React.FC = () => {
                         </div>
                     )}
 
+                    {insertedQuestionRefs.length > 0 && (
+                        <div className="mago-inserted-questions-area">
+                            {insertedQuestionRefs.map((item) => (
+                                <div key={item.key} className="mago-inserted-question-chip">
+                                    <div className="chip-text">
+                                        <span className="chip-top">{item.subjectName} · {item.questionLabel}</span>
+                                        <span className="chip-bottom">{item.examTitle}</span>
+                                    </div>
+                                    <button
+                                        type="button"
+                                        onClick={() => setInsertedQuestionRefs((prev) => prev.filter((ref) => ref.key !== item.key))}
+                                        aria-label="Xóa câu hỏi đã chèn"
+                                    >
+                                        <X size={12} />
+                                    </button>
+                                </div>
+                            ))}
+                        </div>
+                    )}
+
                     <div className="mago-input-toolbar">
                         <div className="mago-import-actions">
                             <button
@@ -857,6 +1275,33 @@ const MagoChatPage: React.FC = () => {
                                 <FileText size={16} />
                                 <span className="mago-hover-label">Import file</span>
                             </button>
+                            <button
+                                className="mago-import-btn"
+                                onClick={() => {
+                                    setShowExamQuestionPicker(true);
+                                    if (!examPickerSubjectId && subjectOptions.length > 0) {
+                                        setExamPickerSubjectId(subjectOptions[0]?.id || '');
+                                    }
+                                }}
+                                disabled={isTyping}
+                                type="button"
+                                aria-label="Chèn câu hỏi từ đề thi"
+                            >
+                                <CircleHelp size={16} />
+                                <span className="mago-hover-label">Chèn câu hỏi</span>
+                            </button>
+                            {canTeachMago && (
+                                <button
+                                    className="mago-import-btn"
+                                    onClick={handleOpenKnowledgeManager}
+                                    disabled={isTyping}
+                                    type="button"
+                                    aria-label="Kiến thức đã dạy"
+                                >
+                                    <Database size={16} />
+                                    <span className="mago-hover-label">Kiến thức đã dạy</span>
+                                </button>
+                            )}
                         </div>
 
                         <div className="mago-mode-picker" ref={modeMenuRef}>
@@ -941,8 +1386,8 @@ const MagoChatPage: React.FC = () => {
                             disabled={isTyping}
                         />
                         <button
-                            className={`mago-send-button ${input.trim() || attachments.length > 0 ? 'active' : ''}`}
-                            disabled={(!input.trim() && attachments.length === 0) || isTyping}
+                            className={`mago-send-button ${input.trim() || attachments.length > 0 || insertedQuestionRefs.length > 0 ? 'active' : ''}`}
+                            disabled={(!input.trim() && attachments.length === 0 && insertedQuestionRefs.length === 0) || isTyping}
                             onClick={handleSend}
                         >
                             <Send size={18} />
@@ -952,6 +1397,191 @@ const MagoChatPage: React.FC = () => {
             </div>
 
             {actionMessage && <div className="mago-action-toast">{actionMessage}</div>}
+
+            {showExamQuestionPicker && (
+                <div className="mago-picker-overlay" onClick={() => setShowExamQuestionPicker(false)}>
+                    <div className="mago-picker-panel" onClick={(e) => e.stopPropagation()}>
+                        <div className="mago-picker-header">
+                            <h3>Chèn câu hỏi từ đề thi</h3>
+                            <button type="button" onClick={() => setShowExamQuestionPicker(false)}>
+                                <X size={16} />
+                            </button>
+                        </div>
+
+                        <div className="mago-picker-grid">
+                            <div>
+                                <label>Môn học</label>
+                                <select
+                                    value={examPickerSubjectId}
+                                    onChange={(e) => setExamPickerSubjectId(e.target.value)}
+                                >
+                                    {subjectOptions.map((subject) => (
+                                        <option key={subject.id} value={subject.id}>
+                                            {subject.icon} {subject.name}
+                                        </option>
+                                    ))}
+                                </select>
+                            </div>
+
+                            <div>
+                                <label>Đề thi</label>
+                                <select
+                                    value={examPickerExamId}
+                                    onChange={(e) => setExamPickerExamId(e.target.value)}
+                                >
+                                    <option value="">-- Chọn đề thi --</option>
+                                    {examPickerFilteredExams.map((exam) => (
+                                        <option key={exam.id} value={exam.id}>
+                                            {exam.title}
+                                        </option>
+                                    ))}
+                                </select>
+                            </div>
+                        </div>
+
+                        <div className="mago-picker-grid mago-picker-filter-grid">
+                            <div>
+                                <label>Lọc thư mục</label>
+                                <select
+                                    value={examPickerFolderFilter}
+                                    onChange={(e) => setExamPickerFolderFilter(e.target.value)}
+                                >
+                                    <option value="ALL">Tất cả thư mục</option>
+                                    <option value="UNFILED">Chưa phân thư mục</option>
+                                    {examPickerFolderOptions.map((folder) => (
+                                        <option key={folder} value={folder}>
+                                            {folder}
+                                        </option>
+                                    ))}
+                                </select>
+                            </div>
+                            <div>
+                                <label>Tìm đề thi</label>
+                                <input
+                                    type="text"
+                                    value={examPickerExamSearch}
+                                    onChange={(e) => setExamPickerExamSearch(e.target.value)}
+                                    placeholder="Nhập tên đề..."
+                                />
+                            </div>
+                        </div>
+
+                        <div className="mago-picker-question-list">
+                            <div className="mago-picker-question-head">
+                                <label>Câu hỏi</label>
+                                <input
+                                    type="text"
+                                    value={examPickerQuestionSearch}
+                                    onChange={(e) => setExamPickerQuestionSearch(e.target.value)}
+                                    placeholder="Tìm câu hỏi..."
+                                />
+                            </div>
+                            {examPickerLoading ? (
+                                <div className="mago-picker-empty">Đang tải dữ liệu...</div>
+                            ) : examPickerExamId && examPickerQuestions.length === 0 ? (
+                                <div className="mago-picker-empty">Đề thi này chưa có câu hỏi.</div>
+                            ) : examPickerExamId && examPickerFilteredQuestions.length === 0 ? (
+                                <div className="mago-picker-empty">Không tìm thấy câu hỏi phù hợp.</div>
+                            ) : (
+                                examPickerFilteredQuestions.map((question) => (
+                                    <button
+                                        key={question.id}
+                                        type="button"
+                                        className={`mago-picker-question-item ${examPickerQuestionId === question.id ? 'active' : ''}`}
+                                        onClick={() => setExamPickerQuestionId(question.id)}
+                                    >
+                                        <strong>{question.label}</strong>
+                                        <div className="mago-picker-question-preview">
+                                            {question.text ? (
+                                                <LatexContent content={question.text} />
+                                            ) : (
+                                                <span>(không có nội dung câu hỏi)</span>
+                                            )}
+                                        </div>
+                                    </button>
+                                ))
+                            )}
+                        </div>
+
+                        <div className="mago-picker-actions">
+                            <button type="button" onClick={() => setShowExamQuestionPicker(false)}>
+                                Hủy
+                            </button>
+                            <button
+                                type="button"
+                                onClick={handleInsertExamQuestion}
+                                disabled={!examPickerQuestionId}
+                            >
+                                Chèn vào chat
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            )}
+
+            {showKnowledgeManager && canTeachMago && (
+                <div className="mago-picker-overlay" onClick={() => setShowKnowledgeManager(false)}>
+                    <div className="mago-picker-panel mago-knowledge-panel" onClick={(e) => e.stopPropagation()}>
+                        <div className="mago-picker-header">
+                            <h3>Kiến thức đã dạy (mago_training)</h3>
+                            <button type="button" onClick={() => setShowKnowledgeManager(false)}>
+                                <X size={16} />
+                            </button>
+                        </div>
+
+                        <div className="mago-knowledge-body">
+                            {knowledgeLoading ? (
+                                <div className="mago-picker-empty">Đang tải dữ liệu...</div>
+                            ) : knowledgeItems.length === 0 ? (
+                                <div className="mago-picker-empty">Chưa có kiến thức nào được dạy.</div>
+                            ) : (
+                                knowledgeItems.map((item) => {
+                                    const isEditing = editingKnowledgeId === item.id;
+                                    return (
+                                        <div key={item.id} className="mago-knowledge-item">
+                                            <div className="mago-knowledge-meta">
+                                                <span>{item.createdBy}</span>
+                                                <span>{new Date(item.createdAt || Date.now()).toLocaleString()}</span>
+                                                <span className={`badge ${item.visibility === 'owner_only' ? 'private' : 'public'}`}>
+                                                    {item.visibility === 'owner_only' ? 'Riêng tư' : 'Công khai'}
+                                                </span>
+                                            </div>
+
+                                            {isEditing ? (
+                                                <textarea
+                                                    value={editingKnowledgeContent}
+                                                    onChange={(e) => setEditingKnowledgeContent(e.target.value)}
+                                                    rows={5}
+                                                />
+                                            ) : (
+                                                <p>{item.content}</p>
+                                            )}
+
+                                            <div className="mago-knowledge-actions">
+                                                {isEditing ? (
+                                                    <>
+                                                        <button type="button" onClick={handleCancelEditKnowledge}>Hủy</button>
+                                                        <button type="button" onClick={handleSaveKnowledge}>Lưu</button>
+                                                    </>
+                                                ) : (
+                                                    <>
+                                                        <button type="button" onClick={() => handleStartEditKnowledge(item)}>
+                                                            <Pencil size={13} /> Sửa
+                                                        </button>
+                                                        <button type="button" className="danger" onClick={() => handleDeleteKnowledge(item)}>
+                                                            <Trash2 size={13} /> Xóa
+                                                        </button>
+                                                    </>
+                                                )}
+                                            </div>
+                                        </div>
+                                    );
+                                })
+                            )}
+                        </div>
+                    </div>
+                </div>
+            )}
         </div>
     );
 };

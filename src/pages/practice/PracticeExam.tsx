@@ -509,7 +509,7 @@ export default function PracticeExam() {
                     });
                 }
 
-                await savePracticeResult({
+                const { coinsEarned } = await savePracticeResult({
                     examId: exam.id,
                     examTitle: exam.title,
                     subjectId: exam.subjectId,
@@ -519,6 +519,15 @@ export default function PracticeExam() {
                     durationSeconds: dur,
                     answers: { part1: unshuffledP1, part2: part2Answers, part3: part3Answers },
                 });
+                
+                if (coinsEarned && coinsEarned > 0) {
+                    setAlertState({
+                        open: true,
+                        title: 'Thưởng Magocoin! 🪙',
+                        message: `Chúc mừng bạn đã hoàn thành bài thi và nhận được ${coinsEarned.toFixed(2)} Magocoin!`,
+                        type: 'success'
+                    });
+                }
                 
                 // Optimistically update local examHistory so it instantly appears on chart
                 setExamHistory(prev => [{

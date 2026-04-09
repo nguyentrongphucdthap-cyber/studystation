@@ -25,7 +25,7 @@
 | **Root directory** | `/` |
 | **Node.js version** | 18 (hoặc 20) |
 
-### Bước 3: Thêm Environment Variables
+### Bướcnvironment Var 3: Thêm Eiables
 
 Vào **Settings → Environment Variables** và thêm:
 

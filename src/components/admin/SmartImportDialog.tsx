@@ -227,6 +227,7 @@ export function SmartImportDialog({ open, onClose, onImport, type, initialSubjec
     const [title, setTitle] = useState('');
     const [time, setTime] = useState(50);
     const [subjectId, setSubjectId] = useState<string>(initialSubjectId || 'toan');
+    const [customFolder, setCustomFolder] = useState('');
     const [extractedText, setExtractedText] = useState('');
     const [jsonPreview, setJsonPreview] = useState('');
     const [uploadProgress, setUploadProgress] = useState<{ current: number, total: number } | null>(null);
@@ -436,6 +437,7 @@ export function SmartImportDialog({ open, onClose, onImport, type, initialSubjec
                 title,
                 time,
                 subjectId,
+                customFolder,
                 ...data
             });
             toast({ title: 'Thành công!', type: 'success' });
@@ -443,6 +445,7 @@ export function SmartImportDialog({ open, onClose, onImport, type, initialSubjec
             setStep('upload');
             setExtractedText('');
             setTitle('');
+            setCustomFolder('');
         } catch (err: any) {
             toast({ title: 'Lỗi', message: err.message, type: 'error' });
         }
@@ -496,7 +499,7 @@ export function SmartImportDialog({ open, onClose, onImport, type, initialSubjec
                     </div>
                 ) : (
                     <div className="space-y-5">
-                        <div className="grid grid-cols-1 md:grid-cols-3 gap-4 p-4 bg-muted/30 rounded-xl border">
+                        <div className="grid grid-cols-1 md:grid-cols-4 gap-4 p-4 bg-muted/30 rounded-xl border">
                             <div className={cn(type === 'etest' ? "md:col-span-2" : "md:col-span-1")}>
                                 <label className="text-[10px] font-bold uppercase text-muted-foreground mb-1 block">Tiêu đề</label>
                                 <input type="text" value={title} onChange={(e) => setTitle(e.target.value)} className="w-full border rounded-md px-3 py-1.5 text-sm" />
@@ -512,6 +515,16 @@ export function SmartImportDialog({ open, onClose, onImport, type, initialSubjec
                             <div>
                                 <label className="text-[10px] font-bold uppercase text-muted-foreground mb-1 block">Thời gian</label>
                                 <input type="number" value={time} onChange={(e) => setTime(Number(e.target.value))} className="w-full border rounded-md px-3 py-1.5 text-sm" />
+                            </div>
+                            <div>
+                                <label className="text-[10px] font-bold uppercase text-muted-foreground mb-1 block">Thư mục</label>
+                                <input
+                                    type="text"
+                                    value={customFolder}
+                                    onChange={(e) => setCustomFolder(e.target.value)}
+                                    className="w-full border rounded-md px-3 py-1.5 text-sm"
+                                    placeholder="VD: Ôn thi học kỳ"
+                                />
                             </div>
                         </div>
 

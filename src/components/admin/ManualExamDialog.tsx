@@ -23,6 +23,7 @@ export function ManualExamDialog({ open, onClose, onSave, initialSubject }: Manu
         title: '',
         subjectId: initialSubject || subjects[0]?.id || '',
         time: 50,
+        customFolder: '',
     });
 
     const [part1, setPart1] = useState<any[]>([]);
@@ -116,7 +117,7 @@ export function ManualExamDialog({ open, onClose, onSave, initialSubject }: Manu
             onClose();
             setStep(1);
             setPart1([]); setPart2([]); setPart3([]);
-            setMeta({ title: '', subjectId: initialSubject || subjects[0]?.id || '', time: 50 });
+            setMeta({ title: '', subjectId: initialSubject || subjects[0]?.id || '', time: 50, customFolder: '' });
         } catch (error) {
             console.error(error);
         } finally {
@@ -142,7 +143,7 @@ export function ManualExamDialog({ open, onClose, onSave, initialSubject }: Manu
             <div className="flex-1 overflow-y-auto p-6 scrollbar-thin">
                 {step === 1 ? (
                     <div className="space-y-6">
-                        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                        <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
                             <div className="md:col-span-1">
                                 <label className="text-xs font-bold uppercase text-muted-foreground mb-1 block">Tên đề thi</label>
                                 <input value={meta.title} onChange={e => setMeta({...meta, title: e.target.value})} className="w-full border rounded-lg px-3 py-2 text-sm outline-none focus:border-primary" />
@@ -156,6 +157,15 @@ export function ManualExamDialog({ open, onClose, onSave, initialSubject }: Manu
                             <div>
                                 <label className="text-xs font-bold uppercase text-muted-foreground mb-1 block">Thời gian</label>
                                 <input type="number" value={meta.time} onChange={e => setMeta({...meta, time: parseInt(e.target.value) || 0})} className="w-full border rounded-lg px-3 py-2 text-sm outline-none focus:border-primary" />
+                            </div>
+                            <div>
+                                <label className="text-xs font-bold uppercase text-muted-foreground mb-1 block">Thư mục</label>
+                                <input
+                                    value={meta.customFolder}
+                                    onChange={e => setMeta({ ...meta, customFolder: e.target.value })}
+                                    className="w-full border rounded-lg px-3 py-2 text-sm outline-none focus:border-primary"
+                                    placeholder="VD: Ôn thi 12A1"
+                                />
                             </div>
                         </div>
 

@@ -396,7 +396,6 @@ export default function VocabPage() {
                 setOffset({ x: 0, y: 0 });
                 setSwipeDir(null);
             } else {
-                // Save session to Firestore
                 if (activeSet) {
                     const elapsed = Math.round((Date.now() - sessionStartTime.current) / 1000);
                     saveVocabSession({
@@ -407,6 +406,10 @@ export default function VocabPage() {
                         unknownCount: unknownIds.length + (known ? 0 : 1),
                         durationSeconds: elapsed,
                         timestamp: new Date().toISOString(),
+                    }).then(({ coinsEarned }) => {
+                        if (coinsEarned && coinsEarned > 0) {
+                            window.alert(`🎉 Thưởng Magocoin! 🎉\n\nChúc mừng bạn đã hoàn thành thẻ bài và nhận được ${coinsEarned.toFixed(2)} Magocoin!`);
+                        }
                     });
                 }
                 setView('result');

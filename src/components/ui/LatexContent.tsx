@@ -29,7 +29,7 @@ type Token =
 //   \ce{...}             công thức hóa học (mhchem)
 //   \begin{env}...\end{env}  môi trường LaTeX
 
-const EXISTING_MATH_REGEX = /(\$\$[\s\S]*?\$\$|\$[^$\n]+?\$|\\\[[\s\S]*?\\\]|\\\([\s\S]*?\\\)|\\ce\{(?:[^{}]|\{[^{}]*\})*\}|\\begin\{[^}]+\}[\s\S]*?\\end\{[^}]+\})/g;
+const EXISTING_MATH_REGEX = /(\$\$[\s\S]*?\$\$|\$[^$\n]+?\$|\\\[[\s\S]*?\\\]|\\\([\s\S]*?\\\)|\\ce\{(?:[^{}]|\{[^{}]*\})*\}|\\begin\{[^}]+\}[\s\S]*?\\end\{[^}]+\}|!\[[^\]]*?\]\([^)]+\))/g;
 
 /**
  * Kiểm tra chuỗi có chứa ký tự ngoài ASCII không (ví dụ: tiếng Việt có dấu).
@@ -84,7 +84,7 @@ function convertBareSubSup(text: string): string {
 
 /**
  * Bước tiền xử lý chính:
- * - Tách nội dung theo các khối LaTeX đã có (giữ nguyên)
+ * - Tách nội dung theo các khối LaTeX đã có và markdown ảnh (giữ nguyên)
  * - Áp dụng convertBareSubSup() cho phần text thuần giữa các khối
  */
 function preprocessMathPatterns(content: string): string {
@@ -380,15 +380,36 @@ export const LatexContent: React.FC<LatexContentProps> = ({ content, className, 
                         return <InlineMath key={index} math={token.value} errorColor="#cc0000" />;
                     case 'text':
                     default: {
-                        const html = token.value
+                        const normalizedText = token.value.replace(
+                            /<img\b[^>]*>/gi,
+                            (imgTag) => {
+                                const srcMatch = imgTag.match(/\bsrc=["']([^"']+)["']/i);
+                                const altMatch = imgTag.match(/\balt=["']([^"']*)["']/i);
+                                const src = srcMatch?.[1]?.trim();
+                                if (!src) return '';
+                                const alt = (altMatch?.[1] || 'image').trim();
+                                return `![${alt}](${src})`;
+                            }
+                        );
+
+                        const htmlWithImages = normalizedText
                             .replace(/&/g, '&amp;')
                             .replace(/</g, '&lt;')
                             .replace(/>/g, '&gt;')
-                            .replace(/!\[([^\]]*)\]\(([^)]+)\)/g, '<img src="$2" alt="$1" class="my-3 max-h-64 max-w-full rounded-xl object-contain shadow-sm border border-border" />')
+                            .replace(/!\[([^\]]*)\]\(([^)]+)\)/g, '<img src="$2" alt="$1" class="my-2 w-full max-h-72 rounded-xl object-contain shadow-sm border border-border bg-white/60 dark:bg-slate-900/40" />')
                             .replace(/\*\*([\s\S]+?)\*\*/g, '<strong class="text-blue-600 font-bold">$1</strong>')
                             .replace(/__([\s\S]+?)__/g, '<u class="underline underline-offset-2 decoration-2 decoration-current">$1</u>')
                             .replace(/\*([\s\S]+?)\*/g, '<em class="italic">$1</em>')
                             .replace(/&lt;u&gt;([\s\S]+?)&lt;\/u&gt;/g, '<u class="underline underline-offset-2 decoration-2 decoration-current">$1</u>');
+
+                        const html = htmlWithImages.replace(
+                            /((?:\s*<img [^>]*\/>\s*){2,})/g,
+                            (match) => {
+                                const images = match.match(/<img [^>]*\/>/g) || [];
+                                if (images.length < 2) return match;
+                                return `<div class="my-3 grid grid-cols-1 sm:grid-cols-2 gap-3">${images.join('')}</div>`;
+                            }
+                        );
 
                         return (
                             <span

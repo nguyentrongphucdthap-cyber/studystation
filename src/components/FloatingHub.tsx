@@ -61,11 +61,10 @@ import {
     sendMagoMessage,
     saveMagoResponse,
     subscribeToMagoMessages,
-    getMagoUsageCountToday,
     getMagoTeachingSystemPrompt,
     relayMagoMessageToOwnersIfRequestedWithSource,
-    MAGO_DAILY_LIMIT,
 } from '../services/chat.service';
+import { subscribeToMagocoins, redeemGiftcodeTransaction } from '../services/magocoin.service';
 import { generateAIContent, type AIChatMessage } from '@/services/ai.service';
 import type { ChatMessage, Friend, GroupChat } from '@/types';
 import './FloatingHub.css';
@@ -73,7 +72,7 @@ import { APP_VERSION } from '@/version';
 import { CHANGELOG } from '@/data/changelog';
 import { getEtestExam } from '@/services/etest.service';
 import { getExamContent } from '@/services/exam.service';
-import { hasUnlimitedMagoAccess } from '@/services/auth.service';
+
 import MathText from './MathText';
 import MagoText from './MagoText';
 
@@ -593,9 +592,7 @@ function ChatTab({
     activeChat: string | null;
     setActiveChat: (val: string | null) => void;
 }) {
-    const { role } = useAuth();
     const { magoCommand, triggerMago } = useUI();
-    const hasUnlimitedMago = hasUnlimitedMagoAccess(role || '');
     const [friends, setFriends] = useState<Friend[]>([]);
     // activeChat lifted to parent
     const [messages, setMessages] = useState<ChatMessage[]>([]);
@@ -614,7 +611,7 @@ function ChatTab({
     const [showGroupSettings, setShowGroupSettings] = useState(false);
     const [isRenamingGroup, setIsRenamingGroup] = useState(false);
     const [showInviteMembers, setShowInviteMembers] = useState(false);
-    const [magoUsageCount, setMagoUsageCount] = useState(0);
+    const [magocoinBalance, setMagocoinBalance] = useState(0);
     const [newGroupName, setNewGroupName] = useState('');
     const [pinnedChats, setPinnedChats] = useState<string[]>(() => {
         try { return JSON.parse(localStorage.getItem(CHAT_PINNED_KEY) || '[]'); } catch { return []; }
@@ -651,15 +648,29 @@ function ChatTab({
         localStorage.setItem(CHAT_READ_KEY, JSON.stringify(ts));
     }, [getReadTimestamps]);
 
+    useEffect(() => {
+        if (!user?.email) return;
+        const unsub = subscribeToMagocoins(user.email, (balance) => {
+            setMagocoinBalance(balance);
+        });
+        return () => { setTimeout(() => unsub(), 0); };
+    }, [user?.email]);
+
     // Subscriptions
     useEffect(() => {
         const unsub = subscribeFriends(setFriends);
-        return () => unsub();
+        return () => { setTimeout(() => unsub(), 0); };
     }, []);
 
+    // Presence subscription
     useEffect(() => {
         const acceptedEmails = friends.filter(f => f.status === 'accepted').map(f => f.email);
         const unsubPresence = subscribeFriendPresence(acceptedEmails, setOnlineMap);
+        return () => { setTimeout(() => unsubPresence(), 0); };
+    }, [friends.map(f => f.status + f.email).join(','), user.email]);
+
+    // Convos & Groups
+    useEffect(() => {
         const unsubConvos = subscribeToAllConvos((updates) => {
             setLastMessages(prev => ({ ...prev, ...updates }));
         });
@@ -669,11 +680,12 @@ function ChatTab({
         });
 
         return () => {
-            unsubPresence();
-            unsubConvos();
-            unsubGroups();
+            setTimeout(() => {
+                unsubConvos();
+                unsubGroups();
+            }, 0);
         };
-    }, [friends, user.email]);
+    }, [user.email]);
 
     // Set up listeners for group messages specifically, cleaning up correctly when groups change
     useEffect(() => {
@@ -691,7 +703,9 @@ function ChatTab({
         });
 
         return () => {
-            Object.values(unsubs).forEach(unsub => unsub());
+            setTimeout(() => {
+                Object.values(unsubs).forEach(unsub => unsub());
+            }, 0);
         };
     }, [groups.map(g => g.id).join(',')]); // Use a string map of IDs to avoid unnecessary re-subscriptions on simple group metadata updates
 
@@ -714,9 +728,6 @@ function ChatTab({
                 setMessages(msgs);
                 markAsRead('mago');
                 onUnreadChange?.(0);
-                
-                // Re-fetch usage count when messages change
-                getMagoUsageCountToday(user.email).then(setMagoUsageCount);
             });
         } else {
             const myKey = user.email.toLowerCase().replace(/@/g, '_at_').replace(/\./g, ',');
@@ -728,8 +739,9 @@ function ChatTab({
                 onUnreadChange?.(0);
             });
         }
-        return () => unsub();
-    }, [activeChat, user.email, onUnreadChange, markAsRead]);
+        return () => { setTimeout(() => unsub(), 0); };
+        // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, [activeChat, user.email]);
 
     useEffect(() => {
         const readTs = getReadTimestamps();
@@ -860,7 +872,7 @@ Yêu cầu phân tích (trình bày đẹp mắt theo phong cách Mago 🧙‍�
                 const savePromise = sendMagoMessage(displayMsg);
                 
                 // Update local count immediately for UI feedback
-                setMagoUsageCount(prev => prev + 1);
+                setMagocoinBalance(prev => Math.max(0, prev - 1));
 
                 // 2. Prepare history for AI (using current messages + the new one)
                 const ERROR_PATTERN = /Xin lỗi, tôi đang gặp chút sự cố kỹ thuật/;
@@ -904,7 +916,7 @@ Yêu cầu phân tích (trình bày đẹp mắt theo phong cách Mago 🧙‍�
                 console.error('[Chat] Mago AI error:', err);
                 
                 if (err.message === 'MAGO_LIMIT_REACHED') {
-                    await saveMagoResponse(`Dừng lại một chút nhé phù thủy nhỏ! 🧙‍♂️✨ Bạn đã hết lượt hỏi tôi cho hôm nay rồi (${MAGO_DAILY_LIMIT}/${MAGO_DAILY_LIMIT} câu).\nHãy dành câu hỏi tiếp theo cho ngày mai nha! Giờ thì đi ôn bài thôi nào! Giỏi lắm! 🏆`);
+                    await saveMagoResponse(`Dừng lại một chút nhé phù thủy nhỏ! 🧙‍♂️✨ Bạn đã hết Magocoin rồi.\nHãy làm bài tập hoặc học từ vựng qua flashcard để nhận thêm nhé! Giờ thì đi học thôi nào! 🏆`);
                 } else {
                     const errorMsg = err.message || 'Lỗi kết nối với Mago';
                     if (/user location is not supported/i.test(errorMsg)) {
@@ -1233,6 +1245,24 @@ Yêu cầu phân tích (trình bày đẹp mắt theo phong cách Mago 🧙‍�
                         <div style={{ display: 'flex', alignItems: 'center', gap: '5px' }}>
                             {activeChat === 'mago' && <span className="chat-ai-badge">AI</span>}
                             <span style={{ fontSize: '13px', fontWeight: 700 }}>{chatPartnerName}</span>
+                            {activeChat === 'mago' && (
+                                <button
+                                    onClick={() => {
+                                        const code = window.prompt('Nhập Giftcode nhận Magocoin tại đây:');
+                                        if (code) {
+                                            redeemGiftcodeTransaction(user.email, code).then(res => {
+                                                if (res.success) window.alert(`🎉 Nhập mã thành công!\nBạn đã nhận được ${res.amount} Magocoin.`);
+                                                else window.alert(`❌ ${res.error}`);
+                                            });
+                                        }
+                                    }}
+                                    className="mago-redeem-btn-premium"
+                                    title="Nhập Giftcode nhận quà"
+                                >
+                                    <img src="https://i.ibb.co/XkN95yrC/Gemini-Generated-Image-vpnvrgvpnvrgvpnv-removebg-preview.png" alt="" />
+                                    <span>Nhập mã</span>
+                                </button>
+                            )}
                         </div>
                         <p className="chat-header-status">{isGroup ? `${group?.members.length || 0} thành viên` : activeChat === 'mago' ? 'Luôn sẵn sàng ✨' : isPartnerOnline ? '🟢 Đang hoạt động' : '⚫ Không hoạt động'}</p>
                     </div>
@@ -1382,16 +1412,14 @@ Yêu cầu phân tích (trình bày đẹp mắt theo phong cách Mago 🧙‍�
                 <input 
                     type="text" 
                     placeholder={activeChat === 'mago' 
-                        ? (hasUnlimitedMago 
-                            ? 'Hỏi Mago... (Vô hạn lượt ✨)'
-                            : (MAGO_DAILY_LIMIT - magoUsageCount > 0 
-                                ? `Hỏi Mago... (Còn ${MAGO_DAILY_LIMIT - magoUsageCount} lượt)` 
-                                : 'Ngày mai quay lại nhé! 🧙‍♂️'))
+                        ? (magocoinBalance > 0 
+                            ? `Hỏi Mago... (Còn ${magocoinBalance} Magocoin)` 
+                            : 'Hết Magocoin rồi! 🧙‍♂️')
                         : 'Nhắn tin...'} 
                     value={input} 
                     onChange={e => setInput(e.target.value)} 
                     onKeyDown={e => e.key === 'Enter' && !e.shiftKey && handleSend()} 
-                    disabled={isMagoTyping || (activeChat === 'mago' && !hasUnlimitedMago && magoUsageCount >= MAGO_DAILY_LIMIT)} 
+                    disabled={isMagoTyping || (activeChat === 'mago' && magocoinBalance < 1)} 
                 />
                 <button onClick={handleSend} disabled={isMagoTyping || !input.trim()}><Send size={16} /></button>
             </div>

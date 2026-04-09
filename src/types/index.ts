@@ -82,6 +82,7 @@ export interface Exam {
     id: string;
     title: string;
     subjectId: string;
+    customFolder?: string;
     time: number; // minutes
     part1?: Part1Question[];
     part2?: Part2Question[];
@@ -100,6 +101,7 @@ export interface ExamMetadata {
     id: string;
     title: string;
     subjectId: string;
+    customFolder?: string;
     time: number;
     attemptCount?: number;
     createdAt?: string;

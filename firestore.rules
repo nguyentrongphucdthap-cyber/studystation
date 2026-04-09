@@ -11,11 +11,11 @@ service cloud.firestore {
     }
     
     function isInWhitelist() {
-      return isLoggedIn() && exists(/databases/$(database)/documents/allowed_users/$(request.auth.token.email));
+      return isLoggedIn() && exists(/databases/$(database)/documents/allowed_users/$(request.auth.token.email.lower()));
     }
     
     function getUserRole() {
-      return get(/databases/$(database)/documents/allowed_users/$(request.auth.token.email)).data.role;
+      return get(/databases/$(database)/documents/allowed_users/$(request.auth.token.email.lower())).data.role;
     }
     
     function isAdmin() {
@@ -139,6 +139,26 @@ service cloud.firestore {
     match /mago_training/{docId} {
       allow read: if isLoggedIn();
       allow write: if isBossOrSuperAdmin();
+    }
+
+    // ============================================
+    // MAGOCOIN & GIFTCODE SYSTEM
+    // ============================================
+
+    match /user_magocoins/{email} {
+      allow read: if isLoggedIn();
+      allow write: if isBossOrSuperAdmin() || (isLoggedIn() && request.auth.token.email.lower() == email.lower());
+    }
+
+    match /mago_giftcodes/{code} {
+      allow read: if isLoggedIn();
+      allow create, delete: if isBossOrSuperAdmin();
+      allow update: if isLoggedIn(); 
+    }
+
+    match /mago_giftcode_history/{historyId} {
+      allow read: if isBossOrSuperAdmin();
+      allow create: if isLoggedIn(); 
     }
 
     // ============================================

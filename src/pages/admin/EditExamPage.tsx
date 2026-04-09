@@ -29,6 +29,7 @@ export default function EditExamPage() {
     const [title, setTitle] = useState('');
     const [time, setTime] = useState(50);
     const [subjectId, setSubjectId] = useState('');
+    const [customFolder, setCustomFolder] = useState('');
     const [part1, setPart1] = useState<Part1Question[]>([]);
     const [part2, setPart2] = useState<Part2Question[]>([]);
     const [part3, setPart3] = useState<Part3Question[]>([]);
@@ -70,6 +71,7 @@ export default function EditExamPage() {
             setTitle(data.title);
             setTime(data.time);
             setSubjectId(data.subjectId);
+            setCustomFolder(data.customFolder || '');
             setPart1(data.part1 || []);
             setPart2(data.part2 || []);
             setPart3(data.part3 || []);
@@ -149,7 +151,7 @@ export default function EditExamPage() {
         setSaving(true);
         try {
             await updateExam(examId, { 
-                title, time, subjectId, part1, part2, part3, questionGroups,
+                title, time, subjectId, customFolder, part1, part2, part3, questionGroups,
                 isSpecial, allowedEmails 
             });
             toast({ title: 'Đã lưu thành công!', type: 'success' });
@@ -166,6 +168,7 @@ export default function EditExamPage() {
             title,
             time,
             subjectId,
+            customFolder,
             part1,
             part2,
             part3,
@@ -184,6 +187,7 @@ export default function EditExamPage() {
                 title: `${title} (Bản sao)`,
                 time,
                 subjectId,
+                customFolder,
                 part1,
                 part2,
                 part3,
@@ -337,6 +341,16 @@ export default function EditExamPage() {
                                     className="w-12 text-xs font-bold text-slate-500 bg-transparent outline-none border-none text-center"
                                 />
                                 <span className="text-xs text-slate-400">phút</span>
+                            </div>
+                            <span className="text-slate-300">|</span>
+                            <div className="flex items-center gap-2">
+                                <span className="text-xs text-slate-400">Thư mục</span>
+                                <input
+                                    value={customFolder}
+                                    onChange={e => setCustomFolder(e.target.value)}
+                                    className="min-w-[140px] text-xs font-semibold text-slate-500 bg-transparent outline-none border-b border-slate-200 focus:border-indigo-400 px-1"
+                                    placeholder="VD: Ôn thi HK2"
+                                />
                             </div>
                             <span className="text-xs text-slate-400 font-medium">ID: {examId}</span>
                         </div>

@@ -29,8 +29,8 @@ export default function AdminTeachers() {
     async function loadUsers() { 
         setLoading(true); 
         const allUsers = await getAllAllowedUsers();
-        // Filter only teachers for this view
-        setUsers(allUsers.filter(u => u.role.includes('teacher')));
+        // Filter only teachers for this view (handle cases where u or u.role might be undefined)
+        setUsers(allUsers.filter(u => u && u.role?.includes('teacher')));
         setLoading(false); 
     }
 

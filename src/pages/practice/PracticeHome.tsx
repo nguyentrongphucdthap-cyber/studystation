@@ -1,4 +1,4 @@
-import { useEffect, useState, useMemo } from 'react';
+﻿import { useEffect, useState, useMemo } from 'react';
 import { useNavigate, useSearchParams } from 'react-router-dom';
 import { cn } from '@/lib/utils';
 import { getAllExams, getSubjects, getHighestScores } from '@/services/exam.service';
@@ -9,7 +9,7 @@ import { useAuth } from '@/contexts/AuthContext';
 import {
     Calculator, FlaskConical, Dna, Clock,
     Monitor, Atom, Book,
-    ArrowLeft, Search, Globe, Scale, Users
+    ArrowLeft, Search, Globe, Scale, Users, Folder, ChevronRight, ChevronDown
 } from 'lucide-react';
 
 export default function PracticeHome() {
@@ -21,6 +21,7 @@ export default function PracticeHome() {
     const [loading, setLoading] = useState(true);
     const [searchQuery, setSearchQuery] = useState('');
     const [error, setError] = useState<string | null>(null);
+    const [expandedFolders, setExpandedFolders] = useState<string[]>([]);
 
     const subjects = getSubjects();
     const activeSubject = searchParams.get('subject') || '';
@@ -65,7 +66,39 @@ export default function PracticeHome() {
             );
         }
         return filtered;
-    }, [exams, activeSubject, searchQuery]);
+    }, [exams, activeSubject, searchQuery, user?.email]);
+
+    const folderSections = useMemo(() => {
+        const normalized = filteredExams.map((exam) => ({
+            exam,
+            folder: (exam.customFolder || '').trim()
+        }));
+        const folderMap = new Map<string, ExamMetadata[]>();
+        const uncategorized: ExamMetadata[] = [];
+
+        normalized.forEach(({ exam, folder }) => {
+            if (!folder) {
+                uncategorized.push(exam);
+                return;
+            }
+            if (!folderMap.has(folder)) folderMap.set(folder, []);
+            folderMap.get(folder)!.push(exam);
+        });
+
+        const folders = Array.from(folderMap.entries())
+            .sort((a, b) => a[0].localeCompare(b[0], 'vi'))
+            .map(([name, exams]) => ({ name, exams }));
+
+        return { folders, uncategorized };
+    }, [filteredExams]);
+
+    useEffect(() => {
+        setExpandedFolders([]);
+    }, [activeSubject, searchQuery]);
+
+    useEffect(() => {
+        setExpandedFolders((prev) => prev.filter((name) => folderSections.folders.some((folder) => folder.name === name)));
+    }, [folderSections.folders]);
 
     // Icon mapping for subjects
     const getSubjectIcon = (id: string) => {
@@ -170,6 +203,125 @@ export default function PracticeHome() {
     // Subject selected: show exam list
     const currentSubject = subjects.find(s => s.id === activeSubject);
 
+    const getScoreStyle = (score: number | undefined) => {
+        if (score === undefined || isNaN(score)) return {
+            border: 'border-slate-200/50',
+            badge: 'bg-slate-50 text-slate-400 border-slate-200/60',
+            accent: 'bg-slate-400',
+            shadow: 'shadow-sm',
+            ring: 'group-hover:ring-slate-100',
+            glow: 'from-slate-50/50'
+        };
+        if (score >= 8.0) return {
+            border: 'border-emerald-200/40',
+            badge: 'bg-emerald-50 text-emerald-600 border-emerald-200/50 shadow-emerald-100/50',
+            accent: 'bg-emerald-500',
+            shadow: 'shadow-emerald-500/5',
+            ring: 'group-hover:ring-emerald-200/30',
+            glow: 'from-emerald-50/50'
+        };
+        if (score >= 6.5) return {
+            border: 'border-blue-200/40',
+            badge: 'bg-blue-50 text-blue-600 border-blue-200/50 shadow-blue-100/50',
+            accent: 'bg-blue-500',
+            shadow: 'shadow-blue-500/5',
+            ring: 'group-hover:ring-blue-200/30',
+            glow: 'from-blue-50/50'
+        };
+        if (score >= 4.0) return {
+            border: 'border-orange-200/40',
+            badge: 'bg-orange-50 text-orange-600 border-orange-200/50 shadow-orange-100/50',
+            accent: 'bg-orange-500',
+            shadow: 'shadow-orange-500/5',
+            ring: 'group-hover:ring-orange-200/30',
+            glow: 'from-orange-50/50'
+        };
+        return {
+            border: 'border-red-200/40',
+            badge: 'bg-red-50 text-red-600 border-red-200/50 shadow-red-100/50',
+            accent: 'bg-red-500',
+            shadow: 'shadow-red-500/5',
+            ring: 'group-hover:ring-red-200/30',
+            glow: 'from-red-50/50'
+        };
+    };
+
+    const renderExamCard = (exam: ExamMetadata) => {
+        const totalQ = (exam.questionCount?.part1 || 0) +
+            (exam.questionCount?.part2 || 0) +
+            (exam.questionCount?.part3 || 0);
+        const highScore = scores[exam.id]?.highestScore;
+        const style = getScoreStyle(highScore);
+
+        return (
+            <button
+                key={exam.id}
+                onClick={() => navigate(`/practice/${exam.id}`)}
+                className={cn(
+                    "group relative bg-white/80 dark:bg-slate-900/60 backdrop-blur-xl rounded-[28px] p-4 border transition-all duration-500 text-left flex flex-col active:scale-[0.97] overflow-hidden hover:shadow-2xl hover:-translate-y-1.5 hover:ring-4",
+                    style.border,
+                    style.ring,
+                    style.shadow
+                )}
+            >
+                <div className={cn(
+                    "absolute inset-0 bg-gradient-to-br to-white opacity-0 group-hover:opacity-100 transition-opacity duration-500",
+                    style.glow
+                )} />
+
+                <div className={cn(
+                    "absolute top-0 right-0 w-24 h-24 -mr-12 -mt-12 rounded-full opacity-[0.06] group-hover:opacity-[0.15] transition-all duration-700 blur-2xl",
+                    style.accent
+                )} />
+
+                <div className="relative space-y-3">
+                    <div className="flex justify-between items-start gap-3">
+                        <h3 className="text-[14px] font-extrabold text-gray-800 dark:text-white line-clamp-2 leading-tight pr-2 group-hover:text-gray-950 dark:group-hover:text-white transition-colors tracking-tight">
+                            {exam.title}
+                            {exam.isSpecial && (
+                                <span className="ml-2 inline-block px-1.5 py-0.5 rounded-md bg-indigo-100 text-indigo-700 text-[9px] font-black uppercase tracking-tighter align-middle">Đặc biệt</span>
+                            )}
+                        </h3>
+                        {highScore !== undefined && !isNaN(highScore) && (
+                            <div className={cn(
+                                "shrink-0 w-12 h-12 rounded-[18px] flex flex-col items-center justify-center border-2 shadow-sm transition-all group-hover:scale-110 group-hover:rotate-3 duration-500",
+                                style.badge
+                            )}>
+                                <span className="text-[16px] font-black leading-none tracking-tighter">
+                                    {highScore.toFixed(highScore === 10 ? 0 : 1)}
+                                </span>
+                                <span className="text-[7px] font-black opacity-40 uppercase tracking-widest mt-0.5">Score</span>
+                            </div>
+                        )}
+                    </div>
+
+                    <div className="flex flex-wrap items-center gap-2">
+                        <div className="flex items-center gap-1 px-1.5 py-0.5 bg-gray-50/50 dark:bg-slate-800/50 rounded-lg text-[9px] text-gray-500 dark:text-gray-400 font-bold tracking-tight border border-gray-100/50 dark:border-slate-700/50 shadow-sm group-hover:bg-white dark:group-hover:bg-slate-800 transition-colors">
+                            <Clock className="h-3 w-3 opacity-50 text-blue-500" />
+                            {exam.time}'
+                        </div>
+                        <div className="flex items-center gap-1 px-1.5 py-0.5 bg-gray-50/50 dark:bg-slate-800/50 rounded-lg text-[9px] text-gray-500 dark:text-gray-400 font-bold tracking-tight border border-gray-100/50 dark:border-slate-700/50 shadow-sm group-hover:bg-white dark:group-hover:bg-slate-800 transition-colors">
+                            <Book className="h-3 w-3 opacity-50 text-emerald-500" />
+                            {totalQ} Q
+                        </div>
+                        <div className="flex items-center gap-1 px-1.5 py-0.5 bg-gray-50/50 dark:bg-slate-800/50 rounded-lg text-[9px] text-gray-400 dark:text-gray-500 font-bold tracking-tight border border-gray-100/50 dark:border-slate-700/50 shadow-sm group-hover:bg-white dark:group-hover:bg-slate-800 transition-colors">
+                            <Users className="h-3 w-3 opacity-40" />
+                            {exam.attemptCount || 0}
+                        </div>
+                    </div>
+                </div>
+            </button>
+        );
+    };
+
+    const toggleFolder = (name: string) => {
+        setExpandedFolders((prev) =>
+            prev.includes(name)
+                ? prev.filter((folderName) => folderName !== name)
+                : [...prev, name]
+        );
+    };
+
     return (
         <div className="space-y-6">
             {/* Header for exam list */}
@@ -195,7 +347,7 @@ export default function PracticeHome() {
 
                 {/* Compact Search */}
                 <div className="relative flex-1 max-w-sm">
-                    <Search className="absolute left-4 top-1/2 -track-y-1/2 h-5 w-5 text-gray-400" />
+                    <Search className="absolute left-4 top-1/2 -translate-y-1/2 h-5 w-5 text-gray-400" />
                     <input
                         type="text"
                         value={searchQuery}
@@ -215,121 +367,56 @@ export default function PracticeHome() {
                     <p className="text-gray-400 font-medium">Không tìm thấy đề thi nào khớp với từ khóa.</p>
                 </div>
             ) : (
-                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4 md:gap-5">
-                    {filteredExams.map((exam) => {
-                        const totalQ = (exam.questionCount?.part1 || 0) +
-                            (exam.questionCount?.part2 || 0) +
-                            (exam.questionCount?.part3 || 0);
-                        const highScore = scores[exam.id]?.highestScore;
-
-                        // Helper for score-based styling
-                        const getScoreStyle = (score: number | undefined) => {
-                            if (score === undefined || isNaN(score)) return {
-                                border: 'border-slate-200/50',
-                                badge: 'bg-slate-50 text-slate-400 border-slate-200/60',
-                                accent: 'bg-slate-400',
-                                shadow: 'shadow-sm',
-                                ring: 'group-hover:ring-slate-100',
-                                glow: 'from-slate-50/50'
-                            };
-                            if (score >= 8.0) return {
-                                border: 'border-emerald-200/40',
-                                badge: 'bg-emerald-50 text-emerald-600 border-emerald-200/50 shadow-emerald-100/50',
-                                accent: 'bg-emerald-500',
-                                shadow: 'shadow-emerald-500/5',
-                                ring: 'group-hover:ring-emerald-200/30',
-                                glow: 'from-emerald-50/50'
-                            };
-                            if (score >= 6.5) return {
-                                border: 'border-blue-200/40',
-                                badge: 'bg-blue-50 text-blue-600 border-blue-200/50 shadow-blue-100/50',
-                                accent: 'bg-blue-500',
-                                shadow: 'shadow-blue-500/5',
-                                ring: 'group-hover:ring-blue-200/30',
-                                glow: 'from-blue-50/50'
-                            };
-                            if (score >= 4.0) return {
-                                border: 'border-orange-200/40',
-                                badge: 'bg-orange-50 text-orange-600 border-orange-200/50 shadow-orange-100/50',
-                                accent: 'bg-orange-500',
-                                shadow: 'shadow-orange-500/5',
-                                ring: 'group-hover:ring-orange-200/30',
-                                glow: 'from-orange-50/50'
-                            };
-                            return {
-                                border: 'border-red-200/40',
-                                badge: 'bg-red-50 text-red-600 border-red-200/50 shadow-red-100/50',
-                                accent: 'bg-red-500',
-                                shadow: 'shadow-red-500/5',
-                                ring: 'group-hover:ring-red-200/30',
-                                glow: 'from-red-50/50'
-                            };
-                        };
-
-                        const style = getScoreStyle(highScore);
-
-                        return (
-                            <button
-                                key={exam.id}
-                                onClick={() => navigate(`/practice/${exam.id}`)}
-                                className={cn(
-                                    "group relative bg-white/80 dark:bg-slate-900/60 backdrop-blur-xl rounded-[28px] p-4 border transition-all duration-500 text-left flex flex-col active:scale-[0.97] overflow-hidden hover:shadow-2xl hover:-translate-y-1.5 hover:ring-4",
-                                    style.border,
-                                    style.ring,
-                                    style.shadow
-                                )}
-                            >
-                                {/* Decorative Gradient Overlay */}
-                                <div className={cn(
-                                    "absolute inset-0 bg-gradient-to-br to-white opacity-0 group-hover:opacity-100 transition-opacity duration-500",
-                                    style.glow
-                                )} />
-
-                                {/* Fixed Background Accent Glow */}
-                                <div className={cn(
-                                    "absolute top-0 right-0 w-24 h-24 -mr-12 -mt-12 rounded-full opacity-[0.06] group-hover:opacity-[0.15] transition-all duration-700 blur-2xl",
-                                    style.accent
-                                )} />
-
-                                <div className="relative space-y-3">
-                                    <div className="flex justify-between items-start gap-3">
-                                        <h3 className="text-[14px] font-extrabold text-gray-800 dark:text-white line-clamp-2 leading-tight pr-2 group-hover:text-gray-950 dark:group-hover:text-white transition-colors tracking-tight">
-                                            {exam.title}
-                                            {exam.isSpecial && (
-                                                <span className="ml-2 inline-block px-1.5 py-0.5 rounded-md bg-indigo-100 text-indigo-700 text-[9px] font-black uppercase tracking-tighter align-middle">Đặc biệt</span>
-                                            )}
-                                        </h3>
-                                        {highScore !== undefined && !isNaN(highScore) && (
-                                            <div className={cn(
-                                                "shrink-0 w-12 h-12 rounded-[18px] flex flex-col items-center justify-center border-2 shadow-sm transition-all group-hover:scale-110 group-hover:rotate-3 duration-500",
-                                                style.badge
-                                            )}>
-                                                <span className="text-[16px] font-black leading-none tracking-tighter">
-                                                    {highScore.toFixed(highScore === 10 ? 0 : 1)}
-                                                </span>
-                                                <span className="text-[7px] font-black opacity-40 uppercase tracking-widest mt-0.5">Score</span>
+                <div className="space-y-8">
+                    <section className="space-y-4">
+                        {folderSections.folders.map((folder) => {
+                            const isExpanded = expandedFolders.includes(folder.name);
+                            return (
+                                <div key={folder.name} className="space-y-3">
+                                    <button
+                                        onClick={() => toggleFolder(folder.name)}
+                                        className="w-full group relative bg-white/80 dark:bg-slate-900/60 backdrop-blur-xl rounded-2xl p-4 border border-amber-200/60 dark:border-amber-800/40 transition-all duration-300 text-left hover:shadow-xl active:scale-[0.99]"
+                                    >
+                                        <div className="flex items-center justify-between gap-3">
+                                            <div className="flex items-center gap-3 min-w-0">
+                                                <div className="w-10 h-10 rounded-xl bg-amber-100 dark:bg-amber-900/40 flex items-center justify-center shrink-0">
+                                                    <Folder className="h-5 w-5 text-amber-500" />
+                                                </div>
+                                                <div className="min-w-0">
+                                                    <p className="text-sm font-black text-slate-800 dark:text-white truncate">{folder.name}</p>
+                                                    <p className="text-[11px] text-slate-500 dark:text-slate-400 mt-0.5">
+                                                        {folder.exams.length} đề thi
+                                                    </p>
+                                                </div>
                                             </div>
-                                        )}
-                                    </div>
+                                            {isExpanded ? (
+                                                <ChevronDown className="h-4 w-4 text-slate-400 shrink-0" />
+                                            ) : (
+                                                <ChevronRight className="h-4 w-4 text-slate-400 shrink-0" />
+                                            )}
+                                        </div>
+                                    </button>
 
-                                    <div className="flex flex-wrap items-center gap-2">
-                                        <div className="flex items-center gap-1 px-1.5 py-0.5 bg-gray-50/50 dark:bg-slate-800/50 rounded-lg text-[9px] text-gray-500 dark:text-gray-400 font-bold tracking-tight border border-gray-100/50 dark:border-slate-700/50 shadow-sm group-hover:bg-white dark:group-hover:bg-slate-800 transition-colors">
-                                            <Clock className="h-3 w-3 opacity-50 text-blue-500" />
-                                            {exam.time}'
+                                    {isExpanded && (
+                                        <div className="pl-1 grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4 md:gap-5">
+                                            {folder.exams.map(renderExamCard)}
                                         </div>
-                                        <div className="flex items-center gap-1 px-1.5 py-0.5 bg-gray-50/50 dark:bg-slate-800/50 rounded-lg text-[9px] text-gray-500 dark:text-gray-400 font-bold tracking-tight border border-gray-100/50 dark:border-slate-700/50 shadow-sm group-hover:bg-white dark:group-hover:bg-slate-800 transition-colors">
-                                            <Book className="h-3 w-3 opacity-50 text-emerald-500" />
-                                            {totalQ} Q
-                                        </div>
-                                        <div className="flex items-center gap-1 px-1.5 py-0.5 bg-gray-50/50 dark:bg-slate-800/50 rounded-lg text-[9px] text-gray-400 dark:text-gray-500 font-bold tracking-tight border border-gray-100/50 dark:border-slate-700/50 shadow-sm group-hover:bg-white dark:group-hover:bg-slate-800 transition-colors">
-                                            <Users className="h-3 w-3 opacity-40" />
-                                            {exam.attemptCount || 0}
-                                        </div>
-                                    </div>
+                                    )}
                                 </div>
-                            </button>
-                        );
-                    })}
+                            );
+                        })}
+
+                        {folderSections.uncategorized.length > 0 && (
+                            <div className="space-y-3 pt-2">
+                                <h3 className="text-sm font-black tracking-wider uppercase text-slate-500 dark:text-slate-300">
+                                    Đề thi ngoài thư mục
+                                </h3>
+                                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4 md:gap-5">
+                                    {folderSections.uncategorized.map(renderExamCard)}
+                                </div>
+                            </div>
+                        )}
+                    </section>
                 </div>
             )}
         </div>

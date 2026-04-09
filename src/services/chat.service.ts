@@ -14,6 +14,7 @@ import { runTransaction } from 'firebase/firestore';
 import { auth, rtdb, db } from '@/config/firebase';
 import type { ChatMessage, Friend, GroupChat } from '@/types';
 import { getUserRole, hasUnlimitedMagoAccess } from './auth.service';
+import { getUserMagocoins, updateMagocoins } from './magocoin.service';
 
 // ============================================================
 // HELPERS
@@ -523,7 +524,7 @@ export function subscribeToGroupChats(callback: (groups: GroupChat[]) => void) {
 // MAGO AI CHAT — stored in Firestore at chats/{email}/convos/mago
 // ============================================================
 
-export const MAGO_DAILY_LIMIT = 20;
+// MAGO_DAILY_LIMIT replaced by Magocoin system
 const MAGO_TRAINING_COLLECTION = 'mago_training';
 const MAGO_TRAINING_CACHE_TTL_MS = 60_000;
 const MAGO_PRIVATE_OWNER_EMAILS = [
@@ -550,6 +551,15 @@ type MagoTrainingEntry = {
     roleSnapshot?: string;
     visibility?: 'public' | 'owner_only';
     visibleTo?: string[];
+};
+
+export type MagoTrainingKnowledgeItem = {
+    id: string;
+    content: string;
+    createdAt: number;
+    createdBy: string;
+    visibility: 'public' | 'owner_only';
+    roleSnapshot?: string;
 };
 
 function isBossRole(role: string): boolean {
@@ -751,42 +761,21 @@ export async function relayMagoMessageToOwnersIfRequestedWithSource(
     return { relayed: deliveredTo.length > 0, deliveredTo, failedTo };
 }
 
-/** Count how many messages the user has sent to Mago today */
-export async function getMagoUsageCountToday(email: string): Promise<number> {
-    try {
-        const docRef = getConvoDocRef(email, 'mago');
-        const snap = await getDoc(docRef);
-        if (!snap.exists()) return 0;
-
-        const msgs = decodeLog(snap.data()?.log || '');
-        const now = new Date();
-        const startOfDay = new Date(now.getFullYear(), now.getMonth(), now.getDate()).getTime();
-
-        return msgs.filter(m => 
-            (m.role === 'user' || !m.role) && 
-            m.senderEmail.toLowerCase() === email.toLowerCase() && 
-            m.timestamp >= startOfDay
-        ).length;
-    } catch (err) {
-        console.error('[Chat] Failed to get Mago usage count:', err);
-        return 0;
-    }
-}
+/**
+ * Removed getMagoUsageCountToday and replaced with Magocoin system.
+ */
 
 export async function sendMagoMessage(text: string): Promise<void> {
     const currentEmail = getCurrentEmail();
     if (!currentEmail || !text.trim()) return;
 
-    // Check usage limit (boss/super admin has no limit)
-    const role = getUserRole();
-    const hasUnlimitedAccess = hasUnlimitedMagoAccess(role);
-    
-    if (!hasUnlimitedAccess) {
-        const count = await getMagoUsageCountToday(currentEmail);
-        if (count >= MAGO_DAILY_LIMIT) {
-            throw new Error('MAGO_LIMIT_REACHED');
-        }
+    // Check usage limit (everyone must use Magocoins)
+    const balance = await getUserMagocoins(currentEmail);
+    if (balance < 1) {
+        throw new Error('MAGO_LIMIT_REACHED');
     }
+    // Deduct 1 Magocoin
+    await updateMagocoins(currentEmail, -1);
 
     const line = encodeMsg(Date.now(), currentEmail, text.trim(), 'user') + MSG_LINE_BREAK;
     const docRef = getConvoDocRef(currentEmail, 'mago');
@@ -861,6 +850,92 @@ export async function addMagoTeachingKnowledge(content: string): Promise<void> {
     });
 
     // Invalidate prompt cache so newest teaching appears immediately.
+    magoTrainingPromptCache.expiresAt = 0;
+    magoTrainingPromptCache.value = {};
+}
+
+export async function getMagoTeachingKnowledgeList(): Promise<MagoTrainingKnowledgeItem[]> {
+    const currentEmail = getCurrentEmail();
+    if (!currentEmail) return [];
+
+    const role = getUserRole();
+    if (!hasUnlimitedMagoAccess(role)) {
+        throw new Error('MAGO_TEACH_FORBIDDEN');
+    }
+
+    const q = query(
+        collection(db, MAGO_TRAINING_COLLECTION),
+        orderBy('createdAt', 'desc'),
+        firestoreLimit(120)
+    );
+    const snap = await getDocs(q);
+
+    return snap.docs
+        .map((docSnap) => {
+            const data = docSnap.data() as MagoTrainingEntry;
+            return {
+                id: docSnap.id,
+                content: String(data.content || ''),
+                createdAt: Number(data.createdAt || 0),
+                createdBy: String(data.createdBy || 'unknown'),
+                visibility: (data.visibility || 'public') as 'public' | 'owner_only',
+                roleSnapshot: data.roleSnapshot,
+            } as MagoTrainingKnowledgeItem;
+        })
+        .filter((item) => item.content.trim());
+}
+
+export async function updateMagoTeachingKnowledge(id: string, content: string): Promise<void> {
+    const currentEmail = getCurrentEmail();
+    if (!currentEmail) return;
+
+    const role = getUserRole();
+    if (!hasUnlimitedMagoAccess(role)) {
+        throw new Error('MAGO_TEACH_FORBIDDEN');
+    }
+
+    const cleaned = String(content || '').trim();
+    if (!cleaned) {
+        throw new Error('MAGO_TEACH_EMPTY');
+    }
+
+    const refDoc = doc(db, MAGO_TRAINING_COLLECTION, id);
+    const snap = await getDoc(refDoc);
+    if (!snap.exists()) {
+        throw new Error('MAGO_TEACH_NOT_FOUND');
+    }
+
+    const existing = snap.data() as MagoTrainingEntry;
+    const trimmed = cleaned.slice(0, 8000);
+    const isPrivate = shouldKeepPrivateKnowledge({
+        content: trimmed,
+        createdBy: String(existing.createdBy || currentEmail),
+        roleSnapshot: String(existing.roleSnapshot || role),
+    });
+
+    await updateDoc(refDoc, {
+        content: trimmed,
+        visibility: isPrivate ? 'owner_only' : 'public',
+        visibleTo: isPrivate ? MAGO_PRIVATE_OWNER_EMAILS : [],
+        updatedAt: Date.now(),
+        updatedBy: currentEmail,
+    });
+
+    magoTrainingPromptCache.expiresAt = 0;
+    magoTrainingPromptCache.value = {};
+}
+
+export async function deleteMagoTeachingKnowledge(id: string): Promise<void> {
+    const currentEmail = getCurrentEmail();
+    if (!currentEmail) return;
+
+    const role = getUserRole();
+    if (!hasUnlimitedMagoAccess(role)) {
+        throw new Error('MAGO_TEACH_FORBIDDEN');
+    }
+
+    await deleteDoc(doc(db, MAGO_TRAINING_COLLECTION, id));
+
     magoTrainingPromptCache.expiresAt = 0;
     magoTrainingPromptCache.value = {};
 }
