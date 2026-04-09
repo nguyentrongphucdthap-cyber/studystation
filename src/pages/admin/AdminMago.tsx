@@ -153,6 +153,112 @@ function TabCreate({ userEmail }: { userEmail: string }) {
         setCode(`MAGO-${randomString}`);
     };
 
+    return (
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+            {/* Cấp coin cho bản thân */}
+            <div className="admin-card p-6 border-l-4 border-indigo-500">
+                <div className="flex items-start gap-4 mb-4">
+                    <div className="p-3 bg-indigo-100 dark:bg-indigo-900/50 rounded-xl text-indigo-600">
+                        <Activity className="h-6 w-6" />
+                    </div>
+                    <div>
+                        <h3 className="font-bold text-slate-800 dark:text-slate-100 text-lg">Tự cấp Magocoin</h3>
+                        <p className="text-sm text-slate-500">Bơm trực tiếp coin vào tài khoản cá nhân của bạn để sử dụng AI vô hạn.</p>
+                    </div>
+                </div>
+
+                <div className="space-y-4">
+                    <div>
+                        <label className="text-xs font-bold text-slate-500 uppercase">Số Lượng Coin</label>
+                        <input 
+                            type="number" 
+                            min="1"
+                            value={claimAmount}
+                            onChange={(e) => setClaimAmount(Number(e.target.value))}
+                            className="w-full mt-1 px-4 py-2 bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-lg text-lg font-bold outline-none focus:ring-2 focus:ring-indigo-500"
+                        />
+                    </div>
+                    <button 
+                        disabled={claiming}
+                        onClick={handleSelfClaim}
+                        className="w-full py-3 bg-indigo-600 hover:bg-indigo-700 text-white font-bold rounded-xl flex items-center justify-center gap-2 transition-all active:scale-95 disabled:opacity-50"
+                    >
+                        {claiming ? <Spinner size="sm" /> : <Coins className="h-5 w-5" />}
+                        Bơm Tiền Tức Thì
+                    </button>
+                </div>
+            </div>
+
+            {/* Tạo Giftcode */}
+            <div className="admin-card p-6 border-l-4 border-rose-500">
+                <div className="flex items-start gap-4 mb-4">
+                    <div className="p-3 bg-rose-100 dark:bg-rose-900/50 rounded-xl text-rose-600">
+                        <Gift className="h-6 w-6" />
+                    </div>
+                    <div>
+                        <h3 className="font-bold text-slate-800 dark:text-slate-100 text-lg">Tạo Mã Giftcode Mới</h3>
+                        <p className="text-sm text-slate-500">Phát giftcode Magocoin cho học sinh. (1 người / 1 mã).</p>
+                    </div>
+                </div>
+
+                <form onSubmit={handleCreateCode} className="space-y-4">
+                    <div>
+                        <label className="text-xs font-bold text-slate-500 uppercase flex justify-between">
+                            <span>Mã CODE</span>
+                            <button type="button" onClick={genRandomCode} className="text-indigo-500 hover:underline">RanDom</button>
+                        </label>
+                        <input 
+                            type="text" 
+                            required
+                            placeholder="Vd: THITHU-15VANG"
+                            value={code}
+                            onChange={(e) => setCode(e.target.value.toUpperCase().replace(/\s/g, ''))}
+                            className="w-full mt-1 px-4 py-2 bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-lg font-mono font-bold text-lg outline-none focus:ring-2 focus:ring-rose-500 uppercase"
+                        />
+                    </div>
+
+                    <div className="grid grid-cols-2 gap-4">
+                        <div>
+                            <label className="text-xs font-bold text-slate-500 uppercase">Tiền Thưởng 🪙</label>
+                            <input 
+                                type="number" 
+                                required min="0.1" step="0.1"
+                                value={amount}
+                                onChange={(e) => setAmount(Number(e.target.value))}
+                                className="w-full mt-1 px-4 py-2 bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-lg outline-none focus:ring-2 focus:ring-rose-500"
+                            />
+                        </div>
+                        <div>
+                            <label className="text-xs font-bold text-slate-500 uppercase">Lượt nhập tối đa</label>
+                            <input 
+                                type="number" 
+                                required min="1"
+                                value={maxUses}
+                                onChange={(e) => setMaxUses(Number(e.target.value))}
+                                className="w-full mt-1 px-4 py-2 bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-lg outline-none focus:ring-2 focus:ring-rose-500"
+                            />
+                        </div>
+                    </div>
+
+                    <div>
+                        <label className="text-xs font-bold text-slate-500 uppercase">Hạn dùng (Tuỳ chọn)</label>
+                        <input 
+                            type="datetime-local" 
+                            value={expiresTime}
+                            onChange={(e) => setExpiresTime(e.target.value)}
+                            className="w-full mt-1 px-4 py-2 bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-lg text-sm outline-none focus:ring-2 focus:ring-rose-500"
+                        />
+                    </div>
+
+                    <button 
+                        type="submit"
+                        disabled={creating}
+                        className="w-full py-3 mt-2 bg-rose-600 hover:bg-rose-700 text-white font-bold rounded-xl flex items-center justify-center gap-2 transition-all active:scale-95 disabled:opacity-50"
+                    >
+                        {creating ? <Spinner size="sm" /> : <Plus className="h-5 w-5" />}
+                        Khởi Tạo Code Mới
+                    </button>
+                </form>
             </div>
 
             {/* Danh sách Giftcode ( Boss cũng xem được ở đây ) */}
@@ -283,7 +389,6 @@ function GiftcodeList() {
         </div>
     );
 }
-}
 
 function TabLeaderboard() {
     const [data, setData] = useState<MagocoinData[]>([]);
@@ -314,7 +419,7 @@ function TabLeaderboard() {
             <div className="px-6 py-4 border-b border-slate-100 dark:border-slate-800 flex justify-between items-center bg-slate-50/50 dark:bg-slate-900/50">
                 <h3 className="font-bold flex items-center gap-2"><Trophy className="h-5 w-5 text-amber-500"/> Bảng xếp hạng phú hộ Server (Top 100)</h3>
                 <button onClick={loadLeaderboard} className="p-2 hover:bg-slate-200 dark:hover:bg-slate-700 rounded-full transition-colors">
-                    <Plus className="h-4 w-4 rotate-45 transform" title="Tải lại" />
+                    <Plus className="h-4 w-4 rotate-45 transform" />
                 </button>
             </div>
             <div className="overflow-x-auto">
@@ -351,18 +456,13 @@ function TabLeaderboard() {
 }
 
 function TabHistory() {
-    const [codes, setCodes] = useState<GiftcodeData[]>([]);
     const [history, setHistory] = useState<GiftcodeHistoryData[]>([]);
     const [loading, setLoading] = useState(true);
 
     const loadData = async () => {
         setLoading(true);
         try {
-            const [c, h] = await Promise.all([
-                getAllGiftcodes(),
-                getGiftcodeHistory(150)
-            ]);
-            setCodes(c);
+            const h = await getGiftcodeHistory(150);
             setHistory(h);
         } catch (err: any) {
             console.error('[AdminMago] Error loading history:', err);
@@ -375,12 +475,6 @@ function TabHistory() {
     useEffect(() => {
         loadData();
     }, []);
-
-    const handleDelete = async (code: string) => {
-        if (!confirm(`Xác nhận xoá vĩnh viễn mã ${code}? Người dùng sẽ không thể sử dụng mã này nữa.`)) return;
-        await deleteGiftcode(code);
-        setCodes(prev => prev.filter(c => c.code !== code));
-    };
 
     if (loading) return <Spinner size="lg" className="mx-auto my-12" />;
 
