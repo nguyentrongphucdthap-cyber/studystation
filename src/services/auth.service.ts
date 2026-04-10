@@ -764,6 +764,10 @@ export async function approveAccessRequest(requestId: string, reviewerEmail: str
 
     // 1. Add to allowed_users
     await addAllowedUser(data.email, 'user');
+    await setDoc(doc(db, 'allowed_users', data.email), {
+        grantedViaAccessRequest: true,
+        accessRequestId: requestId,
+    }, { merge: true });
     
     // 2. Update request status
     await setDoc(reqRef, {
@@ -780,6 +784,40 @@ export async function rejectAccessRequest(requestId: string, reviewerEmail: stri
         reviewedBy: reviewerEmail,
         reviewedAt: new Date().toISOString(),
         reviewNote: note || '',
+    }, { merge: true });
+}
+
+export async function undoAccessRequestDecision(requestId: string): Promise<void> {
+    const reqRef = doc(db, 'access_requests', requestId);
+    const reqSnap = await getDoc(reqRef);
+    if (!reqSnap.exists()) return;
+
+    const reqData = reqSnap.data();
+    const wasApproved = reqData.status === 'approved';
+    const targetEmail = reqData.email as string | undefined;
+
+    if (wasApproved && targetEmail) {
+        const allowedRef = doc(db, 'allowed_users', targetEmail);
+        const allowedSnap = await getDoc(allowedRef);
+
+        if (allowedSnap.exists()) {
+            const allowedData = allowedSnap.data();
+            const shouldRemoveFromWhitelist =
+                allowedData.accessRequestId === requestId ||
+                allowedData.grantedViaAccessRequest === true ||
+                (allowedData.role === 'user' && allowedData.addedBy === reqData.reviewedBy);
+
+            if (shouldRemoveFromWhitelist) {
+                await deleteDoc(allowedRef);
+            }
+        }
+    }
+
+    await setDoc(reqRef, {
+        status: 'pending',
+        reviewedBy: deleteField(),
+        reviewedAt: deleteField(),
+        reviewNote: deleteField(),
     }, { merge: true });
 }
 

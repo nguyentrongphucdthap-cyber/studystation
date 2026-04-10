@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { useAuth } from '@/contexts/AuthContext';
-import { getAllAccessRequests, approveAccessRequest, rejectAccessRequest, updateAccessRequestReview } from '@/services/auth.service';
+import { getAllAccessRequests, approveAccessRequest, rejectAccessRequest, undoAccessRequestDecision } from '@/services/auth.service';
 import { Button } from '@/components/ui/Button';
 import { useToast } from '@/components/ui/Toast';
 import { Spinner } from '@/components/ui/Spinner';
@@ -68,13 +68,8 @@ export default function AdminAccessRequests() {
         if (!isSuperAdmin && !isAdmin) return;
         setProcessingId(req.id);
         try {
-            // Revert back to pending
-            await updateAccessRequestReview(req.id, {
-                status: 'pending',
-                reviewedBy: undefined,
-                reviewedAt: undefined,
-                reviewNote: undefined
-            });
+            // Revert to untouched pending state and rollback granted access when applicable
+            await undoAccessRequestDecision(req.id);
             toast({ title: 'Đã hoàn tác yêu cầu về trạng thái chờ', type: 'success' });
             await loadRequests();
         } catch (err) {

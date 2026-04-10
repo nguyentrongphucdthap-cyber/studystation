@@ -16,6 +16,7 @@ import {
 import { db, auth } from '@/config/firebase';
 
 const MAGOCOIN_COLLECTION = 'user_magocoins';
+const DEFAULT_MAGOCOIN_BALANCE = 10;
 
 export interface MagocoinData {
     email: string;
@@ -63,7 +64,7 @@ export async function getUserMagocoins(email: string): Promise<number> {
         if (snap.exists()) {
             return Number(snap.data().balance) || 0;
         }
-        return 0;
+        return DEFAULT_MAGOCOIN_BALANCE;
     } catch (err) {
         console.error('[Magocoin] Failed to get Magocoins:', err);
         return 0;
@@ -75,7 +76,7 @@ export async function getUserMagocoins(email: string): Promise<number> {
  */
 export function subscribeToMagocoins(email: string | null | undefined, callback: (balance: number) => void) {
     if (!email) {
-        callback(0);
+        callback(DEFAULT_MAGOCOIN_BALANCE);
         return () => { };
     }
     
@@ -84,11 +85,11 @@ export function subscribeToMagocoins(email: string | null | undefined, callback:
         if (snap.exists()) {
             callback(Number(snap.data()?.balance) || 0);
         } else {
-            callback(0);
+            callback(DEFAULT_MAGOCOIN_BALANCE);
         }
     }, (err) => {
         console.warn('[Magocoin] Listener error:', err);
-        callback(0);
+        callback(DEFAULT_MAGOCOIN_BALANCE);
     });
 }
 
@@ -111,7 +112,7 @@ export async function updateMagocoins(email: string, amount: number): Promise<vo
             // Nếu user chưa có mốc Magocoin nào -> Khởi tạo
             await setDoc(docRef, {
                 email: email.toLowerCase(),
-                balance: amount > 0 ? amount : 0, 
+                balance: Math.max(DEFAULT_MAGOCOIN_BALANCE + amount, 0),
                 updatedAt: new Date().toISOString()
             });
         }
@@ -181,7 +182,7 @@ export async function redeemGiftcodeTransaction(email: string, codeStr: string):
 
             const userSnap = await transaction.get(userCoinRef);
             let userRedeemed: string[] = [];
-            let currentBalance = 0;
+            let currentBalance = DEFAULT_MAGOCOIN_BALANCE;
             
             if (userSnap.exists()) {
                 const userData = userSnap.data() as MagocoinData;
