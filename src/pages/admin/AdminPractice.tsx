@@ -211,7 +211,9 @@ export default function AdminPractice() {
     };
 
     const moveExamToFolder = async (exam: ExamMetadata, folderName: string) => {
-        await updateExam(exam.id, { customFolder: folderName.trim() });
+        const targetFolder = folderName.trim();
+        await updateExam(exam.id, { customFolder: targetFolder });
+        addFolderToRegistry(exam.subjectId, targetFolder);
         toast({ title: 'Đã di chuyển đề thi', type: 'success' });
         await loadExams();
     };
@@ -228,6 +230,9 @@ export default function AdminPractice() {
             toast({ title: 'Tên thư mục không hợp lệ hoặc đã tồn tại', type: 'warning' });
             return;
         }
+        if (selectedSubject) {
+            addFolderToRegistry(selectedSubject, valid);
+        }
         setSelectedFolder(valid);
         setNewFolderName('');
         toast({ title: `Đã tạo thư mục "${valid}" (sẵn sàng để di chuyển đề)`, type: 'success' });
@@ -243,10 +248,14 @@ export default function AdminPractice() {
             return;
         }
         const targets = subjectExams.filter((e) => (e.customFolder || '').trim() === oldName);
-        if (!targets.length) return;
         setFolderActionLoading(true);
         try {
-            await Promise.all(targets.map((exam) => updateExam(exam.id, { customFolder: nextName })));
+            if (targets.length) {
+                await Promise.all(targets.map((exam) => updateExam(exam.id, { customFolder: nextName })));
+            }
+            if (selectedSubject) {
+                renameFolderInRegistry(selectedSubject, oldName, nextName);
+            }
             toast({ title: `Đã đổi tên thư mục "${oldName}"`, type: 'success' });
             if (selectedFolder === oldName) setSelectedFolder(nextName);
             await loadExams();
