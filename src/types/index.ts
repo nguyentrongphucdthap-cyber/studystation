@@ -273,6 +273,14 @@ export interface ActivityLog {
     moduleLabel: string;
     timestamp: string;
     deviceType?: string;
+    eventType?: 'online' | 'offline' | 'view' | 'exam_start' | 'exam_submit' | 'other';
+    examId?: string;
+    examTitle?: string;
+    subjectId?: string;
+    score?: number;
+    durationSeconds?: number;
+    status?: 'success' | 'failed' | 'abandoned';
+    metadata?: Record<string, unknown>;
 }
 
 // ============================================================

@@ -9,7 +9,8 @@ import { cn } from '@/lib/utils';
 import type { AllowedUser, ActivityLog, BlacklistEntry } from '@/types';
 import { 
     Users, Plus, Trash2, Search, Shield, ShieldCheck, User, Tags, Activity, 
-    History as ActivityHistory, Clock, Globe, Filter, UserCheck, LayoutGrid, Download, Ban 
+    History as ActivityHistory, Clock, Globe, Filter, UserCheck, LayoutGrid, Download, Ban,
+    Wifi, WifiOff, Eye, ClipboardCheck, CircleDot
 } from 'lucide-react';
 import { formatRelativeActiveTime } from '@/lib/utils';
 import { getUserActivityLogsByEmail, subscribeToOnlineUsersList } from '@/services/auth.service';
@@ -21,6 +22,76 @@ const roleOptions = [
     { value: 'admin', label: 'Admin', icon: Shield, color: 'bg-amber-100 text-amber-700' },
     { value: 'super-admin', label: 'Super Admin', icon: ShieldCheck, color: 'bg-red-100 text-red-700' },
 ];
+
+function formatAbsoluteTime(timestamp?: string) {
+    if (!timestamp) return 'Không rõ thời gian';
+    const d = new Date(timestamp);
+    if (Number.isNaN(d.getTime())) return 'Không rõ thời gian';
+    return d.toLocaleString('vi-VN');
+}
+
+function getActivityVisual(log: ActivityLog) {
+    switch (log.eventType) {
+        case 'online':
+            return {
+                icon: Wifi,
+                iconClass: 'text-emerald-600',
+                chipClass: 'bg-emerald-50 text-emerald-700 border-emerald-200',
+                chipLabel: 'Online',
+            };
+        case 'offline':
+            return {
+                icon: WifiOff,
+                iconClass: 'text-rose-600',
+                chipClass: 'bg-rose-50 text-rose-700 border-rose-200',
+                chipLabel: 'Offline',
+            };
+        case 'exam_submit':
+            return {
+                icon: ClipboardCheck,
+                iconClass: 'text-indigo-600',
+                chipClass: 'bg-indigo-50 text-indigo-700 border-indigo-200',
+                chipLabel: 'Nộp bài',
+            };
+        case 'exam_start':
+            return {
+                icon: CircleDot,
+                iconClass: 'text-amber-600',
+                chipClass: 'bg-amber-50 text-amber-700 border-amber-200',
+                chipLabel: 'Bắt đầu làm',
+            };
+        case 'view':
+            return {
+                icon: Eye,
+                iconClass: 'text-sky-600',
+                chipClass: 'bg-sky-50 text-sky-700 border-sky-200',
+                chipLabel: 'Xem',
+            };
+        default:
+            return {
+                icon: ActivityHistory,
+                iconClass: 'text-slate-500',
+                chipClass: 'bg-slate-50 text-slate-700 border-slate-200',
+                chipLabel: 'Khác',
+            };
+    }
+}
+
+function buildActivityDescription(log: ActivityLog) {
+    const pieces: string[] = [];
+    if (log.examTitle) pieces.push(`Đề: ${log.examTitle}`);
+    if (typeof log.score === 'number') pieces.push(`Điểm: ${log.score}`);
+    if (typeof log.durationSeconds === 'number') {
+        const minutes = Math.floor(log.durationSeconds / 60);
+        const seconds = log.durationSeconds % 60;
+        pieces.push(`Thời gian: ${minutes}m ${seconds}s`);
+    }
+    if (log.status) {
+        const statusLabel = log.status === 'success' ? 'Thành công' : log.status === 'failed' ? 'Lỗi' : 'Bỏ dở';
+        pieces.push(`Trạng thái: ${statusLabel}`);
+    }
+    return pieces.join(' • ');
+}
 
 export default function AdminStudents() {
     const { toast } = useToast();
@@ -607,22 +678,54 @@ export default function AdminStudents() {
                             <div className="flex justify-center py-10"><Spinner size="md" /></div>
                         ) : trackingLogs.length > 0 ? (
                             <div className="space-y-3">
-                                {trackingLogs.map((log) => (
-                                    <div key={log.id} className="p-3 rounded-xl bg-slate-50 dark:bg-slate-800/50 border border-slate-100 dark:border-slate-700/50 flex items-start justify-between gap-4">
-                                        <div className="flex gap-3">
-                                            <div className="mt-1 p-1.5 bg-white dark:bg-slate-800 rounded-lg shadow-sm">
-                                                <ActivityHistory className="h-3.5 w-3.5 text-slate-400" />
+                                <div className="grid grid-cols-3 gap-2">
+                                    <div className="rounded-lg border border-emerald-100 bg-emerald-50/70 p-2 text-center">
+                                        <p className="text-[10px] font-black uppercase tracking-wider text-emerald-700">Online</p>
+                                        <p className="text-lg font-black text-emerald-700">{trackingLogs.filter(l => l.eventType === 'online').length}</p>
+                                    </div>
+                                    <div className="rounded-lg border border-rose-100 bg-rose-50/70 p-2 text-center">
+                                        <p className="text-[10px] font-black uppercase tracking-wider text-rose-700">Offline</p>
+                                        <p className="text-lg font-black text-rose-700">{trackingLogs.filter(l => l.eventType === 'offline').length}</p>
+                                    </div>
+                                    <div className="rounded-lg border border-indigo-100 bg-indigo-50/70 p-2 text-center">
+                                        <p className="text-[10px] font-black uppercase tracking-wider text-indigo-700">Nộp bài</p>
+                                        <p className="text-lg font-black text-indigo-700">{trackingLogs.filter(l => l.eventType === 'exam_submit').length}</p>
+                                    </div>
+                                </div>
+                                {trackingLogs.map((log) => {
+                                    const visual = getActivityVisual(log);
+                                    const EventIcon = visual.icon;
+                                    const details = buildActivityDescription(log);
+                                    return (
+                                        <div key={log.id} className="p-3 rounded-xl bg-slate-50 dark:bg-slate-800/50 border border-slate-100 dark:border-slate-700/50 flex items-start justify-between gap-4">
+                                            <div className="flex gap-3">
+                                                <div className="mt-1 p-1.5 bg-white dark:bg-slate-800 rounded-lg shadow-sm">
+                                                    <EventIcon className={cn("h-3.5 w-3.5", visual.iconClass)} />
+                                                </div>
+                                                <div className="space-y-1">
+                                                    <div className="flex items-center gap-2 flex-wrap">
+                                                        <p className="text-sm font-bold text-slate-700 dark:text-slate-200">{log.moduleLabel || log.moduleName}</p>
+                                                        <span className={cn("text-[10px] font-black uppercase tracking-wider px-2 py-0.5 rounded-md border", visual.chipClass)}>
+                                                            {visual.chipLabel}
+                                                        </span>
+                                                    </div>
+                                                    {details && (
+                                                        <p className="text-[11px] text-slate-600 dark:text-slate-300 font-medium">{details}</p>
+                                                    )}
+                                                    <p className="text-[10px] text-slate-500 font-medium uppercase tracking-wider">{log.deviceType || 'Unknown Device'}</p>
+                                                </div>
                                             </div>
                                             <div>
-                                                <p className="text-sm font-bold text-slate-700 dark:text-slate-200">{log.moduleLabel || log.moduleName}</p>
-                                                <p className="text-[10px] text-slate-500 font-medium uppercase tracking-wider">{log.deviceType || 'Unknown Device'}</p>
+                                                <p className="text-[11px] font-bold text-indigo-500 whitespace-nowrap bg-indigo-50 dark:bg-indigo-900/30 px-2 py-0.5 rounded-md text-right">
+                                                    {formatRelativeActiveTime(log.timestamp)}
+                                                </p>
+                                                <p className="text-[10px] font-semibold text-slate-500 mt-1 whitespace-nowrap">
+                                                    {formatAbsoluteTime(log.timestamp)}
+                                                </p>
                                             </div>
                                         </div>
-                                        <span className="text-[11px] font-bold text-indigo-500 whitespace-nowrap bg-indigo-50 dark:bg-indigo-900/30 px-2 py-0.5 rounded-md">
-                                            {formatRelativeActiveTime(log.timestamp)}
-                                        </span>
-                                    </div>
-                                ))}
+                                    );
+                                })}
                             </div>
                         ) : (
                             <div className="py-12 text-center text-slate-500 flex flex-col items-center gap-2">

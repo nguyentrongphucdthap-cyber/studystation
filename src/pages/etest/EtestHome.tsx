@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { getAllEtestExams } from '@/services/etest.service';
+import { logUserActivity } from '@/services/auth.service';
 import { Spinner } from '@/components/ui/Spinner';
 import type { EtestExam } from '@/types';
 
@@ -15,6 +16,11 @@ export default function EtestHome() {
         getAllEtestExams()
             .then((data) => {
                 setExams(data);
+                logUserActivity('EtestHome', 'Xem danh sách đề E-test', {
+                    eventType: 'view',
+                    status: 'success',
+                    metadata: { totalEtests: data.length },
+                });
                 setLoading(false);
             })
             .catch((err) => {

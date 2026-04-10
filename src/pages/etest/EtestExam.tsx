@@ -1,6 +1,7 @@
 import { useEffect, useState, useCallback, useRef } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { getEtestExam } from '@/services/etest.service';
+import { logUserActivity } from '@/services/auth.service';
 import { cn, formatTime } from '@/lib/utils';
 import { Spinner } from '@/components/ui/Spinner';
 import { Button } from '@/components/ui/Button';
@@ -84,6 +85,15 @@ export default function EtestExamPage() {
         getEtestExam(examId).then((data) => {
             setExam(data);
             if (data) setTimeLeft(data.time * 60);
+            if (data) {
+                logUserActivity('EtestExam', `Xem đề E-test: ${data.title}`, {
+                    eventType: 'view',
+                    examId: data.id,
+                    examTitle: data.title,
+                    subjectId: 'tieng-anh',
+                    status: 'success',
+                });
+            }
             setLoading(false);
         });
     }, [examId]);
@@ -113,11 +123,38 @@ export default function EtestExamPage() {
             });
         });
         const finalScore = totalQ > 0 ? Math.round((correct / totalQ) * 10 * 10) / 10 : 0;
+        const durationSeconds = Math.max(0, exam.time * 60 - timeLeft);
         setScore(finalScore);
         setCorrectCount(correct);
         setTotal(totalQ);
         setView('result');
-    }, [exam, answers]);
+
+        logUserActivity('EtestExam', `Nộp E-test: ${exam.title} (${finalScore} điểm)`, {
+            eventType: 'exam_submit',
+            examId: exam.id,
+            examTitle: exam.title,
+            subjectId: 'tieng-anh',
+            score: finalScore,
+            durationSeconds,
+            status: 'success',
+            metadata: {
+                correctCount: correct,
+                totalQuestions: totalQ,
+            },
+        });
+    }, [exam, answers, timeLeft]);
+
+    const handleStart = useCallback(() => {
+        if (!exam) return;
+        setView('taking');
+        logUserActivity('EtestExam', `Bắt đầu làm E-test: ${exam.title}`, {
+            eventType: 'exam_start',
+            examId: exam.id,
+            examTitle: exam.title,
+            subjectId: 'tieng-anh',
+            status: 'success',
+        });
+    }, [exam]);
 
     if (loading) return <div className="flex items-center justify-center py-20"><Spinner size="lg" label="Đang tải..." /></div>;
     if (!exam) return <div className="py-20 text-center"><p className="text-muted-foreground">Không tìm thấy bài đọc</p></div>;
@@ -139,7 +176,7 @@ export default function EtestExamPage() {
                         <span>{exam.sections.length} passage(s)</span>
                         <span>{exam.sections.reduce((s, sec) => s + sec.questions.length, 0)} câu hỏi</span>
                     </div>
-                    <Button size="xl" className="w-full" onClick={() => setView('taking')}>🚀 Bắt đầu</Button>
+                    <Button size="xl" className="w-full" onClick={handleStart}>🚀 Bắt đầu</Button>
                 </div>
             </div>
         );

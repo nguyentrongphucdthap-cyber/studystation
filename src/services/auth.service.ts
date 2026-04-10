@@ -31,7 +31,7 @@ import {
     remove,
 } from 'firebase/database';
 import { auth, db, rtdb } from '@/config/firebase';
-import type { AllowedUser, UserRole, DeviceType, BlacklistEntry, AccessRequest } from '@/types';
+import type { AllowedUser, UserRole, DeviceType, BlacklistEntry, AccessRequest, ActivityLog } from '@/types';
 import { getDeviceType, generateSessionId } from '@/lib/utils';
 
 // ============================================================
@@ -161,7 +161,7 @@ export async function submitRegistration(data: {
 }
 
 export async function logoutUser() {
-    await stopPresence();
+    await stopPresence({ reason: 'logout' });
     clearStorage();
     await signOut(auth);
 }
@@ -321,6 +321,7 @@ let presenceRef: ReturnType<typeof ref> | null = null;
 let heartbeatInterval: ReturnType<typeof setInterval> | null = null;
 let presenceCleanupBound: (() => void) | null = null;
 let visibilityHandlerBound: (() => void) | null = null;
+let presenceSessionStartedAt: string | null = null;
 
 function getPresenceData(user: { email: string | null; displayName: string | null; photoURL: string | null }, deviceType: string) {
     return {
@@ -357,12 +358,13 @@ export async function startPresence() {
     const { isAllowed } = await checkWhitelist(user.email || '');
     if (!isAllowed) return;
 
-    // Clean up any previous presence
-    await stopPresence();
+    // Clean up any previous presence without logging an offline event
+    await stopPresence({ logOfflineEvent: false });
 
     const deviceType = getDeviceType();
     presenceRef = ref(rtdb, `presence/${user.uid}_${deviceType}`);
     const data = getPresenceData(user, deviceType);
+    presenceSessionStartedAt = new Date().toISOString();
 
     // Listen to connection state
     const connectedRef = ref(rtdb, '.info/connected');
@@ -420,9 +422,22 @@ export async function startPresence() {
         }
     };
     document.addEventListener('visibilitychange', visibilityHandlerBound);
+
+    await logUserActivity('Presence', 'Online: Bắt đầu phiên hoạt động', {
+        eventType: 'online',
+        status: 'success',
+        metadata: {
+            sessionStartedAt: presenceSessionStartedAt,
+            source: 'startPresence',
+        },
+    });
 }
 
-export async function stopPresence() {
+export async function stopPresence(options?: { logOfflineEvent?: boolean; reason?: string }) {
+    const shouldLogOfflineEvent = options?.logOfflineEvent !== false;
+    const stopReason = options?.reason || 'manual';
+    const hadActivePresence = !!presenceRef || !!heartbeatInterval || !!presenceSessionStartedAt;
+
     // Clear heartbeat interval
     if (heartbeatInterval) {
         clearInterval(heartbeatInterval);
@@ -448,6 +463,19 @@ export async function stopPresence() {
         document.removeEventListener('visibilitychange', visibilityHandlerBound);
         visibilityHandlerBound = null;
     }
+
+    if (shouldLogOfflineEvent && hadActivePresence) {
+        await logUserActivity('Presence', 'Offline: Kết thúc phiên hoạt động', {
+            eventType: 'offline',
+            status: 'success',
+            metadata: {
+                sessionStartedAt: presenceSessionStartedAt,
+                sessionEndedAt: new Date().toISOString(),
+                reason: stopReason,
+            },
+        });
+    }
+    presenceSessionStartedAt = null;
 }
 
 // Server time offset for accurate heartbeat checking
@@ -575,7 +603,18 @@ export async function syncUserProfile(user: User) {
 // ACTIVITY LOGGING
 // ============================================================
 
-export async function logUserActivity(moduleName: string, moduleLabel = '') {
+type ActivityLogOptions = {
+    eventType?: ActivityLog['eventType'];
+    examId?: string;
+    examTitle?: string;
+    subjectId?: string;
+    score?: number;
+    durationSeconds?: number;
+    status?: ActivityLog['status'];
+    metadata?: Record<string, unknown>;
+};
+
+export async function logUserActivity(moduleName: string, moduleLabel = '', options: ActivityLogOptions = {}) {
     const user = auth.currentUser;
     if (!user) return;
 
@@ -587,6 +626,14 @@ export async function logUserActivity(moduleName: string, moduleLabel = '') {
             moduleLabel,
             deviceType: getDeviceType(),
             timestamp: new Date().toISOString(),
+            eventType: options.eventType || 'other',
+            examId: options.examId,
+            examTitle: options.examTitle,
+            subjectId: options.subjectId,
+            score: options.score,
+            durationSeconds: options.durationSeconds,
+            status: options.status,
+            metadata: options.metadata || null,
         });
     } catch {
         // Silent fail for activity logging
@@ -606,12 +653,13 @@ export async function getUserActivityLogs(limitCount = 100) {
 export async function getUserActivityLogsByEmail(email: string, limitCount = 50) {
     const q = query(
         collection(db, 'user_activity_logs'),
-        where('userEmail', '==', email),
-        orderBy('timestamp', 'desc'),
-        firestoreLimit(limitCount)
+        where('userEmail', '==', email)
     );
     const snapshot = await getDocs(q);
-    return snapshot.docs.map((d) => ({ id: d.id, ...d.data() }));
+    return snapshot.docs
+        .map((d) => ({ id: d.id, ...d.data() }))
+        .sort((a, b) => new Date((b as Record<string, unknown>).timestamp as string).getTime() - new Date((a as Record<string, unknown>).timestamp as string).getTime())
+        .slice(0, limitCount);
 }
 
 export async function getActivityStats() {

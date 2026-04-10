@@ -157,7 +157,13 @@ export default function PracticeExam() {
                     setSplitScreenMode(hasPassages);
 
                     // Log viewing the exam
-                    logUserActivity('PracticeExam', `Xem đề: ${examData.title}`);
+                    logUserActivity('PracticeExam', `Xem đề: ${examData.title}`, {
+                        eventType: 'view',
+                        examId: examData.id,
+                        examTitle: examData.title,
+                        subjectId: examData.subjectId,
+                        status: 'success',
+                    });
                 }
             } catch (err) {
                 console.error('[PracticeExam] Load error:', err);
@@ -241,6 +247,15 @@ export default function PracticeExam() {
     const handleStart = () => {
         setMode('taking');
         startTimeRef.current = Date.now();
+        if (exam) {
+            logUserActivity('PracticeExam', `Bắt đầu làm đề: ${exam.title}`, {
+                eventType: 'exam_start',
+                examId: exam.id,
+                examTitle: exam.title,
+                subjectId: exam.subjectId,
+                status: 'success',
+            });
+        }
     };
 
     // Helper: Fisher-Yates shuffle
@@ -485,6 +500,21 @@ export default function PracticeExam() {
         setDuration(dur);
         setMode('result');
 
+        logUserActivity('PracticeExam', `Nộp bài: ${exam.title} (${finalScore} điểm)`, {
+            eventType: 'exam_submit',
+            examId: exam.id,
+            examTitle: exam.title,
+            subjectId: exam.subjectId,
+            score: finalScore,
+            durationSeconds: dur,
+            status: 'success',
+            metadata: {
+                correctCount: correct,
+                totalQuestions: total,
+                isPracticeMode,
+            },
+        });
+
         // Save to Firebase
         try {
             await logPracticeAttempt(exam.id, exam.title, exam.subjectId, 'classic', dur);
@@ -547,7 +577,7 @@ export default function PracticeExam() {
         } catch (err) {
             console.error('[Practice] Save result error:', err);
         }
-    }, [exam, part1Answers, part2Answers, part3Answers, user, isGuest]);
+    }, [exam, part1Answers, part2Answers, part3Answers, user, isGuest, isPracticeMode]);
 
     const handleSkip = () => {
         const q = practiceQueue[currentPracticeIdx];

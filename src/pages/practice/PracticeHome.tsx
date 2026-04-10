@@ -37,7 +37,11 @@ export default function PracticeHome() {
                 setScores(highScores);
                 
                 // Log visiting practice home
-                logUserActivity('PracticeHome', 'Xem danh sách đề thi');
+                logUserActivity('PracticeHome', 'Xem danh sách đề thi', {
+                    eventType: 'view',
+                    status: 'success',
+                    metadata: { totalExams: examList.length },
+                });
             } catch (err) {
                 console.error('[Practice] Load error:', err);
                 setError('Không thể tải danh sách đề thi. Vui lòng kiểm tra kết nối mạng hoặc quyền truy cập.');
