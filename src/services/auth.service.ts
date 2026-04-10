@@ -13,6 +13,7 @@ import {
     doc,
     getDoc,
     setDoc,
+    deleteField,
     collection,
     getDocs,
     query,
@@ -735,7 +736,11 @@ export async function rejectAccessRequest(requestId: string, reviewerEmail: stri
 }
 
 export async function updateAccessRequestReview(requestId: string, updates: Partial<AccessRequest>): Promise<void> {
-    await setDoc(doc(db, 'access_requests', requestId), updates, { merge: true });
+    const sanitizedUpdates = Object.fromEntries(
+        Object.entries(updates).map(([key, value]) => [key, value === undefined ? deleteField() : value])
+    );
+
+    await setDoc(doc(db, 'access_requests', requestId), sanitizedUpdates, { merge: true });
 }
 
 // ============================================================
