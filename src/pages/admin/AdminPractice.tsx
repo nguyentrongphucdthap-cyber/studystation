@@ -14,6 +14,8 @@ import { ManualExamDialog } from '@/components/admin/ManualExamDialog';
 import { cn } from '@/lib/utils';
 import { downloadJSON } from '@/lib/exportUtils';
 
+const FOLDER_REGISTRY_KEY = 'admin_practice_folder_registry_v1';
+
 export default function AdminPractice() {
     const navigate = useNavigate();
     const { toast } = useToast();
@@ -29,6 +31,14 @@ export default function AdminPractice() {
     const [deleteTarget, setDeleteTarget] = useState<string | null>(null);
     const [selectedFolder, setSelectedFolder] = useState<'ALL' | 'UNFILED' | string>('ALL');
     const [newFolderName, setNewFolderName] = useState('');
+    const [folderRegistry, setFolderRegistry] = useState<Record<string, string[]>>(() => {
+        try {
+            const raw = localStorage.getItem(FOLDER_REGISTRY_KEY);
+            return raw ? JSON.parse(raw) : {};
+        } catch {
+            return {};
+        }
+    });
     const [folderActionLoading, setFolderActionLoading] = useState(false);
     const [contextMenu, setContextMenu] = useState<
         | { type: 'exam'; exam: ExamMetadata; x: number; y: number }
@@ -56,16 +66,24 @@ export default function AdminPractice() {
         return exams.filter((e) => e.subjectId === selectedSubject);
     }, [exams, selectedSubject]);
 
+    const subjectFolderRegistry = useMemo(
+        () => (selectedSubject ? (folderRegistry[selectedSubject] || []) : []),
+        [folderRegistry, selectedSubject]
+    );
+
     const folderList = useMemo(() => {
         const unique = Array.from(
             new Set(
-                subjectExams
-                    .map((e) => (e.customFolder || '').trim())
-                    .filter(Boolean)
+                [
+                    ...subjectFolderRegistry,
+                    ...subjectExams
+                        .map((e) => (e.customFolder || '').trim())
+                        .filter(Boolean),
+                ]
             )
         );
         return unique.sort((a, b) => a.localeCompare(b, 'vi'));
-    }, [subjectExams]);
+    }, [subjectExams, subjectFolderRegistry]);
 
     const filtered = subjectExams.filter((e) => {
         if (search.trim() && !e.title.toLowerCase().includes(search.toLowerCase())) return false;
@@ -88,6 +106,30 @@ export default function AdminPractice() {
             window.removeEventListener('scroll', closeContextMenu, true);
         };
     }, []);
+
+    useEffect(() => {
+        localStorage.setItem(FOLDER_REGISTRY_KEY, JSON.stringify(folderRegistry));
+    }, [folderRegistry]);
+
+    const addFolderToRegistry = (subjectId: string, folderName: string) => {
+        const next = folderName.trim();
+        if (!subjectId || !next) return;
+        setFolderRegistry((prev) => {
+            const current = prev[subjectId] || [];
+            if (current.some((f) => f.toLowerCase() === next.toLowerCase())) return prev;
+            return { ...prev, [subjectId]: [...current, next] };
+        });
+    };
+
+    const renameFolderInRegistry = (subjectId: string, oldName: string, nextName: string) => {
+        if (!subjectId) return;
+        setFolderRegistry((prev) => {
+            const current = prev[subjectId] || [];
+            const withoutOld = current.filter((f) => f.toLowerCase() !== oldName.toLowerCase());
+            if (withoutOld.some((f) => f.toLowerCase() === nextName.toLowerCase())) return prev;
+            return { ...prev, [subjectId]: [...withoutOld, nextName] };
+        });
+    };
 
     const ensureUniqueFolderName = (name: string) => {
         const trimmed = name.trim();

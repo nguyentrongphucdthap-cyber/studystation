@@ -14,7 +14,7 @@ import { runTransaction } from 'firebase/firestore';
 import { auth, rtdb, db } from '@/config/firebase';
 import type { ChatMessage, Friend, GroupChat } from '@/types';
 import { getUserRole, hasUnlimitedMagoAccess } from './auth.service';
-import { getUserMagocoins, updateMagocoins } from './magocoin.service';
+import { getUserMagocoins, updateMagocoins, grantFirstMagoExhaustBonus } from './magocoin.service';
 
 // ============================================================
 // HELPERS
@@ -772,6 +772,10 @@ export async function sendMagoMessage(text: string): Promise<void> {
     // Check usage limit (everyone must use Magocoins)
     const balance = await getUserMagocoins(currentEmail);
     if (balance < 1) {
+        const reward = await grantFirstMagoExhaustBonus(currentEmail, 5);
+        if (reward.granted) {
+            throw new Error('MAGO_LIMIT_BONUS_GRANTED');
+        }
         throw new Error('MAGO_LIMIT_REACHED');
     }
     // Deduct 1 Magocoin

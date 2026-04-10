@@ -1002,7 +1002,9 @@ const MagoChatPage: React.FC = () => {
             console.error('Mago Chat Error:', err);
             const errorMsg = String(err?.message || 'Lỗi kết nối với Mago');
 
-            if (err?.message === 'MAGO_LIMIT_REACHED') {
+            if (err?.message === 'MAGO_LIMIT_BONUS_GRANTED') {
+                await saveMagoResponse('Ban vua het Magocoin lan dau nen duoc tang them 5 Magocoin. Gui lai tin nhan vua roi de toi ho tro tiep nha!');
+            } else if (err?.message === 'MAGO_LIMIT_REACHED') {
                 await saveMagoResponse(`Bạn đã hết Magocoin mất rồi! Mong bạn học thêm bài vở hoặc thẻ bài để tôi sớm được hỗ trợ lại bạn nhé 🧙‍♂️!`);
             } else if (err?.message === 'MAGO_TEACH_FORBIDDEN') {
                 await saveMagoResponse('Chế độ Dạy chỉ dành cho Boss hoặc Super Admin.');

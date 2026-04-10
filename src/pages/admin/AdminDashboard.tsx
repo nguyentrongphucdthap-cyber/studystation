@@ -1,4 +1,4 @@
-import { NavLink, Outlet } from 'react-router-dom';
+import { NavLink, Outlet, Navigate, useLocation } from 'react-router-dom';
 import { useAuth } from '@/contexts/AuthContext';
 import { getAllExams } from '@/services/exam.service';
 import { getAllAllowedUsers, getActivityStats, getBlacklist } from '@/services/auth.service';
@@ -16,6 +16,8 @@ import { useEffect, useState } from 'react';
 
 export default function AdminDashboard() {
     const { isSuperAdmin, isAdmin, role } = useAuth();
+    const location = useLocation();
+    const isBossOnly = /boss/i.test(role || '') && !isSuperAdmin;
 
     const navItems = [
         { to: '/admin', label: 'Tổng quan', icon: LayoutDashboard, end: true },
@@ -29,6 +31,14 @@ export default function AdminDashboard() {
         ...(isSuperAdmin ? [{ to: '/admin/teachers', label: 'Giáo viên', icon: Shield }] : []),
         ...(isSuperAdmin || (role as string).includes('boss') ? [{ to: '/admin/mago', label: 'Mago A.I', icon: Coins }] : []),
     ];
+
+    const visibleNavItems = isBossOnly
+        ? [{ to: '/admin/access-requests', label: 'YÃªu cáº§u truy cáº­p', icon: UserPlus }]
+        : navItems;
+
+    if (isBossOnly && location.pathname !== '/admin/access-requests') {
+        return <Navigate to="/admin/access-requests" replace />;
+    }
 
     return (
         <div className="admin-panel -m-4 sm:-m-6 lg:-m-8 p-4 sm:p-6 lg:p-8">
@@ -44,7 +54,7 @@ export default function AdminDashboard() {
                             <p className="text-[10px] text-slate-500 uppercase font-bold tracking-wider pt-0.5">Quản lý lớp học</p>
                         </div>
                     </div>
-                    {navItems.map(({ to, label, icon: Icon, end }) => (
+                    {visibleNavItems.map(({ to, label, icon: Icon, end }) => (
                         <NavLink
                             key={to}
                             to={to}

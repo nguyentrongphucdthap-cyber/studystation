@@ -1,6 +1,8 @@
 import { useState, useEffect } from 'react';
 import { useAuth } from '@/contexts/AuthContext';
 import { getAllAccessRequests, approveAccessRequest, rejectAccessRequest, undoAccessRequestDecision } from '@/services/auth.service';
+import { db } from '@/config/firebase';
+import { collection, onSnapshot } from 'firebase/firestore';
 import { Button } from '@/components/ui/Button';
 import { useToast } from '@/components/ui/Toast';
 import { Spinner } from '@/components/ui/Spinner';
@@ -21,6 +23,22 @@ export default function AdminAccessRequests() {
 
     useEffect(() => {
         loadRequests();
+    }, []);
+
+    useEffect(() => {
+        const unsub = onSnapshot(
+            collection(db, 'access_requests'),
+            (snapshot) => {
+                const liveData = snapshot.docs.map((d) => ({ id: d.id, ...d.data() })) as AccessRequest[];
+                setRequests(liveData);
+                setLoading(false);
+            },
+            (err) => {
+                console.error('[AdminAccessRequests] Realtime access_requests error:', err);
+            }
+        );
+
+        return () => unsub();
     }, []);
 
     async function loadRequests() {

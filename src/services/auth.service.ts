@@ -802,12 +802,18 @@ export async function undoAccessRequestDecision(requestId: string): Promise<void
 
         if (allowedSnap.exists()) {
             const allowedData = allowedSnap.data();
+            const role = String(allowedData.role || '').toLowerCase();
+            const isElevatedRole =
+                role.includes('admin') ||
+                role.includes('boss') ||
+                role.includes('teacher');
             const shouldRemoveFromWhitelist =
                 allowedData.accessRequestId === requestId ||
                 allowedData.grantedViaAccessRequest === true ||
                 (allowedData.role === 'user' && allowedData.addedBy === reqData.reviewedBy);
 
-            if (shouldRemoveFromWhitelist) {
+            // Never auto-remove elevated accounts when undoing an access request.
+            if (shouldRemoveFromWhitelist && !isElevatedRole) {
                 await deleteDoc(allowedRef);
             }
         }

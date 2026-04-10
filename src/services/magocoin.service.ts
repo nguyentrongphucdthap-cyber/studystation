@@ -23,6 +23,8 @@ export interface MagocoinData {
     balance: number;
     updatedAt: string;
     redeemedCodes?: string[];
+    firstExhaustBonusGranted?: boolean;
+    firstExhaustBonusGrantedAt?: string;
 }
 
 export interface GiftcodeData {
@@ -120,6 +122,48 @@ export async function updateMagocoins(email: string, amount: number): Promise<vo
             console.error('[Magocoin] Failed to update Magocoins:', err);
             throw err; // Rethrow so the UI can show the actual error
         }
+}
+
+export async function grantFirstMagoExhaustBonus(
+    email: string,
+    bonusAmount = 5
+): Promise<{ granted: boolean; balance: number }> {
+    if (!email) return { granted: false, balance: 0 };
+
+    const docRef = getCoinDocRef(email);
+    return runTransaction(db, async (transaction) => {
+        const snap = await transaction.get(docRef);
+
+        if (!snap.exists()) {
+            const startingBalance = DEFAULT_MAGOCOIN_BALANCE + bonusAmount;
+            transaction.set(docRef, {
+                email: email.toLowerCase(),
+                balance: startingBalance,
+                updatedAt: new Date().toISOString(),
+                firstExhaustBonusGranted: true,
+                firstExhaustBonusGrantedAt: new Date().toISOString(),
+            });
+            return { granted: true, balance: startingBalance };
+        }
+
+        const data = snap.data() as MagocoinData;
+        const alreadyGranted = data.firstExhaustBonusGranted === true;
+        const currentBalance = Number(data.balance) || 0;
+
+        if (alreadyGranted) {
+            return { granted: false, balance: currentBalance };
+        }
+
+        const nextBalance = currentBalance + bonusAmount;
+        transaction.update(docRef, {
+            balance: nextBalance,
+            updatedAt: new Date().toISOString(),
+            firstExhaustBonusGranted: true,
+            firstExhaustBonusGrantedAt: new Date().toISOString(),
+        });
+
+        return { granted: true, balance: nextBalance };
+    });
 }
 
 /**
