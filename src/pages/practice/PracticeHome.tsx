@@ -9,7 +9,7 @@ import { useAuth } from '@/contexts/AuthContext';
 import {
     Calculator, FlaskConical, Dna, Clock,
     Monitor, Atom, Book,
-    ArrowLeft, Search, Globe, Scale, Users, Folder, ChevronRight, Home, ArrowUpLeft
+    ArrowLeft, Search, Globe, Scale, Folder, ChevronRight, Home, ArrowUpLeft
 } from 'lucide-react';
 import * as folderUtils from '@/lib/folderUtils';
 

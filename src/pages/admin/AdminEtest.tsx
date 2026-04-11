@@ -6,8 +6,8 @@ import { Button } from '@/components/ui/Button';
 import { Dialog, ConfirmDialog } from '@/components/ui/Dialog';
 import type { EtestExam } from '@/types';
 import { 
-    Trash2, Upload, Search, Wand2, ArrowLeft, ChevronRight, 
-    FileText, Plus, X, Pencil, Folder, FolderPlus, Home, ArrowUpLeft 
+    Trash2, Search, ChevronRight, 
+    FileText, Plus, Pencil, Folder, FolderPlus, Home, ArrowUpLeft 
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { SmartImportDialog } from '@/components/admin/SmartImportDialog';

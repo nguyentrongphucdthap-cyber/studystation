@@ -17,7 +17,6 @@ import { useEffect, useState } from 'react';
 export default function AdminDashboard() {
     const { isSuperAdmin, isAdmin, role } = useAuth();
     const location = useLocation();
-    const isBossOnly = /boss/i.test(role || '') && !isSuperAdmin;
 
     const navItems = [
         { to: '/admin', label: 'Tổng quan', icon: LayoutDashboard, end: true },

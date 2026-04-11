@@ -6,7 +6,7 @@ import { Spinner } from '@/components/ui/Spinner';
 import { Button } from '@/components/ui/Button';
 import { Dialog, ConfirmDialog } from '@/components/ui/Dialog';
 import type { ExamMetadata } from '@/types';
-import { Trash2, Search, Upload, Download, Wand2, ArrowLeft, ChevronRight, LayoutGrid, Plus, Pencil, Folder, FolderPlus, FileText, Home, ArrowUpLeft } from 'lucide-react';
+import { Trash2, Search, Upload, Wand2, ArrowLeft, ChevronRight, LayoutGrid, Plus, Pencil, Folder, FolderPlus, FileText, Home, ArrowUpLeft } from 'lucide-react';
 import { SmartImportDialog } from '@/components/admin/SmartImportDialog';
 import { ManualExamDialog } from '@/components/admin/ManualExamDialog';
 import { cn } from '@/lib/utils';
@@ -120,15 +120,6 @@ export default function AdminPractice() {
         });
     };
 
-    const renameFolderInRegistry = (subjectId: string, oldName: string, nextName: string) => {
-        if (!subjectId) return;
-        setFolderRegistry((prev) => {
-            const current = prev[subjectId] || [];
-            const withoutOld = current.filter((f) => f.toLowerCase() !== oldName.toLowerCase());
-            if (withoutOld.some((f) => f.toLowerCase() === nextName.toLowerCase())) return prev;
-            return { ...prev, [subjectId]: [...withoutOld, nextName] };
-        });
-    };
 
     const ensureUniqueFolderName = (name: string) => {
         const trimmed = name.trim();
@@ -190,19 +181,6 @@ export default function AdminPractice() {
         setDeleteTarget(null);
     };
 
-    const handleExportJSON = async (exam: ExamMetadata) => {
-        try {
-            const fullExam = await getExamContent(exam.id, true);
-            if (!fullExam) {
-                toast({ title: 'Lỗi', message: 'Không thể tải nội dung đề thi để export', type: 'error' });
-                return;
-            }
-            downloadJSON(fullExam, `StudyStation_Exam_${exam.id}_${new Date().toISOString().split('T')[0]}`);
-            toast({ title: 'Export hoàn tất', message: `Đã tải xuống file JSON cho đề "${exam.title}"`, type: 'success' });
-        } catch (err) {
-            toast({ title: 'Lỗi Export', message: String(err), type: 'error' });
-        }
-    };
 
     const moveExamToFolder = async (exam: ExamMetadata, targetPath: string) => {
         await updateExam(exam.id, { customFolder: targetPath });

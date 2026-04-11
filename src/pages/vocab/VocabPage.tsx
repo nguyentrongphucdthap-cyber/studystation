@@ -10,12 +10,14 @@ import {
     ChevronLeft, Layers, 
     Check, X, Award, Home, RefreshCw,
     Sparkles, ArrowRight, Search, SortAsc, Filter,
-    ChevronDown, Tags, GraduationCap, AlertTriangle, Volume2
+    ChevronDown, Tags, GraduationCap, AlertTriangle, Volume2,
+    ChevronRight, ArrowUpLeft, Folder
 } from 'lucide-react';
 import { createPortal } from 'react-dom';
 import { useTheme } from '@/contexts/ThemeContext';
 import { FormattedText } from '@/components/ui/FormattedText';
 import { getSubjects } from '@/services/exam.service';
+import * as folderUtils from '@/lib/folderUtils';
 
 type VocabView = 'home' | 'flashcard' | 'result' | 'matching' | 'learn';
 
@@ -806,7 +808,7 @@ export default function VocabPage() {
                                             <span className="text-[11px] font-black text-gray-400 uppercase">Trở lên</span>
                                         </button>
                                     )}
-                                    {itemsAtLevel.folders.map((folderName) => (
+                                    {itemsAtLevel.folders.map((folderName: string) => (
                                         <button
                                             key={folderName}
                                             onClick={() => setVocabPath([...vocabPath, folderName])}

@@ -6,7 +6,7 @@ import { Button } from '@/components/ui/Button';
 import { Dialog, ConfirmDialog } from '@/components/ui/Dialog';
 import type { VocabSet } from '@/types';
 import { 
-    Trash2, Search, Upload, Download, Wand2, ArrowLeft, ChevronRight, 
+    Trash2, Search, Upload, Download, ChevronRight, 
     Book, FileJson, Edit2, Plus, FileSpreadsheet, X, Pencil, Folder, 
     FolderPlus, Home, ArrowUpLeft 
 } from 'lucide-react';
@@ -277,10 +277,6 @@ export default function AdminVocab() {
         setShowEditor(true);
     };
 
-    const handleExportJSON = (set: VocabSet) => {
-        downloadJSON(set, `StudyStation_Flashcards_${set.id}_${new Date().toISOString().split('T')[0]}`);
-        toast({ title: 'Export hoàn tất', message: `Đã tải xuống file JSON cho bộ "${set.title}"`, type: 'success' });
-    };
 
     if (loading) return <div className="flex justify-center py-10"><Spinner size="md" /></div>;
 
