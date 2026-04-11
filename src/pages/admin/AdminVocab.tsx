@@ -11,7 +11,6 @@ import {
     FolderPlus, Home, ArrowUpLeft 
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
-import { downloadJSON } from '@/lib/exportUtils';
 import { SmartImportDialog } from '@/components/admin/SmartImportDialog';
 import { FlashcardEditorDialog } from '@/components/admin/FlashcardEditorDialog';
 import { parseFlashcardsCSV, downloadCSVSample } from '@/services/flashcard-import.service';

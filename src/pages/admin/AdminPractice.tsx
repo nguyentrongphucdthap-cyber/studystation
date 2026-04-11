@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { getAllExams, createExam, deleteExam, getSubjects, getExamContent, updateExam } from '@/services/exam.service';
+import { getAllExams, createExam, deleteExam, getSubjects, updateExam } from '@/services/exam.service';
 import { useToast } from '@/components/ui/Toast';
 import { Spinner } from '@/components/ui/Spinner';
 import { Button } from '@/components/ui/Button';
@@ -10,7 +10,6 @@ import { Trash2, Search, Upload, Wand2, ArrowLeft, ChevronRight, LayoutGrid, Plu
 import { SmartImportDialog } from '@/components/admin/SmartImportDialog';
 import { ManualExamDialog } from '@/components/admin/ManualExamDialog';
 import { cn } from '@/lib/utils';
-import { downloadJSON } from '@/lib/exportUtils';
 import * as folderUtils from '@/lib/folderUtils';
 
 const FOLDER_REGISTRY_KEY = 'admin_practice_folder_registry_v1';
