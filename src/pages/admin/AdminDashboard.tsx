@@ -27,17 +27,19 @@ export default function AdminDashboard() {
         { to: '/admin/notifications', label: 'Thông báo', icon: Bell },
         { to: '/admin/schedule', label: 'TKB', icon: Calendar },
         ...(isSuperAdmin || isAdmin || role === 'teacher' ? [{ to: '/admin/students', label: 'Học sinh', icon: Users }] : []),
-        ...(isSuperAdmin || isAdmin ? [{ to: '/admin/access-requests', label: 'Yêu cầu truy cập', icon: UserPlus }] : []),
+        ...(isSuperAdmin || role === 'boss' ? [{ to: '/admin/access-requests', label: 'Yêu cầu truy cập', icon: UserPlus }] : []),
         ...(isSuperAdmin ? [{ to: '/admin/teachers', label: 'Giáo viên', icon: Shield }] : []),
         ...(isSuperAdmin || (role as string).includes('boss') ? [{ to: '/admin/mago', label: 'Mago A.I', icon: Coins }] : []),
     ];
 
-    const visibleNavItems = isBossOnly
-        ? [{ to: '/admin/access-requests', label: 'YÃªu cáº§u truy cáº­p', icon: UserPlus }]
-        : navItems;
+    const visibleNavItems = navItems;
 
-    if (isBossOnly && location.pathname !== '/admin/access-requests') {
-        return <Navigate to="/admin/access-requests" replace />;
+    // Only restrict paths that literally don't exist in navItems (like /admin/teachers for non-supers)
+    const availablePaths = navItems.map(item => item.to);
+    if (!availablePaths.includes(location.pathname) && location.pathname !== '/admin') {
+        // Find first available path as fallback
+        const firstPath = navItems[0]?.to || '/admin';
+        return <Navigate to={firstPath} replace />;
     }
 
     return (

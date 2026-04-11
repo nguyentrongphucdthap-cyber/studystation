@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react';
 import { useAuth } from '@/contexts/AuthContext';
+import { Navigate } from 'react-router-dom';
 import { getAllAccessRequests, approveAccessRequest, rejectAccessRequest, undoAccessRequestDecision } from '@/services/auth.service';
 import { db } from '@/config/firebase';
 import { collection, onSnapshot } from 'firebase/firestore';
@@ -12,13 +13,19 @@ import { cn } from '@/lib/utils';
 import { formatRelativeActiveTime } from '@/lib/utils';
 
 export default function AdminAccessRequests() {
-    const { isSuperAdmin, isAdmin, user: currentUser } = useAuth();
+    const { isSuperAdmin, isAdmin, user: currentUser, role } = useAuth();
+    const isBossOnly = /boss/i.test(role || '') && !isSuperAdmin;
+
+    if (!isSuperAdmin && role !== 'boss') {
+        return <Navigate to="/admin" replace />;
+    }
+
     const { toast } = useToast();
     const [requests, setRequests] = useState<AccessRequest[]>([]);
     const [loading, setLoading] = useState(true);
     const [search, setSearch] = useState('');
     const [statusFilter, setStatusFilter] = useState<'all' | 'pending' | 'approved' | 'rejected'>('pending');
-    const [note, setNote] = useState('');
+    const [notes, setNotes] = useState<Record<string, string>>({});
     const [processingId, setProcessingId] = useState<string | null>(null);
 
     useEffect(() => {
@@ -57,9 +64,9 @@ export default function AdminAccessRequests() {
     const handleApprove = async (id: string) => {
         setProcessingId(id);
         try {
-            await approveAccessRequest(id, currentUser!.email, note);
+            await approveAccessRequest(id, currentUser!.email, notes[id] || '');
             toast({ title: 'Đã duyệt yêu cầu!', type: 'success' });
-            setNote('');
+            setNotes(prev => ({ ...prev, [id]: '' }));
             await loadRequests();
         } catch (err) {
             toast({ title: 'Lỗi khi duyệt', type: 'error' });
@@ -71,9 +78,9 @@ export default function AdminAccessRequests() {
     const handleReject = async (id: string) => {
         setProcessingId(id);
         try {
-            await rejectAccessRequest(id, currentUser!.email, note);
+            await rejectAccessRequest(id, currentUser!.email, notes[id] || '');
             toast({ title: 'Đã từ chối!', type: 'success' });
-            setNote('');
+            setNotes(prev => ({ ...prev, [id]: '' }));
             await loadRequests();
         } catch (err) {
             toast({ title: 'Lỗi khi từ chối', type: 'error' });
@@ -97,10 +104,10 @@ export default function AdminAccessRequests() {
         }
     };
 
-    const filtered = requests.filter(r => {
+    const filtered = requests.filter((r) => {
         const matchesSearch = r.email.toLowerCase().includes(search.toLowerCase()) || 
                              (r.displayName || '').toLowerCase().includes(search.toLowerCase());
-        const matchesStatus = statusFilter === 'all' || r.status === statusFilter;
+        const matchesStatus = isBossOnly ? r.status === 'pending' : (statusFilter === 'all' || r.status === statusFilter);
         return matchesSearch && matchesStatus;
     }).sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime());
 
@@ -130,19 +137,27 @@ export default function AdminAccessRequests() {
                     </div>
                 </div>
 
-                {/* Filters */}
+                {/* Filters & search */}
                 <div className="p-4 bg-slate-50/50 dark:bg-slate-800/20 grid grid-cols-1 md:grid-cols-2 gap-4">
                     <div className="relative group">
                         <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400 group-focus-within:text-indigo-500 transition-colors" />
-                        <input type="text" value={search} onChange={(e) => setSearch(e.target.value)} placeholder="Tìm email / tên người gửi..." className="w-full rounded-xl border-none bg-white dark:bg-slate-800 shadow-sm py-2.5 pl-10 pr-4 text-sm font-medium focus:ring-2 focus:ring-indigo-500/50" />
+                        <input 
+                            type="text" 
+                            value={search} 
+                            onChange={(e) => setSearch(e.target.value)} 
+                            placeholder="Tìm email / tên người gửi..." 
+                            className="w-full rounded-xl border-none bg-white dark:bg-slate-800 shadow-sm py-2.5 pl-10 pr-4 text-sm font-medium focus:ring-2 focus:ring-indigo-500/50" 
+                        />
                     </div>
 
-                    <div className="flex flex-wrap bg-white dark:bg-slate-800 p-1 rounded-xl shadow-sm">
-                        <FilterButton active={statusFilter === 'pending'} onClick={() => setStatusFilter('pending')} label="Đang chờ" count={pendingCount} icon={Clock} color="text-amber-500" />
-                        <FilterButton active={statusFilter === 'approved'} onClick={() => setStatusFilter('approved')} label="Đã duyệt" icon={ShieldCheck} color="text-emerald-500" />
-                        <FilterButton active={statusFilter === 'rejected'} onClick={() => setStatusFilter('rejected')} label="Từ chối" icon={ShieldAlert} color="text-rose-500" />
-                        <FilterButton active={statusFilter === 'all'} onClick={() => setStatusFilter('all')} label="Tất cả" icon={Filter} color="text-slate-500" />
-                    </div>
+                    {!isBossOnly && (
+                        <div className="flex flex-wrap bg-white dark:bg-slate-800 p-1 rounded-xl shadow-sm">
+                            <FilterButton active={statusFilter === 'pending'} onClick={() => setStatusFilter('pending')} label="Đang chờ" count={pendingCount} icon={Clock} color="text-amber-500" />
+                            <FilterButton active={statusFilter === 'approved'} onClick={() => setStatusFilter('approved')} label="Đã duyệt" icon={ShieldCheck} color="text-emerald-500" />
+                            <FilterButton active={statusFilter === 'rejected'} onClick={() => setStatusFilter('rejected')} label="Từ chối" icon={ShieldAlert} color="text-rose-500" />
+                            <FilterButton active={statusFilter === 'all'} onClick={() => setStatusFilter('all')} label="Tất cả" icon={Filter} color="text-slate-500" />
+                        </div>
+                    )}
                 </div>
             </div>
 
@@ -223,8 +238,8 @@ export default function AdminAccessRequests() {
                                                     <input 
                                                         type="text" 
                                                         placeholder="Ghi chú phản hồi (tùy chọn)..." 
-                                                        className="h-10 w-0 group-hover/note:w-48 focus:w-48 rounded-xl bg-slate-50 border-none px-3 text-xs font-medium outline-none transition-all shadow-inner focus:ring-1 focus:ring-indigo-500/30" 
-                                                        onChange={(e) => setNote(e.target.value)}
+                                                        value={notes[req.id] || ''}
+                                                        onChange={(e) => setNotes(prev => ({ ...prev, [req.id]: e.target.value }))}
                                                     />
                                                     <div className="absolute right-3 top-1/2 -translate-y-1/2 pointer-events-none group-hover/note:opacity-0 transition-opacity">
                                                         <MessageSquare className="h-4 w-4 text-slate-300" />
@@ -250,7 +265,7 @@ export default function AdminAccessRequests() {
                                                 </Button>
                                             </div>
                                         ) : (
-                                            (isSuperAdmin || isAdmin) && (
+                                            (isSuperAdmin || (isAdmin && !isBossOnly)) && (
                                                 <Button 
                                                     variant="ghost" 
                                                     size="sm" 
