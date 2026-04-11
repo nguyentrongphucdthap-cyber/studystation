@@ -3,15 +3,25 @@ import { Dialog } from '@/components/ui/Dialog';
 import { Button } from '@/components/ui/Button';
 import { cn } from '@/lib/utils';
 import { useToast } from '@/components/ui/Toast';
-import { Upload, Wand2 } from 'lucide-react';
-import { getSubjects } from '@/services/exam.service';
+import { Upload, Wand2, Eye, Code, Shield, Mail, FolderOpen, Clock, FileText } from 'lucide-react';
+import { getAllExams } from '@/services/exam.service';
+import { LatexContent } from '@/components/ui/LatexContent';
+import { FormattedText } from '@/components/ui/FormattedText';
 import { generateAIContent } from '@/services/ai.service';
 import * as mammoth from 'mammoth';
 import * as pdfjs from 'pdfjs-dist';
-import pdfWorker from 'pdfjs-dist/build/pdf.worker.min.mjs?url';
-
-// Configure PDF.js worker
+import pdfWorker from 'pdfjs-dist/build/pdf.worker.mjs?url';
+// Configure PDF.js worker securely for Vite
 pdfjs.GlobalWorkerOptions.workerSrc = pdfWorker;
+const pdfjsOPS = (pdfjs as any).OPS || {};
+
+import { 
+    robustJSONParse, 
+    sanitizeForFirestore, 
+    getPdfObjAsync, 
+    convertPdfImageToBlob,
+    normalizeImportedExamData
+} from '@/lib/smartImportUtils';
 
 const IMGBB_API_KEY = "cba4af8f08a1654c46570add6d3f1055";
 
@@ -21,6 +31,7 @@ interface SmartImportDialogProps {
     onImport: (data: any) => Promise<void>;
     type: 'practice' | 'etest' | 'vocab';
     initialSubjectId?: string | null;
+    initialFolderPath?: string;
 }
 
 // ──────────────────────────────────────────────────────────
@@ -58,7 +69,11 @@ QUY TẮC CÔNG THỨC & VĂN BẢN (CỰC KỲ QUAN TRỌNG):
   | Đặc điểm | Quần thể A | Quần thể B |
   |---|---|---|
   | Diện tích | 25 ha | 240 ha |
-- HÌNH ẢNH: Nếu hình ảnh là biểu đồ/đồ thị/minh họa (KHÔNG phải công thức), BẮT BUỘC phải copy y nguyên link thẻ hình (Markdown '![...](url)'). VỊ TRÍ ĐẶT ẢNH: Đặt vào cuối thuộc tính "text" của CÂU HỎI CHÍNH. TUY NHIÊN, NẾU hình ảnh đó chính là MỘT ĐÁP ÁN (A, B, C, D) hoặc nằm trong Ý TRẢ LỜI của đúng/sai, thì ĐƯỢC PHÉP dán thẻ hình ảnh đó vào mảng "options" hoặc thuộc tính "text" của "subQuestions".
+- HÌNH ẢNH (QUAN TRỌNG NHẤT): Trong văn bản gốc có chứa các mã định danh dạng \`[[ANH_X.._Y..]]\`. Trong đó X và Y là tọa độ phần trăm (%) tính từ góc trên bên trái của trang giấy.
+- QUY TẮC GÁN ẢNH: 
+    + Nếu một mã nằm cùng "hàng" với văn bản (Y tương đương) nhưng X lớn (ví dụ X > 60), nó thường là hình minh họa nằm BÊN PHẢI đoạn văn hoặc câu hỏi đó. Hãy gán ảnh này vào ngay chính câu hỏi đó.
+    + Nếu một mã nằm ở đầu hoặc cuối câu hỏi, hãy giữ lại nó trong trường "image" hoặc chèn vào văn bản.
+- LOẠI BỎ LOGO: Nếu mã có Y < 8 (Header) hoặc Y > 92 (Footer), hoặc X < 8 hoặc X > 92, hãy cân nhắc xem đó có phải Logo nhãn hiệu không. Nếu đúng hãy BỎ QUA hoàn toàn.
 - KHÔNG ĐƯỢC tự ý bỏ qua các bảng số liệu. Bảng số liệu là một phần của câu hỏi.
 
 JSON FORMAT:
@@ -66,29 +81,30 @@ JSON FORMAT:
   "title": "...",
   "time": 50,
   "part1": [
-    { "text": "...", "options": ["A", "B", "C", "D"], "correct": 0 }
+    { "question": "...", "options": ["A", "B", "C", "D"], "answer": 0 }
   ],
   "part2": [
-    { "text": "...", "subQuestions": [
-      { "text": "a) ...", "correct": true },
-      { "text": "b) ...", "correct": false },
-      { "text": "c) ...", "correct": true },
-      { "text": "d) ...", "correct": false }
+    { "question": "...", "subQuestions": [
+      { "text": "a) ...", "answer": true },
+      { "text": "b) ...", "answer": false },
+      { "text": "c) ...", "answer": true },
+      { "text": "d) ...", "answer": false }
     ]}
   ],
   "part3": [
-    { "text": "...", "correct": "đáp án" }
+    { "question": "...", "answer": "đáp án" }
   ]
 }
-LƯU Ý: KHÔNG sử dụng "questionGroups" hay "passage". Bài thi tiếng Anh có passage được xử lý ở hệ thống E-test riêng.
 QUY TẮC ĐỊNH DẠNG (BẮT BUỘC):
 - Giữ nguyên định dạng gạch chân (__word__) và in đậm (**word**) từ văn bản gốc.
+- CHỈ TRÍCH XUẤT CÁC CÂU HỎI TRỰC TIẾP, BỎ QUA CÁC ĐOẠN VĂN DẪN NẾU CHÚNG KHÔNG PHẢI LÀ MỘT PHẦN CỦA CÂU HỎI.
 Chỉ xuất JSON thuần.`,
 
     etest: `Bạn là chuyên gia phân tích đề thi tiếng Anh. Nhiệm vụ: trích xuất nội dung và xuất JSON.
     
 CẤU TRÚC:
 - "passage": Nội dung bài đọc. Nếu bài đọc có BẢNG SỐ LIỆU (kể cả khi bị liệt kê rời rạc theo hàng dọc), bạn BẮT BUỘC phải dùng Markdown table để tái cấu trúc lại.
+- HÌNH ẢNH: Bạn PHẢI giữ lại nguyên vẹn các mã định danh dạng \`[[IMG_N]]\` và đặt chúng vào đúng vị trí trong "passage" hoặc "text" của câu hỏi. KHÔNG được xóa bỏ các mã này trừ khi đó là logo trang trí (Header/Footer).
 
 JSON FORMAT:
 {
@@ -98,7 +114,7 @@ JSON FORMAT:
     {
       "passage": "...",
       "questions": [
-        { "id": 1, "text": "...", "options": ["A", "B", "C", "D"], "correct": 0 }
+        { "id": 1, "question": "...", "options": ["A", "B", "C", "D"], "answer": 0 }
       ]
     }
   ]
@@ -130,7 +146,7 @@ JSON FORMAT:
   "category": "Tag1, Tag2 (ngăn cách bởi dấu phẩy)",
   "words": [
     { 
-      "word": "Term/Question/Formula", 
+      "question": "Term/Question/Formula", 
       "meaning": "Definition/Answer", 
       "example": "Contextual example", 
       "notes": "Extra info",
@@ -143,96 +159,178 @@ JSON FORMAT:
 Chỉ xuất JSON thuần.`
 };
 
-const MARKDOWN_IMAGE_REGEX = /!\[[^\]]*]\(([^)]+)\)/g;
 
-function toMarkdownImage(imageValue: unknown): string {
-    if (typeof imageValue !== 'string') return '';
-    const trimmed = imageValue.trim();
-    if (!trimmed) return '';
-    if (trimmed.startsWith('![')) return trimmed;
-    return `![image](${trimmed})`;
-}
 
-function appendImageToText(text: unknown, imageValue: unknown): string {
-    const normalizedText = typeof text === 'string' ? text.trim() : '';
-    const markdownImage = toMarkdownImage(imageValue);
-    if (!markdownImage) return normalizedText;
+// ──────────────────────────────────────────────────────────
+// PREVIEW COMPONENTS
+// ──────────────────────────────────────────────────────────
 
-    const existingImages = Array.from(normalizedText.matchAll(MARKDOWN_IMAGE_REGEX), (match) => match[0]);
-    if (existingImages.includes(markdownImage)) {
-        return normalizedText;
-    }
+const QuestionPreview = ({ question, index, type }: { question: any, index: number, type: string }) => {
+    return (
+        <div className="p-4 rounded-xl border bg-white shadow-sm space-y-3">
+            <div className="flex gap-2">
+                <span className="font-bold text-indigo-600 shrink-0">Câu {index + 1}:</span>
+                <div className="flex-1 overflow-hidden">
+                    <LatexContent content={question.question || question.text || question.word || ''} />
+                </div>
+            </div>
 
-    return normalizedText ? `${normalizedText}\n\n${markdownImage}` : markdownImage;
-}
+            {type === 'part1' && question.options && (
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-2 pl-8">
+                    {['A', 'B', 'C', 'D'].map((opt) => (
+                        <div key={opt} className={cn(
+                            "p-2 rounded-lg border text-sm flex gap-2",
+                            question.answer === opt ? "bg-emerald-50 border-emerald-200 text-emerald-700" : "bg-slate-50 border-slate-100"
+                        )}>
+                            <span className="font-bold">{opt}.</span>
+                            <LatexContent content={question[`option${opt}`] || ''} />
+                        </div>
+                    ))}
+                </div>
+            )}
 
-function normalizeImportedExamData(data: any) {
-    const normalized = structuredClone(data);
+            {type === 'part2' && question.subQuestions && (
+                <div className="pl-8 space-y-3">
+                    {question.subQuestions.map((sub: any, subIdx: number) => (
+                        <div key={subIdx} className="p-2 rounded-lg bg-slate-50 border border-slate-100 text-sm">
+                            <div className="flex gap-2 mb-2">
+                                <span className="font-bold text-slate-500">{String.fromCharCode(97 + subIdx)}.</span>
+                                <LatexContent content={sub.text || ''} />
+                            </div>
+                            <div className="flex gap-4 pl-6">
+                                <span className={cn("px-2 py-0.5 rounded text-[10px] font-bold uppercase", sub.answer === 'Đúng' ? "bg-emerald-100 text-emerald-700" : "bg-slate-200 text-slate-600")}>Đúng</span>
+                                <span className={cn("px-2 py-0.5 rounded text-[10px] font-bold uppercase", sub.answer === 'Sai' ? "bg-emerald-100 text-emerald-700" : "bg-slate-200 text-slate-600")}>Sai</span>
+                            </div>
+                        </div>
+                    ))}
+                </div>
+            )}
 
-    if (Array.isArray(normalized.part1)) {
-        normalized.part1 = normalized.part1.map((q: any) => {
-            const newQ = {
-                ...q,
-                text: appendImageToText(q?.text, q?.image),
-                options: Array.isArray(q?.options) ? q.options.slice(0, 4) : ['', '', '', ''],
-            };
-            delete newQ.image;
-            return newQ;
-        });
-    }
+            {type === 'part3' && (
+                <div className="pl-8">
+                    <div className="p-2 rounded-lg bg-indigo-50 border border-indigo-100 text-sm italic text-indigo-700">
+                        Đáp án: {question.answer}
+                    </div>
+                </div>
+            )}
 
-    if (Array.isArray(normalized.part2)) {
-        normalized.part2 = normalized.part2.map((q: any) => {
-            const newQ = {
-                ...q,
-                text: appendImageToText(q?.text, q?.image),
-                subQuestions: Array.isArray(q?.subQuestions) ? q.subQuestions : [],
-            };
-            delete newQ.image;
-            return newQ;
-        });
-    }
+            {question.explanation && (
+                <div className="mt-2 pl-8 text-[11px] text-slate-500 bg-slate-50 p-2 rounded-lg border border-dashed">
+                    <span className="font-bold uppercase block mb-1">Giải thích:</span>
+                    <FormattedText text={question.explanation} />
+                </div>
+            )}
+        </div>
+    );
+};
 
-    if (Array.isArray(normalized.part3)) {
-        normalized.part3 = normalized.part3.map((q: any) => {
-            const newQ = {
-                ...q,
-                text: appendImageToText(q?.text, q?.image),
-            };
-            delete newQ.image;
-            return newQ;
-        });
-    }
+const ExamPreview = ({ data }: { data: any }) => {
+    if (!data) return <div className="p-10 text-center text-slate-400">Không có dữ liệu hiển thị</div>;
 
-    if (Array.isArray(normalized.words)) {
-        normalized.words = normalized.words.map((w: any) => {
-            const newW = { ...w };
-            if (typeof newW.image === 'string') {
-                const match = newW.image.match(/!\[.*?\]\((.*?)\)/);
-                if (match) {
-                    newW.image = match[1];
-                }
-            }
-            return newW;
-        });
-    }
+    return (
+        <div className="space-y-8 pb-10">
+            {data.part1?.length > 0 && (
+                <div className="space-y-4">
+                    <h4 className="font-black text-sm uppercase tracking-widest text-slate-400 flex items-center gap-2">
+                        <span className="h-px flex-1 bg-slate-100" />
+                        PHẦN 1: Trắc nghiệm (A, B, C, D)
+                        <span className="h-px flex-1 bg-slate-100" />
+                    </h4>
+                    {data.part1.map((q: any, i: number) => <QuestionPreview key={i} question={q} index={i} type="part1" />)}
+                </div>
+            )}
 
-    return normalized;
-}
+            {data.part2?.length > 0 && (
+                <div className="space-y-4">
+                    <h4 className="font-black text-sm uppercase tracking-widest text-slate-400 flex items-center gap-2">
+                        <span className="h-px flex-1 bg-slate-100" />
+                        PHẦN 2: Đúng / Sai
+                        <span className="h-px flex-1 bg-slate-100" />
+                    </h4>
+                    {data.part2.map((q: any, i: number) => <QuestionPreview key={i} question={q} index={i} type="part2" />)}
+                </div>
+            )}
 
-export function SmartImportDialog({ open, onClose, onImport, type, initialSubjectId }: SmartImportDialogProps) {
+            {data.part3?.length > 0 && (
+                <div className="space-y-4">
+                    <h4 className="font-black text-sm uppercase tracking-widest text-slate-400 flex items-center gap-2">
+                        <span className="h-px flex-1 bg-slate-100" />
+                        PHẦN 3: Trả lời ngắn
+                        <span className="h-px flex-1 bg-slate-100" />
+                    </h4>
+                    {data.part3.map((q: any, i: number) => <QuestionPreview key={i} question={q} index={i} type="part3" />)}
+                </div>
+            )}
+
+            {/* Vocab Preview */}
+            {data.words?.length > 0 && (
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    {data.words.map((w: any, i: number) => (
+                        <div key={i} className="p-4 rounded-xl border bg-white shadow-sm flex gap-4">
+                            {w.image && <img src={w.image} className="w-16 h-16 rounded-lg object-cover bg-slate-100" alt="" />}
+                            <div className="flex-1">
+                                <div className="flex items-center justify-between mb-1">
+                                    <span className="font-bold text-indigo-600">{w.word}</span>
+                                    {w.partOfSpeech && <span className="text-[10px] bg-slate-100 px-1.5 rounded uppercase font-bold text-slate-500">{w.partOfSpeech}</span>}
+                                </div>
+                                {w.pronunciation && <p className="text-xs text-slate-400 mb-1">{w.pronunciation}</p>}
+                                <p className="text-sm font-medium">{w.meaning}</p>
+                                {w.example && <p className="text-xs text-slate-500 mt-2 bg-slate-50 p-1.5 rounded italic">"{w.example}"</p>}
+                            </div>
+                        </div>
+                    ))}
+                </div>
+            )}
+            
+            {/* E-test Preview */}
+            {data.sections?.map((s: any, si: number) => (
+                <div key={si} className="space-y-4 bg-slate-50/50 p-4 rounded-2xl border border-slate-100">
+                    <h4 className="font-bold text-indigo-600">Bài đọc {si + 1}</h4>
+                    <div className="bg-white p-4 rounded-xl border text-sm leading-relaxed whitespace-pre-wrap overflow-hidden">
+                        <LatexContent content={s.passage || ''} />
+                    </div>
+                    <div className="grid grid-cols-1 gap-4">
+                        {s.questions?.map((q: any, qi: number) => <QuestionPreview key={qi} question={q} index={qi} type="part1" />)}
+                    </div>
+                </div>
+            ))}
+        </div>
+    );
+};
+
+export function SmartImportDialog({ open, onClose, onImport, type, initialSubjectId, initialFolderPath }: SmartImportDialogProps) {
     const { toast } = useToast();
     const [step, setStep] = useState<'upload' | 'review'>('upload');
     const [loading, setLoading] = useState(false);
     const [title, setTitle] = useState('');
     const [time, setTime] = useState(50);
-    const [subjectId, setSubjectId] = useState<string>(initialSubjectId || 'toan');
-    const [customFolder, setCustomFolder] = useState('');
+    const [subjectId] = useState<string>(initialSubjectId || 'toan');
+    const [customFolder, setCustomFolder] = useState(initialFolderPath || '');
+    const [isSpecial, setIsSpecial] = useState(false);
+    const [allowedEmails, setAllowedEmails] = useState('');
+    const [availableFolders, setAvailableFolders] = useState<string[]>([]);
     const [extractedText, setExtractedText] = useState('');
     const [jsonPreview, setJsonPreview] = useState('');
+    const [activeTab, setActiveTab] = useState<'preview' | 'code'>('preview');
     const [uploadProgress, setUploadProgress] = useState<{ current: number, total: number } | null>(null);
     const fileInputRef = useRef<HTMLInputElement>(null);
-    const subjects = getSubjects();
+
+    React.useEffect(() => {
+        if (open) {
+            loadAvailableFolders();
+        }
+    }, [open, subjectId]);
+
+    const loadAvailableFolders = async () => {
+        try {
+            const allExams = await getAllExams();
+            const filtered = allExams.filter(e => e.subjectId === subjectId);
+            const folders = Array.from(new Set(filtered.map(e => (e.customFolder || '').trim()).filter(Boolean)));
+            setAvailableFolders(folders.sort((a, b) => a.localeCompare(b, 'vi')));
+        } catch (err) {
+            console.error("Failed to load folders:", err);
+        }
+    };
 
 
 
@@ -267,30 +365,128 @@ export function SmartImportDialog({ open, onClose, onImport, type, initialSubjec
                         });
                     })
                 });
-                // Convert common HTML tags to markdown-like syntax for AI
                 text = result.value
                     .replace(/<strong>([\s\S]*?)<\/strong>/g, '**$1**')
                     .replace(/<b>([\s\S]*?)<\/b>/g, '**$1**')
                     .replace(/<em>([\s\S]*?)<\/em>/g, '*$1*')
                     .replace(/<i>([\s\S]*?)<\/i>/g, '*$1*')
-                    .replace(/<u>([\s\S]*?)<\/u>/g, '<u>$1</u>') // Keep <u>, LatexContent will handle it
+                    .replace(/<u>([\s\S]*?)<\/u>/g, '<u>$1</u>')
                     .replace(/<p>([\s\S]*?)<\/p>/g, '$1\n\n')
                     .replace(/<br\s*\/?>/g, '\n');
             } else if (fileName.endsWith('.pdf')) {
                 const arrayBuffer = await file.arrayBuffer();
                 const loadingTask = pdfjs.getDocument({ data: arrayBuffer });
                 const pdf = await loadingTask.promise;
-                let fullText = '';
+                let fullTextParts: string[] = [];
                 
                 for (let i = 1; i <= pdf.numPages; i++) {
                     const page = await pdf.getPage(i);
-                    const content: any = await page.getTextContent();
-                    const pageText = content.items
-                        .map((item: any) => item.str || '')
-                        .join(' ');
-                    fullText += pageText + '\n\n';
+                    const textContent = await page.getTextContent();
+                    const operatorList = await page.getOperatorList();
+                    
+                    const pageItems: { 
+                        type: 'text' | 'image', 
+                        content: string, 
+                        x: number, 
+                        y: number, 
+                        topY: number, 
+                        height: number 
+                    }[] = [];
+                    const pageWidth = page.view[2];
+                    const pageHeight = page.view[3];
+                    
+                    textContent.items.forEach((item: any) => {
+                        const h = item.height || 10;
+                        pageItems.push({
+                            type: 'text',
+                            content: item.str,
+                            x: item.transform[4],
+                            y: item.transform[5],
+                            topY: item.transform[5] + h,
+                            height: h
+                        });
+                    });
+                    
+                    let currentTransform = [1, 0, 0, 1, 0, 0];
+                    const imageTasks: Promise<void>[] = [];
+
+                    for (let j = 0; j < operatorList.fnArray.length; j++) {
+                        const fn = operatorList.fnArray[j];
+                        const args = operatorList.argsArray[j];
+                        
+                        if (fn === pdfjsOPS.transform) {
+                            currentTransform = args;
+                        } else if (fn === pdfjsOPS.paintImageXObject || fn === pdfjsOPS.paintInlineImageXObject) {
+                            const imgKey = args[0];
+                            const imgWidth = Math.abs(currentTransform[0] || 1);
+                            const imgHeight = Math.abs(currentTransform[3] || 1);
+                            const posX = currentTransform[4] || 0;
+                            const posY = currentTransform[5] || 0;
+
+                            const isHeader = posY > (pageHeight || 842) * 0.9;
+                            const isFooter = posY < (pageHeight || 842) * 0.05;
+                            const isSmall = imgWidth < 60 && imgHeight < 60;
+
+                            if ((isHeader || isFooter) && isSmall) continue;
+
+                            const itemIndex = pageItems.length;
+                            const sideX = Math.round((posX / (pageWidth || 595)) * 100);
+                            const sideY = Math.round((1 - (posY / (pageHeight || 842))) * 100);
+                            
+                            pageItems.push({
+                                type: 'image',
+                                content: `[[PENDING_IMG_${itemIndex}]]`,
+                                x: posX,
+                                y: posY,
+                                topY: posY + imgHeight,
+                                height: imgHeight
+                            });
+
+                            const uploadTask = (async () => {
+                                try {
+                                    const imgData = await getPdfObjAsync(page, imgKey);
+                                    if (!imgData) throw new Error('No imgData');
+                                    
+                                    const blob = await convertPdfImageToBlob(imgData);
+                                    const formData = new FormData();
+                                    formData.append('key', IMGBB_API_KEY);
+                                    formData.append('image', blob);
+                                    
+                                    const imgRes = await fetch('https://api.imgbb.com/1/upload', { method: 'POST', body: formData });
+                                    if (imgRes.ok) {
+                                        const imgJson = await imgRes.json();
+                                    if (pageItems[itemIndex]) {
+                                        pageItems[itemIndex].content = `![image](${imgJson.data.url}) [[ANH_X${sideX}_Y${sideY}]]`;
+                                    }
+                                    } else {
+                                        throw new Error('Upload fail');
+                                    }
+                                } catch (err) {
+                                    console.error('Lỗi upload:', err);
+                                    if (pageItems[itemIndex]) {
+                                        pageItems[itemIndex].content = `![lỗi]() [[ANH_X${sideX}_Y${sideY}]]`;
+                                    }
+                                }
+                            })();
+                            imageTasks.push(uploadTask);
+                        }
+                    }
+                    
+                    if (imageTasks.length > 0) {
+                        await Promise.all(imageTasks).catch(e => console.warn("Some images failed", e));
+                    }
+                    
+                    pageItems.sort((a, b) => {
+                        if (Math.abs(b.topY - a.topY) > 15) {
+                            return b.topY - a.topY;
+                        }
+                        return a.x - b.x;
+                    });
+                    
+                    const pageContent = pageItems.map(item => item.content).join(' ');
+                    fullTextParts.push(pageContent);
                 }
-                text = fullText;
+                text = fullTextParts.join('\n\n');
             } else if (fileName.endsWith('.txt')) {
                 text = await file.text();
             } else {
@@ -310,94 +506,61 @@ export function SmartImportDialog({ open, onClose, onImport, type, initialSubjec
         }
     };
 
-    const robustJSONParse = (jsonStr: string) => {
-        let cleaned = jsonStr.trim();
-        
-        // Remove possible markdown wrappers
-        if (cleaned.startsWith('```')) {
-            cleaned = cleaned.replace(/^```(?:json)?\s*/, '').replace(/\s*```$/, '');
-        }
-
-        try {
-            return JSON.parse(cleaned);
-        } catch (e: any) {
-            console.warn('[SmartImport] Initial parse failed, attempting structural repair:', e.message);
-            
-            let repaired = cleaned;
-
-            // 1. Fix unescaped backslashes in LaTeX (avoid breaking valid escapes)
-            // Replace any single backslash that isn't part of a known explicitly requested JSON escape
-            // but also avoid replacing already-escaped backslashes.
-            repaired = repaired.replace(/(\\+)(?!["\\/bfnrtu])/g, (match) => {
-                // If it's an odd number of backslashes, add one more
-                return match.length % 2 === 1 ? match + '\\' : match;
-            });
-            
-            // 1.1 Remove AI-generated escaped characters which break KaTeX
-            repaired = repaired.replace(/\\+([\[\]_^])/g, '$1');
-            
-            // For LaTeX commands that happen to start with n, r, t (like \neq, \rightarrow, \tan)
-            // We need to specifically escape them if they are not escaped.
-            // This is tricky. The best defense is the prompt.
-            
-            // 2. Fix unescaped newlines inside strings
-            repaired = repaired.replace(/"([^"]*)"/g, (_match, p1) => {
-                return '"' + p1.replace(/\n/g, '\\n') + '"';
-            });
-            
-            // 3. Fix missing commas between objects/arrays: } { -> }, {
-            repaired = repaired.replace(/\}\s*\{/g, '}, {');
-            repaired = repaired.replace(/\]\s*\[/g, '], [');
-            repaired = repaired.replace(/\}\s*\[/g, '}, [');
-            repaired = repaired.replace(/\]\s*\{/g, '], {');
-            
-            // 4. Remove trailing commas before closing braces/brackets
-            repaired = repaired.replace(/,\s*\}/g, '}');
-            repaired = repaired.replace(/,\s*\]/g, ']');
-
-            // 5. Try to fix truncated JSON by closing open brackets/braces
-            const stack: ( '{' | '[' )[] = [];
-            for (let i = 0; i < repaired.length; i++) {
-                if (repaired[i] === '{') stack.push('{');
-                else if (repaired[i] === '[') stack.push('[');
-                else if (repaired[i] === '}') stack.pop();
-                else if (repaired[i] === ']') stack.pop();
-            }
-            while (stack.length > 0) {
-                const last = stack.pop();
-                repaired += last === '{' ? '}' : ']';
-            }
-
-            try {
-                return JSON.parse(repaired);
-            } catch (err2: any) {
-                console.error('[SmartImport] Structural repair failed:', err2.message);
-                // Return original error but with better context
-                const pos = err2.message.match(/position (\d+)/)?.[1] || e.message.match(/position (\d+)/)?.[1] || '?';
-                throw new Error(`JSON Error: ${e.message}. Vị trí: ${pos}. Có thể file quá dài hoặc AI bị ngắt quãng.`);
-            }
-        }
-    };
-
     const handleGenerateAI = async () => {
         if (!extractedText.trim()) return;
         setLoading(true);
         try {
+            // 1. Thay thế hình ảnh bằng Placeholder v2 (Super Robust) có kèm Hint vị trí
+            const foundImages: string[] = [];
+            // Regex linh hoạt cho cả cũ (Vị trí) và mới (X..Y..)
+            const textWithPlaceholders = extractedText.replace(/(!\[.*?\]\(.*?\))/g, (_match, markdown) => {
+                const placeholder = `[[IMG_${foundImages.length}]]`;
+                foundImages.push(markdown);
+                return placeholder;
+            });
+
+
             const response = await generateAIContent([
-                { role: 'user', parts: [{ text: `NỘI DUNG:\n${extractedText}` }] }
+                { role: 'user', parts: [{ text: `NỘI DUNG TRÍCH XUẤT:\n${textWithPlaceholders}\n\nLƯU Ý: Tuyệt đối giữ lại các mã [[IMG_N]] trong kết quả JSON.` }] }
             ], {
                 systemInstruction: PROMPTS[type] || PROMPTS.practice,
                 temperature: 0.1,
-                maxOutputTokens: 32768, // Allow up to 32k tokens to prevent truncation of long documents
+                maxOutputTokens: 32768,
                 responseMimeType: "application/json"
             });
 
             const jsonMatch = response.match(/\{[\s\S]*\}/);
             if (!jsonMatch) throw new Error('AI không trả về JSON hợp lệ.');
             
-            const parsed = normalizeImportedExamData(robustJSONParse(jsonMatch[0]));
+            // 2.3 parse
+            let parsed = robustJSONParse(jsonMatch[0]);
+
+            // 3. Khôi phục URL hình ảnh từ Placeholder (Hỗ trợ cả trường hợp AI thêm khoảng trắng hoặc xóa bớt hint)
+            const restoreImages = (obj: any) => {
+                if (!obj || typeof obj !== 'object') return;
+                Object.keys(obj).forEach(key => {
+                    if (typeof obj[key] === 'string') {
+                        // Regex linh hoạt bắt IMG_N bất kể phần hint vị trí phía sau
+                        obj[key] = obj[key].replace(/\[\[\s*IMG_(\d+)[^\]]*\]\]/gi, (_match: string, index: string) => {
+                            const idx = parseInt(index);
+                            return foundImages[idx] || _match;
+                        });
+                    } else if (typeof obj[key] === 'object') {
+                        restoreImages(obj[key]);
+                    }
+                });
+            };
+            restoreImages(parsed);
+
+            // 4. Chuẩn hóa dữ liệu lần cuối
+            parsed = normalizeImportedExamData(parsed);
+
+            // 5. Cập nhật metadata từ JSON nếu AI có gợi ý (biệt là tiêu đề bộ thẻ)
+            if (parsed.title) setTitle(parsed.title);
+            
             setJsonPreview(JSON.stringify(parsed, null, 2));
             setStep('review');
+            setActiveTab('preview');
             toast({ title: '✅ Phân tích xong', type: 'success' });
         } catch (err: any) {
             toast({ title: 'Lỗi AI', message: err.message, type: 'error' });
@@ -407,45 +570,57 @@ export function SmartImportDialog({ open, onClose, onImport, type, initialSubjec
     };
 
     const handleFinalImport = async () => {
-        if (!title.trim() && type !== 'vocab') {
-            toast({ title: 'Thiếu tiêu đề', type: 'warning' });
-            return;
-        }
         try {
-            const data = normalizeImportedExamData(robustJSONParse(jsonPreview));
+            const data = robustJSONParse(jsonPreview);
             
-            // Re-index all IDs to guarantee absolute uniqueness and sequential order
-            let globalId = 1;
-            if (Array.isArray(data.part1)) {
-                data.part1.forEach((q: any) => { q.id = globalId++; });
-            }
-            if (Array.isArray(data.part2)) {
-                data.part2.forEach((q: any) => {
-                    q.id = globalId++;
-                    if (Array.isArray(q.subQuestions)) {
-                        q.subQuestions.forEach((sq: any, j: number) => {
-                            sq.id = String.fromCharCode(97 + j); // 'a', 'b', 'c', 'd'
-                        });
-                    }
-                });
-            }
-            if (Array.isArray(data.part3)) {
-                data.part3.forEach((q: any) => { q.id = globalId++; });
+            // Re-index all IDs if it's an exam (not vocab)
+            if (type !== 'vocab') {
+                let globalId = 1;
+                if (Array.isArray(data.part1)) {
+                    data.part1.forEach((q: any) => { q.id = globalId++; });
+                }
+                if (Array.isArray(data.part2)) {
+                    data.part2.forEach((q: any) => {
+                        q.id = globalId++;
+                        if (Array.isArray(q.subQuestions)) {
+                            q.subQuestions.forEach((sq: any, j: number) => {
+                                sq.id = String.fromCharCode(97 + j); // 'a', 'b', 'c', 'd'
+                            });
+                        }
+                    });
+                }
+                if (Array.isArray(data.part3)) {
+                    data.part3.forEach((q: any) => { q.id = globalId++; });
+                }
             }
 
-            await onImport({
-                title,
+            const cleanPayload = sanitizeForFirestore({
+                ...data,
+                title: title.trim(),
                 time,
                 subjectId,
-                customFolder,
-                ...data
+                customFolder: (customFolder || '').trim(),
+                isSpecial,
+                allowedEmails: (allowedEmails || '').split(',').map(e => e.trim()).filter(Boolean)
             });
+
+            console.log("[SmartImport] Final Payload:", cleanPayload);
+            try {
+                await onImport(cleanPayload);
+            } catch (importErr: any) {
+                console.error("[SmartImport] onImport Error:", importErr);
+                throw new Error(importErr?.message || 'Lỗi khi lưu dữ liệu vào hệ thống.');
+            }
             toast({ title: 'Thành công!', type: 'success' });
             onClose();
+            // Reset state
             setStep('upload');
             setExtractedText('');
+            setJsonPreview('');
             setTitle('');
-            setCustomFolder('');
+            setCustomFolder(initialFolderPath || '');
+            setIsSpecial(false);
+            setAllowedEmails('');
         } catch (err: any) {
             toast({ title: 'Lỗi', message: err.message, type: 'error' });
         }
@@ -498,46 +673,141 @@ export function SmartImportDialog({ open, onClose, onImport, type, initialSubjec
                         </div>
                     </div>
                 ) : (
-                    <div className="space-y-5">
-                        <div className="grid grid-cols-1 md:grid-cols-4 gap-4 p-4 bg-muted/30 rounded-xl border">
-                            <div className={cn(type === 'etest' ? "md:col-span-2" : "md:col-span-1")}>
-                                <label className="text-[10px] font-bold uppercase text-muted-foreground mb-1 block">Tiêu đề</label>
-                                <input type="text" value={title} onChange={(e) => setTitle(e.target.value)} className="w-full border rounded-md px-3 py-1.5 text-sm" />
-                            </div>
-                            {type !== 'etest' && (
-                                <div>
-                                    <label className="text-[10px] font-bold uppercase text-muted-foreground mb-1 block">Môn học</label>
-                                    <select value={subjectId} onChange={(e) => setSubjectId(e.target.value)} className="w-full border rounded-md px-3 py-1.5 text-sm">
-                                        {subjects.map(s => <option key={s.id} value={s.id}>{s.icon} {s.name}</option>)}
-                                    </select>
+                    <div className="flex flex-col h-full overflow-hidden">
+                        <div className="flex items-center justify-between mb-4 border-b pb-4 shrink-0">
+                            <div className="flex items-center gap-3">
+                                <div className="h-10 w-10 rounded-xl bg-indigo-50 flex items-center justify-center text-indigo-600">
+                                    <FileText className="h-6 w-6" />
                                 </div>
-                            )}
-                            <div>
-                                <label className="text-[10px] font-bold uppercase text-muted-foreground mb-1 block">Thời gian</label>
-                                <input type="number" value={time} onChange={(e) => setTime(Number(e.target.value))} className="w-full border rounded-md px-3 py-1.5 text-sm" />
+                                <div>
+                                    <h3 className="font-black text-slate-800">Kiểm tra kết quả</h3>
+                                    <p className="text-[10px] text-slate-400 uppercase font-bold">Smart AI Import Engine</p>
+                                </div>
                             </div>
-                            <div>
-                                <label className="text-[10px] font-bold uppercase text-muted-foreground mb-1 block">Thư mục</label>
-                                <input
-                                    type="text"
-                                    value={customFolder}
-                                    onChange={(e) => setCustomFolder(e.target.value)}
-                                    className="w-full border rounded-md px-3 py-1.5 text-sm"
-                                    placeholder="VD: Ôn thi học kỳ"
-                                />
+                            <div className="flex bg-slate-100 p-1 rounded-xl">
+                                <button
+                                    onClick={() => setActiveTab('preview')}
+                                    className={cn(
+                                        "px-4 py-1.5 rounded-lg text-xs font-bold flex items-center gap-2 transition-all",
+                                        activeTab === 'preview' ? "bg-white text-indigo-600 shadow-sm" : "text-slate-500 hover:text-slate-700"
+                                    )}
+                                >
+                                    <Eye className="h-3.5 w-3.5" /> Xem trước
+                                </button>
+                                <button
+                                    onClick={() => setActiveTab('code')}
+                                    className={cn(
+                                        "px-4 py-1.5 rounded-lg text-xs font-bold flex items-center gap-2 transition-all",
+                                        activeTab === 'code' ? "bg-white text-indigo-600 shadow-sm" : "text-slate-500 hover:text-slate-700"
+                                    )}
+                                >
+                                    <Code className="h-3.5 w-3.5" /> JSON Code
+                                </button>
                             </div>
                         </div>
 
-                        <textarea
-                            value={jsonPreview}
-                            onChange={(e) => setJsonPreview(e.target.value)}
-                            rows={15}
-                            className="w-full rounded-xl border bg-slate-900 text-slate-100 p-4 text-xs font-mono outline-none"
-                        />
+                        {/* Metadata Settings Grid */}
+                        <div className="grid grid-cols-1 md:grid-cols-12 gap-4 mb-6 p-4 bg-muted/30 rounded-2xl border shrink-0">
+                            <div className="md:col-span-4">
+                                <label className="text-[10px] font-bold uppercase text-muted-foreground mb-1.5 flex items-center gap-1">
+                                    <FileText className="h-3 w-3" /> Tiêu đề đề thi
+                                </label>
+                                <input 
+                                    type="text" 
+                                    value={title} 
+                                    onChange={(e) => setTitle(e.target.value)} 
+                                    className="w-full rounded-xl border-slate-200 bg-white px-3 py-2 text-sm focus:ring-2 focus:ring-indigo-500/20 outline-none" 
+                                />
+                            </div>
+                            <div className="md:col-span-2">
+                                <label className="text-[10px] font-bold uppercase text-muted-foreground mb-1.5 flex items-center gap-1">
+                                    <Clock className="h-3 w-3" /> Thời gian (phút)
+                                </label>
+                                <input 
+                                    type="number" 
+                                    value={time} 
+                                    onChange={(e) => setTime(parseInt(e.target.value) || 0)} 
+                                    className="w-full rounded-xl border-slate-200 bg-white px-3 py-2 text-sm focus:ring-2 focus:ring-indigo-500/20 outline-none" 
+                                />
+                            </div>
+                            <div className="md:col-span-3">
+                                <label className="text-[10px] font-bold uppercase text-muted-foreground mb-1.5 flex items-center gap-1">
+                                    <FolderOpen className="h-3 w-3" /> Thư mục lưu trữ
+                                </label>
+                                <div className="flex gap-1">
+                                    <select 
+                                        className="flex-1 rounded-xl border-slate-200 bg-white px-1 py-2 text-[11px] focus:ring-2 focus:ring-indigo-500/20 outline-none max-w-[100px]"
+                                        onChange={(e) => setCustomFolder(e.target.value)}
+                                        value={availableFolders.includes(customFolder) ? customFolder : ""}
+                                    >
+                                        <option value="">(Ngoài cùng)</option>
+                                        {availableFolders.map(f => (
+                                            <option key={f} value={f}>{f}</option>
+                                        ))}
+                                    </select>
+                                    <input 
+                                        type="text" 
+                                        value={customFolder} 
+                                        onChange={(e) => setCustomFolder(e.target.value)} 
+                                        placeholder="Tên mới..."
+                                        className="flex-[2] rounded-xl border-slate-200 bg-white px-3 py-2 text-sm focus:ring-2 focus:ring-indigo-500/20 outline-none" 
+                                    />
+                                </div>
+                            </div>
+                            <div className="md:col-span-3 flex flex-col justify-end">
+                                <label className="flex items-center gap-2 px-3 py-2 rounded-xl bg-white border cursor-pointer hover:bg-slate-50 transition-colors h-[38px]">
+                                    <input 
+                                        type="checkbox" 
+                                        checked={isSpecial} 
+                                        onChange={(e) => setIsSpecial(e.target.checked)}
+                                        className="w-4 h-4 rounded text-indigo-600"
+                                    />
+                                    <span className="text-xs font-bold text-slate-700 flex items-center gap-1.5">
+                                        <Shield className={cn("h-4 w-4", isSpecial ? "text-indigo-600" : "text-slate-400")} />
+                                        Đề thi đặc biệt
+                                    </span>
+                                </label>
+                            </div>
 
-                        <div className="flex justify-end gap-3">
-                            <Button variant="outline" onClick={() => setStep('upload')}>Quay lại</Button>
-                            <Button onClick={handleFinalImport} className="bg-emerald-600 hover:bg-emerald-700 text-white">Xác nhận nhập kho</Button>
+                            {/* Special Emails Config */}
+                            {isSpecial && (
+                                <div className="md:col-span-12 animate-in slide-in-from-top-2 duration-300">
+                                    <label className="text-[10px] font-bold uppercase text-muted-foreground mb-1.5 flex items-center gap-1">
+                                        <Mail className="h-3 w-3" /> Email được truy cập (cách nhau bởi dấu phẩy)
+                                    </label>
+                                    <textarea 
+                                        value={allowedEmails} 
+                                        onChange={(e) => setAllowedEmails(e.target.value)}
+                                        placeholder="user1@gmail.com, user2@gmail.com..."
+                                        className="w-full rounded-xl border-slate-200 bg-white px-3 py-2 text-[11px] focus:ring-2 focus:ring-indigo-500/20 outline-none h-16 transition-all"
+                                    />
+                                </div>
+                            )}
+                        </div>
+
+                        {/* Tab Content Area */}
+                        <div className="flex-1 overflow-y-auto px-1 min-h-[300px]">
+                            {activeTab === 'preview' ? (
+                                <div className="animate-in fade-in duration-300">
+                                    <ExamPreview data={robustJSONParse(jsonPreview)} />
+                                </div>
+                            ) : (
+                                <div className="h-full animate-in fade-in duration-300 flex flex-col min-h-[300px]">
+                                    <textarea
+                                        value={jsonPreview}
+                                        onChange={(e) => setJsonPreview(e.target.value)}
+                                        className="flex-1 w-full rounded-2xl border-slate-200 bg-slate-900 text-indigo-300 p-6 text-xs font-mono outline-none shadow-inner min-h-[300px]"
+                                    />
+                                </div>
+                            )}
+                        </div>
+
+                        <div className="mt-6 flex justify-between items-center bg-white pt-4 border-t sticky bottom-0 shrink-0">
+                            <Button variant="ghost" onClick={() => setStep('upload')} className="text-slate-500">Quay lại</Button>
+                            <div className="flex gap-2">
+                                <Button variant="outline" onClick={onClose} className="rounded-xl border-slate-200">Hủy</Button>
+                                <Button onClick={handleFinalImport} className="admin-btn-primary rounded-xl px-10 shadow-lg shadow-indigo-200">Xác nhận lưu đề</Button>
+                            </div>
                         </div>
                     </div>
                 )}

@@ -1,4 +1,4 @@
-﻿import { useEffect, useState, useMemo } from 'react';
+import { useEffect, useState, useMemo } from 'react';
 import { useNavigate, useSearchParams } from 'react-router-dom';
 import { cn } from '@/lib/utils';
 import { getAllExams, getSubjects, getHighestScores } from '@/services/exam.service';
@@ -9,8 +9,9 @@ import { useAuth } from '@/contexts/AuthContext';
 import {
     Calculator, FlaskConical, Dna, Clock,
     Monitor, Atom, Book,
-    ArrowLeft, Search, Globe, Scale, Users, Folder, ChevronRight, ChevronDown
+    ArrowLeft, Search, Globe, Scale, Users, Folder, ChevronRight, Home, ArrowUpLeft
 } from 'lucide-react';
+import * as folderUtils from '@/lib/folderUtils';
 
 export default function PracticeHome() {
     const navigate = useNavigate();
@@ -21,7 +22,7 @@ export default function PracticeHome() {
     const [loading, setLoading] = useState(true);
     const [searchQuery, setSearchQuery] = useState('');
     const [error, setError] = useState<string | null>(null);
-    const [expandedFolders, setExpandedFolders] = useState<string[]>([]);
+    const [currentPath, setCurrentPath] = useState<string[]>([]);
 
     const subjects = getSubjects();
     const activeSubject = searchParams.get('subject') || '';
@@ -36,7 +37,6 @@ export default function PracticeHome() {
                 setExams(examList);
                 setScores(highScores);
                 
-                // Log visiting practice home
                 logUserActivity('PracticeHome', 'Xem danh sách đề thi', {
                     eventType: 'view',
                     status: 'success',
@@ -51,60 +51,47 @@ export default function PracticeHome() {
         load();
     }, []);
 
+    // Reset currentPath when subject changes
+    useEffect(() => {
+        setCurrentPath([]);
+    }, [activeSubject]);
+
     const filteredExams = useMemo(() => {
         let filtered = exams;
+        
+        // Subject filter
         if (activeSubject) {
             filtered = filtered.filter((e) => e.subjectId === activeSubject);
         }
         
-        // Filter Special Exams
+        // Special Access check
         filtered = filtered.filter(e => {
             if (!e.isSpecial) return true;
             return e.allowedEmails?.includes(user?.email || '');
         });
 
+        return filtered;
+    }, [exams, activeSubject, user?.email]);
+
+    const currentFullPath = useMemo(() => currentPath.join('/'), [currentPath]);
+
+    const itemsAtLevel = useMemo(() => {
         if (searchQuery.trim()) {
             const q = searchQuery.toLowerCase();
-            filtered = filtered.filter(
-                (e) => e.title.toLowerCase().includes(q) || e.subjectId.toLowerCase().includes(q)
-            );
+            return {
+                folders: [],
+                exams: filteredExams.filter(e => e.title.toLowerCase().includes(q))
+            };
         }
-        return filtered;
-    }, [exams, activeSubject, searchQuery, user?.email]);
 
-    const folderSections = useMemo(() => {
-        const normalized = filteredExams.map((exam) => ({
-            exam,
-            folder: (exam.customFolder || '').trim()
-        }));
-        const folderMap = new Map<string, ExamMetadata[]>();
-        const uncategorized: ExamMetadata[] = [];
+        // Discovery folders from metadata
+        const allPaths = Array.from(new Set(filteredExams.map(e => (e.customFolder || '').trim()).filter(Boolean)));
+        const folders = folderUtils.getSubFoldersAtLevel(allPaths, currentFullPath);
+        const examsAtThisLevel = filteredExams.filter(e => (e.customFolder || '') === currentFullPath);
 
-        normalized.forEach(({ exam, folder }) => {
-            if (!folder) {
-                uncategorized.push(exam);
-                return;
-            }
-            if (!folderMap.has(folder)) folderMap.set(folder, []);
-            folderMap.get(folder)!.push(exam);
-        });
+        return { folders, exams: examsAtThisLevel };
+    }, [filteredExams, currentFullPath, searchQuery]);
 
-        const folders = Array.from(folderMap.entries())
-            .sort((a, b) => a[0].localeCompare(b[0], 'vi'))
-            .map(([name, exams]) => ({ name, exams }));
-
-        return { folders, uncategorized };
-    }, [filteredExams]);
-
-    useEffect(() => {
-        setExpandedFolders([]);
-    }, [activeSubject, searchQuery]);
-
-    useEffect(() => {
-        setExpandedFolders((prev) => prev.filter((name) => folderSections.folders.some((folder) => folder.name === name)));
-    }, [folderSections.folders]);
-
-    // Icon mapping for subjects
     const getSubjectIcon = (id: string) => {
         switch (id) {
             case 'toan': return { icon: <Calculator className="h-6 w-6 text-red-500" />, bg: 'bg-red-50 dark:bg-red-500/10' };
@@ -120,64 +107,42 @@ export default function PracticeHome() {
         }
     };
 
-    if (loading) {
-        return (
-            <div className="flex items-center justify-center py-20">
-                <Spinner size="lg" label="Đang tải danh sách đề..." />
-            </div>
-        );
-    }
+    if (loading) return <div className="flex items-center justify-center py-20"><Spinner size="lg" label="Đang tải danh sách đề..." /></div>;
 
-    if (error) {
-        return (
-            <div className="text-center py-20 px-6">
-                <div className="bg-red-50 border border-red-200 rounded-xl p-6 text-red-600 max-w-md mx-auto">
-                    <p className="font-semibold mb-2">Lỗi tải dữ liệu</p>
-                    <p className="text-sm opacity-90 mb-4">{error}</p>
-                    <button
-                        onClick={() => navigate('/')}
-                        className="text-sm font-medium hover:underline flex items-center justify-center gap-2 mx-auto"
-                    >
-                        <ArrowLeft className="w-4 h-4" />
-                        Quay lại Menu
-                    </button>
-                </div>
+    if (error) return (
+        <div className="text-center py-20 px-6">
+            <div className="bg-red-50 border border-red-200 rounded-xl p-6 text-red-600 max-w-md mx-auto">
+                <p className="font-semibold mb-2">Lỗi tải dữ liệu</p>
+                <p className="text-sm opacity-90 mb-4">{error}</p>
+                <button onClick={() => navigate('/')} className="text-sm font-medium hover:underline flex items-center justify-center gap-2 mx-auto">
+                    <ArrowLeft className="w-4 h-4" /> Quay lại Menu
+                </button>
             </div>
-        );
-    }
+        </div>
+    );
 
-    // If no subject selected, show subject selection (Redesigned)
+    // Initial Subject Selection
     if (!activeSubject) {
         return (
-            <div className="space-y-6">
-                {/* Header Card */}
+            <div className="space-y-6 animate-in fade-in slide-in-from-bottom-4 duration-700">
                 <div className="bg-white/70 dark:bg-slate-900/40 backdrop-blur-xl rounded-[32px] p-8 md:p-10 shadow-soft border border-white/80 dark:border-slate-800/50 flex flex-col md:flex-row md:items-center justify-between gap-6">
                     <div>
-                        <h2 className="text-2xl md:text-4xl font-extrabold text-gray-900 dark:text-white tracking-tight">Ôn thi THPT QG 2025</h2>
+                        <h2 className="text-2xl md:text-4xl font-extrabold text-gray-900 dark:text-white tracking-tight leading-tight">Ôn thi THPT QG 2025</h2>
                         <p className="text-gray-500 mt-2 text-sm md:text-lg font-medium opacity-80">
                             Cấu trúc đề mới nhất. Tích hợp công thức Toán/Lý/Hóa.
                         </p>
                     </div>
                     <div className="flex flex-wrap gap-2 shrink-0 self-start md:self-center">
-                        <button
-                            onClick={() => navigate('/practice/history')}
-                            className="bg-blue-50 hover:bg-blue-100 text-blue-600 px-6 py-3 rounded-2xl font-bold transition-all flex items-center gap-2 shadow-sm active:scale-95 border border-blue-100"
-                        >
-                            <Clock className="h-5 w-5" />
-                            Lịch sử
+                        <button onClick={() => navigate('/practice/history')} className="bg-blue-50/80 hover:bg-blue-100 text-blue-600 px-6 py-3 rounded-2xl font-bold transition-all flex items-center gap-2 shadow-sm active:scale-95 border border-blue-100/50">
+                            <Clock className="h-5 w-5" /> Lịch sử
                         </button>
-                        <button
-                            onClick={() => navigate('/')}
-                            className="bg-white dark:bg-slate-800 hover:bg-gray-50 dark:hover:bg-slate-700 text-gray-700 dark:text-gray-200 px-6 py-3 rounded-2xl font-bold transition-all flex items-center gap-2 shadow-soft hover:shadow-medium active:scale-95 border border-gray-100 dark:border-slate-700"
-                        >
-                            <ArrowLeft className="h-5 w-5" />
-                            Quay lại Menu
+                        <button onClick={() => navigate('/')} className="bg-white dark:bg-slate-800 hover:bg-gray-50 dark:hover:bg-slate-700 text-gray-700 dark:text-gray-200 px-6 py-3 rounded-2xl font-bold transition-all flex items-center gap-2 shadow-soft border border-gray-100 dark:border-slate-700">
+                            <ArrowLeft className="h-5 w-5" /> Menu
                         </button>
                     </div>
                 </div>
 
-                {/* Grid of Subjects */}
-                <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4 md:gap-6">
+                <div className="grid grid-cols-1 xs:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4 md:gap-6">
                     {subjects.map((sub) => {
                         const count = exams.filter((e) => e.subjectId === sub.id).length;
                         const { icon, bg } = getSubjectIcon(sub.id);
@@ -185,17 +150,15 @@ export default function PracticeHome() {
                             <button
                                 key={sub.id}
                                 onClick={() => setSearchParams({ subject: sub.id })}
-                                className="group bg-white/85 dark:bg-slate-900/60 backdrop-blur-md p-8 rounded-[28px] border border-white/70 dark:border-slate-800/50 shadow-card hover:shadow-card-hover hover:-translate-y-2 transition-all duration-500 flex flex-col items-center text-center relative overflow-hidden active:scale-95"
+                                className="group bg-white/85 dark:bg-slate-900/60 backdrop-blur-md p-8 rounded-[32px] border border-white/70 dark:border-slate-800/50 shadow-soft hover:shadow-xl hover:-translate-y-1.5 transition-all duration-500 text-center relative overflow-hidden active:scale-95"
                             >
-                                <div className={`w-16 h-16 rounded-[22px] ${bg} flex items-center justify-center mb-5 group-hover:scale-110 transition-transform shadow-sm`}>
+                                <div className={cn("w-16 h-16 rounded-[22px] mx-auto flex items-center justify-center mb-5 transition-transform group-hover:scale-110", bg)}>
                                     <div className="scale-110">{icon}</div>
                                 </div>
-                                <h3 className="text-lg font-extrabold text-gray-900 dark:text-gray-100 mb-2 group-hover:text-blue-600 dark:group-hover:text-blue-400 transition-colors tracking-tight">
+                                <h3 className="text-lg font-black text-gray-900 dark:text-gray-100 mb-1 group-hover:text-blue-600 transition-colors tracking-tight">
                                     {sub.name}
                                 </h3>
-                                <div className="text-[11px] text-gray-500 dark:text-gray-400 font-black uppercase tracking-widest bg-gray-50/50 dark:bg-black/20 px-3 py-1 rounded-full border border-gray-100 dark:border-gray-800">
-                                    {count} đề thi
-                                </div>
+                                <p className="text-[10px] text-gray-400 font-black uppercase tracking-widest">{count} đề thi hiện có</p>
                             </button>
                         );
                     })}
@@ -204,225 +167,159 @@ export default function PracticeHome() {
         );
     }
 
-    // Subject selected: show exam list
+    // Selected Subject View
     const currentSubject = subjects.find(s => s.id === activeSubject);
-
+    
     const getScoreStyle = (score: number | undefined) => {
-        if (score === undefined || isNaN(score)) return {
-            border: 'border-slate-200/50',
-            badge: 'bg-slate-50 text-slate-400 border-slate-200/60',
-            accent: 'bg-slate-400',
-            shadow: 'shadow-sm',
-            ring: 'group-hover:ring-slate-100',
-            glow: 'from-slate-50/50'
-        };
-        if (score >= 8.0) return {
-            border: 'border-emerald-200/40',
-            badge: 'bg-emerald-50 text-emerald-600 border-emerald-200/50 shadow-emerald-100/50',
-            accent: 'bg-emerald-500',
-            shadow: 'shadow-emerald-500/5',
-            ring: 'group-hover:ring-emerald-200/30',
-            glow: 'from-emerald-50/50'
-        };
-        if (score >= 6.5) return {
-            border: 'border-blue-200/40',
-            badge: 'bg-blue-50 text-blue-600 border-blue-200/50 shadow-blue-100/50',
-            accent: 'bg-blue-500',
-            shadow: 'shadow-blue-500/5',
-            ring: 'group-hover:ring-blue-200/30',
-            glow: 'from-blue-50/50'
-        };
-        if (score >= 4.0) return {
-            border: 'border-orange-200/40',
-            badge: 'bg-orange-50 text-orange-600 border-orange-200/50 shadow-orange-100/50',
-            accent: 'bg-orange-500',
-            shadow: 'shadow-orange-500/5',
-            ring: 'group-hover:ring-orange-200/30',
-            glow: 'from-orange-50/50'
-        };
-        return {
-            border: 'border-red-200/40',
-            badge: 'bg-red-50 text-red-600 border-red-200/50 shadow-red-100/50',
-            accent: 'bg-red-500',
-            shadow: 'shadow-red-500/5',
-            ring: 'group-hover:ring-red-200/30',
-            glow: 'from-red-50/50'
-        };
-    };
-
-    const renderExamCard = (exam: ExamMetadata) => {
-        const totalQ = (exam.questionCount?.part1 || 0) +
-            (exam.questionCount?.part2 || 0) +
-            (exam.questionCount?.part3 || 0);
-        const highScore = scores[exam.id]?.highestScore;
-        const style = getScoreStyle(highScore);
-
-        return (
-            <button
-                key={exam.id}
-                onClick={() => navigate(`/practice/${exam.id}`)}
-                className={cn(
-                    "group relative bg-white/80 dark:bg-slate-900/60 backdrop-blur-xl rounded-[28px] p-4 border transition-all duration-500 text-left flex flex-col active:scale-[0.97] overflow-hidden hover:shadow-2xl hover:-translate-y-1.5 hover:ring-4",
-                    style.border,
-                    style.ring,
-                    style.shadow
-                )}
-            >
-                <div className={cn(
-                    "absolute inset-0 bg-gradient-to-br to-white opacity-0 group-hover:opacity-100 transition-opacity duration-500",
-                    style.glow
-                )} />
-
-                <div className={cn(
-                    "absolute top-0 right-0 w-24 h-24 -mr-12 -mt-12 rounded-full opacity-[0.06] group-hover:opacity-[0.15] transition-all duration-700 blur-2xl",
-                    style.accent
-                )} />
-
-                <div className="relative space-y-3">
-                    <div className="flex justify-between items-start gap-3">
-                        <h3 className="text-[14px] font-extrabold text-gray-800 dark:text-white line-clamp-2 leading-tight pr-2 group-hover:text-gray-950 dark:group-hover:text-white transition-colors tracking-tight">
-                            {exam.title}
-                            {exam.isSpecial && (
-                                <span className="ml-2 inline-block px-1.5 py-0.5 rounded-md bg-indigo-100 text-indigo-700 text-[9px] font-black uppercase tracking-tighter align-middle">Đặc biệt</span>
-                            )}
-                        </h3>
-                        {highScore !== undefined && !isNaN(highScore) && (
-                            <div className={cn(
-                                "shrink-0 w-12 h-12 rounded-[18px] flex flex-col items-center justify-center border-2 shadow-sm transition-all group-hover:scale-110 group-hover:rotate-3 duration-500",
-                                style.badge
-                            )}>
-                                <span className="text-[16px] font-black leading-none tracking-tighter">
-                                    {highScore.toFixed(highScore === 10 ? 0 : 1)}
-                                </span>
-                                <span className="text-[7px] font-black opacity-40 uppercase tracking-widest mt-0.5">Score</span>
-                            </div>
-                        )}
-                    </div>
-
-                    <div className="flex flex-wrap items-center gap-2">
-                        <div className="flex items-center gap-1 px-1.5 py-0.5 bg-gray-50/50 dark:bg-slate-800/50 rounded-lg text-[9px] text-gray-500 dark:text-gray-400 font-bold tracking-tight border border-gray-100/50 dark:border-slate-700/50 shadow-sm group-hover:bg-white dark:group-hover:bg-slate-800 transition-colors">
-                            <Clock className="h-3 w-3 opacity-50 text-blue-500" />
-                            {exam.time}'
-                        </div>
-                        <div className="flex items-center gap-1 px-1.5 py-0.5 bg-gray-50/50 dark:bg-slate-800/50 rounded-lg text-[9px] text-gray-500 dark:text-gray-400 font-bold tracking-tight border border-gray-100/50 dark:border-slate-700/50 shadow-sm group-hover:bg-white dark:group-hover:bg-slate-800 transition-colors">
-                            <Book className="h-3 w-3 opacity-50 text-emerald-500" />
-                            {totalQ} Q
-                        </div>
-                        <div className="flex items-center gap-1 px-1.5 py-0.5 bg-gray-50/50 dark:bg-slate-800/50 rounded-lg text-[9px] text-gray-400 dark:text-gray-500 font-bold tracking-tight border border-gray-100/50 dark:border-slate-700/50 shadow-sm group-hover:bg-white dark:group-hover:bg-slate-800 transition-colors">
-                            <Users className="h-3 w-3 opacity-40" />
-                            {exam.attemptCount || 0}
-                        </div>
-                    </div>
-                </div>
-            </button>
-        );
-    };
-
-    const toggleFolder = (name: string) => {
-        setExpandedFolders((prev) =>
-            prev.includes(name)
-                ? prev.filter((folderName) => folderName !== name)
-                : [...prev, name]
-        );
+        if (score === undefined || isNaN(score)) return { border: 'border-slate-200/50', badge: 'bg-slate-50 text-slate-400', glow: 'from-slate-50/50', accent: 'bg-slate-400' };
+        if (score >= 8.0) return { border: 'border-emerald-200/40', badge: 'bg-emerald-50 text-emerald-600', glow: 'from-emerald-50/50', accent: 'bg-emerald-500' };
+        if (score >= 6.5) return { border: 'border-blue-200/40', badge: 'bg-blue-50 text-blue-600', glow: 'from-blue-50/50', accent: 'bg-blue-500' };
+        if (score >= 4.0) return { border: 'border-orange-200/40', badge: 'bg-orange-50 text-orange-600', glow: 'from-orange-50/50', accent: 'bg-orange-500' };
+        return { border: 'border-red-200/40', badge: 'bg-red-50 text-red-600', glow: 'from-red-50/50', accent: 'bg-red-500' };
     };
 
     return (
-        <div className="space-y-6">
-            {/* Header for exam list */}
+        <div className="space-y-6 animate-in fade-in slide-in-from-bottom-2 duration-500">
+            {/* Header / Sidebar / Search area */}
             <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-6 bg-white/80 dark:bg-slate-900/40 backdrop-blur-xl p-6 rounded-[28px] border border-white dark:border-slate-800/50 shadow-soft">
                 <div className="flex items-center gap-4">
-                    <button
-                        onClick={() => setSearchParams({})}
-                        className="p-3 hover:bg-gray-100 dark:hover:bg-slate-800 rounded-2xl text-gray-500 transition-all active:scale-90 bg-gray-50/50 dark:bg-slate-800/50"
-                        title="Quay lại"
-                    >
+                    <button onClick={() => setSearchParams({})} className="p-3 hover:bg-gray-100 dark:hover:bg-slate-800 rounded-2xl text-gray-500 transition-all active:scale-90 bg-gray-50/50 dark:bg-slate-800/50 shadow-sm border border-gray-100 dark:border-slate-700">
                         <ArrowLeft className="h-5 w-5" />
                     </button>
                     <div>
-                        <h2 className="text-2xl font-extrabold text-gray-900 dark:text-white tracking-tight">{currentSubject?.name || activeSubject}</h2>
-                        <div className="flex items-center gap-2 mt-1">
-                            <span className="w-2 h-2 rounded-full bg-blue-500" />
-                            <p className="text-[11px] text-gray-400 dark:text-gray-500 uppercase tracking-[0.15em] font-bold">
-                                {filteredExams.length} ĐỀ THI HIỆN CÓ
-                            </p>
+                        <h2 className="text-2xl font-black text-gray-900 dark:text-white tracking-tight">{currentSubject?.name || 'Môn học'}</h2>
+                        <div className="flex items-center gap-2 mt-0.5">
+                            <span className="w-2 h-2 rounded-full bg-blue-500 animate-pulse" />
+                            <p className="text-[10px] text-gray-400 uppercase tracking-widest font-black">{filteredExams.length} ĐỀ THI</p>
                         </div>
                     </div>
                 </div>
 
-                {/* Compact Search */}
                 <div className="relative flex-1 max-w-sm">
                     <Search className="absolute left-4 top-1/2 -translate-y-1/2 h-5 w-5 text-gray-400" />
                     <input
-                        type="text"
-                        value={searchQuery}
-                        onChange={(e) => setSearchQuery(e.target.value)}
-                        placeholder="Tìm kiếm đề thi..."
-                        className="w-full pl-12 pr-5 py-3 bg-gray-50/50 dark:bg-slate-800/50 border border-transparent dark:border-slate-700/50 rounded-2xl focus:outline-none focus:ring-2 focus:ring-blue-500 focus:bg-white dark:focus:bg-slate-800 transition-all text-sm font-medium shadow-inset shadow-sm dark:text-white"
+                        type="text" value={searchQuery} onChange={(e) => setSearchQuery(e.target.value)} 
+                        placeholder="Tìm kiếm nhanh tiêu đề..."
+                        className="w-full pl-12 pr-5 py-3.5 bg-gray-50/50 dark:bg-slate-800/50 border border-gray-100/50 dark:border-slate-700/50 rounded-2xl focus:outline-none focus:ring-4 focus:ring-blue-500/10 focus:bg-white dark:focus:bg-slate-800 transition-all text-sm font-bold shadow-soft dark:text-white"
                     />
                 </div>
             </div>
 
-            {/* Exam list grid */}
-            {filteredExams.length === 0 ? (
-                <div className="bg-white dark:bg-slate-900/40 backdrop-blur-xl rounded-2xl p-12 text-center border border-gray-100 dark:border-slate-800/50 shadow-sm">
-                    <div className="w-16 h-16 bg-gray-50 rounded-full flex items-center justify-center mx-auto mb-4">
-                        <Search className="h-8 w-8 text-gray-300" />
+            {/* Breadcrumbs Explorer */}
+            <div className="bg-white/80 dark:bg-slate-900/40 backdrop-blur-xl rounded-[28px] border border-white dark:border-slate-800/50 shadow-soft overflow-hidden">
+                {!searchQuery.trim() && (
+                    <div className="px-5 py-4 border-b border-gray-100 dark:border-slate-800/60 bg-white/30 dark:bg-slate-900/30 flex items-center gap-1.5 overflow-x-auto scrollbar-hide">
+                        <button
+                            onClick={() => setCurrentPath([])}
+                            className={cn(
+                                "flex items-center gap-2 px-3 py-1.5 rounded-xl text-xs font-black transition-all",
+                                currentPath.length === 0 ? "bg-blue-600 text-white shadow-lg shadow-blue-500/20" : "text-gray-400 hover:bg-gray-100 dark:hover:bg-slate-800"
+                            )}
+                        >
+                            <Home className="h-3.5 w-3.5" /> GỐC
+                        </button>
+                        {currentPath.map((folder, idx) => (
+                            <div key={idx} className="flex items-center gap-1.5">
+                                <ChevronRight className="h-3.5 w-3.5 text-gray-300" />
+                                <button
+                                    onClick={() => setCurrentPath(currentPath.slice(0, idx + 1))}
+                                    className={cn(
+                                        "px-3 py-1.5 rounded-xl text-xs font-black transition-all whitespace-nowrap",
+                                        idx === currentPath.length - 1 ? "bg-blue-500 text-white shadow-lg" : "text-gray-400 hover:bg-gray-100 dark:hover:bg-slate-800"
+                                    )}
+                                >
+                                    {folder.toUpperCase()}
+                                </button>
+                            </div>
+                        ))}
                     </div>
-                    <p className="text-gray-400 font-medium">Không tìm thấy đề thi nào khớp với từ khóa.</p>
-                </div>
-            ) : (
-                <div className="space-y-8">
-                    <section className="space-y-4">
-                        {folderSections.folders.map((folder) => {
-                            const isExpanded = expandedFolders.includes(folder.name);
+                )}
+
+                <div className="p-6 min-h-[400px]">
+                    <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 gap-4">
+                        {/* Up-level button */}
+                        {currentPath.length > 0 && !searchQuery.trim() && (
+                            <button
+                                onClick={() => setCurrentPath(currentPath.slice(0, -1))}
+                                className="group flex flex-col items-center gap-2 p-3 rounded-2xl hover:bg-slate-50 dark:hover:bg-slate-800/50 transition-all border border-transparent hover:border-slate-100 dark:hover:border-slate-700"
+                            >
+                                <div className="h-14 w-14 flex items-center justify-center rounded-2xl bg-indigo-50 dark:bg-indigo-900/20 text-indigo-500 transition-transform group-hover:-translate-y-1">
+                                    <ArrowUpLeft className="h-6 w-6" />
+                                </div>
+                                <span className="text-[10px] font-black text-slate-400 uppercase">Trở lên</span>
+                            </button>
+                        )}
+
+                        {/* Folders */}
+                        {itemsAtLevel.folders.map((folderName) => (
+                            <button
+                                key={folderName}
+                                onClick={() => setCurrentPath([...currentPath, folderName])}
+                                className="group flex flex-col items-center gap-3 p-4 rounded-3xl hover:bg-white dark:hover:bg-slate-800 transition-all border border-transparent hover:border-slate-100 dark:hover:border-slate-700 hover:shadow-xl group"
+                            >
+                                <div className="h-16 w-16 flex items-center justify-center rounded-2xl bg-amber-50 dark:bg-amber-900/20 text-amber-500 transition-all group-hover:scale-110 group-hover:bg-amber-100 dark:group-hover:bg-amber-900/40">
+                                    <Folder className="h-9 w-9 fill-current" />
+                                </div>
+                                <span className="text-xs font-black text-slate-700 dark:text-slate-200 line-clamp-2 text-center leading-tight">
+                                    {folderName}
+                                </span>
+                            </button>
+                        ))}
+                    </div>
+
+                    {/* Exams Grid */}
+                    <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 2xl:grid-cols-5 gap-5 mt-6 border-t border-gray-100 dark:border-slate-800/60 pt-6">
+                        {itemsAtLevel.exams.map((exam) => {
+                            const totalQ = (exam.questionCount?.part1 || 0) + (exam.questionCount?.part2 || 0) + (exam.questionCount?.part3 || 0);
+                            const highScore = scores[exam.id]?.highestScore;
+                            const style = getScoreStyle(highScore);
+                            
                             return (
-                                <div key={folder.name} className="space-y-3">
-                                    <button
-                                        onClick={() => toggleFolder(folder.name)}
-                                        className="w-full group relative bg-white/80 dark:bg-slate-900/60 backdrop-blur-xl rounded-2xl p-4 border border-amber-200/60 dark:border-amber-800/40 transition-all duration-300 text-left hover:shadow-xl active:scale-[0.99]"
-                                    >
-                                        <div className="flex items-center justify-between gap-3">
-                                            <div className="flex items-center gap-3 min-w-0">
-                                                <div className="w-10 h-10 rounded-xl bg-amber-100 dark:bg-amber-900/40 flex items-center justify-center shrink-0">
-                                                    <Folder className="h-5 w-5 text-amber-500" />
+                                <button
+                                    key={exam.id} onClick={() => navigate(`/practice/${exam.id}`)}
+                                    className={cn(
+                                        "group relative bg-white dark:bg-slate-900 rounded-[28px] p-5 border transition-all duration-500 text-left flex flex-col active:scale-[0.97] overflow-hidden hover:shadow-2xl hover:-translate-y-1.5",
+                                        style.border
+                                    )}
+                                >
+                                    <div className={cn("absolute inset-0 bg-gradient-to-br to-white/0 opacity-0 group-hover:opacity-10 dark:opacity-0 transition-opacity duration-500", style.glow)} />
+                                    <div className="relative space-y-4">
+                                        <div className="flex justify-between items-start gap-3">
+                                            <h3 className="text-[13px] font-black text-slate-800 dark:text-white line-clamp-2 leading-tight pr-1 group-hover:text-blue-600 transition-colors tracking-tight">
+                                                {exam.title}
+                                                {exam.isSpecial && <span className="ml-2 inline-block px-1.5 py-0.5 rounded-md bg-indigo-600 text-white text-[8px] font-black uppercase tracking-tighter align-middle">PRO</span>}
+                                            </h3>
+                                            {highScore !== undefined && !isNaN(highScore) && (
+                                                <div className={cn("shrink-0 w-11 h-11 rounded-2xl flex flex-col items-center justify-center border transition-all group-hover:scale-110 duration-500", style.badge)}>
+                                                    <span className="text-[15px] font-black tracking-tight">{highScore.toFixed(highScore === 10 ? 0 : 1)}</span>
+                                                    <span className="text-[6.5px] font-black opacity-50 uppercase tracking-widest leading-none">SCORE</span>
                                                 </div>
-                                                <div className="min-w-0">
-                                                    <p className="text-sm font-black text-slate-800 dark:text-white truncate">{folder.name}</p>
-                                                    <p className="text-[11px] text-slate-500 dark:text-slate-400 mt-0.5">
-                                                        {folder.exams.length} đề thi
-                                                    </p>
-                                                </div>
-                                            </div>
-                                            {isExpanded ? (
-                                                <ChevronDown className="h-4 w-4 text-slate-400 shrink-0" />
-                                            ) : (
-                                                <ChevronRight className="h-4 w-4 text-slate-400 shrink-0" />
                                             )}
                                         </div>
-                                    </button>
-
-                                    {isExpanded && (
-                                        <div className="pl-1 grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4 md:gap-5">
-                                            {folder.exams.map(renderExamCard)}
+                                        <div className="flex flex-wrap items-center gap-2">
+                                            <div className="flex items-center gap-1.5 px-2 py-1 bg-slate-50 dark:bg-slate-800 rounded-lg text-[10px] text-slate-500 font-bold border border-slate-100 dark:border-slate-700">
+                                                <Clock className="h-3 w-3 text-blue-500" /> {exam.time}'
+                                            </div>
+                                            <div className="flex items-center gap-1.5 px-2 py-1 bg-slate-50 dark:bg-slate-800 rounded-lg text-[10px] text-slate-500 font-bold border border-slate-100 dark:border-slate-700">
+                                                <Book className="h-3 w-3 text-emerald-500" /> {totalQ} CH
+                                            </div>
                                         </div>
-                                    )}
-                                </div>
+                                    </div>
+                                </button>
                             );
                         })}
+                    </div>
 
-                        {folderSections.uncategorized.length > 0 && (
-                            <div className="space-y-3 pt-2">
-                                <h3 className="text-sm font-black tracking-wider uppercase text-slate-500 dark:text-slate-300">
-                                    Đề thi ngoài thư mục
-                                </h3>
-                                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4 md:gap-5">
-                                    {folderSections.uncategorized.map(renderExamCard)}
-                                </div>
-                            </div>
-                        )}
-                    </section>
+                    {/* Empty State */}
+                    {itemsAtLevel.folders.length === 0 && itemsAtLevel.exams.length === 0 && (
+                        <div className="py-20 flex flex-col items-center justify-center text-slate-300 dark:text-slate-700">
+                            <Book className="h-16 w-16 mb-4 opacity-10" />
+                            <p className="text-sm font-black uppercase tracking-[0.2em]">Thư mục trống</p>
+                            <p className="text-xs font-medium opacity-60 mt-1">Chưa có đề thi nào trong mục này</p>
+                        </div>
+                    )}
                 </div>
-            )}
+            </div>
         </div>
     );
 }

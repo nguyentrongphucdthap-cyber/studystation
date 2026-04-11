@@ -130,6 +130,7 @@ export default function VocabPage() {
     const [progressFilter, setProgressFilter] = useState<'all' | 'not-started' | 'in-progress' | 'completed'>('all');
     const [activeSubject, setActiveSubject] = useState<string>('all');
     const [activeTag, setActiveTag] = useState<string>('all');
+    const [vocabPath, setVocabPath] = useState<string[]>([]);
 
     // Flashcard core state
     const [currentIndex, setCurrentIndex] = useState(0);
@@ -206,60 +207,24 @@ export default function VocabPage() {
         return Array.from(tags).sort();
     }, [sets]);
 
-    const filteredAndSortedSets = useMemo(() => {
-        console.log('[Vocab DEBUG] Starting Filter:', {
-            setsCount: sets.length,
-            activeSubject,
-            activeTag,
-            searchQuery,
-            progressFilter,
-            sortBy
-        });
+    }, [sets, searchQuery, activeSubject, activeTag, progressFilter, sortBy, getSetProgress]);
 
-        let result = sets.filter(set => {
-            // Search filter
-            const matchesSearch = set.title.toLowerCase().includes(searchQuery.toLowerCase()) || 
-                               (set.description?.toLowerCase().includes(searchQuery.toLowerCase()));
-            if (!matchesSearch) return false;
+    const currentFullPath = useMemo(() => vocabPath.join('/'), [vocabPath]);
 
-            // Subject filter - improved robustness
-            if (activeSubject !== 'all') {
-                if (!set.subjectId) {
-                    console.log('[Vocab DEBUG] Set rejected (missing subjectId):', set.title);
-                    return false;
-                }
-                const match = String(set.subjectId) === String(activeSubject);
-                if (!match) {
-                    console.log(`[Vocab DEBUG] Set rejected (subjectId mismatch): ${set.title} (Set:${set.subjectId} vs Active:${activeSubject})`);
-                    return false;
-                }
-            }
+    const itemsAtLevel = useMemo(() => {
+        if (searchQuery.trim() || activeSubject !== 'all' || activeTag !== 'all' || progressFilter !== 'all') {
+            return {
+                folders: [],
+                sets: filteredAndSortedSets
+            };
+        }
 
-            // Tag filter - improved splitting
-            if (activeTag !== 'all') {
-                const setTags = (set.category || '').split(/[,,;]/).map(t => t.trim().toLowerCase());
-                const match = setTags.includes(activeTag.toLowerCase());
-                if (!match) {
-                    console.log(`[Vocab DEBUG] Set rejected (tag mismatch): ${set.title} (Tags:${setTags.join(',')} vs Active:${activeTag})`);
-                    return false;
-                }
-            }
+        const allPaths = Array.from(new Set(sets.map(s => (s.customFolder || '').trim()).filter(Boolean)));
+        const folders = folderUtils.getSubFoldersAtLevel(allPaths, currentFullPath);
+        const setsAtThisLevel = sets.filter(s => (s.customFolder || '') === currentFullPath);
 
-            // Progress filter
-            if (progressFilter !== 'all') {
-                const p = getSetProgress(set);
-                if (progressFilter === 'not-started' && p !== 0) return false;
-                if (progressFilter === 'completed' && p !== 100) return false;
-                if (progressFilter === 'in-progress' && (p === 0 || p === 100)) return false;
-            }
-
-            return true;
-        });
-
-        console.log('[Vocab DEBUG] Final result count:', result.length);
-
-        // Sorting
-        result.sort((a, b) => {
+        // Apply current sorting to setsAtThisLevel
+        const sortedSets = [...setsAtThisLevel].sort((a, b) => {
             if (sortBy === 'a-z') return a.title.localeCompare(b.title);
             if (sortBy === 'z-a') return b.title.localeCompare(a.title);
             if (sortBy === 'progress-high') return getSetProgress(b) - getSetProgress(a);
@@ -269,8 +234,8 @@ export default function VocabPage() {
             return 0;
         });
 
-        return result;
-    }, [sets, searchQuery, activeSubject, activeTag, progressFilter, sortBy, getSetProgress]);
+        return { folders, sets: sortedSets };
+    }, [sets, filteredAndSortedSets, currentFullPath, searchQuery, activeSubject, activeTag, progressFilter, sortBy, getSetProgress]);
 
     // --- HELPER: Prioritize Unlearned ---
     const getPreparedWords = (vocabSet: VocabSet, limit: number | 'all') => {
@@ -737,7 +702,7 @@ export default function VocabPage() {
                     </div>
                 </div>
 
-                {filteredAndSortedSets.length === 0 ? (
+                {itemsAtLevel.folders.length === 0 && itemsAtLevel.sets.length === 0 ? (
                     <div className="text-center py-20 bg-white/30 dark:bg-slate-900/20 rounded-[40px] border-2 border-dashed border-gray-100 dark:border-slate-800/50">
                         <div className="w-20 h-20 bg-gray-100 dark:bg-slate-800 rounded-full flex items-center justify-center mx-auto mb-6">
                             <Search className="h-8 w-8 text-gray-300" />
@@ -752,6 +717,7 @@ export default function VocabPage() {
                                 setActiveSubject('all');
                                 setActiveTag('all');
                                 setProgressFilter('all');
+                                setVocabPath([]);
                             }}
                         >
                             <RefreshCw className="h-4 w-4 mr-2" />
@@ -759,75 +725,143 @@ export default function VocabPage() {
                         </Button>
                     </div>
                 ) : (
-                    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-                        {filteredAndSortedSets.map((set) => {
-                            const progress = getSetProgress(set);
-                            const currentSubjects: any[] = allSubjects;
-                            const subject = currentSubjects.find((s: any) => s.id === set.subjectId);
-                            
-                            return (
-                                <div 
-                                    key={set.id}
-                                    className="group relative bg-white dark:bg-slate-900 rounded-[36px] p-6 shadow-soft hover:shadow-2xl hover:-translate-y-2 transition-all duration-500 border border-gray-100 dark:border-slate-800 overflow-hidden flex flex-col cursor-pointer"
-                                    onClick={() => {
-                                        setActiveSet(set);
-                                        setShowStudyMenu(true);
-                                    }}
-                                >
-                                    <div className="flex items-center justify-between mb-5">
-                                        <div className="flex items-center gap-2 px-3 py-1.5 bg-gray-50 dark:bg-slate-800 rounded-xl">
-                                            <span className="text-sm">{subject?.icon || '📚'}</span>
-                                            <span className="text-[10px] font-black uppercase tracking-widest text-gray-500">
-                                                {subject?.name || 'Tổng hợp'}
-                                            </span>
-                                        </div>
-                                        <div className="flex items-center gap-1.5 px-3 py-1.5 bg-purple-50 dark:bg-purple-900/20 rounded-xl">
-                                            <Layers className="h-3 w-3 text-purple-600" />
-                                            <span className="text-[11px] font-black text-purple-600">{set.words.length} thẻ</span>
-                                        </div>
-                                    </div>
-
-                                    <div className="mb-4">
-                                        <h3 className="text-xl font-black text-gray-900 dark:text-white line-clamp-1 mb-2 group-hover:text-purple-600 transition-colors">
-                                            {set.title}
-                                        </h3>
-                                        <p className="text-gray-400 dark:text-slate-500 text-xs font-medium line-clamp-2 h-8">
-                                            {set.description || 'Học nhanh các kiến thức quan trọng thông qua bộ thẻ ghi nhớ thông minh.'}
-                                        </p>
-                                    </div>
-
-                                    {set.category && (
-                                        <div className="flex flex-wrap gap-1.5 mb-6 h-6 overflow-hidden">
-                                            {set.category.split(',').map((tag, i) => (
-                                                <span key={i} className="text-[9px] font-black uppercase tracking-tighter text-gray-400 bg-gray-50 dark:bg-slate-800/50 px-2 py-0.5 rounded-md border border-gray-100 dark:border-slate-800">
-                                                    #{tag.trim()}
-                                                </span>
-                                            ))}
-                                        </div>
+                    <div className="bg-white/50 dark:bg-slate-900/40 backdrop-blur-xl rounded-[32px] border border-white dark:border-slate-800 shadow-soft overflow-hidden">
+                        {/* Breadcrumbs Navigation */}
+                        {(!searchQuery.trim() && activeSubject === 'all' && activeTag === 'all' && progressFilter === 'all') && (
+                            <div className="px-6 py-4 border-b border-gray-100 dark:border-slate-800/60 flex items-center gap-1.5 overflow-x-auto scrollbar-hide">
+                                <button
+                                    onClick={() => setVocabPath([])}
+                                    className={cn(
+                                        "flex items-center gap-2 px-4 py-2 rounded-xl text-xs font-black transition-all",
+                                        vocabPath.length === 0 ? "bg-purple-600 text-white shadow-lg" : "text-gray-400 hover:bg-gray-100"
                                     )}
+                                >
+                                    <Home className="h-4 w-4" /> TRANG CHỦ
+                                </button>
+                                {vocabPath.map((folder, idx) => (
+                                    <div key={idx} className="flex items-center gap-1.5">
+                                        <ChevronRight className="h-4 w-4 text-gray-300" />
+                                        <button
+                                            onClick={() => setVocabPath(vocabPath.slice(0, idx + 1))}
+                                            className={cn(
+                                                "px-4 py-2 rounded-xl text-xs font-black transition-all whitespace-nowrap",
+                                                idx === vocabPath.length - 1 ? "bg-purple-500 text-white shadow-md" : "text-gray-400 hover:bg-gray-100"
+                                            )}
+                                        >
+                                            {folder.toUpperCase()}
+                                        </button>
+                                    </div>
+                                ))}
+                            </div>
+                        )}
 
-                                    <div className="mt-auto space-y-4">
-                                        <div className="space-y-2">
-                                            <div className="flex items-center justify-between text-[10px] font-black uppercase tracking-widest text-gray-400">
-                                                <span>Tiến độ học</span>
-                                                <span className={cn(progress === 100 ? "text-emerald-500" : "text-purple-600")}>
-                                                    {progress}%
-                                                </span>
+                        <div className="p-8">
+                            {/* Folders List */}
+                            {itemsAtLevel.folders.length > 0 && (
+                                <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 gap-6 mb-10">
+                                    {vocabPath.length > 0 && !searchQuery.trim() && (
+                                        <button
+                                            onClick={() => setVocabPath(vocabPath.slice(0, -1))}
+                                            className="group flex flex-col items-center gap-3 p-4 rounded-3xl hover:bg-slate-50 dark:hover:bg-slate-800/50 transition-all text-center"
+                                        >
+                                            <div className="h-16 w-16 flex items-center justify-center rounded-2xl bg-indigo-50 dark:bg-indigo-900/20 text-indigo-500 shadow-sm group-hover:-translate-y-1 transition-transform">
+                                                <ArrowUpLeft className="h-7 w-7" />
                                             </div>
-                                            <div className="h-2 w-full bg-gray-100 dark:bg-slate-800 rounded-full overflow-hidden">
-                                                <div 
-                                                    className={cn(
-                                                        "h-full transition-all duration-1000",
-                                                        progress === 100 ? "bg-emerald-500" : "bg-gradient-to-r from-purple-500 to-indigo-500"
-                                                    )}
-                                                    style={{ width: `${progress}%` }}
-                                                />
+                                            <span className="text-[11px] font-black text-gray-400 uppercase">Trở lên</span>
+                                        </button>
+                                    )}
+                                    {itemsAtLevel.folders.map((folderName) => (
+                                        <button
+                                            key={folderName}
+                                            onClick={() => setVocabPath([...vocabPath, folderName])}
+                                            className="group flex flex-col items-center gap-4 p-5 rounded-[32px] hover:bg-white dark:hover:bg-slate-800 transition-all border border-transparent hover:border-slate-100 dark:hover:border-slate-700 hover:shadow-xl active:scale-95 text-center"
+                                        >
+                                            <div className="h-20 w-20 flex items-center justify-center rounded-2xl bg-amber-50 dark:bg-amber-900/20 text-amber-500 transition-all group-hover:scale-110">
+                                                <Folder className="h-11 w-11 fill-current" />
+                                            </div>
+                                            <span className="text-[13px] font-black text-slate-700 dark:text-slate-200 line-clamp-2 leading-tight">
+                                                {folderName}
+                                            </span>
+                                        </button>
+                                    ))}
+                                </div>
+                            )}
+
+                            {/* Resource grid header */}
+                            {itemsAtLevel.folders.length > 0 && <div className="h-px bg-gray-100 dark:bg-slate-800/60 mb-10" />}
+
+                            {/* Sets Grid */}
+                            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                                {itemsAtLevel.sets.map((set) => {
+                                    const progress = getSetProgress(set);
+                                    const currentSubjects: any[] = allSubjects;
+                                    const subject = currentSubjects.find((s: any) => s.id === set.subjectId);
+                                    
+                                    return (
+                                        <div 
+                                            key={set.id}
+                                            className="group relative bg-white dark:bg-slate-900 rounded-[36px] p-6 shadow-soft hover:shadow-2xl hover:-translate-y-2 transition-all duration-500 border border-gray-100 dark:border-slate-800 overflow-hidden flex flex-col cursor-pointer"
+                                            onClick={() => {
+                                                setActiveSet(set);
+                                                setShowStudyMenu(true);
+                                            }}
+                                        >
+                                            <div className="flex items-center justify-between mb-5">
+                                                <div className="flex items-center gap-2 px-3 py-1.5 bg-gray-50 dark:bg-slate-800 rounded-xl">
+                                                    <span className="text-sm">{subject?.icon || '📚'}</span>
+                                                    <span className="text-[10px] font-black uppercase tracking-widest text-gray-500">
+                                                        {subject?.name || 'Tổng hợp'}
+                                                    </span>
+                                                </div>
+                                                <div className="flex items-center gap-1.5 px-3 py-1.5 bg-purple-50 dark:bg-purple-900/20 rounded-xl">
+                                                    <Layers className="h-3 w-3 text-purple-600" />
+                                                    <span className="text-[11px] font-black text-purple-600">{set.words.length} thẻ</span>
+                                                </div>
+                                            </div>
+
+                                            <div className="mb-4">
+                                                <h3 className="text-xl font-black text-gray-900 dark:text-white line-clamp-1 mb-2 group-hover:text-purple-600 transition-colors">
+                                                    {set.title}
+                                                </h3>
+                                                <p className="text-gray-400 dark:text-slate-500 text-xs font-medium line-clamp-2 h-8">
+                                                    {set.description || 'Học nhanh các kiến thức quan trọng thông qua bộ thẻ ghi nhớ thông minh.'}
+                                                </p>
+                                            </div>
+
+                                            {set.category && (
+                                                <div className="flex flex-wrap gap-1.5 mb-6 h-6 overflow-hidden">
+                                                    {set.category.split(',').map((tag, i) => (
+                                                        <span key={i} className="text-[9px] font-black uppercase tracking-tighter text-gray-400 bg-gray-50 dark:bg-slate-800/50 px-2 py-0.5 rounded-md border border-gray-100 dark:border-slate-800">
+                                                            #{tag.trim()}
+                                                        </span>
+                                                    ))}
+                                                </div>
+                                            )}
+
+                                            <div className="mt-auto space-y-4">
+                                                <div className="space-y-2">
+                                                    <div className="flex items-center justify-between text-[10px] font-black uppercase tracking-widest text-gray-400">
+                                                        <span>Tiến độ học</span>
+                                                        <span className={cn(progress === 100 ? "text-emerald-500" : "text-purple-600")}>
+                                                            {progress}%
+                                                        </span>
+                                                    </div>
+                                                    <div className="h-2 w-full bg-gray-100 dark:bg-slate-800 rounded-full overflow-hidden">
+                                                        <div 
+                                                            className={cn(
+                                                                "h-full transition-all duration-1000",
+                                                                progress === 100 ? "bg-emerald-500" : "bg-gradient-to-r from-purple-500 to-indigo-500"
+                                                            )}
+                                                            style={{ width: `${progress}%` }}
+                                                        />
+                                                    </div>
+                                                </div>
                                             </div>
                                         </div>
-                                    </div>
-                                </div>
-                            );
-                        })}
+                                    );
+                                })}
+                            </div>
+                        </div>
                     </div>
                 )}
 

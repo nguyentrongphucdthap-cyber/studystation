@@ -12,9 +12,10 @@ interface ManualExamDialogProps {
     onClose: () => void;
     onSave: (data: any) => Promise<void>;
     initialSubject?: string | null;
+    initialFolderPath?: string;
 }
 
-export function ManualExamDialog({ open, onClose, onSave, initialSubject }: ManualExamDialogProps) {
+export function ManualExamDialog({ open, onClose, onSave, initialSubject, initialFolderPath }: ManualExamDialogProps) {
     const subjects = getSubjects();
     const [step, setStep] = useState(1);
     const [loading, setLoading] = useState(false);
@@ -23,7 +24,7 @@ export function ManualExamDialog({ open, onClose, onSave, initialSubject }: Manu
         title: '',
         subjectId: initialSubject || subjects[0]?.id || '',
         time: 50,
-        customFolder: '',
+        customFolder: initialFolderPath || '',
     });
 
     const [part1, setPart1] = useState<any[]>([]);
@@ -117,7 +118,7 @@ export function ManualExamDialog({ open, onClose, onSave, initialSubject }: Manu
             onClose();
             setStep(1);
             setPart1([]); setPart2([]); setPart3([]);
-            setMeta({ title: '', subjectId: initialSubject || subjects[0]?.id || '', time: 50, customFolder: '' });
+            setMeta({ title: '', subjectId: initialSubject || subjects[0]?.id || '', time: 50, customFolder: initialFolderPath || '' });
         } catch (error) {
             console.error(error);
         } finally {

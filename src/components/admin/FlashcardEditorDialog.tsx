@@ -20,14 +20,16 @@ interface FlashcardEditorDialogProps {
     onSave: (data: Partial<VocabSet>) => void;
     initialData?: VocabSet;
     mode: 'create' | 'edit';
+    initialFolderPath?: string;
 }
 
-export function FlashcardEditorDialog({ open, onClose, onSave, initialData, mode }: FlashcardEditorDialogProps) {
+export function FlashcardEditorDialog({ open, onClose, onSave, initialData, mode, initialFolderPath }: FlashcardEditorDialogProps) {
     const subjects = getSubjects();
     const [title, setTitle] = useState(initialData?.title || '');
     const [description, setDescription] = useState(initialData?.description || '');
     const [category, setCategory] = useState(initialData?.category || '');
     const [subjectId, setSubjectId] = useState(initialData?.subjectId || '');
+    const [customFolder, setCustomFolder] = useState(initialData?.customFolder || initialFolderPath || '');
     const [words, setWords] = useState<VocabWord[]>(initialData?.words || [{ word: '', meaning: '', notes: '' }]);
     const [previewIndex, setPreviewIndex] = useState<number | null>(null);
     const [activeField, setActiveField] = useState<{ index: number, field: keyof VocabWord } | null>(null);
@@ -43,6 +45,7 @@ export function FlashcardEditorDialog({ open, onClose, onSave, initialData, mode
             setDescription(initialData?.description || '');
             setCategory(initialData?.category || '');
             setSubjectId(initialData?.subjectId || '');
+            setCustomFolder(initialData?.customFolder || initialFolderPath || '');
             setWords(initialData?.words || [{ word: '', meaning: '', notes: '' }]);
         }
     }, [open, initialData]);
@@ -110,6 +113,7 @@ export function FlashcardEditorDialog({ open, onClose, onSave, initialData, mode
             description,
             category,
             subjectId,
+            customFolder,
             words,
             updatedAt: new Date().toISOString()
         });
@@ -214,6 +218,15 @@ export function FlashcardEditorDialog({ open, onClose, onSave, initialData, mode
                                 placeholder="Ví dụ: Dao động cơ, Sóng ánh sáng..."
                                 value={category}
                                 onChange={(e) => setCategory(e.target.value)}
+                                className="w-full flex h-10 rounded-2xl border border-gray-100 dark:border-slate-800 bg-gray-50/50 dark:bg-slate-800/50 px-3 py-2 text-sm font-bold ring-offset-white file:border-0 file:bg-transparent file:text-sm file:font-medium placeholder:text-gray-500 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-purple-600 focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50"
+                            />
+                        </div>
+                        <div className="space-y-1.5">
+                            <label className="text-xs font-black text-gray-600 dark:text-gray-400 ml-1">Thư mục</label>
+                            <input 
+                                placeholder="Ví dụ: Lớp 12 / Tập 1"
+                                value={customFolder}
+                                onChange={(e) => setCustomFolder(e.target.value)}
                                 className="w-full flex h-10 rounded-2xl border border-gray-100 dark:border-slate-800 bg-gray-50/50 dark:bg-slate-800/50 px-3 py-2 text-sm font-bold ring-offset-white file:border-0 file:bg-transparent file:text-sm file:font-medium placeholder:text-gray-500 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-purple-600 focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50"
                             />
                         </div>

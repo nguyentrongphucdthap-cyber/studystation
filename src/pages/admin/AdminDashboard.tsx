@@ -36,10 +36,13 @@ export default function AdminDashboard() {
 
     // Only restrict paths that literally don't exist in navItems (like /admin/teachers for non-supers)
     const availablePaths = navItems.map(item => item.to);
-    if (!availablePaths.includes(location.pathname) && location.pathname !== '/admin') {
-        // Find first available path as fallback
-        const firstPath = navItems[0]?.to || '/admin';
-        return <Navigate to={firstPath} replace />;
+    const isPathAllowed = availablePaths.some(p => {
+        if (p === '/admin') return location.pathname === '/admin';
+        return location.pathname.startsWith(p);
+    });
+
+    if (!isPathAllowed) {
+        return <Navigate to="/admin" replace />;
     }
 
     return (

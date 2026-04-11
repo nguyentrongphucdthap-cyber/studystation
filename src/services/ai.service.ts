@@ -80,44 +80,67 @@ export async function generateAIContent(messages: AIChatMessage[], options?: AIC
 // PRODUCTION: Server-side proxy
 // ============================================================
 
-async function generateViaProxy(messages: AIChatMessage[], options?: AIChatOptions): Promise<string> {
-    const model = options?.model || GEMINI_MODEL;
-    const requestBody: Record<string, unknown> = {
-        model,
-        contents: messages,
-        generationConfig: {
-            temperature: options?.temperature ?? 0.7,
-            maxOutputTokens: options?.maxOutputTokens ?? 8192,
-            ...(options?.responseMimeType ? { responseMimeType: options.responseMimeType } : {}),
-        },
-    };
-    if (options?.systemInstruction) {
-        requestBody.system_instruction = {
-            parts: [{ text: options.systemInstruction }],
-        };
-    }
-
-    console.log('[AI Service] Using server-side proxy');
-
-    const response = await fetch('/api/ai/generate', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(requestBody),
-    });
-
-    if (!response.ok) {
-        const raw = await response.text();
-        let errData: any = null;
+/** Helper for exponential backoff retries on transient errors */
+async function withRetry<T>(fn: () => Promise<T>, maxRetries = 5, initialDelay = 1500): Promise<T> {
+    let delay = initialDelay;
+    for (let i = 0; i < maxRetries; i++) {
         try {
-            errData = raw ? JSON.parse(raw) : null;
-        } catch {
-            errData = null;
+            return await fn();
+        } catch (error: any) {
+            const is503 = error?.message?.includes('503') || error?.message?.includes('Service Unavailable');
+            
+            if (is503 && i < maxRetries - 1) {
+                console.warn(`[AI Service] Transient error (503), retrying in ${delay}ms... (Attempt ${i + 1}/${maxRetries})`);
+                await new Promise(r => setTimeout(r, delay));
+                delay = Math.min(delay * 2, 10000); // Exponential backoff max 10s
+                continue;
+            }
+            throw error;
         }
-        throw new Error(errData?.error || `AI proxy request failed (${response.status})`);
     }
+    throw new Error('Đã thử lại nhiều lần nhưng API vẫn không khả dụng (503). Vui lòng đợi lát rồi thử lại.');
+}
 
-    const data = await response.json() as any;
-    return extractResponseText(data);
+async function generateViaProxy(messages: AIChatMessage[], options?: AIChatOptions): Promise<string> {
+    return withRetry(async () => {
+        const model = options?.model || GEMINI_MODEL;
+        const requestBody: Record<string, unknown> = {
+            model,
+            contents: messages,
+            generationConfig: {
+                temperature: options?.temperature ?? 0.7,
+                maxOutputTokens: options?.maxOutputTokens ?? 8192,
+                ...(options?.responseMimeType ? { responseMimeType: options.responseMimeType } : {}),
+            },
+        };
+        if (options?.systemInstruction) {
+            requestBody.system_instruction = {
+                parts: [{ text: options.systemInstruction }],
+            };
+        }
+
+        console.log('[AI Service] Using server-side proxy');
+
+        const response = await fetch('/api/ai/generate', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(requestBody),
+        });
+
+        if (!response.ok) {
+            const raw = await response.text();
+            let errData: any = null;
+            try {
+                errData = raw ? JSON.parse(raw) : null;
+            } catch {
+                errData = null;
+            }
+            throw new Error(errData?.error || `AI proxy request failed (${response.status})`);
+        }
+
+        const data = await response.json() as any;
+        return extractResponseText(data);
+    });
 }
 
 // ============================================================
@@ -182,46 +205,57 @@ async function generateDirectly(messages: AIChatMessage[], options?: AIChatOptio
         const maskedKey = key.slice(0, 8) + '...' + key.slice(-4);
         console.log(`[AI Service] Attempting request with key: ${maskedKey}`);
         const url = `https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent?key=${key}`;
+        
         try {
-            const response = await fetch(url, {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                referrerPolicy: 'strict-origin-when-cross-origin',
-                body: bodyStr,
-            });
+            return await withRetry(async () => {
+                const response = await fetch(url, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    referrerPolicy: 'strict-origin-when-cross-origin',
+                    body: bodyStr,
+                });
 
-            if (!response.ok) {
-                const raw = await response.text();
-                let errData: any = null;
-                try {
-                    errData = raw ? JSON.parse(raw) : null;
-                } catch {
-                    errData = null;
-                }
-                const msg = errData?.error?.message || `Failed to generate AI content (${response.status})`;
+                if (!response.ok) {
+                    const raw = await response.text();
+                    let errData: any = null;
+                    try {
+                        errData = raw ? JSON.parse(raw) : null;
+                    } catch {
+                        errData = null;
+                    }
+                    const msg = errData?.error?.message || `Failed to generate AI content (${response.status})`;
 
-                // Leaked key -> skip immediately
-                if (msg.toLowerCase().includes('leaked')) {
-                    console.warn(`[AI Service] Key ${maskedKey} is LEAKED, skipping...`);
-                    lastError = new Error(msg);
-                    continue;
+                    // Leaked key -> skip immediately
+                    if (msg.toLowerCase().includes('leaked')) {
+                        console.warn(`[AI Service] Key ${maskedKey} is LEAKED, skipping...`);
+                        throw new Error(`LEAKED: ${msg}`); // Throw so withRetry doesn't catch if not 503
+                    }
+                    // Quota / rate-limit -> throw specific error to handled outside withRetry
+                    if (response.status === 429 || (response.status === 403 && msg.toLowerCase().includes('quota'))) {
+                        console.warn(`[AI Service] Key exhausted (${response.status}), trying next key...`);
+                        throw new Error(`QUOTA: ${msg}`);
+                    }
+                    // Handle 503 within withRetry
+                    if (response.status === 503) {
+                        throw new Error(`503: ${msg}`);
+                    }
+                    
+                    throw new Error(msg);
                 }
-                // Quota / rate-limit -> try next key
-                if (response.status === 429 || (response.status === 403 && msg.toLowerCase().includes('quota'))) {
-                    console.warn(`[AI Service] Key exhausted (${response.status}), trying next key...`);
-                    lastError = new Error(msg);
-                    continue;
-                }
-                throw new Error(msg);
-            }
 
-            const data = await response.json() as any;
-            return extractResponseText(data);
+                const data = await response.json() as any;
+                return extractResponseText(data);
+            }, 5, 2000); // 5 retries, 2s initial delay for direct calls
         } catch (error: any) {
             lastError = error;
-            // If it's a quota/rate/leaked error we already continued above; for network errors, also try next key
-            if (error.message?.includes('quota') || error.message?.includes('rate') || error.message?.includes('leaked')) {
-                console.warn('[AI Service] Retrying with next key...');
+            // If it's a quota/rate/leaked error, try next key
+            if (error.message?.includes('QUOTA') || error.message?.includes('LEAKED')) {
+                console.warn('[AI Service] Key failed, retrying with next key...');
+                continue;
+            }
+            // If it was another error (non-retryable or retries exhausted), only try next key if it's not a user-level error
+            if (error.message?.includes('503')) {
+                console.warn('[AI Service] Server 503 persistent on this key, trying next key...');
                 continue;
             }
             throw error;

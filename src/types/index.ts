@@ -138,6 +138,7 @@ export interface EtestExam {
     title: string;
     tag?: string;
     time: number;
+    customFolder?: string;
     sections: EtestSection[];
     createdAt?: string;
     createdBy?: string;
@@ -163,6 +164,7 @@ export interface VocabSet {
     title: string;
     description?: string;
     category: string; // Used as Tags
+    customFolder?: string;
     subjectId?: string; // Links to subjects like 'toan', 'ly', etc.
     words: VocabWord[];
     createdAt?: string;
@@ -361,4 +363,3 @@ export interface AccessRequest {
     reviewedAt?: string;
     reviewNote?: string;
 }
-
