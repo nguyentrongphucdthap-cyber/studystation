@@ -207,6 +207,43 @@ export default function VocabPage() {
         return Array.from(tags).sort();
     }, [sets]);
 
+    const filteredAndSortedSets = useMemo(() => {
+        let result = sets.filter(set => {
+            const matchesSearch = set.title.toLowerCase().includes(searchQuery.toLowerCase()) || 
+                               (set.description?.toLowerCase().includes(searchQuery.toLowerCase()));
+            if (!matchesSearch) return false;
+
+            if (activeSubject !== 'all') {
+                if (!set.subjectId) return false;
+                if (String(set.subjectId) !== String(activeSubject)) return false;
+            }
+
+            if (activeTag !== 'all') {
+                const setTags = (set.category || '').split(/[,,;]/).map(t => t.trim().toLowerCase());
+                if (!setTags.includes(activeTag.toLowerCase())) return false;
+            }
+
+            if (progressFilter !== 'all') {
+                const p = getSetProgress(set);
+                if (progressFilter === 'not-started' && p !== 0) return false;
+                if (progressFilter === 'completed' && p !== 100) return false;
+                if (progressFilter === 'in-progress' && (p === 0 || p === 100)) return false;
+            }
+
+            return true;
+        });
+
+        result.sort((a, b) => {
+            if (sortBy === 'a-z') return a.title.localeCompare(b.title);
+            if (sortBy === 'z-a') return b.title.localeCompare(a.title);
+            if (sortBy === 'progress-high') return getSetProgress(b) - getSetProgress(a);
+            if (sortBy === 'progress-low') return getSetProgress(a) - getSetProgress(b);
+            if (sortBy === 'words-high') return b.words.length - a.words.length;
+            if (sortBy === 'words-low') return a.words.length - b.words.length;
+            return 0;
+        });
+
+        return result;
     }, [sets, searchQuery, activeSubject, activeTag, progressFilter, sortBy, getSetProgress]);
 
     const currentFullPath = useMemo(() => vocabPath.join('/'), [vocabPath]);
@@ -223,7 +260,6 @@ export default function VocabPage() {
         const folders = folderUtils.getSubFoldersAtLevel(allPaths, currentFullPath);
         const setsAtThisLevel = sets.filter(s => (s.customFolder || '') === currentFullPath);
 
-        // Apply current sorting to setsAtThisLevel
         const sortedSets = [...setsAtThisLevel].sort((a, b) => {
             if (sortBy === 'a-z') return a.title.localeCompare(b.title);
             if (sortBy === 'z-a') return b.title.localeCompare(a.title);
