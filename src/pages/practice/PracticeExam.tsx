@@ -21,15 +21,10 @@ import type { Exam, Part1Question, Part2Question, Part3Question, QuestionGroup, 
 import {
     ArrowLeft,
     Clock,
-    CheckCircle,
     XCircle,
     Send,
     RotateCcw,
-    Eye,
     BookOpen,
-    MinusCircle,
-    ChevronDown,
-    ChevronUp,
     History,
     Trophy,
     Shuffle,
@@ -39,7 +34,6 @@ import {
     Settings,
     X,
     Check,
-    Sparkles,
     Layout,
 } from 'lucide-react';
 
@@ -50,7 +44,7 @@ export default function PracticeExam() {
     const navigate = useNavigate();
     const { user, isGuest } = useAuth();
     const { settings } = useTheme();
-    const { setTakingExam, setHubForcedVisible, triggerMago } = useUI();
+    const { setTakingExam, setHubForcedVisible } = useUI();
 
     const [exam, setExam] = useState<Exam | null>(null);
     const [loading, setLoading] = useState(true);
@@ -75,7 +69,6 @@ export default function PracticeExam() {
     const [totalQuestions, setTotalQuestions] = useState(0);
     const [duration, setDuration] = useState(0);
     const [examHistory, setExamHistory] = useState<PracticeHistory[]>([]);
-    const [expandedResults, setExpandedResults] = useState<Record<string, boolean>>({});
 
     // Shuffled versions of questions
     const [shuffledP1, setShuffledP1] = useState<Part1Question[]>([]);
@@ -88,11 +81,10 @@ export default function PracticeExam() {
     const [isPracticeMode, setIsPracticeMode] = useState(false);
     const [currentPracticeIdx, setCurrentPracticeIdx] = useState(0);
     const [selectedHistoryId, setSelectedHistoryId] = useState<string | null>(null);
-    const [resultFilter, setResultFilter] = useState<'all' | 'correct' | 'incorrect'>('all');
 
     // UI
     const [showSubmitConfirm, setShowSubmitConfirm] = useState(false);
-    const [showAnswerSheet, setShowAnswerSheet] = useState(false);
+    const [setShowAnswerSheet] = useState(false);
     const [showMobileTOC, setShowMobileTOC] = useState(false);
     const [showScrollTop, setShowScrollTop] = useState(false);
     const [isNavbarVisible, setIsNavbarVisible] = useState(true);
@@ -205,7 +197,7 @@ export default function PracticeExam() {
 
     useEffect(() => {
         if (mode !== 'result') {
-            setShowAnswerSheet(false);
+            // setShowAnswerSheet(false);
         }
     }, [mode]);
 
@@ -520,7 +512,7 @@ export default function PracticeExam() {
         try {
             await logPracticeAttempt(exam.id, exam.title, exam.subjectId, 'classic', dur);
             if (!isGuest && user) {
-                const newAttemptId = crypto.randomUUID(); // Fallback ID for local optimism
+                // const newAttemptId = crypto.randomUUID(); // Fallback ID for local optimism
                 // Map shuffled answers back to original indices for database consistency
                 const unshuffledP1: Record<number, number> = {};
                 if (exam.part1) {
@@ -1784,9 +1776,9 @@ export default function PracticeExam() {
     let displayCorrectCount = correctCount;
     let displayTotalQuestions = totalQuestions;
     let displayDuration = duration;
-    let displayPart1Answers = part1Answers;
-    let displayPart2Answers = part2Answers;
-    let displayPart3Answers = part3Answers;
+    // let displayPart1Answers = part1Answers;
+    // let displayPart2Answers = part2Answers;
+    // let displayPart3Answers = part3Answers;
     let displayTimestamp = '';
 
     if (selectedHistoryId) {

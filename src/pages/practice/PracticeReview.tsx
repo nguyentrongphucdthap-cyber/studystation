@@ -19,14 +19,13 @@ import {
     GripVertical,
     Search,
     X,
-    Filter,
     AlertCircle
 } from 'lucide-react';
 import { Spinner } from '@/components/ui/Spinner';
 import { Button } from '@/components/ui/Button';
 import { LatexContent } from '@/components/ui/LatexContent';
 import MagoSideChat from '@/components/MagoSideChat';
-import type { PracticeHistory, Exam, Part1Question, Part2Question, Part3Question } from '@/types';
+import type { PracticeHistory, Exam } from '@/types';
 import { cn, formatTime } from '@/lib/utils';
 
 export default function PracticeReview() {
@@ -66,12 +65,14 @@ export default function PracticeReview() {
                 const examData = await getExamContent(hist.examId, true);
                 setExam(examData);
                 
-                // Expand all by default
-                const initialExpanded: Record<string, boolean> = {};
-                (examData.part1 || []).forEach(q => initialExpanded[`p1-${q.id}`] = true);
-                (examData.part2 || []).forEach(q => initialExpanded[`p2-${q.id}`] = true);
-                (examData.part3 || []).forEach(q => initialExpanded[`p3-${q.id}`] = true);
-                setExpandedResults(initialExpanded);
+                if (examData) {
+                    // Expand all by default
+                    const initialExpanded: Record<string, boolean> = {};
+                    (examData.part1 || []).forEach(q => initialExpanded[`p1-${q.id}`] = true);
+                    (examData.part2 || []).forEach(q => initialExpanded[`p2-${q.id}`] = true);
+                    (examData.part3 || []).forEach(q => initialExpanded[`p3-${q.id}`] = true);
+                    setExpandedResults(initialExpanded);
+                }
             } catch (err) {
                 console.error('[Review] Load error:', err);
                 setError('Lỗi khi tải dữ liệu bài thi');
@@ -82,7 +83,7 @@ export default function PracticeReview() {
         loadData();
     }, [historyId]);
 
-    const handleMouseDown = useCallback((e: React.MouseEvent) => {
+    const handleMouseDown = useCallback((_e: React.MouseEvent) => {
         isResizing.current = true;
         document.body.style.cursor = 'col-resize';
         document.body.style.userSelect = 'none';
@@ -117,7 +118,7 @@ export default function PracticeReview() {
         };
     }, [leftWidth]);
 
-    const triggerMagoExplanation = (part: string, qId: number, text: string) => {
+    const triggerMagoExplanation = (part: string, _qId: number, text: string) => {
         const prompt = `Hãy giải thích câu hỏi sau đây:\n\n[Dữ liệu câu hỏi]\nNội dung: ${text}\nPhần: ${part}\n\n[Yêu cầu]\nGiải thích chi tiết tại sao đáp án đúng lại là đáp án đó và phân tích các lỗi sai thường gặp.`;
         setMagoCommand(prompt);
         setShowMago(true);
@@ -141,7 +142,7 @@ export default function PracticeReview() {
     );
 
     const subjects = getSubjects();
-    const subject = subjects.find(s => s.id === history.subjectId);
+    // const subject = subjects.find(s => s.id === history.subjectId);
     const dateStr = new Date(history.timestamp).toLocaleDateString('vi-VN', {
         day: '2-digit', month: '2-digit', year: 'numeric', hour: '2-digit', minute: '2-digit'
     });
@@ -475,7 +476,7 @@ export default function PracticeReview() {
                         {exam.part3?.map((q, idx) => {
                             const userAns = p3Ans[q.id];
                             const answered = (userAns || '').trim().length > 0;
-                            const isCorrect = answered && userAns.trim().toLowerCase() === q.correct.trim().toLowerCase();
+                            const isCorrect = answered && userAns && userAns.trim().toLowerCase() === q.correct.trim().toLowerCase();
                             const isExpanded = expandedResults[`p3-${q.id}`];
 
                             // Filtering

@@ -1,5 +1,5 @@
-import React, { useState, useEffect, useRef } from 'react';
-import { Sparkles, Send, Brain, ListChecks, MessageCircle, AlertCircle } from 'lucide-react';
+import { useState, useEffect, useRef } from 'react';
+import { Sparkles, Send } from 'lucide-react';
 import { useAuth } from '@/contexts/AuthContext';
 import { 
     sendMagoMessage, 
@@ -10,7 +10,6 @@ import {
 } from '@/services/chat.service';
 import { generateAIContent, type AIChatMessage } from '@/services/ai.service';
 import { subscribeToMagocoins } from '@/services/magocoin.service';
-import { LatexContent } from '@/components/ui/LatexContent';
 import MagoText from '@/components/MagoText';
 import { cn } from '@/lib/utils';
 

@@ -3,7 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import { getUserTotalHistory, getSubjects } from '@/services/exam.service';
 import { Spinner } from '@/components/ui/Spinner';
 import type { PracticeHistory } from '@/types';
-import { ArrowLeft, Clock, Trophy, Calendar, ChevronRight, BookOpen, RotateCcw, Sparkles } from 'lucide-react';
+import { ArrowLeft, Clock, Trophy, Calendar, BookOpen, RotateCcw, Sparkles } from 'lucide-react';
 import { cn, formatTime } from '@/lib/utils';
 
 export default function PracticeHistoryPage() {
