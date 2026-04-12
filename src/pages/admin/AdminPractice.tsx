@@ -6,7 +6,10 @@ import { Spinner } from '@/components/ui/Spinner';
 import { Button } from '@/components/ui/Button';
 import { Dialog, ConfirmDialog } from '@/components/ui/Dialog';
 import type { ExamMetadata } from '@/types';
-import { Trash2, Search, Upload, Wand2, ArrowLeft, ChevronRight, LayoutGrid, Plus, Pencil, Folder, FolderPlus, FileText, Home, ArrowUpLeft } from 'lucide-react';
+import { Trash2, Search, Upload, Wand2, ArrowLeft, ChevronRight,    LayoutDashboard, GraduationCap, FileText, Languages,
+    Bell, Calendar, Users, BarChart3, Key, RefreshCw,
+    Shield, UserPlus, Coins, MoreVertical
+} from 'lucide-react';
 import { SmartImportDialog } from '@/components/admin/SmartImportDialog';
 import { ManualExamDialog } from '@/components/admin/ManualExamDialog';
 import { cn } from '@/lib/utils';
@@ -467,13 +470,13 @@ export default function AdminPractice() {
                                     {currentPath.length > 0 && (
                                         <div 
                                             onClick={() => setCurrentPath(currentPath.slice(0, -1))}
-                                            className="group cursor-pointer flex flex-col items-center gap-3 p-4 rounded-2xl transition-all hover:bg-slate-100 dark:hover:bg-slate-800/40"
+                                            className="group cursor-pointer flex flex-col items-center gap-2 sm:gap-3 p-3 sm:p-4 rounded-2xl transition-all hover:bg-slate-100 dark:hover:bg-slate-800/40"
                                         >
                                             <div className="relative">
-                                                <Folder className="h-16 w-16 text-slate-300 dark:text-slate-700 fill-slate-300/10" />
-                                                <ArrowUpLeft className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 h-6 w-6 text-slate-500" />
+                                                <Folder className="h-12 w-12 sm:h-16 sm:w-16 text-slate-300 dark:text-slate-700 fill-slate-300/10" />
+                                                <ArrowUpLeft className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 h-4 w-4 sm:h-6 sm:w-6 text-slate-500" />
                                             </div>
-                                            <span className="text-[11px] font-bold text-slate-400 uppercase tracking-widest italic">(Quay lại)</span>
+                                            <span className="text-[9px] sm:text-[11px] font-bold text-slate-400 uppercase tracking-widest italic">(Quay lại)</span>
                                         </div>
                                     )}
 
@@ -486,15 +489,27 @@ export default function AdminPractice() {
                                                 e.preventDefault();
                                                 setContextMenu({ type: 'folder', folderName, x: e.clientX, y: e.clientY });
                                             }}
-                                            className="group cursor-pointer flex flex-col items-center gap-2 p-4 rounded-2xl transition-all hover:bg-amber-50 dark:hover:bg-amber-900/10 active:scale-95"
+                                            className="group relative cursor-pointer flex flex-col items-center gap-2 p-3 sm:p-4 rounded-2xl transition-all hover:bg-amber-50 dark:hover:bg-amber-900/10 active:scale-95"
                                         >
                                             <div className="relative">
-                                                <Folder className="h-16 w-16 text-amber-500 fill-amber-500/10 transition-transform group-hover:scale-110" />
-                                                <div className="absolute -bottom-1 -right-1 h-5 w-5 rounded-full bg-white dark:bg-slate-900 shadow-sm border border-amber-100 dark:border-amber-900/30 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity">
+                                                <Folder className="h-12 w-12 sm:h-16 sm:w-16 text-amber-500 fill-amber-500/10 transition-transform group-hover:scale-110" />
+                                                <div className="absolute -bottom-1 -right-1 h-5 w-5 rounded-full bg-white dark:bg-slate-900 shadow-sm border border-amber-100 dark:border-amber-900/30 flex items-center justify-center opacity-0 sm:group-hover:opacity-100 transition-opacity">
                                                     <ChevronRight className="h-3 w-3 text-amber-600" />
                                                 </div>
                                             </div>
                                             <span className="text-xs font-bold text-slate-700 dark:text-slate-200 text-center line-clamp-2 px-1">{folderName}</span>
+                                            
+                                            {/* Action Menu Button for Mobile */}
+                                            <button 
+                                                className="absolute top-1 right-1 p-1 sm:hidden text-amber-400"
+                                                onClick={(e) => {
+                                                    e.stopPropagation();
+                                                    const rect = e.currentTarget.getBoundingClientRect();
+                                                    setContextMenu({ type: 'folder', folderName, x: rect.left, y: rect.bottom });
+                                                }}
+                                            >
+                                                <MoreVertical size={14} />
+                                            </button>
                                         </div>
                                     ))}
 
@@ -508,14 +523,14 @@ export default function AdminPractice() {
                                                     e.preventDefault();
                                                     setContextMenu({ type: 'exam', exam, x: e.clientX, y: e.clientY });
                                                 }}
-                                                className="group cursor-pointer flex flex-col items-center gap-2 p-4 rounded-2xl transition-all hover:bg-indigo-50 dark:hover:bg-indigo-900/10 active:scale-95"
+                                                className="group relative cursor-pointer flex flex-col items-center gap-2 p-3 sm:p-4 rounded-2xl transition-all hover:bg-indigo-50 dark:hover:bg-indigo-900/10 active:scale-95"
                                             >
                                                 <div className="relative">
-                                                    <FileText className="h-16 w-16 text-indigo-500 fill-indigo-500/10 transition-transform group-hover:scale-110" />
+                                                    <FileText className="h-12 w-12 sm:h-16 sm:w-16 text-indigo-500 fill-indigo-500/10 transition-transform group-hover:scale-110" />
                                                     {exam.isSpecial && (
-                                                        <div className="absolute top-0 right-0 h-3 w-3 rounded-full bg-rose-500 ring-2 ring-white dark:ring-slate-900" />
+                                                        <div className="absolute top-0 right-0 h-2.5 w-2.5 sm:h-3 sm:w-3 rounded-full bg-rose-500 ring-2 ring-white dark:ring-slate-900" />
                                                     )}
-                                                    <div className="absolute inset-0 flex items-center justify-center opacity-0 group-hover:opacity-100 bg-indigo-600/10 rounded-xl transition-opacity">
+                                                    <div className="absolute inset-0 flex items-center justify-center opacity-0 sm:group-hover:opacity-100 bg-indigo-600/10 rounded-xl transition-opacity">
                                                         <Button 
                                                             size="icon" variant="ghost" 
                                                             onClick={(e) => { e.stopPropagation(); navigate(`/admin/practice/${exam.id}/edit`); }}
@@ -525,13 +540,25 @@ export default function AdminPractice() {
                                                         </Button>
                                                     </div>
                                                 </div>
-                                                <div className="text-center space-y-1">
-                                                    <span className="text-xs font-bold text-slate-700 dark:text-slate-200 line-clamp-2 px-1 h-8 flex items-start justify-center leading-tight">{exam.title}</span>
-                                                    <div className="flex items-center justify-center gap-2 mt-1">
-                                                        <span className="px-1.5 py-0.5 rounded-md bg-slate-100 dark:bg-slate-800 text-[9px] font-bold text-slate-500">{totalQ}Q</span>
-                                                        <span className="px-1.5 py-0.5 rounded-md bg-indigo-50 dark:bg-indigo-900/30 text-[9px] font-bold text-indigo-600 dark:text-indigo-400">{exam.time}'</span>
+                                                <div className="text-center space-y-1 min-h-[40px] sm:min-h-[48px]">
+                                                    <span className="text-[10px] sm:text-xs font-bold text-slate-700 dark:text-slate-200 line-clamp-2 px-0.5 flex items-start justify-center leading-tight">{exam.title}</span>
+                                                    <div className="flex items-center justify-center gap-1.5 mt-0.5">
+                                                        <span className="px-1 py-0.5 rounded-md bg-slate-100 dark:bg-slate-800 text-[8px] sm:text-[9px] font-bold text-slate-500">{totalQ}Q</span>
+                                                        <span className="px-1 py-0.5 rounded-md bg-indigo-50 dark:bg-indigo-900/30 text-[8px] sm:text-[9px] font-bold text-indigo-600 dark:text-indigo-400">{exam.time}'</span>
                                                     </div>
                                                 </div>
+
+                                                {/* Action Menu Button for Mobile */}
+                                                <button 
+                                                    className="absolute top-1 right-1 p-1 sm:hidden text-indigo-400"
+                                                    onClick={(e) => {
+                                                        e.stopPropagation();
+                                                        const rect = e.currentTarget.getBoundingClientRect();
+                                                        setContextMenu({ type: 'exam', exam, x: rect.left, y: rect.bottom });
+                                                    }}
+                                                >
+                                                    <MoreVertical size={14} />
+                                                </button>
                                             </div>
                                         );
                                     })}

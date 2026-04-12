@@ -301,20 +301,20 @@ export default function StatisticsPage() {
                         <ArrowLeft className="h-5 w-5" />
                     </button>
                     <div>
-                        <h1 className="text-3xl font-black text-gray-900 tracking-tight">Thống kê học tập</h1>
-                        <p className="text-gray-500 font-medium text-sm mt-0.5">Tổng quan lộ trình học tập của bạn</p>
+                        <h1 className="text-xl sm:text-3xl font-black text-gray-900 tracking-tight">Thống kê học tập</h1>
+                        <p className="text-gray-500 font-medium text-[10px] sm:text-sm mt-0.5">Tổng quan lộ trình học tập của bạn</p>
                     </div>
                 </div>
                 
-                <div className="flex bg-white/60 backdrop-blur-xl p-1.5 rounded-2xl border border-white/60 shadow-soft">
-                    {['all', ...Array.from(new Set(history.map(h => h.subjectId)))].slice(0, 5).map(id => {
+                <div className="flex bg-white/60 backdrop-blur-xl p-1 sm:p-1.5 rounded-2xl border border-white/60 shadow-soft overflow-x-auto scrollbar-hide">
+                    {['all', ...Array.from(new Set(history.map(h => h.subjectId)))].slice(0, 6).map(id => {
                         const s = subjects.find(sub => sub.id === id);
                         return (
                             <button
                                 key={id}
                                 onClick={() => setSelectedSubject(id)}
                                 className={cn(
-                                    "px-4 py-2 text-xs font-bold rounded-xl transition-all whitespace-nowrap",
+                                    "px-3 sm:px-4 py-1.5 sm:py-2 text-[10px] sm:text-xs font-bold rounded-xl transition-all whitespace-nowrap",
                                     selectedSubject === id 
                                         ? "bg-indigo-600 text-white shadow-lg shadow-indigo-200" 
                                         : "text-gray-500 hover:bg-white/40"
@@ -330,49 +330,48 @@ export default function StatisticsPage() {
             {/* Top Stats & Evaluation */}
             <div className="grid grid-cols-1 lg:grid-cols-12 gap-6">
                 {/* Stats Cards */}
-                <div className="lg:col-span-8 grid grid-cols-1 sm:grid-cols-3 gap-6">
+                <div className="lg:col-span-8 grid grid-cols-2 sm:grid-cols-3 gap-4 sm:gap-6">
                     <StatCard 
-                        icon={<Trophy className="h-6 w-6" />}
+                        icon={<Trophy className="h-5 w-5 sm:h-6 sm:w-6" />}
                         label="Điểm trung bình"
                         value={stats.avgScore.toFixed(1)}
                         suffix="/10"
                         color="bg-amber-50 text-amber-600"
-                        trend="+0.2 so với tuần trước"
+                        trend="+0.2"
                     />
                     <StatCard 
-                        icon={<Clock className="h-6 w-6" />}
+                        icon={<Clock className="h-5 w-5 sm:h-6 sm:w-6" />}
                         label="TG học trung bình"
                         value={Math.round(stats.totalSeconds / (stats.totalExams || 1) / 60)}
-                        suffix="phút/bài"
+                        suffix="m/bài"
                         color="bg-blue-50 text-blue-600"
                     />
                     <StatCard 
-                        icon={<Layout className="h-6 w-6" />}
+                        icon={<Layout className="h-5 w-5 sm:h-6 sm:w-6" />}
                         label="Tổng số bài"
                         value={stats.totalExams}
-                        suffix="đề thi"
+                        suffix="đề"
                         color="bg-emerald-50 text-emerald-600"
                     />
 
                     {/* NEW Flashcard Stats */}
                     <StatCard 
-                        icon={<BookOpen className="h-6 w-6" />}
+                        icon={<BookOpen className="h-5 w-5 sm:h-6 sm:w-6" />}
                         label="Từ vựng đã học"
                         value={vocabStats.totalLearnedEver}
                         suffix="từ"
                         color="bg-indigo-50 text-indigo-600"
-                        trend={`Hôm nay: +${vocabStats.today}`}
                     />
                     <StatCard 
-                        icon={<Zap className="h-6 w-6" />}
-                        label="TB từ mỗi phiên"
+                        icon={<Zap className="h-5 w-5 sm:h-6 sm:w-6" />}
+                        label="TB mỗi phiên"
                         value={Math.round(vocabStats.avgPerSession)}
-                        suffix="từ/phiên"
+                        suffix="từ"
                         color="bg-orange-50 text-orange-600"
                     />
                     <StatCard 
-                        icon={<Target className="h-6 w-6" />}
-                        label="Học trong tuần"
+                        icon={<Target className="h-5 w-5 sm:h-6 sm:w-6" />}
+                        label="Học tuần này"
                         value={vocabStats.week}
                         suffix="từ"
                         color="bg-pink-50 text-pink-600"
@@ -401,13 +400,13 @@ export default function StatisticsPage() {
             {/* Charts Section */}
             <div className="grid grid-cols-1 lg:grid-cols-12 gap-8">
                 {/* Score Trend (Line Chart) */}
-                <div className="lg:col-span-12 bg-white/90 backdrop-blur-xl p-8 rounded-[40px] border border-white shadow-soft relative overflow-hidden">
-                    <div className="flex items-center justify-between mb-8">
+                <div className="lg:col-span-12 bg-white/90 backdrop-blur-xl p-5 sm:p-8 rounded-[32px] sm:rounded-[40px] border border-white shadow-soft relative overflow-hidden">
+                    <div className="flex items-center justify-between mb-6 sm:mb-8">
                         <div className="flex items-center gap-3">
-                            <div className="p-2.5 bg-indigo-50 text-indigo-600 rounded-2xl">
-                                <TrendingUp className="h-5 w-5" />
+                            <div className="p-2 sm:p-2.5 bg-indigo-50 text-indigo-600 rounded-xl sm:rounded-2xl">
+                                <TrendingUp className="h-4 w-4 sm:h-5 sm:w-5" />
                             </div>
-                            <h3 className="text-lg font-bold text-gray-900">Biến thiên điểm số</h3>
+                            <h3 className="text-base sm:text-lg font-bold text-gray-900">Biến thiên điểm số</h3>
                         </div>
                         <div className="hidden sm:flex items-center gap-2">
                             <div className="flex items-center gap-1.5 px-3 py-1.5 bg-gray-50 rounded-lg border border-gray-100">
@@ -416,7 +415,7 @@ export default function StatisticsPage() {
                             </div>
                         </div>
                     </div>
-                    <div className="h-64 mt-4">
+                    <div className="h-48 sm:h-64 mt-4">
                         <ScoreTrendChart history={filteredHistory} />
                     </div>
                 </div>
@@ -537,17 +536,19 @@ export default function StatisticsPage() {
             </div>
 
             {/* Recent History Table */}
-            <div className="bg-white/95 backdrop-blur-xl rounded-[40px] border border-white shadow-soft overflow-hidden">
-                <div className="p-8 border-b border-gray-100/60 flex items-center justify-between">
-                    <h3 className="text-lg font-bold text-gray-900">Lịch sử làm bài gần đây</h3>
+            <div className="bg-white/95 backdrop-blur-xl rounded-[32px] sm:rounded-[40px] border border-white shadow-soft overflow-hidden">
+                <div className="p-6 sm:p-8 border-b border-gray-100/60 flex items-center justify-between">
+                    <h3 className="text-base sm:text-lg font-bold text-gray-900">Lịch sử làm bài gần đây</h3>
                     <button 
                         onClick={() => navigate('/practice/history')}
-                        className="text-xs font-bold text-indigo-600 hover:underline flex items-center gap-1"
+                        className="text-[10px] sm:text-xs font-bold text-indigo-600 hover:underline flex items-center gap-1"
                     >
-                        Xem tất cả <ChevronRight className="h-4 w-4" />
+                        Tất cả <ChevronRight className="h-4 w-4" />
                     </button>
                 </div>
-                <div className="overflow-x-auto">
+                
+                {/* Desktop view */}
+                <div className="hidden md:block overflow-x-auto">
                     <table className="w-full text-left border-collapse">
                         <thead>
                             <tr className="bg-gray-50/50">
@@ -593,11 +594,39 @@ export default function StatisticsPage() {
                         </tbody>
                     </table>
                 </div>
+
+                {/* Mobile view */}
+                <div className="md:hidden divide-y divide-gray-50">
+                    {history.slice(0, 5).map((log) => {
+                        const s = subjects.find(sub => sub.id === log.subjectId);
+                        return (
+                            <div key={log.id} className="p-5 flex items-center justify-between group active:bg-gray-50">
+                                <div className="flex items-center gap-3">
+                                    <div className="w-10 h-10 rounded-xl bg-gray-50 flex items-center justify-center text-xl shrink-0">
+                                        {s?.icon || '📝'}
+                                    </div>
+                                    <div className="min-w-0">
+                                        <h4 className="text-sm font-bold text-gray-900 truncate pr-2">{log.examTitle}</h4>
+                                        <p className="text-[10px] font-medium text-gray-400">
+                                            {new Date(log.timestamp).toLocaleDateString('vi-VN')} • {new Date(log.timestamp).toLocaleTimeString('vi-VN', { hour: '2-digit', minute: '2-digit' })}
+                                        </p>
+                                    </div>
+                                </div>
+                                <div className={cn(
+                                    "px-3 py-1 rounded-lg text-xs font-black shrink-0",
+                                    log.score >= 8 ? "bg-emerald-50 text-emerald-600" : log.score >= 5 ? "bg-amber-50 text-amber-600" : "bg-rose-50 text-rose-600"
+                                )}>
+                                    {log.score.toFixed(1)}
+                                </div>
+                            </div>
+                        );
+                    })}
+                </div>
             </div>
 
             {/* Access History Timeline (NEW) */}
-            <div className="bg-white/95 backdrop-blur-xl rounded-[40px] border border-white shadow-soft overflow-hidden">
-                <div className="p-8 border-b border-gray-100/60 flex items-center justify-between">
+            <div className="bg-white/95 backdrop-blur-xl rounded-[32px] sm:rounded-[40px] border border-white shadow-soft overflow-hidden">
+                <div className="p-6 sm:p-8 border-b border-gray-100/60 flex items-center justify-between">
                     <div className="flex items-center gap-3">
                         <div className="p-2.5 bg-gray-50 text-gray-600 rounded-2xl">
                             <History className="h-5 w-5" />

@@ -535,8 +535,12 @@
         border: var(--card-border);
     }
 
-    .admin-panel .border-none {
-        border: var(--card-border) !important;
+    @media (max-width: 640px) {
+        .admin-card {
+            border-radius: 1rem;
+            padding-left: 1rem !important;
+            padding-right: 1rem !important;
+        }
     }
 
     .admin-card:hover {

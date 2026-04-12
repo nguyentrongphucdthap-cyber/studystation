@@ -48,7 +48,7 @@ export default function AdminDashboard() {
         <div className="admin-panel -m-4 sm:-m-6 lg:-m-8 p-4 sm:p-6 lg:p-8">
             <div className="flex flex-col gap-6 lg:flex-row w-full">
                 {/* Sidebar */}
-                <aside className="admin-card p-4 flex gap-2 overflow-x-auto lg:w-72 lg:flex-col lg:overflow-visible shrink-0 self-start sticky top-24 min-h-[calc(100vh-8rem)]">
+                <aside className="admin-card p-2 sm:p-4 flex gap-2 overflow-x-auto lg:w-72 lg:flex-col lg:overflow-visible shrink-0 self-start sticky top-20 sm:top-24 z-30 min-h-0 lg:min-h-[calc(100vh-8rem)] scrollbar-hide">
                     <div className="hidden lg:flex items-center gap-3 px-3 py-4 mb-4 border-b border-slate-100 dark:border-slate-700/50">
                         <div className="h-10 w-10 rounded-xl bg-indigo-100 text-indigo-600 flex items-center justify-center shrink-0">
                             <Shield className="h-5 w-5" />
