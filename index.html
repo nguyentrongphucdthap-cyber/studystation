@@ -29,6 +29,25 @@
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.16.11/dist/katex.min.css">
     <script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.11/dist/katex.min.js"></script>
     <script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.11/dist/contrib/mhchem.min.js"></script>
+    <script>
+        // Recover from stale HTML pointing to removed hashed JS after a new deploy.
+        window.addEventListener('error', function (event) {
+            var target = event && event.target;
+            if (!(target instanceof HTMLScriptElement)) return;
+            if (target.type !== 'module') return;
+
+            var key = '__studystation_module_reload_once__';
+            if (sessionStorage.getItem(key) === '1') return;
+
+            sessionStorage.setItem(key, '1');
+            var separator = window.location.search ? '&' : '?';
+            window.location.replace(window.location.pathname + window.location.search + separator + 'v=' + Date.now() + window.location.hash);
+        }, true);
+
+        window.addEventListener('pageshow', function () {
+            sessionStorage.removeItem('__studystation_module_reload_once__');
+        });
+    </script>
 </head>
 
 <body>
