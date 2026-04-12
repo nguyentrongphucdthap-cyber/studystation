@@ -141,8 +141,6 @@ export default function PracticeReview() {
         </div>
     );
 
-    const subjects = getSubjects();
-    // const subject = subjects.find(s => s.id === history.subjectId);
     const dateStr = new Date(history.timestamp).toLocaleDateString('vi-VN', {
         day: '2-digit', month: '2-digit', year: 'numeric', hour: '2-digit', minute: '2-digit'
     });

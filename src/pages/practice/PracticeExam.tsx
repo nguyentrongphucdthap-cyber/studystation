@@ -84,7 +84,7 @@ export default function PracticeExam() {
 
     // UI
     const [showSubmitConfirm, setShowSubmitConfirm] = useState(false);
-    const [setShowAnswerSheet] = useState(false);
+    // showAnswerSheet state removed as it was unused
     const [showMobileTOC, setShowMobileTOC] = useState(false);
     const [showScrollTop, setShowScrollTop] = useState(false);
     const [isNavbarVisible, setIsNavbarVisible] = useState(true);
@@ -662,6 +662,7 @@ export default function PracticeExam() {
             </div>
         );
     }
+
 
     const subject = getSubjects().find((s) => s.id === exam.subjectId);
 
@@ -1776,9 +1777,6 @@ export default function PracticeExam() {
     let displayCorrectCount = correctCount;
     let displayTotalQuestions = totalQuestions;
     let displayDuration = duration;
-    // let displayPart1Answers = part1Answers;
-    // let displayPart2Answers = part2Answers;
-    // let displayPart3Answers = part3Answers;
     let displayTimestamp = '';
 
     if (selectedHistoryId) {
@@ -1789,9 +1787,6 @@ export default function PracticeExam() {
             displayTotalQuestions = hist.totalQuestions;
             displayDuration = hist.durationSeconds;
             const histAnswers = hist.answers as { part1?: any, part2?: any, part3?: any };
-            displayPart1Answers = histAnswers.part1 || {};
-            displayPart2Answers = histAnswers.part2 || {};
-            displayPart3Answers = histAnswers.part3 || {};
             
             // Format time correctly
             const d = new Date(hist.timestamp);
