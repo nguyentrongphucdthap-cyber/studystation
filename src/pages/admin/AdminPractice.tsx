@@ -6,9 +6,10 @@ import { Spinner } from '@/components/ui/Spinner';
 import { Button } from '@/components/ui/Button';
 import { Dialog, ConfirmDialog } from '@/components/ui/Dialog';
 import type { ExamMetadata } from '@/types';
-import { Trash2, Search, Upload, Wand2, ArrowLeft, ChevronRight,    LayoutDashboard, GraduationCap, FileText, Languages,
-    Bell, Calendar, Users, BarChart3, Key, RefreshCw,
-    Shield, UserPlus, Coins, MoreVertical
+import { 
+    Trash2, Search, Upload, Wand2, ArrowLeft, ChevronRight, 
+    Plus, LayoutGrid, Home, FolderPlus, Folder, ArrowUpLeft, 
+    Pencil, FileText, MoreVertical 
 } from 'lucide-react';
 import { SmartImportDialog } from '@/components/admin/SmartImportDialog';
 import { ManualExamDialog } from '@/components/admin/ManualExamDialog';
