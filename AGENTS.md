@@ -531,3 +531,30 @@ Admin là backoffice quản lý gần như toàn bộ dữ liệu sản phẩm.
 ## 14. Tóm tắt một câu
 
 StudyStation là một nền tảng học tập đa module với React frontend làm trung tâm, Firebase làm data/auth layer, Cloudflare Pages làm hosting + secret proxy layer, và mọi tính năng lớn đều kết nối với nhau qua ba trục chính: quyền truy cập, dữ liệu học tập, và hệ sinh thái Mago/FloatingHub.
+
+## 15. Quy tắc vàng để tránh lỗi build (Assistant Self-Review)
+
+Để đảm bảo build luôn pass trên Cloudflare Pages và tránh lặp lại các lỗi phổ biến gần đây, Assistant cần tự kiểm tra trước khi push:
+
+### 15.1 Dọn dẹp Imports và Variables (TS6133, TS6196)
+- Khi xóa một tính năng hoặc một đoạn logic, hãy xóa sạch:
+  - Import liên quan (đặc biệt là icon từ `lucide-react`).
+  - Khai báo biến cục bộ.
+  - Các state unused.
+- **Lưu ý**: Nếu chỉ cần setter của `useState`, hãy sử dụng `const [, setVal] = useState(...)`.
+
+### 15.2 Xóa triệt để các tham chiếu (Broken References)
+- Tránh tình trạng "comment out" khai báo nhưng vẫn để lại các dòng code gán giá trị (assignment) cho biến đó ở phía dưới.
+- Kiểm tra toàn bộ file sau khi replace để chắc chắn không còn biến nào "mồ côi".
+
+### 15.3 Kiểm tra Null/Undefined (TS18047, TS18048, TS18049)
+- Tuyệt đối không truy cập property của các object trả về từ Service (như `examData`, `userAns`) mà không có optional chaining `?.` hoặc check `if (data)`.
+- Đặc biệt cẩn thận trong các vòng lặp `.forEach` hoặc `.map` xử lý dữ liệu từ Firebase.
+
+### 15.4 Tránh xóa nhầm code (Accidental Deletion)
+- Khi dùng `multi_replace_file_content`, hãy kiểm tra kỹ `TargetContent` để không xóa nhầm các biến quan trọng nằm giữa các khối code được replacement.
+- Nếu không chắc chắn, hãy thực hiện replace từng khối nhỏ thay vì gom quá nhiều vào một lần.
+
+### 15.5 Bắt buộc chạy Typecheck cục bộ
+- Luôn chạy `npm run typecheck` trước khi push nếu có thay đổi liên quan đến cấu trúc dữ liệu hoặc logic component phức tạp.
+- Chỉ push khi lệnh này trả về Exit code 0.
