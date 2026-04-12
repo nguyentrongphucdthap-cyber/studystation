@@ -234,37 +234,54 @@ export function normalizeImportedExamData(data: any): any {
     };
 
     // Normalize Part 1 (Multiple Choice)
-    normalized.part1 = normalized.part1.map((q: any) => ({
-        id: q.id || '',
-        // Support both AI's and internal keys
-        question: q.question || q.text || '',
-        options: Array.isArray(q.options) ? q.options : ['', '', '', ''],
-        answer: q.answer !== undefined ? q.answer : (q.correct !== undefined ? q.correct : ''),
-        explanation: q.explanation || '',
-        image: q.image || null
-    }));
+    normalized.part1 = normalized.part1.map((q: any) => {
+        const correctValue = q.correct !== undefined ? q.correct : q.answer;
+        return {
+            id: q.id || '',
+            text: q.text || q.question || '',
+            question: q.text || q.question || '',
+            options: Array.isArray(q.options) ? q.options : ['', '', '', ''],
+            // PracticeExam expects 'correct' as number index 0-3
+            correct: typeof correctValue === 'number' ? correctValue : (parseInt(correctValue) || 0),
+            answer: correctValue, // Keep for preview
+            explanation: q.explanation || '',
+            image: q.image || null
+        };
+    });
 
     // Normalize Part 2 (True/False)
     normalized.part2 = normalized.part2.map((q: any) => ({
         id: q.id || '',
-        question: q.question || q.text || '',
-        subQuestions: Array.isArray(q.subQuestions) ? q.subQuestions.map((sq: any) => ({
-            id: sq.id || '',
-            text: sq.text || '',
-            answer: sq.answer === true || sq.answer === 'true' || sq.answer === 'Đúng' ? 'Đúng' : 'Sai'
-        })) : [],
+        text: q.text || q.question || '',
+        question: q.text || q.question || '',
+        subQuestions: Array.isArray(q.subQuestions) ? q.subQuestions.map((sq: any) => {
+            const isCorrect = sq.correct === true || sq.correct === 'true' || sq.answer === true || sq.answer === 'true' || sq.answer === 'Đúng';
+            return {
+                id: sq.id || '',
+                text: sq.text || '',
+                // PracticeExam expects 'correct' as boolean
+                correct: isCorrect,
+                answer: isCorrect ? 'Đúng' : 'Sai' // Keep for preview
+            };
+        }) : [],
         explanation: q.explanation || '',
         image: q.image || null
     }));
 
     // Normalize Part 3 (Short Answer)
-    normalized.part3 = normalized.part3.map((q: any) => ({
-        id: q.id || '',
-        question: q.question || q.text || '',
-        answer: q.answer || q.correct || '',
-        explanation: q.explanation || '',
-        image: q.image || null
-    }));
+    normalized.part3 = normalized.part3.map((q: any) => {
+        const correctValue = q.correct !== undefined ? q.correct : q.answer;
+        return {
+            id: q.id || '',
+            text: q.text || q.question || '',
+            question: q.text || q.question || '',
+            // PracticeExam expects 'correct' as string
+            correct: String(correctValue || ''),
+            answer: String(correctValue || ''),
+            explanation: q.explanation || '',
+            image: q.image || null
+        };
+    });
 
     // Backward compatibility for Vocab/E-test if needed
     if (Array.isArray((data as any).words)) {

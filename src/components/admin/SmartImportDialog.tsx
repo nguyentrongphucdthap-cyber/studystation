@@ -171,19 +171,19 @@ const QuestionPreview = ({ question, index, type }: { question: any, index: numb
             <div className="flex gap-2">
                 <span className="font-bold text-indigo-600 shrink-0">Câu {index + 1}:</span>
                 <div className="flex-1 overflow-hidden">
-                    <LatexContent content={question.question || question.text || question.word || ''} />
+                    <LatexContent content={question.text || question.question || question.word || ''} />
                 </div>
             </div>
 
             {type === 'part1' && question.options && (
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-2 pl-8">
-                    {['A', 'B', 'C', 'D'].map((opt) => (
+                    {['A', 'B', 'C', 'D'].map((opt, i) => (
                         <div key={opt} className={cn(
                             "p-2 rounded-lg border text-sm flex gap-2",
-                            question.answer === opt ? "bg-emerald-50 border-emerald-200 text-emerald-700" : "bg-slate-50 border-slate-100"
+                            (question.correct === i || question.answer === i || question.answer === opt) ? "bg-emerald-50 border-emerald-200 text-emerald-700" : "bg-slate-50 border-slate-100"
                         )}>
                             <span className="font-bold">{opt}.</span>
-                            <LatexContent content={question[`option${opt}`] || ''} />
+                            <LatexContent content={question.options[i] || ''} />
                         </div>
                     ))}
                 </div>
@@ -198,8 +198,8 @@ const QuestionPreview = ({ question, index, type }: { question: any, index: numb
                                 <LatexContent content={sub.text || ''} />
                             </div>
                             <div className="flex gap-4 pl-6">
-                                <span className={cn("px-2 py-0.5 rounded text-[10px] font-bold uppercase", sub.answer === 'Đúng' ? "bg-emerald-100 text-emerald-700" : "bg-slate-200 text-slate-600")}>Đúng</span>
-                                <span className={cn("px-2 py-0.5 rounded text-[10px] font-bold uppercase", sub.answer === 'Sai' ? "bg-emerald-100 text-emerald-700" : "bg-slate-200 text-slate-600")}>Sai</span>
+                                <span className={cn("px-2 py-0.5 rounded text-[10px] font-bold uppercase", (sub.correct === true || sub.answer === 'Đúng') ? "bg-emerald-100 text-emerald-700" : "bg-slate-200 text-slate-600")}>Đúng</span>
+                                <span className={cn("px-2 py-0.5 rounded text-[10px] font-bold uppercase", (sub.correct === false || sub.answer === 'Sai') ? "bg-emerald-100 text-emerald-700" : "bg-slate-200 text-slate-600")}>Sai</span>
                             </div>
                         </div>
                     ))}
@@ -208,8 +208,8 @@ const QuestionPreview = ({ question, index, type }: { question: any, index: numb
 
             {type === 'part3' && (
                 <div className="pl-8">
-                    <div className="p-2 rounded-lg bg-indigo-50 border border-indigo-100 text-sm italic text-indigo-700">
-                        Đáp án: {question.answer}
+                    <div className="p-2 rounded-lg border border-emerald-100 bg-emerald-50/50 text-sm italic text-emerald-700">
+                        Đáp án: <LatexContent content={String(question.correct || question.answer || '')} />
                     </div>
                 </div>
             )}

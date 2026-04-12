@@ -355,7 +355,14 @@ export async function savePracticeResult(result: {
     let coinsEarned = 0;
     if (result.score > 0 && user.email) {
         try {
-            coinsEarned = result.score * 0.05;
+            // Tiered reward: 10 pts -> 3, 9+ pts -> 2, others -> score * 0.05
+            if (result.score === 10) {
+                coinsEarned = 3;
+            } else if (result.score >= 9) {
+                coinsEarned = 2;
+            } else {
+                coinsEarned = result.score * 0.05;
+            }
             if (coinsEarned > 0) {
                 const { updateMagocoins } = await import('@/services/magocoin.service');
                 await updateMagocoins(user.email, coinsEarned);
@@ -367,6 +374,19 @@ export async function savePracticeResult(result: {
 
     clearHighestScoresCache();
     return { id: historyRef.id, coinsEarned };
+}
+
+export async function getPracticeHistoryById(historyId: string): Promise<PracticeHistory | null> {
+    try {
+        const docRef = doc(db, 'practice_history', historyId);
+        const docSnap = await getDoc(docRef);
+        if (docSnap.exists()) {
+            return { id: docSnap.id, ...docSnap.data() } as PracticeHistory;
+        }
+    } catch (err) {
+        console.error('[ExamService] getPracticeHistoryById error:', err);
+    }
+    return null;
 }
 
 export async function getPracticeHistory(examId: string): Promise<PracticeHistory[]> {

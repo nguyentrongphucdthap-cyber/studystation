@@ -3,7 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import { getUserTotalHistory, getSubjects } from '@/services/exam.service';
 import { Spinner } from '@/components/ui/Spinner';
 import type { PracticeHistory } from '@/types';
-import { ArrowLeft, Clock, Trophy, Calendar, ChevronRight, BookOpen } from 'lucide-react';
+import { ArrowLeft, Clock, Trophy, Calendar, ChevronRight, BookOpen, RotateCcw, Sparkles } from 'lucide-react';
 import { cn, formatTime } from '@/lib/utils';
 
 export default function PracticeHistoryPage() {
@@ -220,8 +220,8 @@ export default function PracticeHistoryPage() {
                                     </div>
                                 </div>
 
-                                <div className="flex items-center justify-between sm:justify-end gap-6 border-t sm:border-t-0 pt-3 sm:pt-0">
-                                    <div className="text-center sm:text-right">
+                                <div className="flex items-center justify-between sm:justify-end gap-3 border-t sm:border-t-0 pt-3 sm:pt-0">
+                                    <div className="text-center sm:text-right mr-3">
                                         <p className="text-[10px] text-gray-400 font-black uppercase tracking-widest mb-0.5">Kết quả</p>
                                         <div className={cn(
                                             "flex items-center gap-1.5 font-black text-lg",
@@ -230,13 +230,22 @@ export default function PracticeHistoryPage() {
                                             <Trophy className="h-4 w-4" /> {log.score.toFixed(1)}
                                         </div>
                                     </div>
-                                    <button
-                                        onClick={() => navigate(`/practice/${log.examId}`)}
-                                        className="p-2 hover:bg-blue-50 hover:text-blue-600 rounded-full transition-all text-gray-300"
-                                        title="Làm lại đề này"
-                                    >
-                                        <ChevronRight className="h-6 w-6" />
-                                    </button>
+                                    
+                                    <div className="flex gap-2">
+                                        <button
+                                            onClick={() => navigate(`/practice/review/${log.id}`)}
+                                            className="px-4 py-2 bg-indigo-50 text-indigo-600 text-[10px] font-black uppercase tracking-wider rounded-xl hover:bg-indigo-100 transition-all active:scale-95 flex items-center gap-1.5"
+                                        >
+                                            <Sparkles className="h-3 w-3" /> Xem lại
+                                        </button>
+                                        <button
+                                            onClick={() => navigate(`/practice/${log.examId}`)}
+                                            className="px-4 py-2 bg-slate-50 text-slate-400 text-[10px] font-black uppercase tracking-wider rounded-xl hover:bg-slate-100 transition-all active:scale-95 flex items-center gap-1.5"
+                                            title="Làm lại đề này"
+                                        >
+                                            <RotateCcw className="h-3 w-3" /> Làm lại
+                                        </button>
+                                    </div>
                                 </div>
                             </div>
                         );

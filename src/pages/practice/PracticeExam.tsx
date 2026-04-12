@@ -40,6 +40,7 @@ import {
     X,
     Check,
     Sparkles,
+    Layout,
 } from 'lucide-react';
 
 type ExamMode = 'ready' | 'taking' | 'result';
@@ -539,7 +540,7 @@ export default function PracticeExam() {
                     });
                 }
 
-                const { coinsEarned } = await savePracticeResult({
+                const { id: newHistoryId, coinsEarned } = await savePracticeResult({
                     examId: exam.id,
                     examTitle: exam.title,
                     subjectId: exam.subjectId,
@@ -550,6 +551,8 @@ export default function PracticeExam() {
                     answers: { part1: unshuffledP1, part2: part2Answers, part3: part3Answers },
                 });
                 
+                setSelectedHistoryId(newHistoryId);
+                
                 if (coinsEarned && coinsEarned > 0) {
                     setAlertState({
                         open: true,
@@ -559,9 +562,9 @@ export default function PracticeExam() {
                     });
                 }
                 
-                // Optimistically update local examHistory so it instantly appears on chart
+                // Optimistically update local examHistory 
                 setExamHistory(prev => [{
-                    id: newAttemptId,
+                    id: newHistoryId,
                     userId: user.uid,
                     examId: exam.id,
                     examTitle: exam.title,
@@ -577,7 +580,7 @@ export default function PracticeExam() {
         } catch (err) {
             console.error('[Practice] Save result error:', err);
         }
-    }, [exam, part1Answers, part2Answers, part3Answers, user, isGuest, isPracticeMode]);
+    }, [exam, part1Answers, part2Answers, part3Answers, user, isGuest, isPracticeMode, shuffledP1]);
 
     const handleSkip = () => {
         const q = practiceQueue[currentPracticeIdx];
@@ -1842,11 +1845,15 @@ export default function PracticeExam() {
                         <RotateCcw className="h-4 w-4" /> Làm lại
                     </Button>
                     <Button 
-                        variant={showAnswerSheet ? "default" : "outline"} 
-                        onClick={() => setShowAnswerSheet(!showAnswerSheet)}
-                        className={showAnswerSheet ? "bg-blue-600 hover:bg-blue-700" : "text-blue-600 border-blue-200 hover:bg-blue-50"}
+                        variant="default" 
+                        onClick={() => {
+                            if (selectedHistoryId) {
+                                navigate(`/practice/review/${selectedHistoryId}`);
+                            }
+                        }}
+                        className="bg-indigo-600 hover:bg-indigo-700 text-white font-bold"
                     >
-                        <Eye className="h-4 w-4" /> {showAnswerSheet ? 'Ẩn đáp án' : 'Xem đáp án'}
+                        <Layout className="h-4 w-4" /> Xem đáp án (Split Mode)
                     </Button>
                     <Button onClick={() => navigate('/practice')}>
                         <BookOpen className="h-4 w-4" /> Đề khác
@@ -1952,313 +1959,6 @@ export default function PracticeExam() {
                     );
                 })()}
             </div>
-
-            {/* Answer review */}
-            {showAnswerSheet && (
-            <div className="space-y-4 pb-20">
-                <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 bg-white p-3 md:p-4 rounded-xl shadow-sm border border-gray-100">
-                    <h3 className="text-lg font-bold flex items-center gap-2 m-0 shrink-0">
-                        <Eye className="h-5 w-5 text-blue-500" /> Kết quả chi tiết
-                    </h3>
-                    
-                    {/* Filters Toggle */}
-                    <div className="flex bg-gray-100 rounded-lg p-1 w-full sm:w-auto overflow-x-auto shrink-0">
-                        <button
-                            onClick={() => setResultFilter('all')}
-                            className={cn('px-3 py-1.5 rounded-md text-xs font-bold transition-all whitespace-nowrap', resultFilter === 'all' ? 'bg-white text-gray-900 shadow-sm' : 'text-gray-500 hover:text-gray-700')}
-                        >
-                            Tất cả
-                        </button>
-                        <button
-                            onClick={() => setResultFilter('correct')}
-                            className={cn('px-3 py-1.5 rounded-md text-xs font-bold transition-all whitespace-nowrap', resultFilter === 'correct' ? 'bg-emerald-100 text-emerald-700 shadow-sm' : 'text-gray-500 hover:text-emerald-600')}
-                        >
-                            Câu đúng
-                        </button>
-                        <button
-                            onClick={() => setResultFilter('incorrect')}
-                            className={cn('px-3 py-1.5 rounded-md text-xs font-bold transition-all whitespace-nowrap', resultFilter === 'incorrect' ? 'bg-red-100 text-red-700 shadow-sm' : 'text-gray-500 hover:text-red-600')}
-                        >
-                            Câu sai / Chưa làm
-                        </button>
-                    </div>
-
-                    <button
-                        onClick={() => {
-                            const allExpanded = Object.keys(expandedResults).length > 0;
-                            setExpandedResults(allExpanded ? {} : {
-                                ...exam.part1?.reduce((a, q) => ({ ...a, [`p1-${q.id}`]: true }), {}),
-                                ...exam.part2?.reduce((a, q) => ({ ...a, [`p2-${q.id}`]: true }), {}),
-                                ...exam.part3?.reduce((a, q) => ({ ...a, [`p3-${q.id}`]: true }), {}),
-                            });
-                        }}
-                        className="text-xs font-bold text-blue-600 hover:underline shrink-0"
-                    >
-                        {Object.keys(expandedResults).length > 0 ? 'Thu gọn tất cả' : 'Bật xem tất cả'}
-                    </button>
-                </div>
-
-                <div className="space-y-3">
-                    {/* Part 1 review */}
-                    {(selectedHistoryId ? (exam.part1 || []) : shuffledP1).map((q: Part1Question, idx) => {
-                        const userAns = displayPart1Answers[q.id];
-                        const answered = userAns !== undefined;
-                        const isCorrect = answered && userAns === q.correct;
-                        const isExpanded = expandedResults[`p1-${q.id}`];
-
-                        if (resultFilter === 'correct' && !isCorrect) return null;
-                        if (resultFilter === 'incorrect' && isCorrect) return null;
-
-                        // Identify group for review
-                        const group = (exam.questionGroups || []).find(g => g.questionIds.includes(q.id));
-                        const isFirstInGroup = group && group.questionIds[0] === q.id;
-
-                        return (
-                            <div key={`p1-${q.id}`} className="space-y-2">
-                                {isFirstInGroup && (
-                                    <div className="mt-4 mb-2 p-3 bg-pink-50/50 border border-pink-100 rounded-xl">
-                                        <p className="text-[10px] font-black text-pink-600 uppercase tracking-widest mb-1">Nhóm câu hỏi</p>
-                                        <p className="text-xs font-bold text-slate-700 italic">{group.title}</p>
-                                    </div>
-                                )}
-                                <div className="bg-white rounded-2xl border border-gray-100 shadow-sm overflow-hidden transition-all">
-                                <button
-                                    onClick={() => setExpandedResults({ ...expandedResults, [`p1-${q.id}`]: !isExpanded })}
-                                    className="w-full flex items-center justify-between px-5 py-4 text-left"
-                                >
-                                    <div className="flex items-center gap-3">
-                                        <div className={cn(
-                                            "w-8 h-8 rounded-full flex items-center justify-center font-bold text-xs shrink-0",
-                                            !answered ? "bg-gray-100 text-gray-400" : isCorrect ? "bg-emerald-100 text-emerald-600" : "bg-red-100 text-red-600"
-                                        )}>
-                                            {isCorrect ? <CheckCircle size={16} /> : !answered ? <MinusCircle size={16} /> : <XCircle size={16} />}
-                                        </div>
-                                        <div>
-                                            <span className="text-xs font-bold text-gray-400 uppercase tracking-widest">Câu {idx + 1} (Trắc nghiệm)</span>
-                                            <p className="text-sm font-semibold text-gray-700 line-clamp-1">{q.text}</p>
-                                        </div>
-                                    </div>
-                                    {isExpanded ? <ChevronUp size={20} className="text-gray-300" /> : <ChevronDown size={20} className="text-gray-300" />}
-                                </button>
-
-                                {isExpanded && (
-                                    <div className="px-5 pb-5 pt-1 border-t border-gray-50 bg-gray-50/30 animate-in fade-in slide-in-from-top-2">
-                                        <div className="mb-4 text-sm font-medium text-gray-800 leading-relaxed">
-                                            <LatexContent content={q.text} />
-                                        </div>
-                                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
-                                            {q.options.map((opt, idx) => (
-                                                <div key={idx} className={cn(
-                                                    'rounded-xl px-4 py-3 text-xs flex items-start gap-2 border',
-                                                    idx === q.correct
-                                                        ? 'bg-emerald-50 border-emerald-200 text-emerald-800 font-bold'
-                                                        : answered && idx === userAns
-                                                            ? 'bg-red-50 border-red-200 text-red-800'
-                                                            : 'bg-white border-gray-100 text-gray-500'
-                                                )}>
-                                                    <span className="font-bold opacity-50">{String.fromCharCode(65 + idx)}.</span>
-                                                    <LatexContent content={opt} />
-                                                </div>
-                                            ))}
-                                        </div>
-                                        <div className="mt-4 flex items-center gap-2">
-                                            <Button 
-                                                variant="ghost" 
-                                                size="sm" 
-                                                className="h-8 text-indigo-600 dark:text-indigo-400 font-bold hover:text-indigo-700 dark:hover:text-indigo-300 hover:bg-indigo-50 dark:hover:bg-indigo-900/30 border border-indigo-100 dark:border-indigo-900/50 rounded-xl transition-all duration-300 hover:scale-[1.02] active:scale-95 group relative overflow-hidden"
-                                                onClick={() => triggerMago(`/explain-practice examId:${examId} part:p1 qid:${q.id}`)}
-                                            >
-                                                <Sparkles className="h-4 w-4 mr-2 group-hover:rotate-12 transition-transform" /> 
-                                                <span className="relative z-10">Giải thích bằng Mago A.I 🧙‍♂️</span>
-                                                <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white/20 dark:via-white/5 to-transparent -translate-x-full group-hover:animate-shimmer" />
-                                            </Button>
-                                        </div>
-                                        {q.explanation && (
-                                            <div className="mt-4 p-4 rounded-xl bg-blue-50 border border-blue-100 dark:bg-blue-900/10 dark:border-blue-900/30 text-[11px] leading-relaxed">
-                                                <div className="font-bold text-blue-600 uppercase tracking-wider mb-1 flex items-center gap-1">
-                                                    💡 Giải thích
-                                                </div>
-                                                <LatexContent content={q.explanation} />
-                                            </div>
-                                        )}
-                                    </div>
-                                )}
-                            </div>
-                        </div>
-                    );
-                })}
-
-                {/* Part 2 rewrite similarly ... but it's long, I will simplify if needed */}
-                    {(selectedHistoryId ? (exam.part2 || []) : shuffledP2).map((q: Part2Question, idx) => {
-                        const isExpanded = expandedResults[`p2-${q.id}`];
-                        const subResults = q.subQuestions.map(sq => {
-                            const key = `${q.id}-${sq.id}`;
-                            const userAns = displayPart2Answers[key];
-                            return userAns !== undefined && userAns === sq.correct;
-                        });
-                        const allCorrect = subResults.every(r => r === true);
-                        const someIncorrect = subResults.some(r => r === false);
-
-                        if (resultFilter === 'correct' && !allCorrect) return null;
-                        if (resultFilter === 'incorrect' && allCorrect) return null;
-
-                        return (
-                            <div key={`p2-${q.id}`} className="bg-white rounded-2xl border border-gray-100 shadow-sm overflow-hidden transition-all">
-                                <button
-                                    onClick={() => setExpandedResults({ ...expandedResults, [`p2-${q.id}`]: !isExpanded })}
-                                    className="w-full flex items-center justify-between px-5 py-4 text-left"
-                                >
-                                    <div className="flex items-center gap-3">
-                                        <div className={cn(
-                                            "w-8 h-8 rounded-full flex items-center justify-center font-bold text-xs shrink-0",
-                                            allCorrect ? "bg-emerald-100 text-emerald-600" : someIncorrect ? "bg-red-100 text-red-600" : "bg-gray-100 text-gray-400"
-                                        )}>
-                                            {allCorrect ? <CheckCircle size={16} /> : someIncorrect ? <XCircle size={16} /> : <MinusCircle size={16} />}
-                                        </div>
-                                        <div>
-                                            <span className="text-xs font-bold text-gray-400 uppercase tracking-widest">Câu {shuffledP1.length + idx + 1} (Đúng/Sai)</span>
-                                            <p className="text-sm font-semibold text-gray-700 line-clamp-1">{q.text}</p>
-                                        </div>
-                                    </div>
-                                    {isExpanded ? <ChevronUp size={20} className="text-gray-300" /> : <ChevronDown size={20} className="text-gray-300" />}
-                                </button>
-
-                                {isExpanded && (
-                                    <div className="px-5 pb-5 pt-1 border-t border-gray-50 bg-gray-50/30 animate-in fade-in slide-in-from-top-2">
-                                        <div className="mb-4 text-sm font-medium text-gray-800">
-                                            <LatexContent content={q.text} />
-                                        </div>
-                                        <div className="space-y-2">
-                                            {q.subQuestions.map((sq) => {
-                                                const key = `${q.id}-${sq.id}`;
-                                                const userAns = part2Answers[key];
-                                                const answered = userAns !== undefined;
-                                                const isCorrectSq = answered && userAns === sq.correct;
-                                                return (
-                                                    <div key={key} className={cn(
-                                                        "flex items-center justify-between p-3 rounded-xl border text-xs",
-                                                        !answered ? "bg-gray-50/50 border-gray-100 text-gray-400" :
-                                                            isCorrectSq ? "bg-emerald-50/50 border-emerald-100 text-emerald-800" : "bg-red-50/50 border-red-100 text-red-800"
-                                                    )}>
-                                                        <span className="font-medium">{sq.id}) <LatexContent content={sq.text} /></span>
-                                                        <div className="flex items-center gap-2 font-black shrink-0 ml-3">
-                                                            {answered ? (isCorrectSq ? 'CHÍNH XÁC' : 'SAI') : 'BỎ TRỐNG'}
-                                                            <div className="w-1.5 h-1.5 rounded-full bg-gray-200 mx-1" />
-                                                            ĐÁP ÁN: {sq.correct ? 'Đ' : 'S'}
-                                                            {answered && !isCorrectSq && <span className="opacity-50 ml-1">({userAns ? 'Đ' : 'S'})</span>}
-                                                        </div>
-                                                    </div>
-                                                );
-                                            })}
-                                        </div>
-                                        <div className="mt-4 flex items-center gap-2">
-                                            <Button 
-                                                variant="ghost" 
-                                                size="sm" 
-                                                className="h-8 text-indigo-600 dark:text-indigo-400 font-bold hover:text-indigo-700 dark:hover:text-indigo-300 hover:bg-indigo-50 dark:hover:bg-indigo-900/30 border border-indigo-100 dark:border-indigo-900/50 rounded-xl transition-all duration-300 hover:scale-[1.02] active:scale-95 group relative overflow-hidden"
-                                                onClick={() => triggerMago(`/explain-practice examId:${examId} part:p2 qid:${q.id}`)}
-                                            >
-                                                <Sparkles className="h-4 w-4 mr-2 group-hover:rotate-12 transition-transform" /> 
-                                                <span className="relative z-10">Giải thích bằng Mago A.I 🧙‍♂️</span>
-                                                <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white/20 dark:via-white/5 to-transparent -translate-x-full group-hover:animate-shimmer" />
-                                            </Button>
-                                        </div>
-                                        {q.explanation && (
-                                            <div className="mt-4 p-4 rounded-xl bg-blue-50 border border-blue-100 dark:bg-blue-900/10 dark:border-blue-900/30 text-[11px] leading-relaxed">
-                                                <div className="font-bold text-blue-600 uppercase tracking-wider mb-1 flex items-center gap-1">
-                                                    💡 Giải thích
-                                                </div>
-                                                <LatexContent content={q.explanation} />
-                                            </div>
-                                        )}
-                                    </div>
-                                )}
-                            </div>
-                        );
-                    })}
-
-                    {/* Part 3 review */}
-                    {(selectedHistoryId ? (exam.part3 || []) : shuffledP3).map((q: Part3Question, idx) => {
-                        const userAnsRaw = displayPart3Answers[q.id] || '';
-                        const userAns = userAnsRaw.trim().toLowerCase();
-                        const correctAns = q.correct.trim().toLowerCase();
-                        const answered = userAnsRaw.trim().length > 0;
-                        const isCorrect = answered && userAns === correctAns;
-                        const isExpanded = expandedResults[`p3-${q.id}`];
-
-                        if (resultFilter === 'correct' && !isCorrect) return null;
-                        if (resultFilter === 'incorrect' && isCorrect) return null;
-
-                        return (
-                            <div key={`p3-${q.id}`} className="bg-white rounded-2xl border border-gray-100 shadow-sm overflow-hidden transition-all">
-                                <button
-                                    onClick={() => setExpandedResults({ ...expandedResults, [`p3-${q.id}`]: !isExpanded })}
-                                    className="w-full flex items-center justify-between px-5 py-4 text-left"
-                                >
-                                    <div className="flex items-center gap-3">
-                                        <div className={cn(
-                                            "w-8 h-8 rounded-full flex items-center justify-center font-bold text-xs shrink-0",
-                                            !answered ? "bg-gray-100 text-gray-400" : isCorrect ? "bg-emerald-100 text-emerald-600" : "bg-red-100 text-red-600"
-                                        )}>
-                                            {isCorrect ? <CheckCircle size={16} /> : !answered ? <MinusCircle size={16} /> : <XCircle size={16} />}
-                                        </div>
-                                        <div>
-                                            <span className="text-xs font-bold text-gray-400 uppercase tracking-widest">Câu {shuffledP1.length + shuffledP2.length + idx + 1} (Trả lời ngắn)</span>
-                                            <p className="text-sm font-semibold text-gray-700 line-clamp-1">{q.text}</p>
-                                        </div>
-                                    </div>
-                                    {isExpanded ? <ChevronUp size={20} className="text-gray-300" /> : <ChevronDown size={20} className="text-gray-300" />}
-                                </button>
-
-                                {isExpanded && (
-                                    <div className="px-5 pb-5 pt-1 border-t border-gray-50 bg-gray-50/30 animate-in fade-in slide-in-from-top-2">
-                                        <div className="mb-4 text-sm font-medium text-gray-800">
-                                            <LatexContent content={q.text} />
-                                        </div>
-                                        <div className="flex items-center gap-4 bg-white p-4 rounded-xl border border-gray-100 shadow-sm">
-                                            <div className="flex-1">
-                                                <p className="text-[10px] font-black uppercase tracking-widest text-gray-400 mb-1">Bạn trả lời</p>
-                                                <p className={cn("text-sm font-bold", isCorrect ? "text-emerald-600" : "text-red-500")}>
-                                                    {answered ? userAnsRaw : '(Bỏ trống)'}
-                                                </p>
-                                            </div>
-                                            <div className="w-px h-10 bg-gray-100" />
-                                            <div className="flex-1">
-                                                <p className="text-[10px] font-black uppercase tracking-widest text-gray-400 mb-1">Đáp án đúng</p>
-                                                <p className="text-sm font-bold text-emerald-600">
-                                                    {q.correct}
-                                                </p>
-                                            </div>
-                                        </div>
-                                        <div className="mt-4 flex items-center gap-2">
-                                            <Button 
-                                                variant="ghost" 
-                                                size="sm" 
-                                                className="h-8 text-indigo-600 dark:text-indigo-400 font-bold hover:text-indigo-700 dark:hover:text-indigo-300 hover:bg-indigo-50 dark:hover:bg-indigo-900/30 border border-indigo-100 dark:border-indigo-900/50 rounded-xl transition-all duration-300 hover:scale-[1.02] active:scale-95 group relative overflow-hidden"
-                                                onClick={() => triggerMago(`/explain-practice examId:${examId} part:p3 qid:${q.id}`)}
-                                            >
-                                                <Sparkles className="h-4 w-4 mr-2 group-hover:rotate-12 transition-transform" /> 
-                                                <span className="relative z-10">Giải thích bằng Mago A.I 🧙‍♂️</span>
-                                                <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white/20 dark:via-white/5 to-transparent -translate-x-full group-hover:animate-shimmer" />
-                                            </Button>
-                                        </div>
-                                        {q.explanation && (
-                                            <div className="mt-4 p-4 rounded-xl bg-blue-50 border border-blue-100 dark:bg-blue-900/10 dark:border-blue-900/30 text-[11px] leading-relaxed">
-                                                <div className="font-bold text-blue-600 uppercase tracking-wider mb-1 flex items-center gap-1">
-                                                    💡 Giải thích
-                                                </div>
-                                                <LatexContent content={q.explanation} />
-                                            </div>
-                                        )}
-                                    </div>
-                                )}
-                            </div>
-                        );
-                    })}
-                </div>
-            </div>
-
-            )}
 
             <AlertDialog
                 open={alertState.open}

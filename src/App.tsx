@@ -32,6 +32,7 @@ const AdminAccessRequests = lazy(() => import('@/pages/admin/AdminAccessRequests
 const AccessDenied = lazy(() => import('@/pages/AccessDenied'));
 const StatisticsPage = lazy(() => import('@/pages/Statistics'));
 const MagoChatPage = lazy(() => import('@/pages/mago/MagoChatPage'));
+const PracticeReview = lazy(() => import('@/pages/practice/PracticeReview'));
 
 // Lazy-load AdminOverview from same file
 const AdminOverview = lazy(() =>
@@ -57,6 +58,14 @@ function App() {
                                         element={
                                             <ProtectedRoute>
                                                 <MagoChatPage />
+                                            </ProtectedRoute>
+                                        }
+                                    />
+                                    <Route
+                                        path="/practice/review/:historyId"
+                                        element={
+                                            <ProtectedRoute>
+                                                <PracticeReview />
                                             </ProtectedRoute>
                                         }
                                     />
