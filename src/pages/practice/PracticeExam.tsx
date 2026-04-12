@@ -1786,7 +1786,6 @@ export default function PracticeExam() {
             displayCorrectCount = hist.correctCount;
             displayTotalQuestions = hist.totalQuestions;
             displayDuration = hist.durationSeconds;
-            const histAnswers = hist.answers as { part1?: any, part2?: any, part3?: any };
             
             // Format time correctly
             const d = new Date(hist.timestamp);
