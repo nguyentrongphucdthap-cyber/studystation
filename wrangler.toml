@@ -8,3 +8,4 @@ binding = "AI"
 
 [assets]
 directory = "./dist"
+on_not_found = "single-page-application"

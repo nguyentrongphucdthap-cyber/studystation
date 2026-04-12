@@ -6,7 +6,7 @@
   "scripts": {
     "dev": "npx wrangler pages dev --port 5173 --proxy 5174 -- npm run vite-dev -- --port 5174",
     "vite-dev": "vite --no-open",
-    "build": "tsc -b --force && vite build && node -e \"require('fs').copyFileSync('dist/index.html', 'dist/404.html')\"",
+    "build": "tsc -b --force && vite build",
     "preview": "vite preview",
     "typecheck": "tsc --noEmit",
     "lint": "eslint .",
